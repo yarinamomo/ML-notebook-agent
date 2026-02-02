@@ -19,6 +19,7 @@ class NotebookEnvironmentConfig(BaseModel):
     sandbox_settings: dict[str, Any]
     source_path: str
     docker_mount_path: str
+    problem_mode: str = "JunoBench_Buggy"
     timeout: int = 30
     with_debugger: bool = False
     verbose: bool = True  # Print execution details to console
@@ -58,9 +59,10 @@ class NotebookEnvironment:
     def _setup(self):
         """Setup the benchmark problem and notebook."""
         self.problem = BenchmarkProblem(
-            self.config.sandbox_settings,
-            self.config.source_path,
-            self.config.docker_mount_path
+            sandbox_settings=self.config.sandbox_settings,
+            source_path=self.config.source_path,
+            docker_source_path=self.config.docker_mount_path,
+            problem_mode=self.config.problem_mode
         )
         self.problem.setup(with_debugger=self.config.with_debugger)
         self.notebook = self.problem.notebook
@@ -175,8 +177,8 @@ class NotebookEnvironment:
                 self.notebook.sandbox.run_async(command, cancel_event=None)
             )
             
-            # Extract output using llm_compatible() method from SandboxResult
-            output_str = result.llm_compatible() if result else "(No output)"
+            # Extract output as string from SandboxResult
+            output_str = result.result.text if result and result.result else "(No output)"
             
             returncode = 0 if result.status.value == "success" else 1
             
@@ -292,8 +294,8 @@ class NotebookEnvironment:
                     self.notebook.run_cell_async(index, cancel_event=None)
                 )
                 
-                # Extract output using llm_compatible() method
-                output_text = result.result.llm_compatible() if result.result else "(No output)"
+                # Extract output as string
+                output_text = result.result.text if result.result else "(No output)"
                 
                 result = {
                     "output": output_text,
@@ -318,10 +320,10 @@ class NotebookEnvironment:
                     self.notebook.run_all_async(cancel_event=None)
                 )
                 
-                # Extract output using llm_compatible() method from each cell result
+                # Extract output as string from each cell result
                 output_parts = []
                 for i, r in enumerate(results):
-                    cell_output = r.result.llm_compatible() if r.result else "(No output)"
+                    cell_output = r.result.text if r.result else "(No output)"
                     status = "✓" if r.status.value == "success" else "✗"
                     output_parts.append(f"Cell {i} [{status}]:\n{cell_output}")
                 

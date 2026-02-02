@@ -7,6 +7,7 @@ import shutil
 import re
 import os
 import time
+import src.preprocess_notebook as preprocess_noteboook
 
 def setup_environment(src, dst):
     if not src.exists():
@@ -27,9 +28,9 @@ def setup_environment(src, dst):
     time.sleep(5.0) # 5x longer than tests needed to be absolutely certain
 
 class LightweightNotebook:
-    def __init__(self, content: str, sandbox: DockerSandbox, problem_source_path: Path, problem_file: Path, with_debugger: bool = False):
+    def __init__(self, sandbox: DockerSandbox, problem_source_path: Path, problem_file: Path, problem_mode: str = "JunoBench_Buggy", with_debugger: bool = False):
         self.sandbox = sandbox
-        self.cells = self._parse_cells(content)
+        self.cells = self._parse_cells(problem_file, problem_mode)
         self.state = [None for _ in range(len(self.cells))]
         self.problem_source_path = problem_source_path
         self.problem_file = problem_file
@@ -45,19 +46,9 @@ class LightweightNotebook:
 
         self.save()
 
-    def _parse_cells(self, content: str) -> List[str]:
-        # Split by the cell marker #%%
-        # The first element might be empty or imports before the first cell
-        raw_cells = re.split(r'\n?\s*#\s*%%', content)
-
-        cells = []
-        for cell in raw_cells:
-            cell = cell.strip()
-            if cell:
-                # Remove the header if it exists
-                cell = re.sub(r'^# --- \[CELL \d+\]: ---\s*', '', cell)
-                cells.append(cell)
-        return cells
+    def _parse_cells(self, problem_file: Path, problem_mode: str) -> List[str]:
+        res = preprocess_noteboook.parse_nb(problem_file, parse_mode=problem_mode)
+        return res
 
     def get_cells(self):
         return [f"# --- [CELL {i}]: ---\n{cell}" for i, cell in enumerate(self.cells)]
@@ -134,14 +125,16 @@ class LightweightNotebook:
         return "\n\n#%%\n".join([f"# --- [CELL {i}]: ---\n{cell}" for i, cell in enumerate(self.cells)])
     
     def save(self):
-        self.problem_file.write_text(self.to_script())
+        # self.problem_file.write_text(self.to_script())
+        pass
 
 class BenchmarkProblem:
-    def __init__(self, sandbox_settings: dict, source_path: str, docker_source_path: str = "docker_source"):
+    def __init__(self, sandbox_settings: dict, source_path: str, problem_mode: str = "JunoBench_Buggy", docker_source_path: str = "docker_source"):
         self.source_path = Path(source_path)
         self.docker_source_path = Path(docker_source_path).resolve()
         self.sandbox = None
         self.notebook = None
+        self.problem_mode = problem_mode
         self.sandbox_settings = sandbox_settings
 
     def setup(self, with_debugger: bool = False):
@@ -150,15 +143,15 @@ class BenchmarkProblem:
         self.sandbox = DockerSandbox(mount_volume=str(self.docker_source_path), **self.sandbox_settings)
         self.sandbox.start()
 
-        problem_file = self.docker_source_path / "problem.py"
+        # Extract target_nb_instance from source_path
+        target_nb_instance = self.source_path.name
+        problem_file = self.docker_source_path / f"{target_nb_instance}_reproduced.ipynb"
         if not problem_file.exists():
-            raise FileNotFoundError(f"problem.py not found in {self.docker_source_path}")
+            raise FileNotFoundError(f"{target_nb_instance}_reproduced.ipynb not found in {self.docker_source_path}")
         
-        content = problem_file.read_text()
+        self.sandbox.run(f"import sys\nsys.modules['__main__'].__file__ = '/app/container/{target_nb_instance}_reproduced.ipynb'")
 
-        self.sandbox.run("import sys\nsys.modules['__main__'].__file__ = '/app/container/problem.py'")
-
-        self.notebook = LightweightNotebook(content, self.sandbox, self.docker_source_path, problem_file, with_debugger=with_debugger)
+        self.notebook = LightweightNotebook(sandbox=self.sandbox, problem_source_path=self.docker_source_path, problem_file=problem_file, problem_mode=self.problem_mode, with_debugger=with_debugger)
 
     def teardown(self):
         if self.sandbox:

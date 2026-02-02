@@ -80,7 +80,7 @@ class LoggingModelWrapper:
         return getattr(self.model, name)
 
 
-def example_with_agent():
+def example_with_agent(source_path, problem_mode="JunoBench_Buggy"):
     """Example with custom agent configuration."""
     
     env = NotebookEnvironment(
@@ -88,8 +88,9 @@ def example_with_agent():
             "image_name": "yarinamomo/kaggle_python_env",
             "port": 8888,
         },
-        source_path="example/test/",
+        source_path=source_path,
         docker_mount_path="example/docker_mount/",
+        problem_mode=problem_mode,
         with_debugger=False,
         log_file="agent_interaction.log",  # Enable logging to file
         verbose=True,  # Set to False to disable console output
@@ -119,52 +120,55 @@ def example_with_agent():
             model=model,
             env=env,
             # Custom configuration
-            step_limit=20,  # Max number of steps
+            step_limit=30,  # Max number of steps
             cost_limit=3.0,  # Max cost in dollars
             system_template="""You are a Python-based machine learning Jupyter notebook debugging expert.
-Your task is to fix cell crashes in a given machine learning Jupyter notebook.
+Your task is to fix cell CRASHES in a given machine learning Jupyter notebook. Do not care if the cell does not CRASH.
 
 IMPORTANT RULES:
-1. Before each action, briefly explain why you're doing it, then output the command
+1. Before each action, briefly explain why you're doing it, then call the bash tool with the command
 2. Execute ONE OPTION at a time
 3. DO NOT chain commands with && or ; or |
 4. DO NOT mix __NOTEBOOK_OP__ commands with bash commands
 5. Wait for each command to complete before issuing the next one
 
 OPTION 1: NOTEBOOK OPERATIONS:
-To interact with the notebook, use special commands prefixed with __NOTEBOOK_OP__:
-
-1. Get notebook information:
+To interact with the notebook, use the bash tool, with bash keyword, with one of the following commands prefixed with __NOTEBOOK_OP__ :
    __NOTEBOOK_OP__get_cell_count()          # Returns the total number of cells
    __NOTEBOOK_OP__get_cells()               # Returns all cells with their content
    __NOTEBOOK_OP__get_cell(cell_index)               # Get specific cell by index (0-based)
-
-2. Modify cells:
    __NOTEBOOK_OP__edit_cell(cell_index, "new Python code")  # Edit cell at index
-
-3. Run cells:
    __NOTEBOOK_OP__run_cell(cell_index)               # Run specific cell by index
    __NOTEBOOK_OP__run_all()                 # Run all cells in order
+Use bash command, for example:
+```bash
+__NOTEBOOK_OP__run_all()
+```
+But NOT:
+```
+__NOTEBOOK_OP__run_all()
+```
 
 OPTION 2: REGULAR PYTHON CODE:
-You can also execute regular Python code directly in the notebook kernel via bash commands, for example:
+You can also execute regular Python code directly in the notebook kernel by calling the bash tool, for example:
 ```bash
 import pandas as pd
 df = pd.read_csv('/app/container/data/train.csv')
 print(df.head())
 ```
 
-OPTION 3: When done, echo success message:
+OPTION 3: When done, call bash tool with:
+```bash
 echo "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"
+```
 
-
-WORKFLOW EXAMPLE (execute ONE command per step):
-Step 1: __NOTEBOOK_OP__get_cells()
-Step 2: __NOTEBOOK_OP__run_all()
-Step 3: (if errors found) analyze the error by writing Python code to run diagnoses, or trying to fix the code by __NOTEBOOK_OP__edit_cell(cell_index, "fixed Pythoncode")
-Step 4: check if the fix works by __NOTEBOOK_OP__run_cell(cell_index) or __NOTEBOOK_OP__run_all()
+WORKFLOW EXAMPLE (execute ONE command per step using the bash tool):
+Step 1: Call bash tool with: __NOTEBOOK_OP__get_cells()
+Step 2: Call bash tool with: __NOTEBOOK_OP__run_all()
+Step 3: (if errors found) analyze the error by writing Python code to run diagnoses, or trying to fix the code by calling bash tool with: __NOTEBOOK_OP__edit_cell(cell_index, "fixed Pythoncode")
+Step 4: check if the fix works by calling bash tool with: __NOTEBOOK_OP__run_cell(cell_index) or __NOTEBOOK_OP__run_all()
 Step 5: if more errors, repeat Steps 3-4 until all cells run successfully
-Step 6: if no errors remain, terminate by using: echo "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"
+Step 6: if no errors remain, terminate by calling bash tool with: echo "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"
 ```
 """,
         )
@@ -219,7 +223,7 @@ Step 6: if no errors remain, terminate by using: echo "COMPLETE_TASK_AND_SUBMIT_
         print(f"\n📝 Full interaction log saved to: agent_interaction.log")
 
 
-def example_with_tools():
+def example_with_tools(source_path, problem_mode="JunoBench_Buggy"):
     """Example showing how to manually use the environment (without agent)."""
     
     env = NotebookEnvironment(
@@ -227,63 +231,17 @@ def example_with_tools():
             "image_name": "yarinamomo/kaggle_python_env",
             "port": 8888,
         },
-        source_path="example/test/",
-        docker_mount_path="example/docker_mount/"
+        source_path=source_path,
+        docker_mount_path="example/docker_mount/",
+        problem_mode=problem_mode,
+        with_debugger=False,
+        log_file="agent_interaction.log",  # Enable logging to file
+        verbose=True,  # Set to False to disable console output
     )
     
     try:
-        print("Testing environment capabilities manually...\n")
-        
-        # Test 1: Execute Python code
-        print("1. Executing Python code:")
-        result = env.execute("print('Hello from notebook!')")
-        if result['returncode'] == 0:
-            print(f"   ✅ Success: {result['output']}")
-        else:
-            print(f"   ❌ Failed: {result['output']}")
-        
-        # Test 2: Try code with error
-        print("\n2. Testing error handling:")
-        result = env.execute("print(undefined_variable)")
-        if result['returncode'] != 0:
-            print(f"   ✅ Error caught correctly: {result['output'][:100]}...")
-        else:
-            print(f"   ❌ Should have failed but didn't")
-        
-        # Test 3: Execute data processing
-        print("\n3. Executing data processing:")
-        result = env.execute("""
-import pandas as pd
-data = {'name': ['Alice', 'Bob'], 'age': [25, 30]}
-df = pd.DataFrame(data)
-print(df.to_string())
-""")
-        if result['returncode'] == 0:
-            print(f"   ✅ DataFrame created:\n{result['output']}")
-        else:
-            print(f"   ❌ Failed: {result['output']}")
-        
-        # Test 4: Access notebook directly
-        print("\n4. Accessing notebook object:")
         notebook = env.notebook
         print(f"   Notebook has {notebook.get_cell_count()} cells")
-        
-        print("\n" + "="*60)
-        print("Manual testing complete. Now using with agent...")
-        print("="*60 + "\n")
-        
-        # Now demonstrate with agent
-        agent = DefaultAgent(
-            model=get_model("gpt-4o-mini"),
-            env=env,
-        )
-        
-        exit_status, result = agent.run(
-            "Load the CSV file from data/train_synthetic.csv and print the first 3 rows"
-        )
-        
-        print(f"\nAgent Exit Status: {exit_status}")
-        print(f"Agent Result:\n{result}")
         
     finally:
         env.cleanup()
