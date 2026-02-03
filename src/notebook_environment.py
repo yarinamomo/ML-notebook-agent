@@ -28,20 +28,6 @@ class NotebookEnvironmentConfig:
     with_debugger: bool = False
     verbose: bool = True  # Print execution details to console
 
-
-def _clean_ansi_codes(text: str) -> str:
-    """Remove ANSI escape codes from text."""
-    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-    return ansi_escape.sub('', text)
-
-def _result_parts_to_string(parts: list) -> str:
-    """Convert list of ResultPart to clean string output."""
-    text_parts = []
-    for part in parts:
-        if part.type == SandboxResultType.TEXT:
-            text_parts.append(_clean_ansi_codes(part.content))
-    return ''.join(text_parts)
-
 def _get_status_label(exec_result: ExecutionResult) -> str:
     """Get human-readable status label from ExecutionResult."""
     if exec_result.status == ExecutionStatus.ERROR:
@@ -210,8 +196,7 @@ class NotebookEnvironment:
             
             # Extract output as clean string from ExecutionResult
             if exec_result.result:
-                parts = exec_result.result.llm_compatible()
-                output_str = _result_parts_to_string(parts)
+                output_str = exec_result.result.llm_compatible()
             else:
                 output_str = "(No output)"
             
@@ -351,8 +336,7 @@ class NotebookEnvironment:
                 
                 # Extract output as clean string from ExecutionResult
                 if exec_result.result:
-                    parts = exec_result.result.llm_compatible()
-                    cell_output = _result_parts_to_string(parts)
+                    cell_output = exec_result.result.llm_compatible()
                 else:
                     cell_output = "(No output)"
                 
@@ -387,8 +371,7 @@ class NotebookEnvironment:
                 output_parts = []
                 for i, exec_result in enumerate(exec_results):
                     if exec_result.result:
-                        parts = exec_result.result.llm_compatible()
-                        cell_output = _result_parts_to_string(parts)
+                        cell_output = exec_result.result.llm_compatible(if_truncate=True, max_words=500)
                     else:
                         cell_output = "(No output)"
                     

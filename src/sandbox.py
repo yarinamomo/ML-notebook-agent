@@ -60,7 +60,7 @@ class SandboxResult:
         return f"<SandboxResult: {len(self.outputs)} outputs>"
     
 
-    def llm_compatible(self) -> List[ResultPart]:
+    def llm_compatible(self, if_truncate: bool = False, max_words: int = 500) -> str:
         """Converts outputs into a list of ResultPart for LLM consumption."""
         parts = []
         for out in self.outputs:
@@ -82,8 +82,33 @@ class SandboxResult:
                     parts.append(ResultPart(SandboxResultType.TEXT, data['text/html']))
             elif msg_type == 'error':
                 parts.append(ResultPart(SandboxResultType.TEXT, f"\n---ERROR---: {content['evalue']}\n"))
-        return parts
+        outputs = self._result_parts_to_string(parts)
+        if if_truncate:
+            outputs = self._truncate_cell_output(outputs, max_words=max_words)
+        return outputs
     
+    def _clean_ansi_codes(self, text: str) -> str:
+        """Remove ANSI escape codes from text."""
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        return ansi_escape.sub('', text)
+
+    def _result_parts_to_string(self, parts: list) -> str:
+        """Convert list of ResultPart to clean string output."""
+        text_parts = []
+        for part in parts:
+            if part.type == SandboxResultType.TEXT:
+                text_parts.append(self._clean_ansi_codes(part.content))
+        return ''.join(text_parts)
+    
+    def _truncate_cell_output(self, output: str, max_words: int = 500) -> str:
+        """Truncate cell output to a reasonable word limit for LLM processing."""
+        words = output.split()
+        if len(words) <= max_words:
+            return output
+        
+        truncated = ' '.join(words[:max_words])
+        remaining_words = len(words) - max_words
+        return f"{truncated}\n\n[OUTPUT TRUNCATED - {remaining_words} more words omitted for brevity]"
 
     def display(self):
         """Renders outputs in a Jupyter Notebook (for debugging)."""
