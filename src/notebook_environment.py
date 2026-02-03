@@ -6,15 +6,15 @@ with the self-defined Docker-based Jupyter notebook sandbox.
 """
 
 import asyncio
+from dataclasses import dataclass
 import platform
 from typing import Any
-from pydantic import BaseModel
 
 from .benchmark import BenchmarkProblem, LightweightNotebook
 from .sandbox import ExecutionStatus
 
-
-class NotebookEnvironmentConfig(BaseModel):
+@dataclass
+class NotebookEnvironmentConfig:
     """Configuration for the notebook environment."""
     sandbox_settings: dict[str, Any]
     source_path: str
