@@ -120,17 +120,24 @@ def example_with_agent(source_path, problem_mode="JunoBench_Buggy"):
             model=model,
             env=env,
             # Custom configuration
-            step_limit=30,  # Max number of steps
-            cost_limit=3.0,  # Max cost in dollars
+            step_limit=20,  # Max number of steps
+            cost_limit=1.0,  # Max cost in dollars
+            # the default litellm_model in minisweagent needs BASH_TOOL to extract commands
+#             system_template="""whatever you get, call bash tool with:
+# # ```bash
+# # echo "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"
+# # ```""",
             system_template="""You are a Python-based machine learning Jupyter notebook debugging expert.
-Your task is to fix cell CRASHES in a given machine learning Jupyter notebook. Do not care if the cell does not CRASH.
+Your task is to fix cell CRASHES in a given machine learning Jupyter notebook. 
 
 IMPORTANT RULES:
-1. Before each action, briefly explain why you're doing it, then call the bash tool with the command
-2. Execute ONE OPTION at a time
-3. DO NOT chain commands with && or ; or |
-4. DO NOT mix __NOTEBOOK_OP__ commands with bash commands
-5. Wait for each command to complete before issuing the next one
+1. The crashes appear to be ERRORs upon execution. Do not care if the cell does not CRASH or executed with ERROR
+2. Before each action, briefly explain why you're doing it, then call the bash tool with the command
+3. Execute ONE OPTION at a time
+4. DO NOT chain commands with && or ; or |
+5. DO NOT mix __NOTEBOOK_OP__ commands with bash commands
+6. Wait for each command to complete before issuing the next one
+7. Focus on the fixing code errors. Do not try to install or uninstall any libraries - the environment is pre-configured
 
 OPTION 1: NOTEBOOK OPERATIONS:
 To interact with the notebook, use the bash tool, with bash keyword, with one of the following commands prefixed with __NOTEBOOK_OP__ :
@@ -150,11 +157,16 @@ __NOTEBOOK_OP__run_all()
 ```
 
 OPTION 2: REGULAR PYTHON CODE:
-You can also execute regular Python code directly in the notebook kernel by calling the bash tool, for example:
+You can also execute regular Python code directly in the notebook kernel for debugging by calling the bash tool, for example:
 ```bash
 import pandas as pd
-df = pd.read_csv('/app/container/data/train.csv')
-print(df.head())
+if isinstance(val, pd.Series):
+    summary = {
+        "dtype": str(val.dtype), # Data type of the series
+        "length": len(val), # Number of elements
+        "has_nan": bool(val.isna().any()) # Check for missing values
+    }
+    print(summary)
 ```
 
 OPTION 3: When done, call bash tool with:
@@ -163,13 +175,12 @@ echo "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"
 ```
 
 WORKFLOW EXAMPLE (execute ONE command per step using the bash tool):
-Step 1: Call bash tool with: __NOTEBOOK_OP__get_cells()
-Step 2: Call bash tool with: __NOTEBOOK_OP__run_all()
-Step 3: (if errors found) analyze the error by writing Python code to run diagnoses, or trying to fix the code by calling bash tool with: __NOTEBOOK_OP__edit_cell(cell_index, "fixed Pythoncode")
-Step 4: check if the fix works by calling bash tool with: __NOTEBOOK_OP__run_cell(cell_index) or __NOTEBOOK_OP__run_all()
-Step 5: if more errors, repeat Steps 3-4 until all cells run successfully
-Step 6: if no errors remain, terminate by calling bash tool with: echo "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"
-```
+Step 1: Call bash tool with: __NOTEBOOK_OP__run_all()
+Step 2: (if errors found) Call bash tool with: __NOTEBOOK_OP__get_cells() to analyze and fix the error
+Step 3: fix the code by calling bash tool with: __NOTEBOOK_OP__edit_cell(cell_index, "fixed Python code")
+Step 4: Check if the fix works by calling bash tool with: __NOTEBOOK_OP__run_cell(cell_index) or __NOTEBOOK_OP__run_all()
+Step 5: if more errors, repeat Steps 2-4 until all cells run successfully
+Step 6: if no errors remain, terminate by calling bash tool with: echo "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT", and return a brief summary of the fixes made.
 """,
         )
         print("✅ Agent created")
