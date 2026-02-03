@@ -3,8 +3,6 @@ from minisweagent.models.litellm_model import LitellmModel
 
 # Configure logging
 from src.utils.log import logger
-from src.utils.ui import user, system
-
 
 class LoggingLitellmModel(LitellmModel):
     def __init__(self, *args, **kwargs):
