@@ -1,0 +1,105 @@
+agent:
+  system_template: |
+     You are a Python-based machine learning Jupyter notebook debugging expert.
+     Your task is to fix cell crashes in a given machine learning Jupyter notebook.
+
+     IMPORTANT RULES:
+     1. Before each action, briefly explain why you're doing it, then output the command
+     2. Execute ONE OPTION at a time
+     3. DO NOT chain commands with && or ; or |
+     4. DO NOT mix __NOTEBOOK_OP__ commands with bash commands
+     5. Wait for each command to complete before issuing the next one
+
+     OPTION 1: NOTEBOOK OPERATIONS:
+     To interact with the notebook, use special commands prefixed with __NOTEBOOK_OP__:
+
+     1. Get notebook information:
+       __NOTEBOOK_OP__get_cell_count()          # Returns the total number of cells
+       __NOTEBOOK_OP__get_cells()               # Returns all cells with their content
+       __NOTEBOOK_OP__get_cell(cell_index)               # Get specific cell by index (0-based)
+
+     2. Modify cells:
+       __NOTEBOOK_OP__edit_cell(cell_index, "new Python code")  # Edit cell at index
+
+     3. Run cells:
+       __NOTEBOOK_OP__run_cell(cell_index)               # Run specific cell by index
+       __NOTEBOOK_OP__run_all()                 # Run all cells in order
+
+     OPTION 2: REGULAR PYTHON CODE:
+     You can also execute regular Python code directly in the notebook kernel via bash commands, for example:
+     ```bash
+     import pandas as pd
+     df = pd.read_csv('/app/container/data/train.csv')
+     print(df.head())
+     ```
+
+     OPTION 3: When done, echo success message:
+     echo "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"
+
+
+     WORKFLOW EXAMPLE (execute ONE command per step):
+     Step 1: __NOTEBOOK_OP__get_cells()
+     Step 2: __NOTEBOOK_OP__run_all()
+     Step 3: (if errors found) analyze the error by writing Python code to run diagnoses, or trying to fix the code by __NOTEBOOK_OP__edit_cell(cell_index, "fixed Pythoncode")
+     Step 4: check if the fix works by __NOTEBOOK_OP__run_cell(cell_index) or __NOTEBOOK_OP__run_all()
+     Step 5: if more errors, repeat Steps 3-4 until all cells run successfully
+     Step 6: if no errors remain, terminate by using: echo "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"
+     ```
+  instance_template: |
+    Please solve this issue: {{task}}.
+  action_observation_template: |
+    <returncode>{{output.returncode}}</returncode>
+    {% if output.output | length < 10000 -%}
+    <output>
+    {{ output.output -}}
+    </output>
+    {%- else -%}
+    <warning>
+    The output of your last command was too long.
+    Please try a different command that produces less output.
+    If you're looking at a file you can try use head, tail or sed to view a smaller number of lines selectively.
+    If you're using grep or find and it produced too much output, you can use a more selective search pattern.
+    If you really need to see something from the full command's output, you can redirect output to a file and then search in that file.
+    </warning>
+    {%- set elided_chars = output.output | length - 10000 -%}
+    <output_head>
+    {{ output.output[:5000] }}
+    </output_head>
+    <elided_chars>
+    {{ elided_chars }} characters elided
+    </elided_chars>
+    <output_tail>
+    {{ output.output[-5000:] }}
+    </output_tail>
+    {%- endif -%}
+  format_error_template: |
+    Please always provide EXACTLY ONE action in triple backticks, found {{actions|length}} actions.
+    If you want to end the task, please issue the following command: `echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`
+    without any other command.
+    Else, please format your response exactly as follows:
+
+    <response_example>
+    Here are some thoughts about why you want to perform the action.
+
+    ```bash
+    <action>
+    ```
+    </response_example>
+
+    Note: In rare cases, if you need to reference a similar format in your command, you might have
+    to proceed in two steps, first writing TRIPLEBACKTICKSBASH, then replacing them with ```bash.
+  step_limit: 2.
+  cost_limit: 3.
+environment: # Not used currently
+  env:
+    PAGER: cat
+    MANPAGER: cat
+    LESS: -R
+    PIP_PROGRESS_BAR: 'off'
+    TQDM_DISABLE: '1'
+model:
+  model_name: glm-4.7-355b
+  cost_tracking: ignore_errors
+  model_kwargs:
+    custom_llm_provider: openai
+    api_base: https://aqueduct.ai.datalab.tuwien.ac.at/v1
