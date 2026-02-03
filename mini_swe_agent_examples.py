@@ -6,6 +6,11 @@ from minisweagent.agents.default import DefaultAgent
 from minisweagent.models import get_model
 from src.notebook_environment import NotebookEnvironment
 
+def main():
+    target_nb_instance = "sklearn_1"
+    source_path = f"example/JunoBench/{target_nb_instance}"
+    example_with_agent(source_path, problem_mode="JunoBench_Buggy")
+
 
 class LoggingModelWrapper:
     """Wrapper that logs all model responses."""
