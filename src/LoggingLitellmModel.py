@@ -3,6 +3,8 @@ from minisweagent.models.litellm_model import LitellmModel
 
 # Configure logging
 from src.utils.log import logger
+from src.utils.ui import user, system
+
 
 class LoggingLitellmModel(LitellmModel):
     def __init__(self, *args, **kwargs):
@@ -11,7 +13,7 @@ class LoggingLitellmModel(LitellmModel):
         super().__init__(*args, **kwargs)
 
     def query(self, *args, **kwargs):
-        logger.info("Calling query with args: %s, kwargs: %s", args, kwargs)
+        logger.debug("Calling query with args: %s, kwargs: %s", args, kwargs)
         result = super().query(*args, **kwargs)
         self._log_response(result)
         return result

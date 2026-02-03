@@ -7,7 +7,6 @@ from typing import Any
 
 import typer
 import yaml
-from rich.console import Console
 from minisweagent.config import  get_config_path
 from minisweagent.agents.default import DefaultAgent
 from minisweagent.run.utils.save import save_traj
@@ -19,7 +18,6 @@ from src.utils.log import logger
 app = typer.Typer(rich_markup_mode="rich")
 DEFAULT_CONFIG = Path(os.getenv("NOTEBOOK_AGENT_CONFIG_PATH", "./config/default.yaml"))
 DEFAULT_OUTPUT = Path(os.getenv("NOTEBOOK_AGENT_TRAJECTORIES_PATH", "./trajectories/last_run.traj.json"))
-console = Console(highlight=False)
 
 
 # fmt: off
@@ -30,10 +28,10 @@ def main(
     config_spec: Path = typer.Option(DEFAULT_CONFIG, "-c", "--config", help="Path to config file"),
     output: Path | None = typer.Option(DEFAULT_OUTPUT, "-o", "--output", help="Output trajectory file"),
 ) -> Any:
+    logger.info("Starting notebook agent....")
     config_path = get_config_path(config_spec)
-    console.print(f"Loading agent config from [bold green]'{config_path}'[/bold green]")
     config = yaml.safe_load(config_path.read_text())
-    console.print(f"Configuration loaded: {config}")
+    logger.debug(f"Configuration loaded: {config}")
     if cost_limit is not None:
         config.setdefault("agent", {})["cost_limit"] = cost_limit
     if model_name is not None:

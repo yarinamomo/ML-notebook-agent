@@ -5,8 +5,8 @@ from rich.logging import RichHandler
 
 
 def _setup_root_logger() -> None:
-    logger = logging.getLogger("minisweagent")
-    logger.setLevel(logging.DEBUG)
+    logger = logging.getLogger("mlnotebookagent")
+    logger.setLevel(logging.INFO)
     _handler = RichHandler(
         show_path=False,
         show_time=False,
@@ -19,7 +19,7 @@ def _setup_root_logger() -> None:
 
 
 def add_file_handler(path: Path | str, level: int = logging.DEBUG, *, print_path: bool = True) -> None:
-    logger = logging.getLogger("minisweagent")
+    logger = logging.getLogger("mlnotebookagent")
     handler = logging.FileHandler(path)
     handler.setLevel(level)
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -30,7 +30,7 @@ def add_file_handler(path: Path | str, level: int = logging.DEBUG, *, print_path
 
 
 _setup_root_logger()
-logger = logging.getLogger("minisweagent")
+logger = logging.getLogger("mlnotebookagent")
 
 
 __all__ = ["logger"]
