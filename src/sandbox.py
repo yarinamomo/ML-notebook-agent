@@ -440,6 +440,23 @@ class DockerSandbox:
                 if msg_type in ('stream', 'execute_result', 'display_data', 'error'):
                     collected_outputs.append(response)
 
+            # Check if any outputs contain errors
+            has_error = any(msg['msg_type'] == 'error' for msg in collected_outputs)
+            
+            if has_error:
+                # Extract error message from error output
+                error_msg = None
+                for msg in collected_outputs:
+                    if msg['msg_type'] == 'error':
+                        error_msg = msg['content'].get('evalue', 'Unknown error')
+                        break
+                
+                return ExecutionResult(
+                    status=ExecutionStatus.ERROR,
+                    result=SandboxResult(self.clean_output(collected_outputs)),
+                    error=error_msg
+                )
+            
             return ExecutionResult(
                 status=ExecutionStatus.COMPLETED,
                 result=SandboxResult(self.clean_output(collected_outputs))
@@ -456,12 +473,7 @@ class DockerSandbox:
 
     def run(self, code):
         """Sends code to the container and waits for the result."""
-        result = self._execute(code, cancel_event=None)
-        
-        if result.status == ExecutionStatus.ERROR:
-            raise Exception(result.error)
-        
-        return result.result
+        return self._execute(code, cancel_event=None)
     
     async def run_async(
         self,
