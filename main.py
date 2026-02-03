@@ -6,11 +6,11 @@ from typing import Any
 import typer
 import yaml
 from minisweagent.config import  get_config_path
-from minisweagent.agents.default import DefaultAgent
 from minisweagent.run.utils.save import save_traj
 from src.notebook_environment import NotebookEnvironment
 from src.LoggingLitellmModel import LoggingLitellmModel
 from src.utils.log import logger
+from src.ui_agent import UiAgent
 
 
 app = typer.Typer(rich_markup_mode="rich")
@@ -52,7 +52,7 @@ def main(
         log_file="agent_interaction.log",  # Enable logging to file
         verbose=True,  # Set to False to disable console output
     )
-    agent = DefaultAgent(model, env, **config.get("agent", {}))
+    agent = UiAgent(model, env, **config.get("agent", {}))
     exit_status, result, extra_info = None, None, None
     try:
         exit_status, result = agent.run("Fix the crashes in the notebook")  # type: ignore[arg-type]

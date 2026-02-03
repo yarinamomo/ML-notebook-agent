@@ -135,14 +135,6 @@ class NotebookEnvironment:
             log_entry += f"COMMAND (after stripping code blocks):\n{command}\n"
             log_entry += f"{'='*60}\n"
         
-        
-            print(f"\n{'='*60}")
-            print(f"🤖 AGENT EXECUTING (Step {self.step_count}):")
-            print(command[:500])  # Show first 500 chars
-            if len(command) > 500:
-                print(f"... (truncated, total length: {len(command)} chars)")
-            print(f"{'='*60}\n")
-        
         if not self.notebook:
             return {
                 "output": "Error: Notebook not initialized",
@@ -220,13 +212,6 @@ class NotebookEnvironment:
                 log_entry += f"Output:\n{output_str}\n"
                 log_entry += f"{'='*60}\n"
                 
-                print(f"✅ RESULT (Step {self.step_count}):")
-                print(f"Status: {exec_result.status.value}")
-                print(f"Output preview: {output_str[:200]}")
-                if len(output_str) > 200:
-                    print(f"... (truncated, total length: {len(output_str)} chars)")
-                print(f"{'='*60}\n")
-                
                 # Write to log file
                 if self.log_file:
                     with open(self.log_file, 'a', encoding='utf-8') as f:
@@ -253,10 +238,6 @@ class NotebookEnvironment:
             if self.config.verbose:
                 log_entry += f"\nERROR:\n{error_msg}\n"
                 log_entry += f"{'='*60}\n"
-                
-                print(f"❌ ERROR (Step {self.step_count}):")
-                print(error_msg)
-                print(f"{'='*60}\n")
                 
                 if self.log_file:
                     with open(self.log_file, 'a', encoding='utf-8') as f:
@@ -398,14 +379,6 @@ class NotebookEnvironment:
             
             # Log notebook operation result
             if result and self.config.verbose:
-                print(f"{'='*60}\n")
-                print(f"📓 NOTEBOOK OPERATION (Step {self.step_count}):")
-                print(f"Operation: {command[:100]}")
-                print(f"Result: {result['output'][:200]}")
-                if len(result['output']) > 200:
-                    print(f"... (truncated)")
-                print(f"{'='*60}\n")
-                
                 if self.log_file:
                     with open(self.log_file, 'a', encoding='utf-8') as f:
                         f.write(f"{'='*60}\n")
