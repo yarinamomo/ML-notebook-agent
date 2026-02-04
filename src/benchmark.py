@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 from typing import List, Optional
-from .sandbox import DockerSandbox, ExecutionStatus, SandboxResult
+from .sandbox import DockerSandbox, ExecutionStatus, SandboxResult, ExecutionResult
 from pathlib import Path
 import shutil
 import re
@@ -31,13 +31,13 @@ class LightweightNotebook:
     def __init__(self, sandbox: DockerSandbox, problem_source_path: Path, problem_file: Path, problem_mode: str = "JunoBench_Buggy", with_debugger: bool = False):
         self.sandbox = sandbox
         self.cells = self._parse_cells(problem_file, problem_mode)
-        self.state = [None for _ in range(len(self.cells))]
+        self.state: List[Optional[ExecutionResult]] = [None for _ in range(len(self.cells))]
         self.problem_source_path = problem_source_path
         self.problem_file = problem_file
         if with_debugger:
             self.add_debugger_to_problem()
 
-    def add_debugger_to_problem(self) -> str:
+    def add_debugger_to_problem(self):
         if  self.cells and len(self.cells) > 1:
             self.cells[0] = "import pymcdebug as pmd\n" + self.cells[0]
             
@@ -102,7 +102,7 @@ class LightweightNotebook:
             results.append(self.run_cell(i))
         return results
     
-    async def run_cell_async(self, index: int, cancel_event: Optional[asyncio.Event] = None):
+    async def run_cell_async(self, index: int, cancel_event: Optional[asyncio.Event] = None) -> ExecutionResult:
         if 0 <= index < len(self.cells):
             # Change working directory inside the Docker container before executing code
             code = f"import os\nos.chdir('/app/container')\n{self.cells[index]}"
@@ -111,7 +111,7 @@ class LightweightNotebook:
             return result
         raise IndexError("Cell index out of range")
     
-    async def run_all_async(self, cancel_event: Optional[asyncio.Event] = None) -> List[SandboxResult]:
+    async def run_all_async(self, cancel_event: Optional[asyncio.Event] = None) -> List[ExecutionResult]:
         results = []
         for i in range(len(self.cells)):
             result = await self.run_cell_async(i, cancel_event=cancel_event)

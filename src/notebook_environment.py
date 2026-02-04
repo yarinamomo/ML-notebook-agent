@@ -221,6 +221,12 @@ class NotebookEnvironment:
         - run_all(): Runs all cells
         - save(): Saves the notebook
         """
+        if not self.notebook:
+            return {
+                "output": "Error: Notebook not initialized",
+                "returncode": 1
+            }
+        
         try:
             # Parse the operation
             command = command.strip().replace("__NOTEBOOK_OP__", "")

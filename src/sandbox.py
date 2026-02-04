@@ -3,6 +3,9 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, List, Optional
 import docker
+from docker.client import DockerClient
+from docker.errors import NotFound as ContainerNotFound
+from utils.log import logging
 import time
 import requests
 import json
@@ -154,7 +157,7 @@ class ExecutionResult:
 
 class DockerSandbox:
     def __init__(self, image_name, base_url="http://127.0.0.1", port=8888, token="Super_Duper_Secret_Token", mount_volume=None):
-        self.client = docker.from_env()
+        self.client: DockerClient = docker.from_env()
         self.container = None
         self.port = port
         self.mount_volume = mount_volume
@@ -183,18 +186,18 @@ class DockerSandbox:
 
     def start(self):
         """Starts a fresh Docker container with Jupyter."""
-        print("🐳 Starting Sandbox Container...")
+        logging.info("🐳 Starting Sandbox Container...")
 
         container_name = f"sandbox_{self.port}"
 
         try:
             old_container = self.client.containers.get(container_name)
-            print(f"🧹 Found orphan container '{container_name}'. Removing it...")
+            logging.debug(f"🧹 Found orphan container '{container_name}'. Removing it...")
             old_container.remove(force=True)
-        except docker.errors.NotFound:
+        except ContainerNotFound:
             pass
         except Exception as e:
-            print(f"⚠️ Warning: Could not cleanup old container: {e}")
+            logging.warning(f"⚠️ Warning: Could not cleanup old container: {e}")
 
 
         try:
@@ -203,7 +206,7 @@ class DockerSandbox:
                 name=container_name,
                 detach=True,
                 volumes={self.mount_volume: {'bind': '/app/container', 'mode': 'rw'}} if self.mount_volume else None,
-                ports={8888: self.port},
+                ports={'8888/tcp': self.port},
                 remove=True,
                 command=f"jupyter server --allow-root --ServerApp.root_dir=/app/container --ServerApp.ip=0.0.0.0 --ServerApp.websocket_ping_interval=0 --ServerApp.port=8888 --ServerApp.allow_origin='*' --ServerApp.token='{self.token}' --ServerApp.open_browser=False"
             )
@@ -211,12 +214,12 @@ class DockerSandbox:
             self._wait_for_server()
             
             self._start_kernel()
-            print("✅ Sandbox Ready.")
+            logging.info("✅ Sandbox Ready.")
             
         except Exception as e:
-            print(f"❌ Error starting sandbox: {e}")
+            logging.error(f"❌ Error starting sandbox: {e}")
             self.stop()
-            raise
+            raise e
 
     def run_terminal(self, command):
         """
@@ -226,7 +229,7 @@ class DockerSandbox:
         if not self.container:
             raise Exception("Sandbox not started.")
 
-        print(f"💻 Executing Shell Command: {command}")
+        logging.debug(f"💻 Executing Shell Command: {command}")
         
         # execution_result returns a tuple: (exit_code, output_bytes)
         exit_code, output = self.container.exec_run(
@@ -246,7 +249,7 @@ class DockerSandbox:
                 if parent_msg_id and parent_msg_id in self.execution_queues:
                     self.execution_queues[parent_msg_id].put(data)
         except Exception as e:
-            print(f"Error processing WebSocket message: {e}")
+            logging.error(f"Error processing WebSocket message: {e}")
 
     def interrupt_kernel(self):
         """Send interrupt signal to the Jupyter kernel."""
@@ -256,9 +259,9 @@ class DockerSandbox:
         try:
             url = f"{self.base_url}/api/kernels/{self.kernel_id}/interrupt"
             requests.post(url, headers={"Authorization": f"Token {self.token}"})
-            print("🛑 Kernel interrupt sent")
+            logging.info("🛑 Kernel interrupt sent")
         except Exception as e:
-            print(f"⚠️ Failed to interrupt kernel: {e}")
+            logging.warning(f"⚠️ Failed to interrupt kernel: {e}")
 
     def clean_output(self, outputs):
         """
@@ -532,7 +535,7 @@ class DockerSandbox:
 
     def restart(self, cleanup_lambda=None):
         """Kills the current container and starts a fresh one."""
-        print("♻️ Restarting Sandbox (Wiping state)...")
+        logging.info("♻️ Restarting Sandbox (Wiping state)...")
         self.stop()
 
         if cleanup_lambda:
@@ -545,17 +548,16 @@ class DockerSandbox:
         if self.ws_app:
             self.ws_app.close()
             self.ws_app = None
-
         if self.container:
             try:
                 self.container.kill()
                 self.container.remove()
-                self.container.close()
-            except:
+            except Exception as e:
+                logging.debug(f"Error removing the container: {e}")
                 pass
 
             self.container = None
-        print("🛑 Sandbox Destroyed.")
+        logging.info("🛑 Sandbox Destroyed.")
 
     def _wait_for_server(self):
         """Polls the local port until Jupyter is responding."""
@@ -575,7 +577,6 @@ class DockerSandbox:
             f"{self.base_url}/api/kernels",
             headers={"Authorization": f"Token {self.token}"}
         )
-        # print(response)
         self.kernel_id = response.json()["id"]
         
         ws_url = f"ws://127.0.0.1:{self.port}/api/kernels/{self.kernel_id}/channels?token={self.token}"
