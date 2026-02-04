@@ -5,13 +5,13 @@ class UiAgent(DefaultAgent):
     def query(self) -> dict:
         with ui.wait_llm():
             response = super().query()
-        ui.system(response.get("content", ""))
+        ui.system(response.get("content", ""), step=self.model.n_calls)
         return response
 
 
     def get_observation(self, response: dict) -> dict:
         response = super().get_observation(response)
-        ui.agent(response.get("output", ""), response.get("action", None), response.get("returncode", None))
+        ui.agent(response.get("output", ""), action=response.get("action", None), return_code=response.get("returncode", None), step=self.model.n_calls)
         return response
 
 

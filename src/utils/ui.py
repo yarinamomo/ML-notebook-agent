@@ -4,15 +4,17 @@ from contextlib import contextmanager
 
 console = Console()
 
-def agent(output: str, action: str | None = None, return_code: int | None = None) -> None:
-    subtitle = ""
+__all__ = ["agent","system","info","warn","error", "wait","wait_llm","wait_tool", "console"]
+
+
+
+def agent(output: str, *, action: str | None = None, return_code: int | None = None, step: int | None = None) -> None:
     if action and return_code is not None:
-        console.print(Panel(f"Executed {action}, with Return Code {return_code}", title="🔧Tool Exectued", style="yellow"))
-    console.print(Panel(output[:500], title="🤖Agent Response", style="green"))
+        console.print(Panel(f"Executed {action}, with Return Code {return_code}", title=f"🔧Tool Executed (Step {step})", style="yellow", title_align="left"))
+    console.print(Panel(_truncate(output), title=f"🤖Agent Response (Step {step})", style="green", title_align="left"))
 
-def system(content: str)-> None:
-    console.print(Panel(content[:500], title="🧠LLM Response",style="cyan"))
-
+def system(content: str, step: int | None = None) -> None:
+    console.print(Panel(_truncate(content), title=f"🧠LLM Response (Step {step})", style="cyan", title_align="left"))
 
 
 def info(message: str) -> None:
@@ -51,3 +53,28 @@ def wait_tool(command: str | None = None):
     label = f"🔧Executing {command}" if command else "tool"
     with wait(label, color="yellow"):
         yield
+
+def _truncate(content: str, max_lines: int = 50, max_chars_per_line: int = 200) -> str:
+    lines = content.split('\n')
+    was_truncated_lines = len(lines) > max_lines
+    
+    # Truncate lines
+    truncated_lines = lines[:max_lines]
+    
+    # Truncate each line if too long
+    was_truncated_chars = any(len(line) > max_chars_per_line for line in truncated_lines)
+    truncated_lines = [line[:max_chars_per_line] for line in truncated_lines]
+    
+    result = '\n'.join(truncated_lines)
+    
+    # Add truncation notices
+    notices = []
+    if was_truncated_lines:
+        notices.append(f"[yellow]... ({len(lines) - max_lines} more lines)[/yellow]")
+    if was_truncated_chars:
+        notices.append("[yellow]... (some lines truncated)[/yellow]")
+    
+    if notices:
+        result += "\n\n" + "\n".join(notices)
+    
+    return result
