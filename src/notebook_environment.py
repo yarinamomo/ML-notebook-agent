@@ -26,7 +26,6 @@ class NotebookEnvironmentConfig:
     problem_mode: str = "JunoBench_Buggy"
     timeout: int = 30
     with_debugger: bool = False
-    verbose: bool = True  # Print execution details to console
 
 def _get_status_label(exec_result: ExecutionResult) -> str:
     """Get human-readable status label from ExecutionResult."""
@@ -48,7 +47,6 @@ class NotebookEnvironment:
         self,
         *,
         config_class: type = NotebookEnvironmentConfig,
-        log_file: str | None = None,
         **kwargs
     ):
         """
@@ -56,22 +54,12 @@ class NotebookEnvironment:
         
         Args:
             config_class: Configuration class to use
-            log_file: Optional path to log file for recording agent interactions
             **kwargs: Configuration parameters (sandbox_settings, source_path, docker_mount_path, etc.)
         """
         self.config = config_class(**kwargs)
         self.problem: BenchmarkProblem | None = None
         self.notebook: LightweightNotebook | None = None
-        self.log_file = log_file
-        self.step_count = 0
         self._setup()
-        
-        # Initialize log file
-        if self.log_file:
-            with open(self.log_file, 'w', encoding='utf-8') as f:
-                f.write("="*80 + "\n")
-                f.write("AGENT INTERACTION LOG\n")
-                f.write("="*80 + "\n\n")
         
     def _setup(self):
         """Setup the benchmark problem and notebook."""
@@ -124,16 +112,6 @@ class NotebookEnvironment:
             if code_start != -1 and code_end != -1 and code_end > code_start:
                 # Get lines between ``` markers, excluding the markers themselves
                 command = '\n'.join(lines[code_start + 1:code_end])
-        
-        # Log what the agent is executing
-        if self.config.verbose:
-            self.step_count += 1
-            
-            log_entry = f"\n{'='*60}\n"
-            log_entry += f"STEP {self.step_count}\n"
-            log_entry += f"{'='*60}\n"
-            log_entry += f"COMMAND (after stripping code blocks):\n{command}\n"
-            log_entry += f"{'='*60}\n"
         
         if not self.notebook:
             return {
@@ -205,18 +183,6 @@ class NotebookEnvironment:
                 # If no marker found but execution completed, default to 0
                 returncode = 0
             
-            if self.config.verbose:
-                log_entry += f"\nRESULT:\n"
-                log_entry += f"Status: {exec_result.status.value}\n"
-                log_entry += f"Return Code: {returncode}\n"
-                log_entry += f"Output:\n{output_str}\n"
-                log_entry += f"{'='*60}\n"
-                
-                # Write to log file
-                if self.log_file:
-                    with open(self.log_file, 'a', encoding='utf-8') as f:
-                        f.write(log_entry)
-            
             # Prepare result in agent-expected format
             result = {
                 "output": output_str,
@@ -234,14 +200,6 @@ class NotebookEnvironment:
             raise
         except Exception as e:
             error_msg = f"Execution error: {str(e)}"
-            
-            if self.config.verbose:
-                log_entry += f"\nERROR:\n{error_msg}\n"
-                log_entry += f"{'='*60}\n"
-                
-                if self.log_file:
-                    with open(self.log_file, 'a', encoding='utf-8') as f:
-                        f.write(log_entry)
             
             return {
                 "output": error_msg,
@@ -376,16 +334,6 @@ class NotebookEnvironment:
                     "output": f"Unknown notebook operation: {command}",
                     "returncode": 1
                 }
-            
-            # Log notebook operation result
-            if result and self.config.verbose:
-                if self.log_file:
-                    with open(self.log_file, 'a', encoding='utf-8') as f:
-                        f.write(f"{'='*60}\n")
-                        f.write(f"\n📓 NOTEBOOK OPERATION:\n")
-                        f.write(f"Operation: {command}\n")
-                        f.write(f"Result:\n{result['output']}\n")
-                        f.write(f"{'='*60}\n")
             
             return result
                 

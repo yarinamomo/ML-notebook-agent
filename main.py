@@ -49,8 +49,6 @@ def main(
         docker_mount_path="example/docker_mount/",
         problem_mode="JunoBench_Buggy",
         with_debugger=False,
-        log_file="agent_interaction.log",  # Enable logging to file
-        verbose=True,  # Set to False to disable console output
     )
     agent = UiAgent(model, env, **config.get("agent", {}))
     exit_status, result, extra_info = None, None, None
