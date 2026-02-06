@@ -236,9 +236,10 @@ class DockerSandbox:
             command, 
             user="root" # Run as root to allow apt-get/installation
         )
-        
-        return output.decode("utf-8")
-    
+        if exit_code != 0:
+            logging.warning(f"⚠️ Command exited with code {exit_code}")
+        return {"output": output.decode("utf-8"), "exit_code": exit_code}
+     
     def _on_ws_message(self, ws, message):
         """Callback for WebSocketApp running in background thread."""
         try:

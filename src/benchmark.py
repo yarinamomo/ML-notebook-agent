@@ -128,6 +128,7 @@ class LightweightNotebook:
         # self.problem_file.write_text(self.to_script())
         pass
 
+# actual environment for the agent
 class BenchmarkProblem:
     def __init__(self, sandbox_settings: dict, source_path: str, problem_mode: str = "JunoBench_Buggy", docker_source_path: str = "docker_source"):
         self.source_path = Path(source_path)
@@ -153,7 +154,191 @@ class BenchmarkProblem:
 
         self.notebook = LightweightNotebook(sandbox=self.sandbox, problem_source_path=self.docker_source_path, problem_file=problem_file, problem_mode=self.problem_mode, with_debugger=with_debugger)
 
+    async def execute_python_command(self, command: str):
+        if not self.notebook:
+            result =  {
+                "output": "Error: Notebook not initialized",
+                "returncode": 1,
+                "exception_info": "Notebook not initialized",
+            }
+        try:
+            exec_result = await self.sandbox.run_async(command, cancel_event=None)
+            # Extract output as clean string from ExecutionResult
+            if exec_result.result:
+                output_str = exec_result.result.llm_compatible()
+            else:
+                output_str = "(No output)"
+            # Check for returncode marker from bash wrapper and extract it
+            returncode = 0 if exec_result.status == ExecutionStatus.COMPLETED else 1
+            # Look for the returncode marker pattern
+            returncode_match = re.search(r'__RETURNCODE__=(\d+)', output_str)
+            if returncode_match:
+                # Extract the actual return code from bash subprocess
+                returncode = int(returncode_match.group(1))
+                # Remove the marker from output (handle various newline combinations)
+                output_str = re.sub(r'\n*__RETURNCODE__=\d+\n*', '', output_str).strip()
+            elif exec_result.status == ExecutionStatus.COMPLETED:
+                # If no marker found but execution completed, default to 0
+                returncode = 0
+            
+            result = {
+                "output": output_str,
+                "returncode": returncode,
+                "exception_info": "",
+            }
+            return result
+        except Exception as e:
+            return {
+                "output": f"Error executing command: {str(e)}",
+                "returncode": 1,
+                "exception_info": f"Error executing command: {str(e)}",
+            }
+
+    async def execute_notebook_command(self, command: str):
+        """
+        Handle notebook operations initialized by the agent.
+        
+        Supported operations:
+        - get_cell_count(): Returns number of cells
+        - get_cells(): Returns all cells
+        - get_cell(index): Returns specific cell
+        - edit_cell(index, code): Edits a cell
+        - run_cell(index): Runs a specific cell
+        - run_all(): Runs all cells
+        - save(): Saves the notebook
+        """
+        if not self.notebook:
+            result =  {
+                "output": "Error: Notebook not initialized",
+                "returncode": 1,
+                "exception_info": "Notebook not initialized",
+            }
+        
+        try:
+            if command == "get_cell_count()":
+                count = self.notebook.get_cell_count()
+                result = {
+                    "output": str(count), 
+                    "returncode": 0,
+                    "exception_info": "",
+                }
+            
+            elif command == "get_cells()":
+                cells = self.notebook.get_cells()
+                output = "\n\n".join(cells)
+                result = {
+                    "output": output, 
+                    "returncode": 0,
+                    "exception_info": "",
+                }
+            
+            elif command.startswith("get_cell("):
+                index = int(command.split("(")[1].split(")")[0])
+                cell = self.notebook.get_cell(index)
+                result = {
+                    "output": cell, 
+                    "returncode": 0, 
+                    "exception_info": ""
+                }
+            
+            elif command.startswith("edit_cell("):
+                # Parse: edit_cell(index, "code")
+                import ast
+                # Extract args safely
+                args_str = command[len("edit_cell("):-1]
+                parts = args_str.split(",", 1)
+                index = int(parts[0].strip())
+                code = ast.literal_eval(parts[1].strip())
+                self.notebook.edit_cell(index, code)
+                result = {
+                    "output": f"Cell {index} edited successfully", 
+                    "returncode": 0, 
+                    "exception_info": ""
+                }
+            
+            elif command.startswith("run_cell("):
+                index = int(command.split("(")[1].split(")")[0])
+                
+                # Run asynchronously
+                exec_result = await self.notebook.run_cell_async(index, cancel_event=None)
+                
+                # Extract output as clean string from ExecutionResult
+                if exec_result.result:
+                    cell_output = exec_result.result.llm_compatible()
+                else:
+                    cell_output = "(No output)"
+                
+                # Get status label
+                status = self._get_status_label(exec_result)
+                output_text = f"Cell {index} [{status}]:\n{cell_output}"
+                
+                result = {
+                    "output": output_text,
+                    "returncode": 0 if exec_result.status == ExecutionStatus.COMPLETED else 1,
+                    "exception_info": "",
+                }
+            
+            elif command == "run_all()":
+                # Run all cells
+                exec_results = await self.notebook.run_all_async(cancel_event=None)
+                
+                # Extract output as clean string from each ExecutionResult
+                output_parts = []
+                for i, exec_result in enumerate(exec_results):
+                    if exec_result.result:
+                        cell_output = exec_result.result.llm_compatible(if_truncate=True, max_words=500)
+                    else:
+                        cell_output = "(No output)"
+                    
+                    # Get status label using shared function
+                    status = self._get_status_label(exec_result)
+                    output_parts.append(f"Cell {i} [{status}]:\n{cell_output}")
+                
+                output = "\n\n".join(output_parts)
+                all_success = all(r.status == ExecutionStatus.COMPLETED for r in exec_results)
+                result = {
+                    "output": output,
+                    "returncode": 0 if all_success else 1,
+                    "exception_info": "",
+                }
+            
+            elif command == "save()":
+                self.notebook.save()
+                result = {
+                    "output": "Notebook saved successfully", 
+                    "returncode": 0,
+                    "exception_info": "",
+                    }
+            
+            else:
+                result = {
+                    "output": f"Unknown notebook operation: {command}",
+                    "returncode": 1,
+                    "exception_info": f"Unknown notebook operation: {command}",
+                }
+        except Exception as e:
+            result = {
+                "output": f"Error executing notebook command: {str(e)}",
+                "returncode": 1,
+                "exception_info": f"Error executing notebook command: {str(e)}",
+            }
+        return result
+
     def teardown(self):
         if self.sandbox:
             self.sandbox.stop()
             self.sandbox = None
+
+    def _get_status_label(self, exec_result: ExecutionResult) -> str:
+        """Get human-readable status label from ExecutionResult."""
+        if exec_result.status == ExecutionStatus.ERROR:
+            return "ERROR"
+        elif exec_result.status == ExecutionStatus.COMPLETED:
+            if exec_result.result and exec_result.result.text.strip():
+                return "SUCCESS"
+            else:
+                return "SUCCESS (no output)"
+        elif exec_result.status == ExecutionStatus.CANCELLED:
+            return "CANCELLED"
+        else:
+            return exec_result.status.value.upper()
