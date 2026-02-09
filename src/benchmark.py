@@ -30,6 +30,7 @@ class LightweightNotebook:
     def __init__(self, sandbox: DockerSandbox, problem_source_path: Path, problem_file: Path, problem_mode: str = "JunoBench_Buggy", timeout: int = 30):
         self.sandbox = sandbox
         self.cells = self._parse_cells(problem_file, problem_mode)
+        self.cell_states = [None for _ in range(len(self.cells))]
         self.state: List[Optional[ExecutionResult]] = [None for _ in range(len(self.cells))]
         self.problem_source_path = problem_source_path
         self.problem_file = problem_file
@@ -54,6 +55,7 @@ class LightweightNotebook:
         if 0 <= index < len(self.cells):
             self.cells[index] = new_content
             self.state[index] = None
+            self.cell_states[index] = "edited"
             self.save()
         else:
             raise IndexError("Cell index out of range")
@@ -97,6 +99,7 @@ class LightweightNotebook:
             code = f"import os\nos.chdir('/app/container')\n{self.cells[index]}"
             result = await self.sandbox.run_async(code, cancel_event=cancel_event, timeout=self.timeout)
             self.state[index] = result
+            self.save()
             return result
         raise IndexError("Cell index out of range")
     
@@ -108,14 +111,60 @@ class LightweightNotebook:
 
             if result.status == ExecutionStatus.CANCELLED:
                 break
+        self.save()
         return results
-    
-    def to_script(self):
-        return "\n\n#%%\n".join([f"# --- [CELL {i}]: ---\n{cell}" for i, cell in enumerate(self.cells)])
-    
+
     def save(self):
-        # self.problem_file.write_text(self.to_script())
-        pass
+        """Save the notebook as a Python script with cell metadata."""
+        # Collect metadata for all cells
+        cell_metadata = [self._get_cell_metadata(i) for i in range(len(self.cells))]
+        
+        # Format cells with their metadata
+        formatted_cells = [
+            self._format_cell_with_metadata(i, metadata) 
+            for i, metadata in enumerate(cell_metadata)
+        ]
+        
+        # Generate script content
+        script_content = "\n\n#%%\n".join(formatted_cells)
+        
+        # Determine save path and write file
+        save_path = self._generate_save_path()
+        save_path.write_text(script_content)
+
+    def _get_cell_metadata(self, index: int) -> dict:
+        """Get metadata for a specific cell including state and execution status."""
+        metadata = {
+            "cell_state": "unchanged",
+            "execution_status": "not run"
+        }
+        
+        # Check if cell was edited
+        if self.cell_states[index] is not None:
+            metadata["cell_state"] = self.cell_states[index]
+        
+        # Check execution status
+        if self.state[index] is not None:
+            metadata["execution_status"] = self.state[index].status
+        
+        return metadata
+    
+    def _format_cell_with_metadata(self, index: int, metadata: dict) -> str:
+        """Format a cell with its metadata comments."""
+        cell_lines = [
+            f"# --- [CELL {index}]: ---",
+            f"# cell_state: {metadata['cell_state']}",
+            f"# execution_status: {metadata['execution_status']}",
+            self.cells[index]
+        ]
+        return "\n".join(cell_lines)
+    
+    def _generate_save_path(self) -> Path:
+        """Generate the save path based on patch status."""
+        filename = self.problem_file.name
+        base_name = filename.replace('.ipynb', '')
+        suffix = 'patched' # if is_patched else 'unpatched'
+        return self.problem_source_path / f"{base_name}_{suffix}.py"
 
 # actual environment for the agent
 class BenchmarkProblem:
@@ -142,7 +191,7 @@ class BenchmarkProblem:
         
         self.sandbox.run(f"import sys\nsys.modules['__main__'].__file__ = '/app/container/{target_nb_instance}_reproduced.ipynb'")
 
-        self.notebook = LightweightNotebook(sandbox=self.sandbox, problem_source_path=self.docker_source_path, problem_file=problem_file, problem_mode=self.problem_mode, timeout=self.timeout)
+        self.notebook = LightweightNotebook(sandbox=self.sandbox, problem_source_path=self.source_path, problem_file=problem_file, problem_mode=self.problem_mode, timeout=self.timeout)
 
     async def execute_python_command(self, command: str):
         if not self.notebook:
@@ -199,7 +248,6 @@ class BenchmarkProblem:
         - edit_cell(index, code): Edits a cell
         - run_cell(index): Runs a specific cell
         - run_all(): Runs all cells
-        - save(): Saves the notebook
         """
         if not self.notebook:
             result =  {
@@ -207,7 +255,7 @@ class BenchmarkProblem:
                 "returncode": 1,
                 "exception_info": "Notebook not initialized",
             }
-        
+            return result
         try:
             if command == "get_cell_count()":
                 count = self.notebook.get_cell_count()
@@ -305,14 +353,6 @@ class BenchmarkProblem:
                     "exception_info": exception_info,
                 }
             
-            elif command == "save()":
-                self.notebook.save()
-                result = {
-                    "output": "Notebook saved successfully", 
-                    "returncode": 0,
-                    "exception_info": "",
-                    }
-            
             else:
                 result = {
                     "output": f"Unknown notebook operation: {command}",
@@ -331,6 +371,14 @@ class BenchmarkProblem:
         if self.sandbox:
             self.sandbox.stop()
             self.sandbox = None
+        
+        # Clean up the mount path (docker_source_path)
+        if self.docker_source_path and self.docker_source_path.exists():
+            try:
+                shutil.rmtree(self.docker_source_path)
+            except Exception as e:
+                import logging
+                logging.warning(f"⚠️ Warning: Could not clean up mount path {self.docker_source_path}: {e}")
 
     def _get_status_label(self, exec_result: ExecutionResult) -> str:
         """Get human-readable status label from ExecutionResult."""
