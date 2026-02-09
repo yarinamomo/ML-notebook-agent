@@ -39,6 +39,7 @@ class NotebookEnvironment:
             config_class: Configuration class to use
             **kwargs: Configuration parameters (sandbox_settings, source_path, docker_mount_path, etc.)
         """
+        self.config = config_class(**kwargs)
         self.problem: BenchmarkProblem | None = None
         self._setup()
         
@@ -181,17 +182,14 @@ class NotebookEnvironment:
     
     def _get_event_loop(self) -> asyncio.AbstractEventLoop:
         """Get or create event loop with Windows compatibility."""
-        if platform.system() == 'Windows':
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_closed():
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-            except RuntimeError:
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_closed():
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
-        else:
-            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
         return loop
 
     def _is_bash_command(self, command: str) -> bool:
@@ -228,3 +226,13 @@ if result.stderr:
 # Print return code marker for parsing
 print(f'__RETURNCODE__={{result.returncode}}')
 """
+    
+    def serialize(self) -> dict:
+        return {
+            "info": {
+                "config": {
+                    "environment": self.config.model_dump(mode="json"),
+                    "environment_type": f"{self.__class__.__module__}.{self.__class__.__name__}",
+                }
+            }
+        }
