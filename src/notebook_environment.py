@@ -18,10 +18,6 @@ from .benchmark import BenchmarkProblem, LightweightNotebook
 from .sandbox import ExecutionStatus, ExecutionResult, SandboxResultType
 import re
 
-class NotebookAction(TypedDict):
-    command: str
-    tool_call_id: NotRequired[str]
-
 class NotebookEnvironmentConfig(BaseModel):
     """Configuration for the notebook environment."""
     sandbox_settings: dict[str, Any]
@@ -76,8 +72,8 @@ class NotebookEnvironment:
         self.problem.setup(with_debugger=self.config.with_debugger)
         self.notebook = self.problem.notebook
     
-    def execute(self, command: dict[str, Any] | NotebookAction, cwd: str = "") -> dict[str, Any]:
-        string_command = command.get("command", "")
+    def execute(self, action: dict, cwd: str = "") -> dict[str, Any]:
+        string_command = action.get("command", "")
         output =  self.__execute(string_command)
         if not output.get("exception_info"):
             output["exception_info"] = ""
@@ -345,7 +341,7 @@ class NotebookEnvironment:
                 "exception_info": f"Exception during notebook operation handling: {str(e)}"
             }
     
-    def get_template_vars(self) -> dict[str, Any]:
+    def get_template_vars(self, **kwargs) -> dict[str, Any]:
         """
         Get template variables for mini-swe-agent prompts.
         
