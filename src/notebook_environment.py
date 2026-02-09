@@ -40,18 +40,13 @@ class NotebookEnvironment:
             **kwargs: Configuration parameters (sandbox_settings, source_path, docker_mount_path, etc.)
         """
         self.config = config_class(**kwargs)
-        self.problem: BenchmarkProblem | None = None
-        self._setup()
-        
-    def _setup(self):
-        """Setup the benchmark problem and notebook."""
-        self.problem = BenchmarkProblem(
+        self.problem: BenchmarkProblem = BenchmarkProblem(
             sandbox_settings=self.config.sandbox_settings,
             source_path=self.config.source_path,
             docker_source_path=self.config.docker_mount_path,
             problem_mode=self.config.problem_mode,
             timeout=self.config.timeout
-        )
+        )        
         self.problem.setup()
     
     def execute(self, command: str, cwd: str = "", *, timeout: int | None = None) -> dict[str, Any]:
@@ -112,21 +107,15 @@ class NotebookEnvironment:
             # Pure notebook operation
             if command.strip().startswith("__NOTEBOOK_OP__"):
                 command = command.strip().replace("__NOTEBOOK_OP__", "")
-                loop = self._get_event_loop()
-                return loop.run_until_complete(
-                    self.problem.execute_notebook_command(command)
-                )
+                return asyncio.run(self.problem.execute_notebook_command(command))
         
         # If it's a bash command, wrap it
         if self._is_bash_command(command):
             command = self._wrap_bash_command(command)
         
         # Execute the bash/Python code in the notebook kernel
-        # Execute synchronously by running async in event loop
-        loop = self._get_event_loop()            
-        result = loop.run_until_complete(
-            self.problem.execute_python_command(command)
-        )
+        # Execute synchronously by running async
+        result = asyncio.run(self.problem.execute_python_command(command))
         
         # Check if task is finished (raises Submitted exception if complete)
         self._check_finished(result)
@@ -186,28 +175,11 @@ class NotebookEnvironment:
     
     def cleanup(self):
         """Cleanup the Docker container and resources."""
-        if self.problem:
-            self.problem.teardown()
-            self.problem = None
+        self.problem.teardown()
     
     def __del__(self):
         """Cleanup on deletion."""
         self.cleanup()
-    
-    def _get_event_loop(self) -> asyncio.AbstractEventLoop:
-        """Get or create event loop with Windows compatibility."""
-        if platform.system() == 'Windows':
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_closed():
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-        else:
-            loop = asyncio.get_event_loop()
-        return loop
 
     def _is_bash_command(self, command: str) -> bool:
         """Check if command looks like a bash command."""
