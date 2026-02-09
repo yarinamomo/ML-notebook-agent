@@ -47,8 +47,7 @@ def main(
         },
         source_path=source_path,
         docker_mount_path="example/docker_mount/",
-        problem_mode="JunoBench_Buggy",
-        with_debugger=False,
+        problem_mode="JunoBench_Buggy"
     )
     agent = UiAgent(model, env, **config.get("agent", {}))
     exit_status, result, extra_info = None, None, None

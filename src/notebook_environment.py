@@ -23,7 +23,6 @@ class NotebookEnvironmentConfig:
     docker_mount_path: str
     problem_mode: str = "JunoBench_Buggy"
     timeout: int = 30
-    with_debugger: bool = False
 
 class NotebookEnvironment:
     """mini-swe-agent Environment for Jupyter Notebook Sandbox."""
@@ -50,9 +49,10 @@ class NotebookEnvironment:
             sandbox_settings=self.config.sandbox_settings,
             source_path=self.config.source_path,
             docker_source_path=self.config.docker_mount_path,
-            problem_mode=self.config.problem_mode
+            problem_mode=self.config.problem_mode,
+            timeout=self.config.timeout
         )
-        self.problem.setup(with_debugger=self.config.with_debugger)
+        self.problem.setup()
     
     def execute(self, command: str, cwd: str = "", *, timeout: int | None = None) -> dict[str, Any]:
         """

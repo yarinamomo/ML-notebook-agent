@@ -1,5 +1,4 @@
 import asyncio
-from dataclasses import dataclass
 from typing import List, Optional
 from .sandbox import DockerSandbox, ExecutionStatus, SandboxResult, ExecutionResult
 from pathlib import Path
@@ -28,23 +27,13 @@ def setup_environment(src, dst):
     time.sleep(5.0) # 5x longer than tests needed to be absolutely certain
 
 class LightweightNotebook:
-    def __init__(self, sandbox: DockerSandbox, problem_source_path: Path, problem_file: Path, problem_mode: str = "JunoBench_Buggy", with_debugger: bool = False):
+    def __init__(self, sandbox: DockerSandbox, problem_source_path: Path, problem_file: Path, problem_mode: str = "JunoBench_Buggy", timeout: int = 30):
         self.sandbox = sandbox
         self.cells = self._parse_cells(problem_file, problem_mode)
         self.state: List[Optional[ExecutionResult]] = [None for _ in range(len(self.cells))]
         self.problem_source_path = problem_source_path
         self.problem_file = problem_file
-        if with_debugger:
-            self.add_debugger_to_problem()
-
-    def add_debugger_to_problem(self):
-        if  self.cells and len(self.cells) > 1:
-            self.cells[0] = "import pymcdebug as pmd\n" + self.cells[0]
-            
-            for cell_index in range(0, len(self.cells)):
-                self.cells[cell_index] = self.cells[cell_index].replace("pm.sample(", "pmd.debug(")
-
-        self.save()
+        self.timeout = timeout
 
     def _parse_cells(self, problem_file: Path, problem_mode: str) -> List[str]:
         res = preprocess_noteboook.parse_nb(problem_file, parse_mode=problem_mode)
@@ -91,7 +80,7 @@ class LightweightNotebook:
         if 0 <= index < len(self.cells):
             # Change working directory inside the Docker container before executing code
             code = f"import os\nos.chdir('/app/container')\n{self.cells[index]}"
-            result = self.sandbox.run(code)
+            result = self.sandbox.run(code, timeout=self.timeout)
             self.state[index] = result
             return result
         raise IndexError("Cell index out of range")
@@ -106,7 +95,7 @@ class LightweightNotebook:
         if 0 <= index < len(self.cells):
             # Change working directory inside the Docker container before executing code
             code = f"import os\nos.chdir('/app/container')\n{self.cells[index]}"
-            result = await self.sandbox.run_async(code, cancel_event=cancel_event)
+            result = await self.sandbox.run_async(code, cancel_event=cancel_event, timeout=self.timeout)
             self.state[index] = result
             return result
         raise IndexError("Cell index out of range")
@@ -130,15 +119,16 @@ class LightweightNotebook:
 
 # actual environment for the agent
 class BenchmarkProblem:
-    def __init__(self, sandbox_settings: dict, source_path: str, problem_mode: str = "JunoBench_Buggy", docker_source_path: str = "docker_source"):
+    def __init__(self, sandbox_settings: dict, source_path: str, problem_mode: str = "JunoBench_Buggy", docker_source_path: str = "docker_source", timeout: int = 30):
         self.source_path = Path(source_path)
         self.docker_source_path = Path(docker_source_path).resolve()
         self.sandbox = None
         self.notebook = None
         self.problem_mode = problem_mode
         self.sandbox_settings = sandbox_settings
+        self.timeout = timeout
 
-    def setup(self, with_debugger: bool = False):
+    def setup(self):
         setup_environment(self.source_path, self.docker_source_path)
 
         self.sandbox = DockerSandbox(mount_volume=str(self.docker_source_path), **self.sandbox_settings)
@@ -152,7 +142,7 @@ class BenchmarkProblem:
         
         self.sandbox.run(f"import sys\nsys.modules['__main__'].__file__ = '/app/container/{target_nb_instance}_reproduced.ipynb'")
 
-        self.notebook = LightweightNotebook(sandbox=self.sandbox, problem_source_path=self.docker_source_path, problem_file=problem_file, problem_mode=self.problem_mode, with_debugger=with_debugger)
+        self.notebook = LightweightNotebook(sandbox=self.sandbox, problem_source_path=self.docker_source_path, problem_file=problem_file, problem_mode=self.problem_mode, timeout=self.timeout)
 
     async def execute_python_command(self, command: str):
         if not self.notebook:
@@ -162,12 +152,16 @@ class BenchmarkProblem:
                 "exception_info": "Notebook not initialized",
             }
         try:
-            exec_result = await self.sandbox.run_async(command, cancel_event=None)
+            exec_result = await self.sandbox.run_async(command, cancel_event=None, timeout=self.timeout)
             # Extract output as clean string from ExecutionResult
             if exec_result.result:
                 output_str = exec_result.result.llm_compatible()
             else:
                 output_str = "(No output)"
+            exception_info = ""
+            if exec_result.status == ExecutionStatus.TIMEOUT:
+                output_str = f"Timeout: Command timed out after {self.timeout} seconds."
+                exception_info = f"Command timed out after {self.timeout} seconds."
             # Check for returncode marker from bash wrapper and extract it
             returncode = 0 if exec_result.status == ExecutionStatus.COMPLETED else 1
             # Look for the returncode marker pattern
@@ -184,7 +178,7 @@ class BenchmarkProblem:
             result = {
                 "output": output_str,
                 "returncode": returncode,
-                "exception_info": "",
+                "exception_info": exception_info
             }
             return result
         except Exception as e:
@@ -268,20 +262,26 @@ class BenchmarkProblem:
                 else:
                     cell_output = "(No output)"
                 
+                exception_info = ""
+                if exec_result.status == ExecutionStatus.TIMEOUT:
+                    cell_output = f"Cell execution timed out after {self.timeout} seconds."
+                    exception_info = f"Cell execution timed out after {self.timeout} seconds."
+
                 # Get status label
                 status = self._get_status_label(exec_result)
                 output_text = f"Cell {index} [{status}]:\n{cell_output}"
-                
+
                 result = {
                     "output": output_text,
                     "returncode": 0 if exec_result.status == ExecutionStatus.COMPLETED else 1,
-                    "exception_info": "",
+                    "exception_info": exception_info,
                 }
             
             elif command == "run_all()":
                 # Run all cells
                 exec_results = await self.notebook.run_all_async(cancel_event=None)
                 
+                exception_info = ""
                 # Extract output as clean string from each ExecutionResult
                 output_parts = []
                 for i, exec_result in enumerate(exec_results):
@@ -290,6 +290,9 @@ class BenchmarkProblem:
                     else:
                         cell_output = "(No output)"
                     
+                    if exec_result.status == ExecutionStatus.TIMEOUT:
+                        cell_output = f"Cell execution timed out after {self.timeout} seconds."
+                        exception_info = f"Cell execution timed out after {self.timeout} seconds."
                     # Get status label using shared function
                     status = self._get_status_label(exec_result)
                     output_parts.append(f"Cell {i} [{status}]:\n{cell_output}")
@@ -299,7 +302,7 @@ class BenchmarkProblem:
                 result = {
                     "output": output,
                     "returncode": 0 if all_success else 1,
-                    "exception_info": "",
+                    "exception_info": exception_info,
                 }
             
             elif command == "save()":
@@ -340,5 +343,7 @@ class BenchmarkProblem:
                 return "SUCCESS (no output)"
         elif exec_result.status == ExecutionStatus.CANCELLED:
             return "CANCELLED"
+        elif exec_result.status == ExecutionStatus.TIMEOUT:
+            return "TIMEOUT"
         else:
             return exec_result.status.value.upper()
