@@ -13,9 +13,7 @@ from typing import Any
 # Define exceptions for mini-swe-agent v1 compatibility
 from minisweagent.agents.default import Submitted
 
-from .benchmark import BenchmarkProblem, LightweightNotebook
-from .sandbox import ExecutionStatus, ExecutionResult, SandboxResultType
-import re
+from .benchmark import BenchmarkProblem
 
 @dataclass
 class NotebookEnvironmentConfig:
@@ -25,21 +23,6 @@ class NotebookEnvironmentConfig:
     docker_mount_path: str
     problem_mode: str = "JunoBench_Buggy"
     timeout: int = 30
-    with_debugger: bool = False
-
-def _get_status_label(exec_result: ExecutionResult) -> str:
-    """Get human-readable status label from ExecutionResult."""
-    if exec_result.status == ExecutionStatus.ERROR:
-        return "ERROR"
-    elif exec_result.status == ExecutionStatus.COMPLETED:
-        if exec_result.result and exec_result.result.text.strip():
-            return "SUCCESS"
-        else:
-            return "SUCCESS (no output)"
-    elif exec_result.status == ExecutionStatus.CANCELLED:
-        return "CANCELLED"
-    else:
-        return exec_result.status.value.upper()
 
 class NotebookEnvironment:
     """mini-swe-agent Environment for Jupyter Notebook Sandbox."""
@@ -58,7 +41,6 @@ class NotebookEnvironment:
         """
         self.config = config_class(**kwargs)
         self.problem: BenchmarkProblem | None = None
-        self.notebook: LightweightNotebook | None = None
         self._setup()
         
     def _setup(self):
@@ -67,17 +49,17 @@ class NotebookEnvironment:
             sandbox_settings=self.config.sandbox_settings,
             source_path=self.config.source_path,
             docker_source_path=self.config.docker_mount_path,
-            problem_mode=self.config.problem_mode
+            problem_mode=self.config.problem_mode,
+            timeout=self.config.timeout
         )
-        self.problem.setup(with_debugger=self.config.with_debugger)
-        self.notebook = self.problem.notebook
+        self.problem.setup()
     
     def execute(self, command: str, cwd: str = "", *, timeout: int | None = None) -> dict[str, Any]:
         """
         Execute a command (Python code or special notebook operations).
         
         This method is called by mini-swe-agent to execute code. It handles:
-        1. Special notebook operation commands (prefixed with __NOTEBOOK_OP__)
+        1. Special notebook operation commands (Format: __NOTEBOOK_OP__<operation>(<args>))
         2. Bash commands (wrapped in subprocess)
         3. Regular Python code (executed in notebook kernel)
         
@@ -113,12 +95,6 @@ class NotebookEnvironment:
                 # Get lines between ``` markers, excluding the markers themselves
                 command = '\n'.join(lines[code_start + 1:code_end])
         
-        if not self.notebook:
-            return {
-                "output": "Error: Notebook not initialized",
-                "returncode": 1
-            }
-        
         # Check if command contains __NOTEBOOK_OP__ - prioritize notebook operations
         # even if it also has bash commands
         if "__NOTEBOOK_OP__" in command:
@@ -130,224 +106,33 @@ class NotebookEnvironment:
                         "Please execute them separately.\n"
                         f"Your command: {command[:100]}..."
                     ),
-                    "returncode": 1
+                    "returncode": 1,
+                    "exception_info": "Mixed bash and notebook operation commands",
                 }
             # Pure notebook operation
             if command.strip().startswith("__NOTEBOOK_OP__"):
-                return self._handle_notebook_operation(command)
-        
-        # Check if this is a notebook operation command
-        if command.strip().startswith("__NOTEBOOK_OP__"):
-            return self._handle_notebook_operation(command)
+                command = command.strip().replace("__NOTEBOOK_OP__", "")
+                loop = self._get_event_loop()
+                return loop.run_until_complete(
+                    self.problem.execute_notebook_command(command)
+                )
         
         # If it's a bash command, wrap it
         if self._is_bash_command(command):
             command = self._wrap_bash_command(command)
         
-        # Execute the Python code in the notebook kernel
-        try:
-            # Execute synchronously by running async in event loop
-            if platform.system() == 'Windows':
-                # Windows may need a new event loop
-                try:
-                    loop = asyncio.get_event_loop()
-                    if loop.is_closed():
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                except RuntimeError:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-            else:
-                loop = asyncio.get_event_loop()
-            
-            exec_result = loop.run_until_complete(
-                self.notebook.sandbox.run_async(command, cancel_event=None)
-            )
-            
-            # Extract output as clean string from ExecutionResult
-            if exec_result.result:
-                output_str = exec_result.result.llm_compatible()
-            else:
-                output_str = "(No output)"
-            
-            # Check for returncode marker from bash wrapper and extract it
-            returncode = 0 if exec_result.status == ExecutionStatus.COMPLETED else 1
-            # Look for the returncode marker pattern
-            returncode_match = re.search(r'__RETURNCODE__=(\d+)', output_str)
-            if returncode_match:
-                # Extract the actual return code from bash subprocess
-                returncode = int(returncode_match.group(1))
-                # Remove the marker from output (handle various newline combinations)
-                output_str = re.sub(r'\n*__RETURNCODE__=\d+\n*', '', output_str).strip()
-            elif exec_result.status == ExecutionStatus.COMPLETED:
-                # If no marker found but execution completed, default to 0
-                returncode = 0
-            
-            # Prepare result in agent-expected format
-            result = {
-                "output": output_str,
-                "returncode": returncode
-            }
-            
-            # Check if task is finished (raises Submitted exception if complete)
-            self._check_finished(result)
-            
-            # Convert result to agent-expected format
-            return result
-            
-        except Submitted:
-            # Re-raise Submitted exception to signal task completion
-            raise
-        except Exception as e:
-            error_msg = f"Execution error: {str(e)}"
-            
-            return {
-                "output": error_msg,
-                "returncode": 1
-            }
-    
-    def _handle_notebook_operation(self, command: str) -> dict[str, Any]:
-        """
-        Handle special notebook operations that need to run outside the container.
+        # Execute the bash/Python code in the notebook kernel
+        # Execute synchronously by running async in event loop
+        loop = self._get_event_loop()            
+        result = loop.run_until_complete(
+            self.problem.execute_python_command(command)
+        )
         
-        Format: __NOTEBOOK_OP__<operation>(<args>)
+        # Check if task is finished (raises Submitted exception if complete)
+        self._check_finished(result)
         
-        Supported operations:
-        - get_cell_count(): Returns number of cells
-        - get_cells(): Returns all cells
-        - get_cell(index): Returns specific cell
-        - edit_cell(index, code): Edits a cell
-        - run_cell(index): Runs a specific cell
-        - run_all(): Runs all cells
-        - save(): Saves the notebook
-        """
-        if not self.notebook:
-            return {
-                "output": "Error: Notebook not initialized",
-                "returncode": 1
-            }
-        
-        try:
-            # Parse the operation
-            command = command.strip().replace("__NOTEBOOK_OP__", "")
-            
-            result = None
-            
-            # Handle different operations
-            if command == "get_cell_count()":
-                count = self.notebook.get_cell_count()
-                result = {"output": str(count), "returncode": 0}
-            
-            elif command == "get_cells()":
-                cells = self.notebook.get_cells()
-                output = "\n\n".join(cells)
-                result = {"output": output, "returncode": 0}
-            
-            elif command.startswith("get_cell("):
-                index = int(command.split("(")[1].split(")")[0])
-                cell = self.notebook.get_cell(index)
-                result = {"output": cell, "returncode": 0}
-            
-            elif command.startswith("edit_cell("):
-                # Parse: edit_cell(index, "code")
-                import ast
-                # Extract args safely
-                args_str = command[len("edit_cell("):-1]
-                parts = args_str.split(",", 1)
-                index = int(parts[0].strip())
-                code = ast.literal_eval(parts[1].strip())
-                self.notebook.edit_cell(index, code)
-                result = {"output": f"Cell {index} edited successfully", "returncode": 0}
-            
-            elif command.startswith("run_cell("):
-                index = int(command.split("(")[1].split(")")[0])
-                
-                # Run asynchronously
-                if platform.system() == 'Windows':
-                    try:
-                        loop = asyncio.get_event_loop()
-                        if loop.is_closed():
-                            loop = asyncio.new_event_loop()
-                            asyncio.set_event_loop(loop)
-                    except RuntimeError:
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                else:
-                    loop = asyncio.get_event_loop()
-                
-                exec_result = loop.run_until_complete(
-                    self.notebook.run_cell_async(index, cancel_event=None)
-                )
-                
-                # Extract output as clean string from ExecutionResult
-                if exec_result.result:
-                    cell_output = exec_result.result.llm_compatible()
-                else:
-                    cell_output = "(No output)"
-                
-                # Get status label
-                status = _get_status_label(exec_result)
-                output_text = f"Cell {index} [{status}]:\n{cell_output}"
-                
-                result = {
-                    "output": output_text,
-                    "returncode": 0 if exec_result.status == ExecutionStatus.COMPLETED else 1
-                }
-            
-            elif command == "run_all()":
-                # Run all cells
-                if platform.system() == 'Windows':
-                    try:
-                        loop = asyncio.get_event_loop()
-                        if loop.is_closed():
-                            loop = asyncio.new_event_loop()
-                            asyncio.set_event_loop(loop)
-                    except RuntimeError:
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                else:
-                    loop = asyncio.get_event_loop()
-                
-                exec_results = loop.run_until_complete(
-                    self.notebook.run_all_async(cancel_event=None)
-                )
-                
-                # Extract output as clean string from each ExecutionResult
-                output_parts = []
-                for i, exec_result in enumerate(exec_results):
-                    if exec_result.result:
-                        cell_output = exec_result.result.llm_compatible(if_truncate=True, max_words=500)
-                    else:
-                        cell_output = "(No output)"
-                    
-                    # Get status label using shared function
-                    status = _get_status_label(exec_result)
-                    output_parts.append(f"Cell {i} [{status}]:\n{cell_output}")
-                
-                output = "\n\n".join(output_parts)
-                all_success = all(r.status == ExecutionStatus.COMPLETED for r in exec_results)
-                result = {
-                    "output": output,
-                    "returncode": 0 if all_success else 1
-                }
-            
-            elif command == "save()":
-                self.notebook.save()
-                result = {"output": "Notebook saved successfully", "returncode": 0}
-            
-            else:
-                result = {
-                    "output": f"Unknown notebook operation: {command}",
-                    "returncode": 1
-                }
-            
-            return result
-                
-        except Exception as e:
-            return {
-                "output": f"Notebook operation error: {str(e)}",
-                "returncode": 1
-            }
+        # Convert result to agent-expected format
+        return result
     
     def get_template_vars(self) -> dict[str, Any]:
         """
@@ -372,15 +157,15 @@ class NotebookEnvironment:
         }
         
         # Add notebook-specific info if available
-        if self.notebook:
+        if self.problem and self.problem.notebook:
             template_vars.update({
                 "notebook_initialized": True,
-                "cell_count": self.notebook.get_cell_count(),
+                "cell_count": self.problem.notebook.get_cell_count(),
                 
                 # Instructions for getting notebook content
                 "notebook_access_hint": (
                     "Use __NOTEBOOK_OP__get_cells() to view all notebook cells. "
-                    f"The notebook has {self.notebook.get_cell_count()} cells."
+                    f"The notebook has {self.problem.notebook.get_cell_count()} cells."
                 ),
             })
         
@@ -404,11 +189,25 @@ class NotebookEnvironment:
         if self.problem:
             self.problem.teardown()
             self.problem = None
-            self.notebook = None
     
     def __del__(self):
         """Cleanup on deletion."""
         self.cleanup()
+    
+    def _get_event_loop(self) -> asyncio.AbstractEventLoop:
+        """Get or create event loop with Windows compatibility."""
+        if platform.system() == 'Windows':
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_closed():
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+        else:
+            loop = asyncio.get_event_loop()
+        return loop
 
     def _is_bash_command(self, command: str) -> bool:
         """Check if command looks like a bash command."""
@@ -434,12 +233,13 @@ result = subprocess.run(
     encoding='utf-8',
     errors='replace'
 )
-# Print stdout
-print(result.stdout, end='')
-# Print stderr to stderr stream
+
+# Print stdout and stderr
+if result.stdout:
+    print(result.stdout, end='')
 if result.stderr:
-    import sys
-    print(result.stderr, end='', file=sys.stderr)
-# Print returncode marker on its own line for parsing
-print(f'\\n__RETURNCODE__={{result.returncode}}')
+    print(result.stderr, end='')
+
+# Print return code marker for parsing
+print(f'__RETURNCODE__={{result.returncode}}')
 """

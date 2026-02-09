@@ -5,7 +5,7 @@ from typing import Any, List, Optional
 import docker
 from docker.client import DockerClient
 from docker.errors import NotFound as ContainerNotFound
-from utils.log import logging
+from src.utils.log import logging
 import time
 import requests
 import json
@@ -145,6 +145,7 @@ class ExecutionStatus(Enum):
     COMPLETED = "completed"
     CANCELLED = "cancelled"
     ERROR = "error"
+    TIMEOUT = "timeout"
 
 
 @dataclass
@@ -236,9 +237,10 @@ class DockerSandbox:
             command, 
             user="root" # Run as root to allow apt-get/installation
         )
-        
-        return output.decode("utf-8")
-    
+        if exit_code != 0:
+            logging.warning(f"⚠️ Command exited with code {exit_code}")
+        return {"output": output.decode("utf-8"), "exit_code": exit_code}
+     
     def _on_ws_message(self, ws, message):
         """Callback for WebSocketApp running in background thread."""
         try:
@@ -374,7 +376,7 @@ class DockerSandbox:
         code: str,
         cancel_event: Optional[threading.Event] = None,
         poll_interval: float = 0.5,
-        timeout: float = 60.0
+        timeout: int = 30
     ) -> ExecutionResult:
         """
         Core execution logic - used by both run() and run_async().
@@ -453,7 +455,7 @@ class DockerSandbox:
                         continue  # Check cancellation again
                     else:
                         return ExecutionResult(
-                            status=ExecutionStatus.ERROR,
+                            status=ExecutionStatus.TIMEOUT,
                             error="Execution timed out waiting for response"
                         )
                 
@@ -499,14 +501,15 @@ class DockerSandbox:
             with self._queue_lock:
                 self.execution_queues.pop(msg_id, None)
 
-    def run(self, code):
+    def run(self, code, timeout: int = 30) -> ExecutionResult:
         """Sends code to the container and waits for the result."""
-        return self._execute(code, cancel_event=None)
+        return self._execute(code, cancel_event=None, timeout=timeout)
     
     async def run_async(
         self,
         code: str,
         cancel_event: Optional[asyncio.Event] = None,
+        timeout: int = 30
     ) -> ExecutionResult:
         """Async execution with cancellation support."""
         thread_cancel = threading.Event()
@@ -524,7 +527,7 @@ class DockerSandbox:
                 code,
                 thread_cancel,
                 0.5,  # poll_interval
-                30.0  # timeout
+                timeout  # timeout
             )
             return result
         except asyncio.CancelledError:
