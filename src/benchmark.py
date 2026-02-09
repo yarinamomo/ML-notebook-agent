@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Optional
+from typing import List, Optional, Any
 from .sandbox import DockerSandbox, ExecutionStatus, SandboxResult, ExecutionResult
 from pathlib import Path
 import shutil
@@ -7,6 +7,7 @@ import re
 import os
 import time
 import src.preprocess_notebook as preprocess_noteboook
+from src.utils.log import logger
 
 def setup_environment(src, dst):
     if not src.exists():
@@ -30,7 +31,7 @@ class LightweightNotebook:
     def __init__(self, sandbox: DockerSandbox, problem_source_path: Path, problem_file: Path, problem_mode: str = "JunoBench_Buggy", timeout: int = 30):
         self.sandbox = sandbox
         self.cells = self._parse_cells(problem_file, problem_mode)
-        self.cell_states = [None for _ in range(len(self.cells))]
+        self.cell_states: List[Optional[str]] = [None for _ in range(len(self.cells))]
         self.state: List[Optional[ExecutionResult]] = [None for _ in range(len(self.cells))]
         self.problem_source_path = problem_source_path
         self.problem_file = problem_file
@@ -96,6 +97,7 @@ class LightweightNotebook:
     async def run_cell_async(self, index: int, cancel_event: Optional[asyncio.Event] = None) -> ExecutionResult:
         if 0 <= index < len(self.cells):
             # Change working directory inside the Docker container before executing code
+            logger.debug(f"Running cell {index} asynchronously.")
             code = f"import os\nos.chdir('/app/container')\n{self.cells[index]}"
             result = await self.sandbox.run_async(code, cancel_event=cancel_event, timeout=self.timeout)
             self.state[index] = result
@@ -110,6 +112,7 @@ class LightweightNotebook:
             results.append(result)
 
             if result.status == ExecutionStatus.CANCELLED:
+                logger.debug(f"Cell {i} execution cancelled.")
                 break
         self.save()
         return results
@@ -134,7 +137,7 @@ class LightweightNotebook:
 
     def _get_cell_metadata(self, index: int) -> dict:
         """Get metadata for a specific cell including state and execution status."""
-        metadata = {
+        metadata: dict[str, Any] = {
             "cell_state": "unchanged",
             "execution_status": "not run"
         }
@@ -145,7 +148,7 @@ class LightweightNotebook:
         
         # Check execution status
         if self.state[index] is not None:
-            metadata["execution_status"] = self.state[index].status
+            metadata["execution_status"] = self.state[index].status # type: ignore[union-attr] somehow the if not none does not convince the type checker.
         
         return metadata
     
@@ -249,6 +252,7 @@ class BenchmarkProblem:
         - run_cell(index): Runs a specific cell
         - run_all(): Runs all cells
         """
+        print(f"Received notebook command: {command}")
         if not self.notebook:
             result =  {
                 "output": "Error: Notebook not initialized",
