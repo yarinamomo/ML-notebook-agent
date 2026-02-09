@@ -6,19 +6,23 @@ with the self-defined Docker-based Jupyter notebook sandbox.
 """
 
 import asyncio
-from dataclasses import dataclass
 import platform
-from typing import Any
+from typing import Any, TypedDict, NotRequired
 
 # Define exceptions for mini-swe-agent v1 compatibility
-from minisweagent.agents.default import Submitted
+from minisweagent.exceptions import Submitted
+from pydantic import BaseModel
+
 
 from .benchmark import BenchmarkProblem, LightweightNotebook
 from .sandbox import ExecutionStatus, ExecutionResult, SandboxResultType
 import re
 
-@dataclass
-class NotebookEnvironmentConfig:
+class NotebookAction(TypedDict):
+    command: str
+    tool_call_id: NotRequired[str]
+
+class NotebookEnvironmentConfig(BaseModel):
     """Configuration for the notebook environment."""
     sandbox_settings: dict[str, Any]
     source_path: str
@@ -56,9 +60,9 @@ class NotebookEnvironment:
             config_class: Configuration class to use
             **kwargs: Configuration parameters (sandbox_settings, source_path, docker_mount_path, etc.)
         """
-        self.config = config_class(**kwargs)
         self.problem: BenchmarkProblem | None = None
         self.notebook: LightweightNotebook | None = None
+        self.config = config_class(**kwargs)
         self._setup()
         
     def _setup(self):
@@ -72,7 +76,15 @@ class NotebookEnvironment:
         self.problem.setup(with_debugger=self.config.with_debugger)
         self.notebook = self.problem.notebook
     
-    def execute(self, command: str, cwd: str = "", *, timeout: int | None = None) -> dict[str, Any]:
+    def execute(self, command: dict[str, Any] | NotebookAction, cwd: str = "") -> dict[str, Any]:
+        string_command = command.get("command", "")
+        output =  self.__execute(string_command)
+        if not output.get("exception_info"):
+            output["exception_info"] = ""
+        return output
+
+
+    def __execute(self, command: str) -> dict[str, Any]:
         """
         Execute a command (Python code or special notebook operations).
         
@@ -83,8 +95,6 @@ class NotebookEnvironment:
         
         Args:
             command: Code or operation to execute
-            cwd: Working directory
-            timeout: Execution timeout
             
         Returns:
             dict with keys:
@@ -92,31 +102,12 @@ class NotebookEnvironment:
                 - returncode: 0 for success, 1 for error
         """
         # Strip markdown code blocks if present
-        command = command.strip()
-        
-        # Look for code blocks anywhere in the text (not just at the start)
-        if "```" in command:
-            # Find the first code block
-            lines = command.split('\n')
-            code_start = -1
-            code_end = -1
-            
-            for i, line in enumerate(lines):
-                if line.strip().startswith("```") and code_start == -1:
-                    code_start = i
-                elif line.strip() == "```" and code_start != -1:
-                    code_end = i
-                    break
-            
-            # Extract code between the markers
-            if code_start != -1 and code_end != -1 and code_end > code_start:
-                # Get lines between ``` markers, excluding the markers themselves
-                command = '\n'.join(lines[code_start + 1:code_end])
         
         if not self.notebook:
             return {
                 "output": "Error: Notebook not initialized",
-                "returncode": 1
+                "returncode": 1,
+                "exception_info": "Notebook instance is None during command execution"
             }
         
         # Check if command contains __NOTEBOOK_OP__ - prioritize notebook operations
@@ -130,7 +121,8 @@ class NotebookEnvironment:
                         "Please execute them separately.\n"
                         f"Your command: {command[:100]}..."
                     ),
-                    "returncode": 1
+                    "returncode": 1,
+                    "exception_info": "Mixed command with both bash and notebook operations is not allowed"
                 }
             # Pure notebook operation
             if command.strip().startswith("__NOTEBOOK_OP__"):
@@ -203,7 +195,8 @@ class NotebookEnvironment:
             
             return {
                 "output": error_msg,
-                "returncode": 1
+                "returncode": 1,
+                "exception_info": f"Exception during command execution: {str(e)}"
             }
     
     def _handle_notebook_operation(self, command: str) -> dict[str, Any]:
@@ -224,7 +217,8 @@ class NotebookEnvironment:
         if not self.notebook:
             return {
                 "output": "Error: Notebook not initialized",
-                "returncode": 1
+                "returncode": 1,
+                "exception_info": "Notebook instance is None during notebook operation handling"
             }
         
         try:
@@ -338,7 +332,8 @@ class NotebookEnvironment:
             else:
                 result = {
                     "output": f"Unknown notebook operation: {command}",
-                    "returncode": 1
+                    "returncode": 1,
+                    "exception_info": "Unknown notebook operation command received"
                 }
             
             return result
@@ -346,7 +341,8 @@ class NotebookEnvironment:
         except Exception as e:
             return {
                 "output": f"Notebook operation error: {str(e)}",
-                "returncode": 1
+                "returncode": 1,
+                "exception_info": f"Exception during notebook operation handling: {str(e)}"
             }
     
     def get_template_vars(self) -> dict[str, Any]:
@@ -397,7 +393,7 @@ class NotebookEnvironment:
         lines = output.get("output", "").lstrip().splitlines(keepends=True)
         if lines and lines[0].strip() == "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" and output["returncode"] == 0:
             submission = "".join(lines[1:])
-            raise Submitted(submission)
+            raise Submitted({"role": "exit", "content": submission })
     
     def cleanup(self):
         """Cleanup the Docker container and resources."""
@@ -443,3 +439,14 @@ if result.stderr:
 # Print returncode marker on its own line for parsing
 print(f'\\n__RETURNCODE__={{result.returncode}}')
 """
+    
+
+    def serialize(self) -> dict:
+        return {
+            "info": {
+                "config": {
+                    "environment": self.config.model_dump(mode="json"),
+                    "environment_type": f"{self.__class__.__module__}.{self.__class__.__name__}",
+                }
+            }
+        }

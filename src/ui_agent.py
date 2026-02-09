@@ -5,16 +5,14 @@ class UiAgent(DefaultAgent):
     def query(self) -> dict:
         with ui.wait_llm():
             response = super().query()
-        ui.system(response.get("content", ""), step=self.model.n_calls)
+        ui.system(response.get("content", ""), step=self.n_calls)
         return response
 
 
-    def get_observation(self, response: dict) -> dict:
-        response = super().get_observation(response)
-        ui.agent(response.get("output", ""), action=response.get("action", None), return_code=response.get("returncode", None), step=self.model.n_calls)
+    def execute_actions(self, message: dict) -> list[dict]:
+        with ui.wait_tool(message.get("action")):
+            response = super().execute_actions(message)
+            for output in response:
+                ui.agent(output.get("content", ""), action=output.get("action", None), return_code=output.get("returncode", None), step=self.n_calls)
+
         return response
-
-
-    def execute_action(self, action: dict) -> dict:
-        with ui.wait_tool(action.get("action")):
-            return super().execute_action(action)

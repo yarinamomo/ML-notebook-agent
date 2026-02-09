@@ -6,7 +6,6 @@ from typing import Any
 import typer
 import yaml
 from minisweagent.config import  get_config_path
-from minisweagent.run.utils.save import save_traj
 from src.notebook_environment import NotebookEnvironment
 from src.LoggingLitellmModel import LoggingLitellmModel
 from src.utils.log import logger
@@ -49,6 +48,7 @@ def main(
         docker_mount_path="example/docker_mount/",
         problem_mode="JunoBench_Buggy",
         with_debugger=False,
+        timeout=30,
     )
     agent = UiAgent(model, env, **config.get("agent", {}))
     exit_status, result, extra_info = None, None, None
@@ -59,7 +59,7 @@ def main(
         exit_status, result = type(e).__name__, str(e)
         extra_info = {"traceback": traceback.format_exc()}
     finally:
-        save_traj(agent, output, exit_status=exit_status, result=result, extra_info=extra_info)  # type: ignore[arg-type]
+        agent.save(output)
         env.cleanup()
     return agent
 
