@@ -7,13 +7,22 @@ with the self-defined Docker-based Jupyter notebook sandbox.
 
 import asyncio
 from dataclasses import dataclass
-import platform
-from typing import Any
+import json
+from typing import Any, Optional
 
 # Define exceptions for mini-swe-agent v1 compatibility
 from minisweagent.agents.default import Submitted
 
 from .benchmark import BenchmarkProblem
+from .utils.notebook_command_helper import (
+    NotebookCommandType,
+    is_bash_command,
+    is_mixed_notebook_and_bash,
+    is_notebook_command,
+    parse_notebook_command,
+    strip_markdown_code_blocks,
+    wrap_bash_command,
+)
 
 @dataclass
 class NotebookEnvironmentConfig:
@@ -23,6 +32,7 @@ class NotebookEnvironmentConfig:
     docker_mount_path: str
     problem_mode: str = "JunoBench_Buggy"
     timeout: int = 30
+
 
 class NotebookEnvironment:
     """mini-swe-agent Environment for Jupyter Notebook Sandbox."""
@@ -47,7 +57,6 @@ class NotebookEnvironment:
             problem_mode=self.config.problem_mode,
             timeout=self.config.timeout
         )        
-        self.problem.setup()
     
     def execute(self, command: str, cwd: str = "", *, timeout: int | None = None) -> dict[str, Any]:
         """
@@ -69,57 +78,32 @@ class NotebookEnvironment:
                 - returncode: 0 for success, 1 for error
         """
         # Strip markdown code blocks if present
-        command = command.strip()
+        command = strip_markdown_code_blocks(command)
         
-        # Look for code blocks anywhere in the text (not just at the start)
-        if "```" in command:
-            # Find the first code block
-            lines = command.split('\n')
-            code_start = -1
-            code_end = -1
-            
-            for i, line in enumerate(lines):
-                if line.strip().startswith("```") and code_start == -1:
-                    code_start = i
-                elif line.strip() == "```" and code_start != -1:
-                    code_end = i
-                    break
-            
-            # Extract code between the markers
-            if code_start != -1 and code_end != -1 and code_end > code_start:
-                # Get lines between ``` markers, excluding the markers themselves
-                command = '\n'.join(lines[code_start + 1:code_end])
-        
-        # Check if command contains __NOTEBOOK_OP__ - prioritize notebook operations
-        # even if it also has bash commands
-        if "__NOTEBOOK_OP__" in command:
-            # If it's a mixed command (bash + notebook ops), reject it
-            if "&&" in command or ";" in command or "|" in command:
-                return {
-                    "output": (
-                        "Error: Cannot mix bash commands with __NOTEBOOK_OP__ commands.\n"
-                        "Please execute them separately.\n"
-                        f"Your command: {command[:100]}..."
-                    ),
-                    "returncode": 1,
-                    "exception_info": "Mixed bash and notebook operation commands",
-                }
-            # Pure notebook operation
-            if command.strip().startswith("__NOTEBOOK_OP__"):
-                command = command.strip().replace("__NOTEBOOK_OP__", "")
-                return asyncio.run(self.problem.execute_notebook_command(command))
-        
-        # If it's a bash command, wrap it
-        if self._is_bash_command(command):
-            command = self._wrap_bash_command(command)
-        
-        # Execute the bash/Python code in the notebook kernel
-        # Execute synchronously by running async
-        result = asyncio.run(self.problem.execute_python_command(command))
-        
+
+        if is_mixed_notebook_and_bash(command):
+            return self._wrap_error(
+                "Error: Cannot mix bash commands with __NOTEBOOK_OP__ commands.\n"
+                "Please execute them separately.\n"
+                "Your command: {command[:100]}...", 
+                "Mixed bash and notebook operation commands")
+
+        try:
+            if is_notebook_command(command):
+                return self._execute_notebook_command(command.strip().replace("__NOTEBOOK_OP__", "", 1))
+            # If it's a bash command, wrap it
+            elif is_bash_command(command):
+                command = wrap_bash_command(command)            
+                exec_result = self.problem.execute_python_command(command)
+                result = self._wrap_success(self._format_exec_result(exec_result))
+            else:
+                result = self._wrap_error("Unrecognized command format. Please use __NOTEBOOK_OP__ for notebook operations or valid bash commands.")
+        except Exception as exc:
+            result = self._wrap_error(f"Error executing command: {exc}")
+
         # Check if task is finished (raises Submitted exception if complete)
         self._check_finished(result)
-        
+
         # Convert result to agent-expected format
         return result
     
@@ -146,15 +130,15 @@ class NotebookEnvironment:
         }
         
         # Add notebook-specific info if available
-        if self.problem and self.problem.notebook:
+        if self.problem:
             template_vars.update({
                 "notebook_initialized": True,
-                "cell_count": self.problem.notebook.get_cell_count(),
+                "cell_count": self.problem.get_cell_count(),
                 
                 # Instructions for getting notebook content
                 "notebook_access_hint": (
                     "Use __NOTEBOOK_OP__get_cells() to view all notebook cells. "
-                    f"The notebook has {self.problem.notebook.get_cell_count()} cells."
+                    f"The notebook has {self.problem.get_cell_count()} cells."
                 ),
             })
         
@@ -172,46 +156,66 @@ class NotebookEnvironment:
         if lines and lines[0].strip() == "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" and output["returncode"] == 0:
             submission = "".join(lines[1:])
             raise Submitted(submission)
+
+    def _execute_notebook_command(self, command: str) -> dict[str, Any]:
+        if not self.problem.get_cell_count():
+            return self._wrap_error("Notebook not initialized")
+        try:
+            parsed = parse_notebook_command(command)
+            match parsed.kind:
+                case NotebookCommandType.GET_CELL_COUNT:
+                    return self._wrap_success(str(self.problem.get_cell_count()))
+                case NotebookCommandType.GET_CELLS:
+                    cells = self.problem.get_cells()
+                    return self._wrap_success("\n\n".join(cells))
+                case NotebookCommandType.GET_CELL:
+                    index = parsed.args[0]
+                    return self._wrap_success(self.problem.get_cell(index))
+                case NotebookCommandType.EDIT_CELL:
+                    index, code = parsed.args
+                    self.problem.edit_cell(index, code)
+                    return self._wrap_success(f"Cell {index} edited successfully")
+                case NotebookCommandType.RUN_CELL:
+                    index = parsed.args[0]
+                    exec_result = self.problem.run_cell(index)
+                    return self._wrap_success(self._format_exec_result(exec_result))
+                case NotebookCommandType.RUN_ALL:
+                    exec_results = self.problem.run_all()
+                    output_parts = []
+                    for i, exec_result in enumerate(exec_results):
+                        cell_output = self._format_exec_result(exec_result)
+                        output_parts.append(f"Cell {i}:\n{cell_output}")
+                    return self._wrap_success("\n\n".join(output_parts))
+        except Exception as exc:
+            return self._wrap_error(f"Error executing notebook command: {exc}")
+
+    def _wrap_success(self, output: str) -> dict[str, Any]:
+        return {
+            "output": output,
+            "returncode": 0,
+            "exception_info": "",
+        }
+
+    def _wrap_error(self, message: str, exception_info: Optional[str] = None) -> dict[str, Any]:
+        return {
+            "output": message,
+            "returncode": 1,
+            "exception_info": exception_info or message,
+        }
+
+    def _format_exec_result(self, exec_result: Any) -> str:
+        if exec_result is None:
+            return "(No output)"
+        try:
+            return json.dumps(exec_result)
+        except TypeError:
+            return str(exec_result)
     
-    def cleanup(self):
+    def close(self):
         """Cleanup the Docker container and resources."""
-        self.problem.teardown()
+        if self.problem:
+            self.problem.close()
     
     def __del__(self):
         """Cleanup on deletion."""
-        self.cleanup()
-
-    def _is_bash_command(self, command: str) -> bool:
-        """Check if command looks like a bash command."""
-        bash_indicators = [
-            'echo ', 'cat ', 'ls ', 'pwd', 'cd ', 'mkdir ', 'rm ', 'touch ',
-            'grep ', 'find ', 'sed ', 'awk ', 'git ', 'python ', 'pip ',
-            'export ', 'source ', './','bash ', 'sh '
-        ]
-        command_lower = command.strip().lower()
-        return any(command_lower.startswith(indicator) for indicator in bash_indicators)
-    
-    def _wrap_bash_command(self, command: str) -> str:
-        """Wrap bash command in Python subprocess call, matching mini-swe-agent pattern."""
-        return f"""
-import subprocess
-
-result = subprocess.run(
-    {repr(command)},
-    shell=True,
-    capture_output=True,
-    text=True,
-    cwd='/app/container',
-    encoding='utf-8',
-    errors='replace'
-)
-
-# Print stdout and stderr
-if result.stdout:
-    print(result.stdout, end='')
-if result.stderr:
-    print(result.stderr, end='')
-
-# Print return code marker for parsing
-print(f'__RETURNCODE__={{result.returncode}}')
-"""
+        self.close()

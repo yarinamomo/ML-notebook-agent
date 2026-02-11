@@ -59,7 +59,7 @@ def main(
         extra_info = {"traceback": traceback.format_exc()}
     finally:
         save_traj(agent, output, exit_status=exit_status, result=result, extra_info=extra_info)  # type: ignore[arg-type]
-        env.cleanup()
+        env.close()
     return agent
 
 
