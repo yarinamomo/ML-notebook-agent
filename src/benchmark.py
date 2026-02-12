@@ -58,15 +58,14 @@ class BenchmarkProblem:
         return f"# --- [CELL {index}]: ---\n{self._get_cleaned_cell_source(index)}"
 
     def edit_cell(self, index: int, new_content: str):
-        cell = self._get_selected_cell(index)
+        cell = self._safe_get_cell(index)
         cell["source"] = new_content
         self._cell_states[index] = "edited"
         self._exec_states.pop(index, None) # reset execution state since content changed
         nbformat_helper.save_cells(self._cells, self._cell_states, self._exec_states, self.problem_file)
 
     def run_cell(self, index: int):
-        cell = self._get_selected_cell(index)
-        code = self._get_cell_source(cell)
+        code = self._get_cell_source(index)
         # Change working directory inside the Docker container before executing code
         code = f"import os\nos.chdir('/app/container')\n{code}" # TODO this should be moved into sandbox.
         result = self.sandbox.run(code, timeout=self.timeout)
@@ -99,17 +98,17 @@ class BenchmarkProblem:
                 import logging
                 logging.warning(f"⚠️ Warning: Could not clean up mount path {self.docker_source_path}: {e}")
 
-    def _get_selected_cell(self, index: int):
+    def _safe_get_cell(self, index: int):
         if 0 <= index < len(self._cells):
             return self._cells[index]
         raise IndexError("Cell index out of range")
 
-    def _get_cell_source(self, cell: dict) -> str:
+    def _get_cell_source(self, index: int) -> str:
+        cell = self._safe_get_cell(index)
         source = cell.get("source", "")
         if isinstance(source, list):
             source = "".join(source)
         return source
     
     def _get_cleaned_cell_source(self, index: int) -> str:
-        cell = self._get_selected_cell(index)
-        return preprocess_notebook.remove_comments(self._get_cell_source(cell))
+        return preprocess_notebook.remove_comments(self._get_cell_source(index))
