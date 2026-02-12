@@ -156,7 +156,7 @@ class NotebookEnvironment:
         outputs = exec_result.get("outputs", []) if exec_result else []
         text = outputs[0].get("text", "") if outputs else ""
         if ("COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in text 
-            and "RETURNCODE=0" in text):
+            and "__RETURNCODE__=0" in text):
             raise Submitted(text)
 
     def _execute_notebook_command(self, command: str) -> dict[str, Any]:
