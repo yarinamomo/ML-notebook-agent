@@ -1,11 +1,11 @@
-from typing import Optional
+from typing import Optional, cast
 import queue
 import time
 import requests
 import docker
 from jupyter_kernel_client import KernelClient
 from src.utils.log import logging
-
+from src.utils.nb_types import CellExecutionResult
 
 class DockerSandbox:
     def __init__(self, image_name, base_url="http://127.0.0.1", port=8888, token="Super_Duper_Secret_Token", mount_volume=None):
@@ -67,14 +67,15 @@ class DockerSandbox:
             logging.exception("Failed to start kernel")
             raise RuntimeError("Failed to start kernel") from exc
 
-    def run(self, code: str, timeout=30):
+    def run(self, code: str, timeout=30) -> CellExecutionResult:
         """Execute code in the container kernel and return outputs."""
         if not self.kernel_client or self._closed:
             raise RuntimeError("Kernel not connected" if not self.kernel_client else "Sandbox is closed")
         try:
             print("Executing code in sandbox kernel...")
             print(f"Code:\n{code}")
-            return self.kernel_client.execute(code, timeout=timeout)
+            result = self.kernel_client.execute(code, timeout=timeout) 
+            return cast(CellExecutionResult, result)
         except (TimeoutError, queue.Empty) as exc:
             logging.warning("Kernel execution timed out after %s seconds", timeout)
             raise TimeoutError(f"Kernel execution timed out after {timeout} seconds") from exc

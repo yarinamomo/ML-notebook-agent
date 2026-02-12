@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List
 from nbformat import NO_CONVERT, NotebookNode, read, write
-
+from src.utils.nb_types import CellExecutionResult
 
 def load_notebook(nb_path: Path) -> NotebookNode:
     with open(nb_path, "r", encoding="utf-8") as f:
@@ -32,7 +32,7 @@ def select_code_cells(nb: NotebookNode, parse_mode: str) -> List[dict]:
         return _get_code_cells(nb)  # return all code cells without specific ordering
 
 
-def save_cells(cells: list[dict], cell_states: dict[int, str], exec_states: dict[int, str], problem_file: Path) -> None:
+def save_cells(cells: list[dict], cell_states: dict[int, str], exec_states: dict[int, CellExecutionResult], problem_file: Path) -> None:
     """Save the notebook as a Python script with cell metadata."""
     cell_metadata = [
         _get_cell_metadata(cell_states, exec_states, i) for i in range(len(cells))
@@ -44,10 +44,10 @@ def save_cells(cells: list[dict], cell_states: dict[int, str], exec_states: dict
     save_path.write_text(script_content, encoding="utf-8")
 
 
-def _get_cell_metadata(cell_states: dict[int, str], exec_states: dict[int, str], index: int) -> dict:
+def _get_cell_metadata(cell_states: dict[int, str], exec_states: dict[int, CellExecutionResult], index: int) -> dict:
     return {
         "cell_state": cell_states.get(index, "unchanged"), 
-        "execution_status": exec_states.get(index, "not run")
+        "execution_status": exec_states.get(index, {"status": "not run"})
         }
 
 

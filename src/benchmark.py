@@ -1,10 +1,11 @@
 from typing import Any, List, Optional
-from .sandbox import DockerSandbox
 from pathlib import Path
 import shutil
 import time
 import src.preprocess_notebook as preprocess_notebook
 import src.utils.nbformat_helper as nbformat_helper
+from src.utils.nb_types import CellExecutionResult
+from src.sandbox import DockerSandbox
 
 def setup_environment(src, dst):
     if not src.exists():
@@ -45,7 +46,7 @@ class BenchmarkProblem:
         for cell_info in self._cells:
             print(cell_info)
         self._cell_states: dict[int, str] = dict()  # cell_id -> state (edited/unchanged)
-        self._exec_states: dict[int, Any] = dict()  # cell_id -> execution result
+        self._exec_states: dict[int, CellExecutionResult] = dict()  # cell_id -> execution result
         self.timeout = timeout # TODO Move into sandbox settings. 
 
     def get_cells(self):
@@ -72,7 +73,7 @@ class BenchmarkProblem:
         self._exec_states[index] = result
         return result
 
-    def run_all(self) -> List[Any]:
+    def run_all(self) -> List[CellExecutionResult]:
         results = []
         for i in range(len(self._cells)):
             results.append(self.run_cell(i))

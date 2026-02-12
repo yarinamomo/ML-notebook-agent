@@ -12,6 +12,7 @@ from typing import Any, Optional
 
 # Define exceptions for mini-swe-agent v1 compatibility
 from minisweagent.agents.default import Submitted
+from src.utils.nb_types import CellExecutionResult
 
 from .benchmark import BenchmarkProblem
 from .utils.notebook_command_helper import (
@@ -87,7 +88,7 @@ class NotebookEnvironment:
                 "Please execute them separately.\n"
                 "Your command: {command[:100]}...", 
                 "Mixed bash and notebook operation commands")
-
+        exec_result = None # TODO this is a bit hacky. We need to have access to the execution result in _check_finished, but it's only produced in certain branches. Refactor needed.
         try:
             if is_notebook_command(command):
                 return self._execute_notebook_command(command.strip().replace("__NOTEBOOK_OP__", "", 1))
@@ -102,7 +103,7 @@ class NotebookEnvironment:
             result = self._wrap_error(f"Error executing command: {exc}")
 
         # Check if task is finished (raises Submitted exception if complete)
-        self._check_finished(result)
+        self._check_finished(exec_result)
 
         # Convert result to agent-expected format
         return result
@@ -144,7 +145,7 @@ class NotebookEnvironment:
         
         return template_vars
     
-    def _check_finished(self, output: dict):
+    def _check_finished(self, exec_result: Optional[CellExecutionResult]):
         """
         Check if the output indicates task completion.
         Raises Submitted exception if first line is COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT
@@ -152,10 +153,11 @@ class NotebookEnvironment:
         
         Compatible with mini-swe-agent v1.
         """
-        lines = output.get("output", "").lstrip().splitlines(keepends=True)
-        if lines and lines[0].strip() == "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" and output["returncode"] == 0:
-            submission = "".join(lines[1:])
-            raise Submitted(submission)
+        outputs = exec_result.get("outputs", []) if exec_result else []
+        text = outputs[0].get("text", "") if outputs else ""
+        if ("COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in text 
+            and "RETURNCODE=0" in text):
+            raise Submitted(text)
 
     def _execute_notebook_command(self, command: str) -> dict[str, Any]:
         if not self.problem.get_cell_count():
