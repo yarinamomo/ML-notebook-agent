@@ -41,7 +41,7 @@ def save_cells(cells: list[dict], cell_states: dict[int, str], exec_states: dict
     script_content = "\n\n#%%\n".join(formatted_cells)
     save_path = (problem_file.with_suffix("") # remove .ipynb suffix
                  .with_name(problem_file.stem + "_patched.py"))
-    save_path.write_text(script_content)
+    save_path.write_text(script_content, encoding="utf-8")
 
 
 def _get_cell_metadata(cell_states: dict[int, str], exec_states: dict[int, str], index: int) -> dict:
