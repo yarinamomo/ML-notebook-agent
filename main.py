@@ -26,28 +26,37 @@ def main(
     config_spec: Path = typer.Option(DEFAULT_CONFIG, "-c", "--config", help="Path to config file"),
     output: Path | None = typer.Option(DEFAULT_OUTPUT, "-o", "--output", help="Output trajectory file"),
 ) -> Any:
+
     logger.info("Starting notebook agent....")
     config_path = get_config_path(config_spec)
     config = yaml.safe_load(config_path.read_text())
     logger.debug(f"Configuration loaded: {config}")
+
+    if config.get("misc", {}).get("if_local_key", False):
+        logger.info("Loading API keys from .env file")
+        from dotenv import load_dotenv
+        load_dotenv(".env", override=True)
+
     if cost_limit is not None:
         config.setdefault("agent", {})["cost_limit"] = cost_limit
     if model_name is not None:
         config.setdefault("model", {})["model_name"] = model_name
 
     model = LoggingLitellmModel(**config.get("model", {}))
-        
-    target_nb_instance = "sklearn_1"
-    source_path = f"example/JunoBench/{target_nb_instance}"
+    
+    env_config = config.get("environment", {})
+    target_nb_instance = env_config.get("target_nb_instance", "sklearn_1")
 
     env = NotebookEnvironment(
         sandbox_settings={
-            "image_name": "yarinamomo/kaggle_python_env",
+            "image_name": env_config.get("docker_image_name", "yarinamomo/junobench-simple"),
             "port": 8888,
+            "start_command": env_config.get("docker_start_command", None)
         },
-        source_path=source_path,
-        docker_mount_path="example/docker_mount/",
-        problem_mode="JunoBench_Buggy"
+        source_path=env_config.get("source_path", "example/JunoBench/")+target_nb_instance,
+        docker_mount_path=env_config.get("docker_mount_path", "example/docker_mount/"),
+        problem_mode=env_config.get("problem_mode", "JunoBench_Buggy"),
+        timeout=env_config.get("timeout", 30)
     )
     agent = UiAgent(model, env, **config.get("agent", {}))
     exit_status, result, extra_info = None, None, None

@@ -8,7 +8,7 @@ from src.utils.log import logging
 from src.utils.nb_types import CellExecutionResult
 
 class DockerSandbox:
-    def __init__(self, image_name, base_url="http://127.0.0.1", port=8888, token="Super_Duper_Secret_Token", mount_volume=None):
+    def __init__(self, image_name, base_url="http://127.0.0.1", port=8888, token="Super_Duper_Secret_Token", mount_volume=None, start_command=None):
         self.image_name = image_name
         self.base_url = base_url
         self.port = port
@@ -18,6 +18,7 @@ class DockerSandbox:
         self.container = None
         self.kernel_client: Optional[KernelClient] = None
         self._closed = False
+        self.start_command = start_command
 
     def start(self):
         # Remove old container if exists
@@ -36,8 +37,7 @@ class DockerSandbox:
             stdin_open=True,
             volumes={self.mount_volume: {'bind': '/app/container', 'mode': 'rw'}} if self.mount_volume else None,
             ports={'8888/tcp': self.port},
-            command=f"jupyter server --allow-root --ServerApp.ip=0.0.0.0 "
-                    f"--ServerApp.port=8888 --ServerApp.token='' --ServerApp.password='' --ServerApp.open_browser=False"
+            command=self.start_command
         )
 
         # Wait until server is ready
