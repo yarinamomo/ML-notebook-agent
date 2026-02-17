@@ -93,3 +93,16 @@ class DockerSandbox:
             self.container.remove()
             self.container = None
         self._closed = True
+
+    def restart_kernel(self):
+        """Restart the kernel without stopping the container."""
+        old_client = self.kernel_client
+        self.kernel_client = None  # Clear before stopping
+        
+        if old_client:
+            try:
+                old_client.stop()
+            except Exception as e:
+                logging.warning(f"Error stopping old kernel: {e}")
+        
+        self._start_kernel()

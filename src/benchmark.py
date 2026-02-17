@@ -74,6 +74,7 @@ class BenchmarkProblem:
         return result
 
     def run_all(self) -> List[CellExecutionResult]:
+        self.sandbox.restart_kernel()
         results = []
         for i in range(len(self._cells)):
             results.append(self.run_cell(i))
