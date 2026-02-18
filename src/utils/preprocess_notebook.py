@@ -1,7 +1,7 @@
 import os
 import re
 from typing import Dict, List, Optional, Tuple
-from nbformat import NO_CONVERT, read
+from nbformat import NO_CONVERT, NotebookNode, read
 import copy
 import tokenize
 from io import StringIO
@@ -30,7 +30,7 @@ def parse_nb(nb_path: Path, parse_mode = "JunoBench_Buggy") -> List[str]:
 # process reproduced crashing notebooks to: a list of successfully executed code cells + crashing code cell
 def preprocess_junobench_buggy_code_cells(nb_path: Path):
     with open(nb_path, 'r', encoding='utf-8') as f:
-        nb = read(f, as_version=NO_CONVERT)
+        nb: NotebookNode = read(f, as_version=NO_CONVERT)
 
     # print(f"Processing notebook: {nb_path}")
 
@@ -70,7 +70,7 @@ def preprocess_junobench_buggy_code_cells(nb_path: Path):
 # for any notebook: only get the code cells that have been executed
 def preprocess_auto_executed_code_cells(nb_fix_path: Path):
     with open(nb_fix_path, 'r', encoding='utf-8') as f:
-        nb_fix = read(f, as_version=NO_CONVERT)
+        nb_fix: NotebookNode = read(f, as_version=NO_CONVERT)
 
     processed_nb = []
     code_cell_count = 0  # Track code cells for logical indexing
@@ -144,7 +144,7 @@ def remove_comments(source_code: str) -> str:
     cleaned_code = '\n'.join(line.rstrip() for line in cleaned_code.splitlines())
     return cleaned_code #normalize_whitespace(cleaned_code)
 
-def _extract_bug_location_from_cell(cell: dict) -> Optional[Tuple[Optional[int], Optional[str]]]:
+def _extract_bug_location_from_cell(cell: dict) -> Tuple[Optional[int], Optional[str]]:
     """
     Extract the crashing line number from the error traceback in a code cell's output.
     Returns a 1-based line number and line of code or None if not found.
@@ -153,7 +153,7 @@ def _extract_bug_location_from_cell(cell: dict) -> Optional[Tuple[Optional[int],
         return None, None
     
     for output in cell['outputs']:
-        if output.output_type == 'error':
+        if output.get("output_type") == 'error':
             traceback_lines = output.get('traceback', [])
             traceback_lines = parse_traceback("\n".join(traceback_lines))
             pattern = r'<ipython-input-(\d+)-[\da-f]+> in <cell line: (\d+)>()'
@@ -173,11 +173,11 @@ def _find_buggy_cell_index_and_line(nb_cells: List[dict]) -> Tuple[Optional[int]
     """
     code_cell_index = 0
     for cell in nb_cells:
-        if cell.cell_type != 'code':
+        if cell.get("cell_type") != "code":
             continue
         for output in cell.get('outputs', []):
-            if output.output_type == 'error':
-                line = _extract_bug_location_from_cell(cell)
+            if output.get("output_type") == 'error':
+                line, _  = _extract_bug_location_from_cell(cell)
                 return code_cell_index, line
         code_cell_index += 1
     return None, None
