@@ -32,15 +32,15 @@ def select_code_cells(nb: NotebookNode, parse_mode: str) -> List[dict]:
         return _get_code_cells(nb)  # return all code cells without specific ordering
 
 
-def save_cells(cells: list[dict], cell_states: dict[int, str], exec_states: dict[int, CellExecutionResult], problem_file: Path) -> None:
+def save_cells(cells: list[dict], cell_states: dict[int, str], exec_states: dict[int, CellExecutionResult], problem_file_source_path: Path) -> None:
     """Save the notebook as a Python script with cell metadata."""
     cell_metadata = [
         _get_cell_metadata(cell_states, exec_states, i) for i in range(len(cells))
     ]
     formatted_cells = [_format_cell_with_metadata(i, cell, cell_metadata[i]) for i, cell in enumerate(cells)]
     script_content = "\n\n#%%\n".join(formatted_cells)
-    save_path = (problem_file.with_suffix("") # remove .ipynb suffix
-                 .with_name(problem_file.stem + "_patched.py"))
+    save_path = (problem_file_source_path.with_suffix("") # remove .ipynb suffix
+                 .with_name(problem_file_source_path.stem + "_patched.py"))
     save_path.write_text(script_content, encoding="utf-8")
 
 
@@ -53,10 +53,12 @@ def _get_cell_metadata(cell_states: dict[int, str], exec_states: dict[int, CellE
 
 
 def _format_cell_with_metadata(index: int, cell: dict, metadata: dict) -> str:
+    exec_status = metadata['execution_status']
+    exec_status_filtered = {k: v for k, v in exec_status.items() if k != 'outputs'} if isinstance(exec_status, dict) else exec_status
     return "\n".join([
         f"# --- [CELL {index}]: ---",
         f"# cell_state: {metadata['cell_state']}",
-        f"# execution_status: {metadata['execution_status']}",
+        f"# execution_status: {exec_status_filtered}",
         get_cell_source(cell),
     ])
 

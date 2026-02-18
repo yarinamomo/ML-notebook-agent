@@ -12,7 +12,7 @@ from typing import Any, Optional
 
 # Define exceptions for mini-swe-agent v1 compatibility
 from minisweagent.agents.default import Submitted
-from src.utils.nb_types import CellExecutionResult
+from src.utils.nb_types import CellExecutionResult, format_for_llm
 
 from .benchmark import BenchmarkProblem
 from .utils.notebook_command_helper import (
@@ -84,9 +84,9 @@ class NotebookEnvironment:
 
         if is_mixed_notebook_and_bash(command):
             return self._wrap_error(
-                "Error: Cannot mix bash commands with __NOTEBOOK_OP__ commands.\n"
-                "Please execute them separately.\n"
-                "Your command: {command[:100]}...", 
+                "Error: Cannot mix bash commands with __NOTEBOOK_OP__ commands.\n"+
+                "Please execute them separately.\n"+
+                f"Your command: {command[:100]}...",
                 "Mixed bash and notebook operation commands")
         exec_result = None # TODO this is a bit hacky. We need to have access to the execution result in _check_finished, but it's only produced in certain branches. Refactor needed.
         try:
@@ -208,10 +208,9 @@ class NotebookEnvironment:
     def _format_exec_result(self, exec_result: Any) -> str:
         if exec_result is None:
             return "(No output)"
-        try:
-            return json.dumps(exec_result)
-        except TypeError:
-            return str(exec_result)
+        if isinstance(exec_result, dict) and 'outputs' in exec_result:
+            return format_for_llm(exec_result, if_truncate=True, max_words=500)
+        return str(exec_result)
     
     def close(self):
         """Cleanup the Docker container and resources."""

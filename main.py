@@ -53,7 +53,7 @@ def main(
             "port": 8888,
             "start_command": env_config.get("docker_start_command", None)
         },
-        source_path=env_config.get("source_path", "example/JunoBench/")+target_nb_instance,
+        source_path=env_config.get("source_path_parent", "example/JunoBench/")+target_nb_instance,
         docker_mount_path=env_config.get("docker_mount_path", "example/docker_mount/"),
         problem_mode=env_config.get("problem_mode", "JunoBench_Buggy"),
         timeout=env_config.get("timeout", 30)

@@ -2,7 +2,7 @@ from typing import Any, List, Optional
 from pathlib import Path
 import shutil
 import time
-import src.preprocess_notebook as preprocess_notebook
+import src.utils.preprocess_notebook as preprocess_notebook
 import src.utils.nbformat_helper as nbformat_helper
 from src.utils.nb_types import CellExecutionResult
 from src.sandbox import DockerSandbox
@@ -39,12 +39,12 @@ class BenchmarkProblem:
 
         self.sandbox: DockerSandbox = DockerSandbox(mount_volume=str(self.docker_source_path), **sandbox_settings)
         self.sandbox.start()  
-        self.sandbox.run("print(\"Hello World\")")
+        # self.sandbox.run("print(\"Hello World\")")
         self.sandbox.run(f"import sys\nsys.modules['__main__'].__file__ = '/app/container/{target_nb_instance}_reproduced.ipynb'")
 
         self._cells = nbformat_helper.select_code_cells(nbformat_helper.load_notebook(self.problem_file), problem_mode)
-        for cell_info in self._cells:
-            print(cell_info)
+        # for cell_info in self._cells:
+        #     print(cell_info)
         self._cell_states: dict[int, str] = dict()  # cell_id -> state (edited/unchanged)
         self._exec_states: dict[int, CellExecutionResult] = dict()  # cell_id -> execution result
         self.timeout = timeout # TODO Move into sandbox settings. 
@@ -63,7 +63,7 @@ class BenchmarkProblem:
         cell["source"] = new_content
         self._cell_states[index] = "edited"
         self._exec_states.pop(index, None) # reset execution state since content changed
-        nbformat_helper.save_cells(self._cells, self._cell_states, self._exec_states, self.problem_file)
+        nbformat_helper.save_cells(self._cells, self._cell_states, self._exec_states, self.source_path / self.source_path.name)
 
     def run_cell(self, index: int):
         code = self._get_cell_source(index)
@@ -71,6 +71,7 @@ class BenchmarkProblem:
         code = f"import os\nos.chdir('/app/container')\n{code}" # TODO this should be moved into sandbox.
         result = self.sandbox.run(code, timeout=self.timeout)
         self._exec_states[index] = result
+        nbformat_helper.save_cells(self._cells, self._cell_states, self._exec_states, self.source_path / self.source_path.name)
         return result
 
     def run_all(self) -> List[CellExecutionResult]:
@@ -78,6 +79,7 @@ class BenchmarkProblem:
         results = []
         for i in range(len(self._cells)):
             results.append(self.run_cell(i))
+        nbformat_helper.save_cells(self._cells, self._cell_states, self._exec_states, self.source_path / self.source_path.name)
         return results
 
 
@@ -85,7 +87,7 @@ class BenchmarkProblem:
         if not self._cells:
             raise RuntimeError("Notebook not initialized")
         exec_result = self.sandbox.run(command, timeout=self.timeout)
-        print(f"Raw execution result: {exec_result}")
+        # print(f"Raw execution result: {exec_result}")
         return exec_result
 
     def close(self):
