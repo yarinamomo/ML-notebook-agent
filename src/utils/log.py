@@ -6,7 +6,8 @@ from rich.logging import RichHandler
 
 def _setup_root_logger() -> None:
     logger = logging.getLogger("mlnotebookagent")
-    logger.setLevel(logging.INFO)
+    # logger.setLevel(logging.INFO)
+    logger.setLevel(logging.ERROR)
     _handler = RichHandler(
         show_path=False,
         show_time=False,

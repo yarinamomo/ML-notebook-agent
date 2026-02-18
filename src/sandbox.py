@@ -4,7 +4,7 @@ import time
 import requests
 import docker
 from jupyter_kernel_client import KernelClient
-from src.utils.log import logging
+from src.utils.log import logger
 from src.utils.nb_types import CellExecutionResult
 
 class DockerSandbox:
@@ -54,7 +54,7 @@ class DockerSandbox:
                 if r.status_code == 200:
                     return
             except Exception as exc:
-                logging.warning("Jupyter status check failed: %s", exc)
+                logger.warning("Jupyter status check failed: %s", exc)
                 time.sleep(1)
         raise RuntimeError("Jupyter server not responding")
 
@@ -64,7 +64,7 @@ class DockerSandbox:
             kernel_client.start()
             self.kernel_client = kernel_client
         except Exception as exc:
-            logging.exception("Failed to start kernel")
+            logger.exception("Failed to start kernel")
             raise RuntimeError("Failed to start kernel") from exc
 
     def run(self, code: str, timeout=30) -> CellExecutionResult:
@@ -72,15 +72,15 @@ class DockerSandbox:
         if not self.kernel_client or self._closed:
             raise RuntimeError("Kernel not connected" if not self.kernel_client else "Sandbox is closed")
         try:
-            print("Executing code in sandbox kernel...")
-            print(f"Code:\n{code}")
+            # print("Executing code in sandbox kernel...")
+            # print(f"Code:\n{code}")
             result = self.kernel_client.execute(code, timeout=timeout) 
             return cast(CellExecutionResult, result)
         except (TimeoutError, queue.Empty) as exc:
-            logging.warning("Kernel execution timed out after %s seconds", timeout)
+            logger.warning("Kernel execution timed out after %s seconds", timeout)
             raise TimeoutError(f"Kernel execution timed out after {timeout} seconds") from exc
         except Exception as exc:
-            logging.exception("Kernel execution failed")
+            logger.exception("Kernel execution failed")
             raise RuntimeError("Kernel execution failed") from exc
 
     def stop(self):
@@ -103,6 +103,6 @@ class DockerSandbox:
             try:
                 old_client.stop()
             except Exception as e:
-                logging.warning(f"Error stopping old kernel: {e}")
+                logger.warning(f"Error stopping old kernel: {e}")
         
         self._start_kernel()
