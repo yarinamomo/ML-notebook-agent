@@ -11,7 +11,7 @@ from src.notebook_environment import NotebookEnvironment
 from src.LoggingLitellmModel import LoggingLitellmModel
 from src.utils.log import logger
 from src.ui_agent import UiAgent
-
+from src.utils.summary_logger import initialize_logger, get_logger
 
 app = typer.Typer(rich_markup_mode="rich")
 DEFAULT_CONFIG = Path(os.getenv("NOTEBOOK_AGENT_CONFIG_PATH", "./config/default.yaml"))
@@ -32,11 +32,20 @@ def main(
     config = yaml.safe_load(config_path.read_text())
     logger.debug(f"Configuration loaded: {config}")
 
-    if config.get("misc", {}).get("if_local_key", False):
+    misc_config = config.get("misc", {})
+    if misc_config.get("if_local_key", False):
         logger.info("Loading API keys from .env file")
         from dotenv import load_dotenv
         load_dotenv(".env", override=True)
 
+    # Initialize summary logger    
+    if misc_config.get("enable_summary_log", False):
+        initialize_logger(
+            enabled=True,
+            output_path=misc_config.get("summary_log_path", "./trajectories/last_run_summary.json")
+        )
+        logger.info("Summary logging enabled")
+        
     if cost_limit is not None:
         config.setdefault("agent", {})["cost_limit"] = cost_limit
     if model_name is not None:
@@ -67,6 +76,13 @@ def main(
         exit_status, result = type(e).__name__, str(e)
         extra_info = {"traceback": traceback.format_exc()}
     finally:
+        # Check if task completed successfully
+        if misc_config.get("enable_summary_log", False):
+            if result and "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in str(result):
+                get_logger().mark_success(step=agent.model.n_calls)
+                logger.info("Task completed successfully")
+            # Save summary and trajectory
+            get_logger().save_summary()
         save_traj(agent, output, exit_status=exit_status, result=result, extra_info=extra_info)  # type: ignore[arg-type]
         env.close()
     return agent

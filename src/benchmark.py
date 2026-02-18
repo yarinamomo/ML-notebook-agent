@@ -6,6 +6,7 @@ import src.utils.preprocess_notebook as preprocess_notebook
 import src.utils.nbformat_helper as nbformat_helper
 from src.utils.nb_types import CellExecutionResult
 from src.sandbox import DockerSandbox
+from src.utils.summary_logger import get_logger
 
 def setup_environment(src, dst):
     if not src.exists():
@@ -60,10 +61,14 @@ class BenchmarkProblem:
 
     def edit_cell(self, index: int, new_content: str):
         cell = self._safe_get_cell(index)
+        original_content = self._get_cell_source(index)
         cell["source"] = new_content
         self._cell_states[index] = "edited"
         self._exec_states.pop(index, None) # reset execution state since content changed
         nbformat_helper.save_cells(self._cells, self._cell_states, self._exec_states, self.source_path / self.source_path.name)
+        
+        # Log to summary logger about before and after cell change
+        get_logger().log_cell_edit(index, original_content, new_content)
 
     def run_cell(self, index: int):
         code = self._get_cell_source(index)
