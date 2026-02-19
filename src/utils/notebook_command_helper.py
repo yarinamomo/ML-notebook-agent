@@ -14,6 +14,7 @@ class NotebookCommandType(Enum):
     EDIT_CELL = "edit_cell"
     RUN_CELL = "run_cell"
     RUN_ALL = "run_all"
+    RUN_CUSTOM_CODE = "run_code"
 
 
 @dataclass
@@ -36,6 +37,7 @@ def parse_notebook_command(command: str) -> NotebookCommand:
         "edit_cell": NotebookCommandType.EDIT_CELL,
         "run_cell": NotebookCommandType.RUN_CELL,
         "run_all": NotebookCommandType.RUN_ALL,
+        "run_code": NotebookCommandType.RUN_CUSTOM_CODE,
     }
     if name not in command_map:
         raise ValueError(f"Unknown notebook operation: {name}")
@@ -60,6 +62,14 @@ def parse_notebook_command(command: str) -> NotebookCommand:
         if not isinstance(code, str):
             raise ValueError("edit_cell() code argument must be a string")
         return NotebookCommand(kind=kind, args=(index, code))
+
+    if kind is NotebookCommandType.RUN_CUSTOM_CODE:
+        if not args_str:
+            raise ValueError("run_code() expects a code string")
+        code = ast.literal_eval(args_str.strip())
+        if not isinstance(code, str):
+            raise ValueError("run_code() code argument must be a code string")
+        return NotebookCommand(kind=kind, args=(code,))
 
     raise ValueError(f"Unsupported notebook operation: {name}")
 
@@ -96,8 +106,33 @@ def is_notebook_command(command: str) -> bool:
 
 
 def is_mixed_notebook_and_bash(command: str) -> bool:
+    """
+    Check if command chains multiple operations using bash operators.
+    
+    Returns True if bash operators (&&, ;, |) appear OUTSIDE the notebook 
+    operation's argument string, indicating:
+    - Notebook + bash: '__NOTEBOOK_OP__run_code("x=1"); echo "hello"'
+    - Notebook + notebook: '__NOTEBOOK_OP__run_code("x=1") && __NOTEBOOK_OP__get_cells()'
+    - Multiple commands: '__NOTEBOOK_OP__run_all() | grep error'
+    
+    Returns False for valid single operations:
+    - Valid: '__NOTEBOOK_OP__run_code("print(1); print(2)")'  # ; is inside args
+    """
     if not has_notebook_marker(command):
         return False
+    
+    # Extract the part after __NOTEBOOK_OP__
+    cmd = command.strip()
+    if cmd.startswith("__NOTEBOOK_OP__"):
+        cmd = cmd.replace("__NOTEBOOK_OP__", "", 1).strip()
+    
+    # Check if it matches valid notebook command pattern: operation(args)
+    # The $ anchor ensures nothing comes after the closing paren
+    match = re.match(r"^([a-zA-Z_]\w*)\s*\((.*)\)\s*$", cmd)
+    if match:
+        return False  # Valid single notebook operation
+    
+    # Doesn't match complete pattern - check for chaining operators
     return any(token in command for token in ("&&", ";", "|"))
 
 

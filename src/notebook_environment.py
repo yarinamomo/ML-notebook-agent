@@ -188,6 +188,10 @@ class NotebookEnvironment:
                         cell_output = self._format_exec_result(exec_result)
                         output_parts.append(f"Cell {i}:\n{cell_output}")
                     return self._wrap_success("\n\n".join(output_parts))
+                case NotebookCommandType.RUN_CUSTOM_CODE:
+                    code = parsed.args[0]
+                    exec_result = self.problem.execute_python_command(code)
+                    return self._wrap_success(self._format_exec_result(exec_result))
         except Exception as exc:
             return self._wrap_error(f"Error executing notebook command: {exc}")
 
