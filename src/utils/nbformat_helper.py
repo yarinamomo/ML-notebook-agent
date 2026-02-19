@@ -32,16 +32,18 @@ def select_code_cells(nb: NotebookNode, parse_mode: str) -> List[dict]:
         return _get_code_cells(nb)  # return all code cells without specific ordering
 
 
-def save_cells(cells: list[dict], cell_states: dict[int, str], exec_states: dict[int, CellExecutionResult], problem_file_source_path: Path) -> None:
+def save_cells(cells: list[dict], cell_states: dict[int, str], exec_states: dict[int, CellExecutionResult], instance_name: str, output_dir: Path | None = None) -> None:
     """Save the notebook as a Python script with cell metadata."""
     cell_metadata = [
         _get_cell_metadata(cell_states, exec_states, i) for i in range(len(cells))
     ]
     formatted_cells = [_format_cell_with_metadata(i, cell, cell_metadata[i]) for i, cell in enumerate(cells)]
     script_content = "\n\n#%%\n".join(formatted_cells)
-    save_path = (problem_file_source_path.with_suffix("") # remove .ipynb suffix
-                 .with_name(problem_file_source_path.stem + "_patched.py"))
-    save_path.write_text(script_content, encoding="utf-8")
+    
+    if output_dir is not None:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        save_path = output_dir / f"{instance_name}_patched.py"
+        save_path.write_text(script_content, encoding="utf-8")
 
 
 def _get_cell_metadata(cell_states: dict[int, str], exec_states: dict[int, CellExecutionResult], index: int) -> dict:

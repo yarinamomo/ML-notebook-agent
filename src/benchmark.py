@@ -28,9 +28,10 @@ def setup_environment(src, dst):
 
 # actual environment for the agent
 class BenchmarkProblem:
-    def __init__(self, sandbox_settings: dict, source_path: str, problem_mode: str = "JunoBench_Buggy", docker_source_path: str = "docker_source", timeout: int = 30):
+    def __init__(self, sandbox_settings: dict, source_path: str, output_dir: str, problem_mode: str = "JunoBench_Buggy", docker_source_path: str = "docker_source", timeout: int = 30):
         self.source_path = Path(source_path)
         self.docker_source_path = Path(docker_source_path).resolve()
+        self.output_dir = Path(output_dir)
         setup_environment(self.source_path, self.docker_source_path)
         # Extract target_nb_instance from source_path
         target_nb_instance = self.source_path.name
@@ -65,7 +66,7 @@ class BenchmarkProblem:
         cell["source"] = new_content
         self._cell_states[index] = "edited"
         self._exec_states.pop(index, None) # reset execution state since content changed
-        nbformat_helper.save_cells(self._cells, self._cell_states, self._exec_states, self.source_path / self.source_path.name)
+        nbformat_helper.save_cells(self._cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
         
         # Log to summary logger about before and after cell change
         get_logger().log_cell_edit(index, original_content, new_content)
@@ -76,7 +77,7 @@ class BenchmarkProblem:
         code = f"import os\nos.chdir('/app/container')\n{code}" # TODO this should be moved into sandbox.
         result = self.sandbox.run(code, timeout=self.timeout)
         self._exec_states[index] = result
-        nbformat_helper.save_cells(self._cells, self._cell_states, self._exec_states, self.source_path / self.source_path.name)
+        nbformat_helper.save_cells(self._cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
         return result
 
     def run_all(self) -> List[CellExecutionResult]:
@@ -84,7 +85,7 @@ class BenchmarkProblem:
         results = []
         for i in range(len(self._cells)):
             results.append(self.run_cell(i))
-        nbformat_helper.save_cells(self._cells, self._cell_states, self._exec_states, self.source_path / self.source_path.name)
+        nbformat_helper.save_cells(self._cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
         return results
 
 

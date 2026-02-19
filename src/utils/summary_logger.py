@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 import json
 from datetime import datetime
+from src.utils.log import logger as main_logger
 
 
 class SummaryLogger:
@@ -140,3 +141,47 @@ def initialize_logger(enabled: bool = False, output_path: Path | str | None = No
     global _logger_instance
     _logger_instance = SummaryLogger(enabled=enabled, output_path=output_path)
     return _logger_instance
+
+
+def print_execution_summary(results_summary: list[dict[str, Any]]) -> None:
+    """
+    Print execution summary to logger.
+    
+    Args:
+        results_summary: List of result dictionaries from all runs
+    """
+    main_logger.info(f"\n{'='*80}")
+    main_logger.info("EXECUTION SUMMARY")
+    main_logger.info(f"{'='*80}")
+    main_logger.info(f"Total runs: {len(results_summary)}")
+    
+    successful = sum(1 for r in results_summary if r.get('success', False))
+    failed = sum(1 for r in results_summary if not r.get('success', False))
+    
+    main_logger.info(f"Successful: {successful}")
+    main_logger.info(f"Failed: {failed}")
+    
+    # Break down by model if multiple models
+    models = set(r.get('model', 'unknown') for r in results_summary)
+    if len(models) > 1:
+        main_logger.info(f"\nBreakdown by model:")
+        for model in sorted(models):
+            model_results = [r for r in results_summary if r.get('model') == model]
+            model_success = sum(1 for r in model_results if r.get('success', False))
+            main_logger.info(f"  {model}: {model_success}/{len(model_results)} successful")
+
+
+def save_overall_summary(results_summary: list[dict[str, Any]], output_path: Path) -> None:
+    """
+    Save overall summary of all runs to JSON file.
+    
+    Args:
+        results_summary: List of result dictionaries from all runs
+        output_path: Path to save the summary
+    """
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(results_summary, f, indent=2, ensure_ascii=False)
+    
+    main_logger.info(f"Overall summary saved to: {output_path}")

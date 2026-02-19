@@ -9,6 +9,7 @@ import asyncio
 from dataclasses import dataclass
 import json
 from typing import Any, Optional
+from pathlib import Path
 
 # Define exceptions for mini-swe-agent v1 compatibility
 from minisweagent.agents.default import Submitted
@@ -31,6 +32,7 @@ class NotebookEnvironmentConfig:
     sandbox_settings: dict[str, Any]
     source_path: str
     docker_mount_path: str
+    output_dir: str  # Path to save patched files
     problem_mode: str = "JunoBench_Buggy"
     timeout: int = 30
 
@@ -54,8 +56,9 @@ class NotebookEnvironment:
         self.problem: BenchmarkProblem = BenchmarkProblem(
             sandbox_settings=self.config.sandbox_settings,
             source_path=self.config.source_path,
-            docker_source_path=self.config.docker_mount_path,
+            output_dir=self.config.output_dir,
             problem_mode=self.config.problem_mode,
+            docker_source_path=self.config.docker_mount_path,
             timeout=self.config.timeout
         )        
     
