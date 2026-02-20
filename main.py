@@ -12,8 +12,7 @@ from src.ui_agent import UiAgent
 from src.utils.summary_logger import (
     initialize_logger,
     get_logger,
-    print_execution_summary,
-    save_overall_summary
+    get_results_tracker
 )
 from src.utils.yaml_parser import (
     load_config,
@@ -35,11 +34,11 @@ def run_single_instance(
     run_number: int,
     config: dict,
     trajectories_dir: Path
-) -> tuple[str, Any, dict | None, float]:
+) -> tuple[str, Any, dict | None, float, int]:
     """Run a single instance with a specific model and run number.
     
     Returns:
-        tuple: (exit_status, result, extra_info, cost)
+        tuple: (exit_status, result, extra_info, cost, total_steps)
     """
     
     model_name = model_config.get("model_name", "unknown")
@@ -86,7 +85,7 @@ def run_single_instance(
     
     # Create and run agent
     agent = UiAgent(model, env, **config.get("agent", {}))
-    exit_status, result, extra_info, cost = None, None, None, 0.0
+    exit_status, result, extra_info, cost, total_steps = None, None, None, 0.0, 0
     
     try:
         exit_status, result = agent.run("Fix the crashes in the notebook")  # type: ignore[arg-type]
@@ -97,6 +96,7 @@ def run_single_instance(
     finally:
         # Capture cost information
         cost = getattr(agent.model, 'cost', 0.0)
+        total_steps = getattr(agent.model, 'n_calls', 0)
         
         # Check if task completed successfully
         if misc_config.get("enable_summary_log", False):
@@ -114,7 +114,7 @@ def run_single_instance(
         # Close environment
         env.close()
     
-    return exit_status, result, extra_info, cost
+    return exit_status, result, extra_info, cost, total_steps
 
 # fmt: off
 @app.command(help="_HELP_TEXT")
@@ -144,8 +144,8 @@ def main(
         logger.error("No instances to run")
         return None
     
-    # Track results
-    results_summary = []
+    # Get results tracker
+    results_tracker = get_results_tracker()
     
     # Main execution loops: models -> instances -> runs
     for model_config in models_config:
@@ -157,7 +157,7 @@ def main(
         for instance_name in instances:
             for run_num in range(1, total_run_count + 1):
                 try:
-                    exit_status, result, _, cost = run_single_instance(
+                    exit_status, result, _, cost, total_steps = run_single_instance(
                         model_config=model_config,
                         instance_name=instance_name,
                         run_number=run_num,
@@ -165,30 +165,33 @@ def main(
                         trajectories_dir=trajectories_dir
                     )
                     
-                    results_summary.append({
-                        "model": model_name_str,
-                        "instance": instance_name,
-                        "run": run_num,
-                        "exit_status": exit_status,
-                        "success": "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in str(result) if result else False,
-                        "cost": round(cost, 4)
-                    })
+                    success = "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in str(result) if result else False
+                    results_tracker.add_result(
+                        model=model_name_str,
+                        instance=instance_name,
+                        run=run_num,
+                        exit_status=exit_status,
+                        success=success,
+                        cost=cost,
+                        total_steps=total_steps
+                    )
                     
                 except Exception as e:
                     logger.error(f"Failed to run model={model_name_str}, instance={instance_name}, run={run_num}: {e}")
-                    results_summary.append({
-                        "model": model_name_str,
-                        "instance": instance_name,
-                        "run": run_num,
-                        "exit_status": "FAILED",
-                        "success": False,
-                        "cost": 0.0,
-                        "error": str(e)
-                    })
+                    results_tracker.add_result(
+                        model=model_name_str,
+                        instance=instance_name,
+                        run=run_num,
+                        exit_status="FAILED",
+                        success=False,
+                        cost=0.0,
+                        total_steps=0,
+                        error=str(e)
+                    )
     
     # Print and save execution summary
-    print_execution_summary(results_summary)
-    save_overall_summary(results_summary, trajectories_dir / "overall_summary.json")
+    results_tracker.print_summary()
+    results_tracker.save_summary(trajectories_dir / "overall_summary.json")
 
 if __name__ == "__main__":
     app()
