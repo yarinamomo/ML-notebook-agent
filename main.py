@@ -2,6 +2,7 @@ import os
 import traceback
 from pathlib import Path
 from typing import Any
+import threading
 
 import typer
 from minisweagent.run.utils.save import save_traj
@@ -80,6 +81,7 @@ def run_single_instance(
         docker_mount_path=env_config.get("docker_mount_path", "example/docker_mount/"),
         problem_mode=env_config.get("problem_mode", "JunoBench_Buggy"),
         timeout=env_config.get("timeout", 30),
+        run_all_timeout=env_config.get("run_all_timeout", 0),
         output_dir=str(run_output_dir)
     )
     
@@ -87,12 +89,37 @@ def run_single_instance(
     agent = UiAgent(model, env, **config.get("agent", {}))
     exit_status, result, extra_info, cost, total_steps = None, None, None, 0.0, 0
     
+    # Get total_timeout from environment config
+    total_timeout = env_config.get("total_timeout", 0)
+    
+    # Run agent with optional total timeout
+    def run_agent():
+        nonlocal exit_status, result
+        try:
+            exit_status, result = agent.run("")  # type: ignore[arg-type]
+        except Exception as e:
+            exit_status, result = type(e).__name__, str(e)
+            raise
+    
     try:
-        exit_status, result = agent.run("Fix the crashes in the notebook")  # type: ignore[arg-type]
+        if total_timeout and total_timeout > 0:
+            # Run with timeout
+            thread = threading.Thread(target=run_agent)
+            thread.daemon = True
+            thread.start()
+            thread.join(timeout=total_timeout)
+            
+            if thread.is_alive():
+                # Timeout occurred
+                logger.error(f"Agent run exceeded total timeout of {total_timeout}s")
+                exit_status = "TIMEOUT"
+                result = f"Agent execution exceeded total timeout of {total_timeout} seconds"
+                extra_info = {"reason": "total_timeout_exceeded"}
+        else:
+            # Run without timeout
+            run_agent()
     except Exception as e:
         logger.error(f"Error running agent: {e}", exc_info=True)
-        exit_status, result = type(e).__name__, str(e)
-        extra_info = {"traceback": traceback.format_exc()}
     finally:
         # Capture cost information
         cost = getattr(agent.model, 'cost', 0.0)
