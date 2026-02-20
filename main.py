@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any
 
 import typer
-from minisweagent.run.utils.save import save_traj
 from src.notebook_environment import NotebookEnvironment
 from src.LoggingLitellmModel import LoggingLitellmModel
 from src.utils.log import logger
@@ -82,10 +81,12 @@ def run_single_instance(
     
     # Create and run agent
     agent = UiAgent(model, env, **config.get("agent", {}))
-    exit_status, result, extra_info = None, None, None
+    exit_status, result, extra_info = "", None, None
     
     try:
-        exit_status, result = agent.run("Fix the crashes in the notebook")  # type: ignore[arg-type]
+        result = agent.run("Fix the crashes in the notebook")  # type: ignore[arg-type]
+        exit_status = "1"
+        print(f"Agent result: {result}")
     except Exception as e:
         logger.error(f"Error running agent: {e}", exc_info=True)
         exit_status, result = type(e).__name__, str(e)
@@ -94,13 +95,13 @@ def run_single_instance(
         # Check if task completed successfully
         if misc_config.get("enable_summary_log", False):
             if result and "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in str(result):
-                get_logger().mark_success(step=agent.model.n_calls)
+                get_logger().mark_success(step=agent.n_calls)
                 logger.info(f"Task completed successfully: {instance_name}")
             # Save summary
             get_logger().save_summary()
         
         # Save trajectory
-        save_traj(agent, instance_traj_path, exit_status=exit_status, result=result, extra_info=extra_info)  # type: ignore[arg-type]
+        agent.save(instance_traj_path, extra_info)
         logger.info(f"Saved trajectory to: {instance_traj_path}")
         
         # Close environment
