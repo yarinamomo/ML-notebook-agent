@@ -6,23 +6,35 @@ with the self-defined Docker-based Jupyter notebook sandbox.
 """
 
 import asyncio
-import platform
-from typing import Any, TypedDict, NotRequired
+from dataclasses import dataclass
+import json
+from typing import Any, Optional
+from pathlib import Path
 
 # Define exceptions for mini-swe-agent v1 compatibility
-from minisweagent.exceptions import Submitted
-from pydantic import BaseModel
-
+from minisweagent.agents.default import Submitted
+from src.utils.nb_types import CellExecutionResult, format_for_llm
 
 from .benchmark import BenchmarkProblem
+from .utils.notebook_command_helper import (
+    NotebookCommandType,
+    is_bash_command,
+    is_mixed_notebook_and_bash,
+    is_notebook_command,
+    parse_notebook_command,
+    strip_markdown_code_blocks,
+    wrap_bash_command,
+)
 
 class NotebookEnvironmentConfig(BaseModel):
     """Configuration for the notebook environment."""
     sandbox_settings: dict[str, Any]
     source_path: str
     docker_mount_path: str
+    output_dir: str  # Path to save patched files
     problem_mode: str = "JunoBench_Buggy"
     timeout: int = 30
+
 
 class NotebookEnvironment:
     """mini-swe-agent Environment for Jupyter Notebook Sandbox."""
@@ -40,19 +52,14 @@ class NotebookEnvironment:
             **kwargs: Configuration parameters (sandbox_settings, source_path, docker_mount_path, etc.)
         """
         self.config = config_class(**kwargs)
-        self.problem: BenchmarkProblem | None = None
-        self._setup()
-        
-    def _setup(self):
-        """Setup the benchmark problem and notebook."""
-        self.problem = BenchmarkProblem(
+        self.problem: BenchmarkProblem = BenchmarkProblem(
             sandbox_settings=self.config.sandbox_settings,
             source_path=self.config.source_path,
-            docker_source_path=self.config.docker_mount_path,
+            output_dir=self.config.output_dir,
             problem_mode=self.config.problem_mode,
+            docker_source_path=self.config.docker_mount_path,
             timeout=self.config.timeout
-        )
-        self.problem.setup()
+        )        
     
     def execute(self, action: dict, cwd: str = "") -> dict[str, Any]:
         string_command = action.get("command", "")
@@ -80,43 +87,32 @@ class NotebookEnvironment:
                 - returncode: 0 for success, 1 for error
         """
         # Strip markdown code blocks if present
+        command = strip_markdown_code_blocks(command)
         
-        # Check if command contains __NOTEBOOK_OP__ - prioritize notebook operations
-        # even if it also has bash commands
-        if "__NOTEBOOK_OP__" in command:
-            # If it's a mixed command (bash + notebook ops), reject it
-            if "&&" in command or ";" in command or "|" in command:
-                return {
-                    "output": (
-                        "Error: Cannot mix bash commands with __NOTEBOOK_OP__ commands.\n"
-                        "Please execute them separately.\n"
-                        f"Your command: {command[:100]}..."
-                    ),
-                    "returncode": 1,
-                    "exception_info": "Mixed bash and notebook operation commands",
-                }
-            # Pure notebook operation
-            if command.strip().startswith("__NOTEBOOK_OP__"):
-                command = command.strip().replace("__NOTEBOOK_OP__", "")
-                loop = self._get_event_loop()
-                return loop.run_until_complete(
-                    self.problem.execute_notebook_command(command)
-                )
-        
-        # If it's a bash command, wrap it
-        if self._is_bash_command(command):
-            command = self._wrap_bash_command(command)
-        
-        # Execute the bash/Python code in the notebook kernel
-        # Execute synchronously by running async in event loop
-        loop = self._get_event_loop()            
-        result = loop.run_until_complete(
-            self.problem.execute_python_command(command)
-        )
-        
+
+        if is_mixed_notebook_and_bash(command):
+            return self._wrap_error(
+                "Error: Cannot mix bash commands with __NOTEBOOK_OP__ commands.\n"+
+                "Please execute them separately.\n"+
+                f"Your command: {command[:100]}...",
+                "Mixed bash and notebook operation commands")
+        exec_result = None # TODO this is a bit hacky. We need to have access to the execution result in _check_finished, but it's only produced in certain branches. Refactor needed.
+        try:
+            if is_notebook_command(command):
+                return self._execute_notebook_command(command.strip().replace("__NOTEBOOK_OP__", "", 1))
+            # If it's a bash command, wrap it
+            elif is_bash_command(command):
+                command = wrap_bash_command(command)            
+                exec_result = self.problem.execute_python_command(command)
+                result = self._wrap_success(self._format_exec_result(exec_result))
+            else:
+                result = self._wrap_error("Unrecognized command format. Please use __NOTEBOOK_OP__ for notebook operations or valid bash commands.")
+        except Exception as exc:
+            result = self._wrap_error(f"Error executing command: {exc}")
+
         # Check if task is finished (raises Submitted exception if complete)
-        self._check_finished(result)
-        
+        self._check_finished(exec_result)
+
         # Convert result to agent-expected format
         return result
     
@@ -143,21 +139,21 @@ class NotebookEnvironment:
         }
         
         # Add notebook-specific info if available
-        if self.problem and self.problem.notebook:
+        if self.problem:
             template_vars.update({
                 "notebook_initialized": True,
-                "cell_count": self.problem.notebook.get_cell_count(),
+                "cell_count": self.problem.get_cell_count(),
                 
                 # Instructions for getting notebook content
                 "notebook_access_hint": (
                     "Use __NOTEBOOK_OP__get_cells() to view all notebook cells. "
-                    f"The notebook has {self.problem.notebook.get_cell_count()} cells."
+                    f"The notebook has {self.problem.get_cell_count()} cells."
                 ),
             })
         
         return template_vars
     
-    def _check_finished(self, output: dict):
+    def _check_finished(self, exec_result: Optional[CellExecutionResult]):
         """
         Check if the output indicates task completion.
         Raises Submitted exception if first line is COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT
@@ -165,74 +161,74 @@ class NotebookEnvironment:
         
         Compatible with mini-swe-agent v1.
         """
-        lines = output.get("output", "").lstrip().splitlines(keepends=True)
-        if lines and lines[0].strip() == "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" and output["returncode"] == 0:
-            submission = "".join(lines[1:])
-            raise Submitted({"role": "exit", "content": submission })
+        outputs = exec_result.get("outputs", []) if exec_result else []
+        text = outputs[0].get("text", "") if outputs else ""
+        if ("COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in text 
+            and "__RETURNCODE__=0" in text):
+            raise Submitted(text)
+
+    def _execute_notebook_command(self, command: str) -> dict[str, Any]:
+        if not self.problem.get_cell_count():
+            return self._wrap_error("Notebook not initialized")
+        try:
+            parsed = parse_notebook_command(command)
+            match parsed.kind:
+                case NotebookCommandType.GET_CELL_COUNT:
+                    return self._wrap_success(str(self.problem.get_cell_count()))
+                case NotebookCommandType.GET_CELLS:
+                    cells = self.problem.get_cells()
+                    return self._wrap_success("\n\n".join(cells))
+                case NotebookCommandType.GET_CELL:
+                    index = parsed.args[0]
+                    return self._wrap_success(self.problem.get_cell(index))
+                case NotebookCommandType.EDIT_CELL:
+                    index, code = parsed.args
+                    self.problem.edit_cell(index, code)
+                    return self._wrap_success(f"Cell {index} edited successfully")
+                case NotebookCommandType.RUN_CELL:
+                    index = parsed.args[0]
+                    exec_result = self.problem.run_cell(index)
+                    return self._wrap_success(self._format_exec_result(exec_result))
+                case NotebookCommandType.RUN_ALL:
+                    exec_results = self.problem.run_all()
+                    output_parts = []
+                    for i, exec_result in enumerate(exec_results):
+                        cell_output = self._format_exec_result(exec_result)
+                        output_parts.append(f"Cell {i}:\n{cell_output}")
+                    return self._wrap_success("\n\n".join(output_parts))
+                case NotebookCommandType.RUN_CUSTOM_CODE:
+                    code = parsed.args[0]
+                    exec_result = self.problem.execute_python_command(code)
+                    return self._wrap_success(self._format_exec_result(exec_result))
+        except Exception as exc:
+            return self._wrap_error(f"Error executing notebook command: {exc}")
+
+    def _wrap_success(self, output: str) -> dict[str, Any]:
+        return {
+            "output": output,
+            "returncode": 0,
+            "exception_info": "",
+        }
+
+    def _wrap_error(self, message: str, exception_info: Optional[str] = None) -> dict[str, Any]:
+        return {
+            "output": message,
+            "returncode": 1,
+            "exception_info": exception_info or message,
+        }
+
+    def _format_exec_result(self, exec_result: Any) -> str:
+        if exec_result is None:
+            return "(No output)"
+        if isinstance(exec_result, dict) and 'outputs' in exec_result:
+            return format_for_llm(exec_result, if_truncate=True, max_words=500)
+        return str(exec_result)
     
-    def cleanup(self):
+    def close(self):
         """Cleanup the Docker container and resources."""
         if self.problem:
-            self.problem.teardown()
-            self.problem = None
+            self.problem.close()
     
     def __del__(self):
         """Cleanup on deletion."""
-        self.cleanup()
-    
-    def _get_event_loop(self) -> asyncio.AbstractEventLoop:
-        """Get or create event loop with Windows compatibility."""
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_closed():
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        return loop
-
-    def _is_bash_command(self, command: str) -> bool:
-        """Check if command looks like a bash command."""
-        bash_indicators = [
-            'echo ', 'cat ', 'ls ', 'pwd', 'cd ', 'mkdir ', 'rm ', 'touch ',
-            'grep ', 'find ', 'sed ', 'awk ', 'git ', 'python ', 'pip ',
-            'export ', 'source ', './','bash ', 'sh '
-        ]
-        command_lower = command.strip().lower()
-        return any(command_lower.startswith(indicator) for indicator in bash_indicators)
-    
-    def _wrap_bash_command(self, command: str) -> str:
-        """Wrap bash command in Python subprocess call, matching mini-swe-agent pattern."""
-        return f"""
-import subprocess
-
-result = subprocess.run(
-    {repr(command)},
-    shell=True,
-    capture_output=True,
-    text=True,
-    cwd='/app/container',
-    encoding='utf-8',
-    errors='replace'
-)
-
-# Print stdout and stderr
-if result.stdout:
-    print(result.stdout, end='')
-if result.stderr:
-    print(result.stderr, end='')
-
-# Print return code marker for parsing
-print(f'__RETURNCODE__={{result.returncode}}')
-"""
-    
-    def serialize(self) -> dict:
-        return {
-            "info": {
-                "config": {
-                    "environment": self.config.model_dump(mode="json"),
-                    "environment_type": f"{self.__class__.__module__}.{self.__class__.__name__}",
-                }
-            }
-        }
+        self.close()

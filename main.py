@@ -4,52 +4,86 @@ from pathlib import Path
 from typing import Any
 
 import typer
-import yaml
-from minisweagent.config import  get_config_path
+from minisweagent.run.utils.save import save_traj
 from src.notebook_environment import NotebookEnvironment
 from src.LoggingLitellmModel import LoggingLitellmModel
 from src.utils.log import logger
 from src.ui_agent import UiAgent
-
+from src.utils.summary_logger import (
+    initialize_logger,
+    get_logger,
+    print_execution_summary,
+    save_overall_summary
+)
+from src.utils.yaml_parser import (
+    load_config,
+    load_api_keys,
+    apply_cli_overrides,
+    get_models_config,
+    get_run_count,
+    get_instances,
+    get_trajectories_dir
+)
 
 app = typer.Typer(rich_markup_mode="rich")
 DEFAULT_CONFIG = Path(os.getenv("NOTEBOOK_AGENT_CONFIG_PATH", "./config/default.yaml"))
-DEFAULT_OUTPUT = Path(os.getenv("NOTEBOOK_AGENT_TRAJECTORIES_PATH", "./trajectories/last_run.traj.json"))
 
 
-# fmt: off
-@app.command(help="_HELP_TEXT")
-def main(
-    model_name: str | None = typer.Option( None, "-m", "--model", help="Model to use",),
-    cost_limit: float | None = typer.Option(None, "-l", "--cost-limit", help="Cost limit. Set to 0 to disable."),
-    config_spec: Path = typer.Option(DEFAULT_CONFIG, "-c", "--config", help="Path to config file"),
-    output: Path | None = typer.Option(DEFAULT_OUTPUT, "-o", "--output", help="Output trajectory file"),
-) -> Any:
-    logger.info("Starting notebook agent....")
-    config_path = get_config_path(config_spec)
-    config = yaml.safe_load(config_path.read_text())
-    logger.debug(f"Configuration loaded: {config}")
-    if cost_limit is not None:
-        config.setdefault("agent", {})["cost_limit"] = cost_limit
-    if model_name is not None:
-        config.setdefault("model", {})["model_name"] = model_name
-
-    model = LoggingLitellmModel(**config.get("model", {}))
-        
-    target_nb_instance = "sklearn_1"
-    source_path = f"example/JunoBench/{target_nb_instance}"
-
+def run_single_instance(
+    model_config: dict,
+    instance_name: str,
+    run_number: int,
+    config: dict,
+    trajectories_dir: Path
+) -> tuple[str, Any, dict | None]:
+    """Run a single instance with a specific model and run number."""
+    
+    model_name = model_config.get("model_name", "unknown")
+    logger.info(f"\n{'='*80}")
+    logger.info(f"Running: Model={model_name}, Instance={instance_name}, Run={run_number}")
+    logger.info(f"{'='*80}\n")
+    
+    # Create model instance
+    model = LoggingLitellmModel(**model_config)
+    
+    # Setup environment
+    env_config = config.get("environment", {})
+    source_path_parent = Path(env_config.get("source_path_parent", "example/JunoBench/"))
+    
+    # Create structured log paths: trajectories_dir/model_name/run_X/instance_name...
+    run_output_dir = trajectories_dir / model_name / f"run_{run_number}"
+    run_output_dir.mkdir(parents=True, exist_ok=True)
+    
+    instance_traj_path = run_output_dir / f"{instance_name}.traj.json"
+    instance_summary_path = run_output_dir / f"{instance_name}_summary.json"
+    
+    # Initialize summary logger with instance-specific path
+    misc_config = config.get("misc", {})
+    if misc_config.get("enable_summary_log", False):
+        initialize_logger(
+            enabled=True,
+            output_path=str(instance_summary_path)
+        )
+        logger.info(f"Summary logging enabled: {instance_summary_path}")
+    
+    # Create environment
     env = NotebookEnvironment(
         sandbox_settings={
-            "image_name": "yarinamomo/kaggle_python_env",
+            "image_name": env_config.get("docker_image_name", "yarinamomo/junobench-simple"),
             "port": 8888,
+            "start_command": env_config.get("docker_start_command", None)
         },
-        source_path=source_path,
-        docker_mount_path="example/docker_mount/",
-        problem_mode="JunoBench_Buggy"
+        source_path=str(source_path_parent / instance_name),
+        docker_mount_path=env_config.get("docker_mount_path", "example/docker_mount/"),
+        problem_mode=env_config.get("problem_mode", "JunoBench_Buggy"),
+        timeout=env_config.get("timeout", 30),
+        output_dir=str(run_output_dir)
     )
+    
+    # Create and run agent
     agent = UiAgent(model, env, **config.get("agent", {}))
     exit_status, result, extra_info = None, None, None
+    
     try:
         exit_status, result = agent.run("Fix the crashes in the notebook")  # type: ignore[arg-type]
     except Exception as e:
@@ -57,10 +91,94 @@ def main(
         exit_status, result = type(e).__name__, str(e)
         extra_info = {"traceback": traceback.format_exc()}
     finally:
-        agent.save(output)
-        env.cleanup()
-    return agent
+        # Check if task completed successfully
+        if misc_config.get("enable_summary_log", False):
+            if result and "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in str(result):
+                get_logger().mark_success(step=agent.model.n_calls)
+                logger.info(f"Task completed successfully: {instance_name}")
+            # Save summary
+            get_logger().save_summary()
+        
+        # Save trajectory
+        save_traj(agent, instance_traj_path, exit_status=exit_status, result=result, extra_info=extra_info)  # type: ignore[arg-type]
+        logger.info(f"Saved trajectory to: {instance_traj_path}")
+        
+        # Close environment
+        env.close()
+    
+    return exit_status, result, extra_info
 
+# fmt: off
+@app.command(help="_HELP_TEXT")
+def main(
+    model_name: str | None = typer.Option( None, "-m", "--model", help="Model to use (overrides config)",),
+    cost_limit: float | None = typer.Option(None, "-l", "--cost-limit", help="Cost limit. Set to 0 to disable."),
+    config_spec: Path = typer.Option(DEFAULT_CONFIG, "-c", "--config", help="Path to config file"),
+    run_count: int | None = typer.Option(None, "-r", "--run-count", help="Number of runs (overrides config)"),
+    run_all: bool | None = typer.Option(None, "--run-all/--single", help="Run all instances (overrides config)")
+) -> Any:
+
+    logger.info("Starting notebook agent....")
+    
+    # Load and parse configuration
+    config = load_config(config_spec)
+    load_api_keys(config)
+    config = apply_cli_overrides(config, cost_limit, run_count)
+    
+    # Get configuration parameters
+    models_config = get_models_config(config, model_name)
+    total_run_count = get_run_count(config)
+    instances = get_instances(config, run_all)
+    trajectories_dir = get_trajectories_dir(config)
+    
+    # Validate instances
+    if not instances:
+        logger.error("No instances to run")
+        return None
+    
+    # Track results
+    results_summary = []
+    
+    # Main execution loops: models -> instances -> runs
+    for model_config in models_config:
+        model_name_str = model_config.get("model_name", "unknown")
+        logger.info(f"\n{'#'*80}")
+        logger.info(f"# Starting runs for model: {model_name_str}")
+        logger.info(f"{'#'*80}\n")
+        
+        for instance_name in instances:
+            for run_num in range(1, total_run_count + 1):
+                try:
+                    exit_status, result, _ = run_single_instance(
+                        model_config=model_config,
+                        instance_name=instance_name,
+                        run_number=run_num,
+                        config=config,
+                        trajectories_dir=trajectories_dir
+                    )
+                    
+                    results_summary.append({
+                        "model": model_name_str,
+                        "instance": instance_name,
+                        "run": run_num,
+                        "exit_status": exit_status,
+                        "success": "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in str(result) if result else False
+                    })
+                    
+                except Exception as e:
+                    logger.error(f"Failed to run model={model_name_str}, instance={instance_name}, run={run_num}: {e}")
+                    results_summary.append({
+                        "model": model_name_str,
+                        "instance": instance_name,
+                        "run": run_num,
+                        "exit_status": "FAILED",
+                        "success": False,
+                        "error": str(e)
+                    })
+    
+    # Print and save execution summary
+    print_execution_summary(results_summary)
+    save_overall_summary(results_summary, trajectories_dir / "overall_summary.json")
 
 if __name__ == "__main__":
     app()
