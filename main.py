@@ -35,8 +35,12 @@ def run_single_instance(
     run_number: int,
     config: dict,
     trajectories_dir: Path
-) -> tuple[str, Any, dict | None]:
-    """Run a single instance with a specific model and run number."""
+) -> tuple[str, Any, dict | None, float]:
+    """Run a single instance with a specific model and run number.
+    
+    Returns:
+        tuple: (exit_status, result, extra_info, cost)
+    """
     
     model_name = model_config.get("model_name", "unknown")
     logger.info(f"\n{'='*80}")
@@ -82,7 +86,7 @@ def run_single_instance(
     
     # Create and run agent
     agent = UiAgent(model, env, **config.get("agent", {}))
-    exit_status, result, extra_info = None, None, None
+    exit_status, result, extra_info, cost = None, None, None, 0.0
     
     try:
         exit_status, result = agent.run("Fix the crashes in the notebook")  # type: ignore[arg-type]
@@ -91,12 +95,16 @@ def run_single_instance(
         exit_status, result = type(e).__name__, str(e)
         extra_info = {"traceback": traceback.format_exc()}
     finally:
+        # Capture cost information
+        cost = getattr(agent.model, 'cost', 0.0)
+        
         # Check if task completed successfully
         if misc_config.get("enable_summary_log", False):
             if result and "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in str(result):
                 get_logger().mark_success(step=agent.model.n_calls)
                 logger.info(f"Task completed successfully: {instance_name}")
-            # Save summary
+            # Set cost and save summary
+            get_logger().set_cost(cost)
             get_logger().save_summary()
         
         # Save trajectory
@@ -106,7 +114,7 @@ def run_single_instance(
         # Close environment
         env.close()
     
-    return exit_status, result, extra_info
+    return exit_status, result, extra_info, cost
 
 # fmt: off
 @app.command(help="_HELP_TEXT")
@@ -149,7 +157,7 @@ def main(
         for instance_name in instances:
             for run_num in range(1, total_run_count + 1):
                 try:
-                    exit_status, result, _ = run_single_instance(
+                    exit_status, result, _, cost = run_single_instance(
                         model_config=model_config,
                         instance_name=instance_name,
                         run_number=run_num,
@@ -162,7 +170,8 @@ def main(
                         "instance": instance_name,
                         "run": run_num,
                         "exit_status": exit_status,
-                        "success": "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in str(result) if result else False
+                        "success": "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in str(result) if result else False,
+                        "cost": round(cost, 4)
                     })
                     
                 except Exception as e:
@@ -173,6 +182,7 @@ def main(
                         "run": run_num,
                         "exit_status": "FAILED",
                         "success": False,
+                        "cost": 0.0,
                         "error": str(e)
                     })
     

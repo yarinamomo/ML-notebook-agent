@@ -21,6 +21,7 @@ class SummaryLogger:
         self.start_time = datetime.now()
         self.original_cells = {}  # cell_id -> original source
         self.edited_cells = {}    # cell_id -> edited source
+        self.cost = 0.0  # Total cost for this instance
         
     def log_llm_response(self, content: str, step: int) -> None:
         """Log an LLM response."""
@@ -64,6 +65,12 @@ class SummaryLogger:
             "success": True
         })
     
+    def set_cost(self, cost: float) -> None:
+        """Set the total cost for this instance."""
+        if not self.enabled:
+            return
+        self.cost = cost
+    
     def save_summary(self) -> None:
         """Generate and save the summary as JSON."""
         if not self.enabled:
@@ -94,7 +101,8 @@ class SummaryLogger:
                 "generated_at": end_time.isoformat(),
                 "execution_time_seconds": (end_time - self.start_time).total_seconds(),
                 "success": self.success,
-                "status": "SUCCESS" if self.success else "INCOMPLETE"
+                "status": "SUCCESS" if self.success else "INCOMPLETE",
+                "cost": round(self.cost, 4)
             },
             "statistics": {
                 "total_steps": len(self.steps),
