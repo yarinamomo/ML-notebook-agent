@@ -49,6 +49,8 @@ class BenchmarkProblem:
         #     print(cell_info)
         self._cell_states: dict[int, str] = dict()  # cell_id -> state (edited/unchanged)
         self._exec_states: dict[int, CellExecutionResult] = dict()  # cell_id -> execution result
+        # Store original cell contents for tracking true original state
+        self._original_cells: dict[int, str] = {i: self._get_cell_source(i) for i in range(len(self._cells))}
         self.timeout = timeout # TODO Move into sandbox settings. 
 
     def get_cells(self):
@@ -62,11 +64,12 @@ class BenchmarkProblem:
 
     def edit_cell(self, index: int, new_content: str):
         cell = self._safe_get_cell(index)
-        original_content = self._get_cell_source(index)
+        original_content = self._original_cells.get(index, "")
+        
         cell["source"] = new_content
         self._cell_states[index] = "edited"
         self._exec_states.pop(index, None) # reset execution state since content changed
-        nbformat_helper.save_cells(self._cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
+        nbformat_helper.save_cells(self._cells, self._original_cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
         
         # Log to summary logger about before and after cell change
         get_logger().log_cell_edit(index, original_content, new_content)
@@ -77,7 +80,7 @@ class BenchmarkProblem:
         code = f"import os\nos.chdir('/app/container')\n{code}" # TODO this should be moved into sandbox.
         result = self.sandbox.run(code, timeout=self.timeout)
         self._exec_states[index] = result
-        nbformat_helper.save_cells(self._cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
+        nbformat_helper.save_cells(self._cells, self._original_cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
         return result
 
     def run_all(self) -> List[CellExecutionResult]:
@@ -85,7 +88,7 @@ class BenchmarkProblem:
         results = []
         for i in range(len(self._cells)):
             results.append(self.run_cell(i))
-        nbformat_helper.save_cells(self._cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
+        nbformat_helper.save_cells(self._cells, self._original_cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
         return results
 
 
