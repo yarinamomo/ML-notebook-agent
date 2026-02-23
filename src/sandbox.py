@@ -67,18 +67,54 @@ class DockerSandbox:
             logger.exception("Failed to start kernel")
             raise RuntimeError("Failed to start kernel") from exc
 
-    def run(self, code: str, timeout=30) -> CellExecutionResult:
-        """Execute code in the container kernel and return outputs."""
-        if not self.kernel_client or self._closed:
-            raise RuntimeError("Kernel not connected" if not self.kernel_client else "Sandbox is closed")
+    def run(self, code: str, timeout=30, max_retries=2) -> CellExecutionResult:
+        """
+        Execute code in the container kernel and return outputs.
+        Automatically attempts to reconnect the kernel if disconnected before execution.
+        
+        Args:
+            code: Python code to execute
+            timeout: Execution timeout in seconds
+            max_retries: Maximum number of reconnection attempts if kernel is disconnected (default: 2)
+            
+        Returns:
+            CellExecutionResult with execution output
+        """
+        if self._closed:
+            raise RuntimeError("Sandbox is closed")
+        
+        # Ensure kernel is connected before execution (with retries)
+        for attempt in range(max_retries + 1):
+            if not self.kernel_client:
+                if attempt == 0:
+                    logger.warning("Kernel not connected, attempting to reconnect...")
+                else:
+                    logger.info("Reconnection attempt %d/%d", attempt, max_retries)
+                
+                try:
+                    self._start_kernel()
+                    logger.info("Kernel reconnected successfully")
+                    break  # Successfully connected
+                except Exception as e:
+                    if attempt == max_retries:
+                        logger.error("Failed to reconnect kernel after %d attempts", max_retries)
+                        raise RuntimeError(f"Failed to reconnect kernel after {max_retries} attempts") from e
+                    time.sleep(3)
+            else:
+                break  # Kernel already connected
+        
+        # Execute code
         try:
-            # print("Executing code in sandbox kernel...")
-            # print(f"Code:\n{code}")
-            result = self.kernel_client.execute(code, timeout=timeout) 
+            result = self.kernel_client.execute(code, timeout=timeout)
             return cast(CellExecutionResult, result)
         except (TimeoutError, queue.Empty) as exc:
-            logger.warning("Kernel execution timed out after %s seconds", timeout)
+            logger.error("Kernel execution timed out after %s seconds", timeout)
             raise TimeoutError(f"Kernel execution timed out after {timeout} seconds") from exc
+        except (ConnectionError, OSError) as exc:
+            # Kernel died during execution - mark as disconnected for next call
+            logger.exception("Kernel connectivity lost during execution: %s", exc)
+            self.kernel_client = None
+            raise RuntimeError("Kernel connection lost during execution") from exc
         except Exception as exc:
             logger.exception("Kernel execution failed")
             raise RuntimeError("Kernel execution failed") from exc
@@ -103,6 +139,6 @@ class DockerSandbox:
             try:
                 old_client.stop()
             except Exception as e:
-                logger.warning(f"Error stopping old kernel: {e}")
+                logger.exception("Error stopping old kernel: %s", e)
         
         self._start_kernel()
