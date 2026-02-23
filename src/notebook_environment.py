@@ -7,12 +7,12 @@ with the self-defined Docker-based Jupyter notebook sandbox.
 
 import asyncio
 from dataclasses import dataclass
-import json
 from typing import Any, Optional
 from pathlib import Path
+from pydantic import BaseModel
 
 # Define exceptions for mini-swe-agent v1 compatibility
-from minisweagent.agents.default import Submitted
+from minisweagent.exceptions import Submitted
 from src.utils.nb_types import CellExecutionResult, format_for_llm
 
 from .benchmark import BenchmarkProblem
@@ -165,7 +165,7 @@ class NotebookEnvironment:
         text = outputs[0].get("text", "") if outputs else ""
         if ("COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in text 
             and "__RETURNCODE__=0" in text):
-            raise Submitted(text)
+            raise Submitted(exec_result) # type: ignore exec_result is a not null dict.
 
     def _execute_notebook_command(self, command: str) -> dict[str, Any]:
         if not self.problem.get_cell_count():
@@ -217,7 +217,7 @@ class NotebookEnvironment:
             "exception_info": exception_info or message,
         }
 
-    def _format_exec_result(self, exec_result: Any) -> str:
+    def _format_exec_result(self, exec_result: CellExecutionResult) -> str:
         if exec_result is None:
             return "(No output)"
         if isinstance(exec_result, dict) and 'outputs' in exec_result:
@@ -232,3 +232,14 @@ class NotebookEnvironment:
     def __del__(self):
         """Cleanup on deletion."""
         self.close()
+
+
+    def serialize(self) -> dict:
+        return {
+            "info": {
+                "config": {
+                    "environment": self.config.model_dump(mode="json"),
+                    "environment_type": f"{self.__class__.__module__}.{self.__class__.__name__}",
+                }
+            }
+        }
