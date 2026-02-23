@@ -15,8 +15,8 @@ def agent(output: str, *, action: str | None = None, return_code: int | None = N
         get_logger().log_operation(action or "(no action)", output, return_code if return_code is not None else -1, step or 0)
     console.print(Panel(_truncate(output), title=f"🤖Agent Response (Step {step})", style="green", title_align="left"))
 
-def system(content: str, step: int | None = None) -> None:
-    console.print(Panel(_truncate(content), title=f"🧠LLM Response (Step {step})", style="cyan", title_align="left"))
+def system(content: str, actions: str = "", step: int | None = None) -> None:
+    console.print(Panel(_truncate(content) + f"\n\n[yellow]Actions:\n {_truncate(actions)}[/yellow]", title=f"🧠LLM Response (Step {step})", style="cyan", title_align="left"))
     get_logger().log_llm_response(content, step or 0)
 
 
@@ -73,9 +73,9 @@ def _truncate(content: str, max_lines: int = 50, max_chars_per_line: int = 200) 
     # Add truncation notices
     notices = []
     if was_truncated_lines:
-        notices.append(f"[yellow]... ({len(lines) - max_lines} more lines)[/yellow]")
+        notices.append(f"[dim yellow]... ({len(lines) - max_lines} more lines)[/dim yellow]")
     if was_truncated_chars:
-        notices.append("[yellow]... (some lines truncated)[/yellow]")
+        notices.append("[dim yellow]... (some lines truncated)[/dim yellow]")
     
     if notices:
         result += "\n\n" + "\n".join(notices)

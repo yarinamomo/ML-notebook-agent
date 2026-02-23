@@ -5,7 +5,8 @@ class UiAgent(DefaultAgent):
     def query(self) -> dict:
         with ui.wait_llm():
             response = super().query()
-        ui.system(response.get("content", ""), step=self.n_calls)
+        actions = "\n".join([action.get("command", "") for action in response.get("extra", {}).get("actions", [])])
+        ui.system(response.get("content", ""), actions=actions, step=self.n_calls)
         return response
 
 
