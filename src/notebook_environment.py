@@ -167,7 +167,11 @@ class NotebookEnvironment:
         text = outputs[0].get("text", "") if outputs else ""
         if ("COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in text 
             and "__RETURNCODE__=0" in text):
-            raise Submitted(exec_result) # type: ignore exec_result is a not null dict.
+            raise Submitted(  {
+                    "role": "exit",
+                    "content": text,
+                    "extra": {"exit_status": "Submitted", "submission": text},
+                }) # type: ignore exec_result is a not null dict.
 
     def _execute_notebook_command(self, command: str) -> dict[str, Any]:
         if not self.problem.get_cell_count():
