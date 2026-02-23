@@ -22,13 +22,15 @@ class SummaryLogger:
         self.original_cells = {}  # cell_id -> original source
         self.edited_cells = {}    # cell_id -> edited source
         self.cost = 0.0  # Total cost for this instance
+        self._step_counter = 0  # Independent step counter to handle agent restarts
         
     def log_llm_response(self, content: str, step: int) -> None:
         """Log an LLM response."""
         if not self.enabled:
             return
+        self._step_counter += 1
         self.steps.append({
-            "step": step,
+            "step": self._step_counter,
             "content": content
         })
     
@@ -36,8 +38,9 @@ class SummaryLogger:
         """Log an operation/action."""
         if not self.enabled:
             return
+        # Use the same step counter from the LLM response
         self.operations.append({
-            "step": step,
+            "step": self._step_counter,
             "action": action,
             "output": output,
             "return_code": return_code,
@@ -57,8 +60,9 @@ class SummaryLogger:
         if not self.enabled:
             return
         self.success = True
+        self._step_counter += 1
         self.operations.append({
-            "step": step,
+            "step": self._step_counter,
             "action": "Job Submitted",
             "output": "Task completed successfully",
             "return_code": 0,
