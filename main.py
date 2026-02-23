@@ -86,7 +86,7 @@ def run_single_instance(
     
     # Create and run agent
     agent = UiAgent(model, env, **config.get("agent", {}))
-    exit_status, result, extra_info, cost, total_steps = None, None, None, 0.0, 0
+    exit_status, result, extra_info, cost, total_steps = "", None, None, 0.0, 0
     
     # Get total_timeout from environment config
     total_timeout = env_config.get("total_timeout", 0)
