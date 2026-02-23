@@ -102,7 +102,7 @@ def run_single_instance(
             raise
     
     try:
-        if total_timeout and total_timeout > 0:
+        if total_timeout is not None and total_timeout > 0:
             # Run with timeout
             thread = threading.Thread(target=run_agent)
             thread.daemon = True
@@ -140,6 +140,8 @@ def run_single_instance(
         
         # Close environment
         env.close()
+        import time
+        time.sleep(2)  # Ensure clean shutdown
     
     return exit_status, result, extra_info, cost, total_steps
 
