@@ -34,6 +34,7 @@ class NotebookEnvironmentConfig(BaseModel):
     output_dir: str  # Path to save patched files
     problem_mode: str = "JunoBench_Buggy"
     timeout: int = 30
+    run_all_timeout: int = 0  # Total timeout for run_all() operation
 
 
 class NotebookEnvironment:
@@ -58,7 +59,8 @@ class NotebookEnvironment:
             output_dir=self.config.output_dir,
             problem_mode=self.config.problem_mode,
             docker_source_path=self.config.docker_mount_path,
-            timeout=self.config.timeout
+            timeout=self.config.timeout,
+            run_all_timeout=self.config.run_all_timeout
         )        
     
     def execute(self, action: dict, cwd: str = "") -> dict[str, Any]:

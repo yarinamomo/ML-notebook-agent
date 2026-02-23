@@ -21,13 +21,16 @@ class SummaryLogger:
         self.start_time = datetime.now()
         self.original_cells = {}  # cell_id -> original source
         self.edited_cells = {}    # cell_id -> edited source
+        self.cost = 0.0  # Total cost for this instance
+        self._step_counter = 0  # Independent step counter to handle agent restarts
         
     def log_llm_response(self, content: str, step: int) -> None:
         """Log an LLM response."""
         if not self.enabled:
             return
+        self._step_counter += 1
         self.steps.append({
-            "step": step,
+            "step": self._step_counter,
             "content": content
         })
     
@@ -35,8 +38,9 @@ class SummaryLogger:
         """Log an operation/action."""
         if not self.enabled:
             return
+        # Use the same step counter from the LLM response
         self.operations.append({
-            "step": step,
+            "step": self._step_counter,
             "action": action,
             "output": output,
             "return_code": return_code,
@@ -56,13 +60,20 @@ class SummaryLogger:
         if not self.enabled:
             return
         self.success = True
+        self._step_counter += 1
         self.operations.append({
-            "step": step,
+            "step": self._step_counter,
             "action": "Job Submitted",
             "output": "Task completed successfully",
             "return_code": 0,
             "success": True
         })
+    
+    def set_cost(self, cost: float) -> None:
+        """Set the total cost for this instance."""
+        if not self.enabled:
+            return
+        self.cost = cost
     
     def save_summary(self) -> None:
         """Generate and save the summary as JSON."""
@@ -94,7 +105,8 @@ class SummaryLogger:
                 "generated_at": end_time.isoformat(),
                 "execution_time_seconds": (end_time - self.start_time).total_seconds(),
                 "success": self.success,
-                "status": "SUCCESS" if self.success else "INCOMPLETE"
+                "status": "SUCCESS" if self.success else "INCOMPLETE",
+                "cost": round(self.cost, 4)
             },
             "statistics": {
                 "total_steps": len(self.steps),
@@ -124,8 +136,83 @@ class SummaryLogger:
         }
 
 
-# Global instance
+class ResultsTracker:
+    """Tracks results across multiple runs/instances/models."""
+    
+    def __init__(self):
+        self.results = []
+    
+    def add_result(self, model: str, instance: str, run: int, exit_status: str, 
+                   success: bool, cost: float, total_steps: int = 0, error: str | None = None) -> None:
+        """Add a single run result."""
+        result = {
+            "model": model,
+            "instance": instance,
+            "run": run,
+            "exit_status": exit_status,
+            "success": success,
+            "cost": round(cost, 4),
+            "total_steps": total_steps
+        }
+        if error:
+            result["error"] = error
+        self.results.append(result)
+    
+    def print_summary(self) -> None:
+        """Print execution summary to logger."""
+        main_logger.info(f"\n{'='*80}")
+        main_logger.info("EXECUTION SUMMARY")
+        main_logger.info(f"{'='*80}")
+        main_logger.info(f"Total runs: {len(self.results)}")
+        
+        successful = sum(1 for r in self.results if r.get('success', False))
+        failed = sum(1 for r in self.results if not r.get('success', False))
+        total_cost = sum(r.get('cost', 0.0) for r in self.results)
+        total_steps = sum(r.get('total_steps', 0) for r in self.results)
+        
+        main_logger.info(f"Successful: {successful}")
+        main_logger.info(f"Failed: {failed}")
+        main_logger.info(f"Total cost: ${total_cost:.4f}")
+        main_logger.info(f"Total steps: {total_steps}")
+        
+        # Break down by model if multiple models
+        models = set(r.get('model', 'unknown') for r in self.results)
+        if len(models) > 1:
+            main_logger.info(f"\nBreakdown by model:")
+            for model in sorted(models):
+                model_results = [r for r in self.results if r.get('model') == model]
+                model_success = sum(1 for r in model_results if r.get('success', False))
+                main_logger.info(f"  {model}: {model_success}/{len(model_results)} successful")
+    
+    def save_summary(self, output_path: Path) -> None:
+        """Save overall summary to JSON file."""
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        successful = sum(1 for r in self.results if r.get('success', False))
+        failed = sum(1 for r in self.results if not r.get('success', False))
+        total_cost = sum(r.get('cost', 0.0) for r in self.results)
+        total_steps = sum(r.get('total_steps', 0) for r in self.results)
+        
+        overall_summary = {
+            "summary": {
+                "total_runs": len(self.results),
+                "successful": successful,
+                "failed": failed,
+                "total_steps": total_steps,
+                "total_cost": round(total_cost, 4)
+            },
+            "results": self.results
+        }
+        
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(overall_summary, f, indent=2, ensure_ascii=False)
+        
+        main_logger.info(f"Overall summary saved to: {output_path}")
+
+
+# Global instances
 _logger_instance: SummaryLogger | None = None
+_results_tracker: ResultsTracker | None = None
 
 
 def get_logger() -> SummaryLogger:
@@ -143,45 +230,15 @@ def initialize_logger(enabled: bool = False, output_path: Path | str | None = No
     return _logger_instance
 
 
-def print_execution_summary(results_summary: list[dict[str, Any]]) -> None:
-    """
-    Print execution summary to logger.
-    
-    Args:
-        results_summary: List of result dictionaries from all runs
-    """
-    main_logger.info(f"\n{'='*80}")
-    main_logger.info("EXECUTION SUMMARY")
-    main_logger.info(f"{'='*80}")
-    main_logger.info(f"Total runs: {len(results_summary)}")
-    
-    successful = sum(1 for r in results_summary if r.get('success', False))
-    failed = sum(1 for r in results_summary if not r.get('success', False))
-    
-    main_logger.info(f"Successful: {successful}")
-    main_logger.info(f"Failed: {failed}")
-    
-    # Break down by model if multiple models
-    models = set(r.get('model', 'unknown') for r in results_summary)
-    if len(models) > 1:
-        main_logger.info(f"\nBreakdown by model:")
-        for model in sorted(models):
-            model_results = [r for r in results_summary if r.get('model') == model]
-            model_success = sum(1 for r in model_results if r.get('success', False))
-            main_logger.info(f"  {model}: {model_success}/{len(model_results)} successful")
+def get_results_tracker() -> ResultsTracker:
+    """Get the global results tracker instance."""
+    global _results_tracker
+    if _results_tracker is None:
+        _results_tracker = ResultsTracker()
+    return _results_tracker
 
 
-def save_overall_summary(results_summary: list[dict[str, Any]], output_path: Path) -> None:
-    """
-    Save overall summary of all runs to JSON file.
-    
-    Args:
-        results_summary: List of result dictionaries from all runs
-        output_path: Path to save the summary
-    """
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(results_summary, f, indent=2, ensure_ascii=False)
-    
-    main_logger.info(f"Overall summary saved to: {output_path}")
+def reset_results_tracker() -> None:
+    """Reset the global results tracker (useful for testing)."""
+    global _results_tracker
+    _results_tracker = ResultsTracker()

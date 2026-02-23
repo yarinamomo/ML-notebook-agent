@@ -32,12 +32,12 @@ def select_code_cells(nb: NotebookNode, parse_mode: str) -> List[dict]:
         return _get_code_cells(nb)  # return all code cells without specific ordering
 
 
-def save_cells(cells: list[dict], cell_states: dict[int, str], exec_states: dict[int, CellExecutionResult], instance_name: str, output_dir: Path | None = None) -> None:
+def save_cells(cells: list[dict], original_cells: dict[int, str], cell_states: dict[int, str], exec_states: dict[int, CellExecutionResult], instance_name: str, output_dir: Path | None = None) -> None:
     """Save the notebook as a Python script with cell metadata."""
     cell_metadata = [
         _get_cell_metadata(cell_states, exec_states, i) for i in range(len(cells))
     ]
-    formatted_cells = [_format_cell_with_metadata(i, cell, cell_metadata[i]) for i, cell in enumerate(cells)]
+    formatted_cells = [_format_cell_with_metadata(i, cell, original_cells, cell_metadata[i]) for i, cell in enumerate(cells)]
     script_content = "\n\n#%%\n".join(formatted_cells)
     
     if output_dir is not None:
@@ -54,14 +54,25 @@ def _get_cell_metadata(cell_states: dict[int, str], exec_states: dict[int, CellE
 
 
 
-def _format_cell_with_metadata(index: int, cell: dict, metadata: dict) -> str:
+def _format_cell_with_metadata(index: int, cell: dict, original_cells: dict[int, str], metadata: dict) -> str:
     exec_status = metadata['execution_status']
     exec_status_filtered = {k: v for k, v in exec_status.items() if k != 'outputs'} if isinstance(exec_status, dict) else exec_status
+    
+    cell_source = get_cell_source(cell)
+    
+    # If the cell has been edited, show BEFORE and AFTER
+    if metadata['cell_state'] == 'edited' and index in original_cells:
+        original_content = original_cells[index]
+        commented_original = "\n".join(f"# {line}" for line in original_content.splitlines())
+        cell_content = f"# === BEFORE (original) ===\n{commented_original}\n\n# === AFTER (edited) ===\n{cell_source}"
+    else:
+        cell_content = cell_source
+    
     return "\n".join([
         f"# --- [CELL {index}]: ---",
         f"# cell_state: {metadata['cell_state']}",
         f"# execution_status: {exec_status_filtered}",
-        get_cell_source(cell),
+        cell_content,
     ])
 
 

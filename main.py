@@ -2,6 +2,7 @@ import os
 import traceback
 from pathlib import Path
 from typing import Any
+import threading
 
 import typer
 from src.notebook_environment import NotebookEnvironment
@@ -11,8 +12,7 @@ from src.ui_agent import UiAgent
 from src.utils.summary_logger import (
     initialize_logger,
     get_logger,
-    print_execution_summary,
-    save_overall_summary
+    get_results_tracker
 )
 from src.utils.yaml_parser import (
     load_config,
@@ -34,8 +34,12 @@ def run_single_instance(
     run_number: int,
     config: dict,
     trajectories_dir: Path
-) -> tuple[str, Any, dict | None]:
-    """Run a single instance with a specific model and run number."""
+) -> tuple[str, Any, dict | None, float, int]:
+    """Run a single instance with a specific model and run number.
+    
+    Returns:
+        tuple: (exit_status, result, extra_info, cost, total_steps)
+    """
     
     model_name = model_config.get("model_name", "unknown")
     logger.info(f"\n{'='*80}")
@@ -76,28 +80,57 @@ def run_single_instance(
         docker_mount_path=env_config.get("docker_mount_path", "example/docker_mount/"),
         problem_mode=env_config.get("problem_mode", "JunoBench_Buggy"),
         timeout=env_config.get("timeout", 30),
+        run_all_timeout=env_config.get("run_all_timeout", 0),
         output_dir=str(run_output_dir)
     )
     
     # Create and run agent
     agent = UiAgent(model, env, **config.get("agent", {}))
-    exit_status, result, extra_info = "", None, None
+    exit_status, result, extra_info, cost, total_steps = None, None, None, 0.0, 0
+    
+    # Get total_timeout from environment config
+    total_timeout = env_config.get("total_timeout", 0)
+    
+    # Run agent with optional total timeout
+    def run_agent():
+        nonlocal exit_status, result
+        try:
+            exit_status, result = agent.run("")  # type: ignore[arg-type]
+        except Exception as e:
+            exit_status, result = type(e).__name__, str(e)
+            raise
     
     try:
-        result = agent.run("Fix the crashes in the notebook")  # type: ignore[arg-type]
-        exit_status = "1"
-        print(f"Agent result: {result}")
+        if total_timeout is not None and total_timeout > 0:
+            # Run with timeout
+            thread = threading.Thread(target=run_agent)
+            thread.daemon = True
+            thread.start()
+            thread.join(timeout=total_timeout)
+            
+            if thread.is_alive():
+                # Timeout occurred
+                logger.error(f"Agent run exceeded total timeout of {total_timeout}s")
+                exit_status = "TIMEOUT"
+                result = f"Agent execution exceeded total timeout of {total_timeout} seconds"
+                extra_info = {"reason": "total_timeout_exceeded"}
+        else:
+            # Run without timeout
+            run_agent()
     except Exception as e:
         logger.error(f"Error running agent: {e}", exc_info=True)
-        exit_status, result = type(e).__name__, str(e)
-        extra_info = {"traceback": traceback.format_exc()}
     finally:
+        # Capture cost information
+        cost = getattr(agent.model, 'cost', 0.0)
+        total_steps = getattr(agent.model, 'n_calls', 0)
+        
         # Check if task completed successfully
         if misc_config.get("enable_summary_log", False):
             if result and "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in str(result):
                 get_logger().mark_success(step=agent.n_calls)
                 logger.info(f"Task completed successfully: {instance_name}")
-            # Save summary
+            # Set cost and save summary
+            get_logger().set_cost(cost)
             get_logger().save_summary()
         
         # Save trajectory
@@ -106,8 +139,10 @@ def run_single_instance(
         
         # Close environment
         env.close()
+        import time
+        time.sleep(2)  # Ensure clean shutdown
     
-    return exit_status, result, extra_info
+    return exit_status, result, extra_info, cost, total_steps
 
 # fmt: off
 @app.command(help="_HELP_TEXT")
@@ -137,8 +172,8 @@ def main(
         logger.error("No instances to run")
         return None
     
-    # Track results
-    results_summary = []
+    # Get results tracker
+    results_tracker = get_results_tracker()
     
     # Main execution loops: models -> instances -> runs
     for model_config in models_config:
@@ -150,7 +185,7 @@ def main(
         for instance_name in instances:
             for run_num in range(1, total_run_count + 1):
                 try:
-                    exit_status, result, _ = run_single_instance(
+                    exit_status, result, _, cost, total_steps = run_single_instance(
                         model_config=model_config,
                         instance_name=instance_name,
                         run_number=run_num,
@@ -158,28 +193,33 @@ def main(
                         trajectories_dir=trajectories_dir
                     )
                     
-                    results_summary.append({
-                        "model": model_name_str,
-                        "instance": instance_name,
-                        "run": run_num,
-                        "exit_status": exit_status,
-                        "success": "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in str(result) if result else False
-                    })
+                    success = "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in str(result) if result else False
+                    results_tracker.add_result(
+                        model=model_name_str,
+                        instance=instance_name,
+                        run=run_num,
+                        exit_status=exit_status,
+                        success=success,
+                        cost=cost,
+                        total_steps=total_steps
+                    )
                     
                 except Exception as e:
                     logger.error(f"Failed to run model={model_name_str}, instance={instance_name}, run={run_num}: {e}")
-                    results_summary.append({
-                        "model": model_name_str,
-                        "instance": instance_name,
-                        "run": run_num,
-                        "exit_status": "FAILED",
-                        "success": False,
-                        "error": str(e)
-                    })
+                    results_tracker.add_result(
+                        model=model_name_str,
+                        instance=instance_name,
+                        run=run_num,
+                        exit_status="FAILED",
+                        success=False,
+                        cost=0.0,
+                        total_steps=0,
+                        error=str(e)
+                    )
     
     # Print and save execution summary
-    print_execution_summary(results_summary)
-    save_overall_summary(results_summary, trajectories_dir / "overall_summary.json")
+    results_tracker.print_summary()
+    results_tracker.save_summary(trajectories_dir / "overall_summary.json")
 
 if __name__ == "__main__":
     app()
