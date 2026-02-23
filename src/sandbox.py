@@ -17,7 +17,7 @@ class DockerSandbox:
         self.docker_client = docker.from_env()
         self.container = None
         self.kernel_client: Optional[KernelClient] = None
-        self._closed = False
+        # self._closed = False
         self.start_command = start_command
 
     def start(self):
@@ -80,8 +80,8 @@ class DockerSandbox:
         Returns:
             CellExecutionResult with execution output
         """
-        if self._closed:
-            raise RuntimeError("Sandbox is closed")
+        # if self._closed:
+        #     raise RuntimeError("Sandbox is closed")
         
         # Ensure kernel is connected before execution (with retries)
         for attempt in range(max_retries + 1):
@@ -128,7 +128,7 @@ class DockerSandbox:
             self.container.kill()
             self.container.remove()
             self.container = None
-        self._closed = True
+        # self._closed = True
 
     def restart_kernel(self):
         """Restart the kernel without stopping the container."""

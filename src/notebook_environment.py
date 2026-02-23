@@ -232,13 +232,15 @@ class NotebookEnvironment:
     
     def close(self):
         """Cleanup the Docker container and resources."""
-        if self.problem:
+        if hasattr(self, "problem") and self.problem:
             self.problem.close()
     
     def __del__(self):
         """Cleanup on deletion."""
-        self.close()
-
+        try:
+            self.close()
+        except Exception:
+            pass
 
     def serialize(self) -> dict:
         return {
@@ -249,3 +251,4 @@ class NotebookEnvironment:
                 }
             }
         }
+

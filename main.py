@@ -11,8 +11,7 @@ from src.utils.log import logger
 from src.ui_agent import UiAgent
 from src.utils.summary_logger import (
     initialize_logger,
-    get_logger,
-    get_results_tracker
+    get_logger
 )
 from src.utils.yaml_parser import (
     load_config,
@@ -172,9 +171,6 @@ def main(
         logger.error("No instances to run")
         return None
     
-    # Get results tracker
-    results_tracker = get_results_tracker()
-    
     # Main execution loops: models -> instances -> runs
     for model_config in models_config:
         model_name_str = model_config.get("model_name", "unknown")
@@ -193,33 +189,8 @@ def main(
                         trajectories_dir=trajectories_dir
                     )
                     
-                    success = "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in str(result) if result else False
-                    results_tracker.add_result(
-                        model=model_name_str,
-                        instance=instance_name,
-                        run=run_num,
-                        exit_status=exit_status,
-                        success=success,
-                        cost=cost,
-                        total_steps=total_steps
-                    )
-                    
                 except Exception as e:
                     logger.error(f"Failed to run model={model_name_str}, instance={instance_name}, run={run_num}: {e}")
-                    results_tracker.add_result(
-                        model=model_name_str,
-                        instance=instance_name,
-                        run=run_num,
-                        exit_status="FAILED",
-                        success=False,
-                        cost=0.0,
-                        total_steps=0,
-                        error=str(e)
-                    )
-    
-    # Print and save execution summary
-    results_tracker.print_summary()
-    results_tracker.save_summary(trajectories_dir / "overall_summary.json")
 
 if __name__ == "__main__":
     app()
