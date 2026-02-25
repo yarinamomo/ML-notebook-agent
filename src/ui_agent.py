@@ -11,9 +11,21 @@ class UiAgent(DefaultAgent):
 
 
     def execute_actions(self, message: dict) -> list[dict]:
-        with ui.wait_tool(message.get("action")):
-            response = super().execute_actions(message)
-            for output in response:
-                ui.agent(output.get("content", ""), action=output.get("action", None), return_code=output.get("returncode", None), step=self.n_calls)
+        actions = message.get("extra", {}).get("actions", []) # command, tool_call_id
+        commands = "\n".join([action.get("command", "") for action in actions])
+        with ui.wait_tool(commands):
+            response_list = super().execute_actions(message)
+            for response in response_list:
+                tool_call_id = response.get('tool_call_id', '')
+                for action in actions:
+                    if action.get('tool_call_id', '') == tool_call_id:
+                        cmd = action.get('command', '')
+                        break
+                extra = response.get('extra', {})
+                output = extra.get('raw_output', '')
+                returncode = extra.get('returncode', '')
+                # timestamp = extra.get('timestamp', '')
+                # exception_info = extra.get('exception_info', '')
+                ui.agent(output, action=cmd, return_code=returncode, step=self.n_calls)
 
-        return response
+        return response_list

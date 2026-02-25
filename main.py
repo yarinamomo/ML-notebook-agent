@@ -37,7 +37,7 @@ def run_single_instance(
     """Run a single instance with a specific model and run number.
     
     Returns:
-        tuple: (exit_status, result, extra_info, cost, total_steps)
+        tuple: (exit_status, submission, extra_info, cost, total_steps)
     """
     
     model_name = model_config.get("model_name", "unknown")
@@ -85,18 +85,20 @@ def run_single_instance(
     
     # Create and run agent
     agent = UiAgent(model, env, **config.get("agent", {}))
-    exit_status, result, extra_info, cost, total_steps = "", None, None, 0.0, 0
+    exit_status, submission, extra_info, cost, total_steps = "", None, None, 0.0, 0
     
     # Get total_timeout from environment config
     total_timeout = env_config.get("total_timeout", 0)
     
     # Run agent with optional total timeout
     def run_agent():
-        nonlocal exit_status, result
+        nonlocal exit_status, submission
         try:
-            exit_status, result = agent.run("")  # type: ignore[arg-type]
+            exit_info = agent.run("")  # type: ignore[arg-type]
+            exit_status = exit_info.get("exit_status", "")
+            submission = exit_info.get("submission", "")
         except Exception as e:
-            exit_status, result = type(e).__name__, str(e)
+            exit_status, submission = type(e).__name__, str(e)
             raise
     
     try:
@@ -111,7 +113,7 @@ def run_single_instance(
                 # Timeout occurred
                 logger.error(f"Agent run exceeded total timeout of {total_timeout}s")
                 exit_status = "TIMEOUT"
-                result = f"Agent execution exceeded total timeout of {total_timeout} seconds"
+                submission = f"Agent execution exceeded total timeout of {total_timeout} seconds"
                 extra_info = {"reason": "total_timeout_exceeded"}
         else:
             # Run without timeout
@@ -125,7 +127,7 @@ def run_single_instance(
         
         # Check if task completed successfully
         if misc_config.get("enable_summary_log", False):
-            if result and "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in str(result):
+            if submission and "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in str(submission):
                 get_logger().mark_success(step=agent.n_calls)
                 logger.info(f"Task completed successfully: {instance_name}")
             # Set cost and save summary
@@ -141,7 +143,7 @@ def run_single_instance(
         import time
         time.sleep(2)  # Ensure clean shutdown
     
-    return exit_status, result, extra_info, cost, total_steps
+    return exit_status, submission, extra_info, cost, total_steps
 
 # fmt: off
 @app.command(help="_HELP_TEXT")
@@ -181,7 +183,7 @@ def main(
         for instance_name in instances:
             for run_num in range(1, total_run_count + 1):
                 try:
-                    exit_status, result, _, cost, total_steps = run_single_instance(
+                    exit_status, submission, _, cost, total_steps = run_single_instance(
                         model_config=model_config,
                         instance_name=instance_name,
                         run_number=run_num,

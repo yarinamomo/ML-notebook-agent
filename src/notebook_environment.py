@@ -11,7 +11,6 @@ from typing import Any, Optional
 from pathlib import Path
 from pydantic import BaseModel
 
-# Define exceptions for mini-swe-agent v1 compatibility
 from minisweagent.exceptions import Submitted
 from src.utils.nb_types import CellExecutionResult, format_for_llm
 
@@ -78,7 +77,6 @@ class NotebookEnvironment:
         This method is called by mini-swe-agent to execute code. It handles:
         1. Special notebook operation commands (Format: __NOTEBOOK_OP__<operation>(<args>))
         2. Bash commands (wrapped in subprocess)
-        3. Regular Python code (executed in notebook kernel)
         
         Args:
             command: Code or operation to execute
@@ -158,10 +156,6 @@ class NotebookEnvironment:
     def _check_finished(self, exec_result: Optional[CellExecutionResult]):
         """
         Check if the output indicates task completion.
-        Raises Submitted exception if first line is COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT
-        and returncode is 0.
-        
-        Compatible with mini-swe-agent v1.
         """
         outputs = exec_result.get("outputs", []) if exec_result else []
         text = outputs[0].get("text", "") if outputs else ""
