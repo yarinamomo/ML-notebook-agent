@@ -25,3 +25,39 @@ pip install -e .
 - Python 3.11+
 - Docker image with Jupyter (e.g., `yarinamomo/kaggle_python_env`)
 - OpenAI/Anthropic/Google API key (for mini-swe-agent features)
+
+## Trajectory Viewer
+
+A web-based tool for inspecting agent trajectories. Shows the chat history on the left and the notebook state on the right, with inline git-style diffs for cell edits.
+
+### Setup
+
+```bash
+# 1. Preprocess trajectory data into a single JSON file
+python3 preprocess_trajectories.py
+
+# 2. Install viewer dependencies (once)
+cd viewer && npm install
+
+# 3. Start the dev server
+npm run dev
+```
+
+The viewer opens at [http://localhost:5173](http://localhost:5173).
+
+### Features
+
+- **Selector bar** — Pick model, library, run, and instance from cascading dropdowns. Metadata (status, cost, time, edits) is shown inline.
+- **Chat panel (left)** — All agent steps displayed as scrollable cards with reasoning, action, and observation. Click or use arrow keys to step through; the active step is highlighted and auto-scrolled.
+- **Notebook panel (right)** — All notebook cells shown at a glance. When the active step is a cell edit, the viewer auto-scrolls to that cell and displays an inline line-by-line diff.
+- **Keyboard navigation** — Arrow up/down to move between steps.
+
+### Regenerating Data
+
+After new agent runs are added to `trajectories/`, re-run the preprocessor:
+
+```bash
+python3 preprocess_trajectories.py
+```
+
+This reads all `*.traj.json`, `*_summary.json`, and `*_patched.py` files and writes `viewer/public/data.json`.
