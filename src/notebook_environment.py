@@ -15,15 +15,6 @@ from minisweagent.exceptions import Submitted
 from src.utils.nb_types import CellExecutionResult, format_for_llm
 
 from .benchmark import BenchmarkProblem
-from .utils.notebook_command_helper import (
-    NotebookCommandType,
-    is_bash_command,
-    is_mixed_notebook_and_bash,
-    is_notebook_command,
-    parse_notebook_command,
-    strip_markdown_code_blocks,
-    wrap_bash_command,
-)
 
 class NotebookEnvironmentConfig(BaseModel):
     """Configuration for the notebook environment."""
@@ -63,65 +54,95 @@ class NotebookEnvironment:
         )        
     
     def execute(self, action: dict, cwd: str = "") -> dict[str, Any]:
-        string_command = action.get("command", "")
-        output =  self.__execute(string_command)
-        if not output.get("exception_info"):
-            output["exception_info"] = ""
-        return output
+        """Execute a structured tool action.
 
+        The *action* dict is produced by ``parse_notebook_tool_actions`` and
+        contains ``tool_name``, ``arguments`` and ``tool_call_id``.
 
-    def __execute(self, command: str) -> dict[str, Any]:
+        Legacy string-based commands (``action["command"]``) are no longer
+        supported; every operation is dispatched by tool name.
         """
-        Execute a command (Python code or special notebook operations).
-        
-        This method is called by mini-swe-agent to execute code. It handles:
-        1. Special notebook operation commands (Format: __NOTEBOOK_OP__<operation>(<args>))
-        2. Bash commands (wrapped in subprocess)
-        
-        Args:
-            command: Code or operation to execute
-            
-        Returns:
-            dict with keys:
-                - output: Combined stdout/stderr/result
-                - returncode: 0 for success, 1 for error
-        """
-        # Strip markdown code blocks if present
-        command = strip_markdown_code_blocks(command)
-        
+        tool_name: str = action.get("tool_name", "")
+        args: dict = action.get("arguments", {})
 
-        if is_mixed_notebook_and_bash(command):
+        if not tool_name:
             return self._wrap_error(
-                "Error: Cannot mix bash commands with __NOTEBOOK_OP__ commands.\n"+
-                "Please execute them separately.\n"+
-                f"Your command: {command[:100]}...",
-                "Mixed bash and notebook operation commands")
-        exec_result = None # TODO this is a bit hacky. We need to have access to the execution result in _check_finished, but it's only produced in certain branches. Refactor needed.
+                "No tool_name in action. This is a bug – please report it."
+            )
+
         try:
-            if is_notebook_command(command):
-                return self._execute_notebook_command(command.strip().replace("__NOTEBOOK_OP__", "", 1))
-            # If it's a bash command, wrap it
-            elif is_bash_command(command):
-                command = wrap_bash_command(command)            
-                exec_result = self.problem.execute_python_command(command)
-                result = self._wrap_success(self._format_exec_result(exec_result))
-            else:
-                result = self._wrap_error("Unrecognized command format. Please use __NOTEBOOK_OP__ for notebook operations or valid bash commands.")
+            return self._dispatch_tool(tool_name, args)
+        except Submitted:
+            raise  # Let the agent framework handle submission
         except Exception as exc:
-            result = self._wrap_error(f"Error executing command: {exc}")
+            return self._wrap_error(f"Error executing {tool_name}: {exc}")
 
-        # Check if task is finished (raises Submitted exception if complete)
-        self._check_finished(exec_result)
+    # ------------------------------------------------------------------
+    # Tool dispatch
+    # ------------------------------------------------------------------
 
-        # Convert result to agent-expected format
-        return result
-    
+    def _dispatch_tool(self, tool_name: str, args: dict) -> dict[str, Any]:
+        """Route a structured tool call to the appropriate handler."""
+        if not self.problem.get_cell_count() and tool_name not in ("submit",):
+            return self._wrap_error("Notebook not initialized")
+
+        match tool_name:
+            case "get_cell_count":
+                return self._wrap_success(str(self.problem.get_cell_count()))
+
+            case "get_cells":
+                cells = self.problem.get_cells()
+                return self._wrap_success("\n\n".join(cells))
+
+            case "get_cell":
+                index = int(args["cell_index"])
+                return self._wrap_success(self.problem.get_cell(index))
+
+            case "edit_cell":
+                index = int(args["cell_index"])
+                code = str(args["code"])
+                self.problem.edit_cell(index, code)
+                return self._wrap_success(f"Cell {index} edited successfully")
+
+            case "run_cell":
+                index = int(args["cell_index"])
+                exec_result = self.problem.run_cell(index)
+                return self._wrap_success(self._format_exec_result(exec_result))
+
+            case "run_all":
+                exec_results = self.problem.run_all()
+                output_parts = []
+                for i, exec_result in enumerate(exec_results):
+                    cell_output = self._format_exec_result(exec_result)
+                    output_parts.append(f"Cell {i}:\n{cell_output}")
+                return self._wrap_success("\n\n".join(output_parts))
+
+            case "run_code":
+                code = str(args["code"])
+                exec_result = self.problem.execute_python_command(code)
+                return self._wrap_success(self._format_exec_result(exec_result))
+
+            case "submit":
+                summary = args.get("summary", "")
+                raise Submitted({
+                    "role": "exit",
+                    "content": summary,
+                    "extra": {
+                        "exit_status": "Submitted",
+                        "submission": summary,
+                    },
+                })
+            case _:
+                return self._wrap_error(
+                    f"Unknown tool '{tool_name}'. "
+                    "Valid tools: get_cell_count, get_cells, get_cell, "
+                    "edit_cell, run_cell, run_all, run_code, submit."
+                )
+
+
     def get_template_vars(self, **kwargs) -> dict[str, Any]:
         """
         Get template variables for mini-swe-agent prompts.
-        
-        This method is called by mini-swe-agent to get context about the environment
-        that can be injected into prompts using {variable_name} syntax.
         
         Returns:
             dict: Template variables including notebook metadata and instructions
@@ -143,65 +164,13 @@ class NotebookEnvironment:
             template_vars.update({
                 "notebook_initialized": True,
                 "cell_count": self.problem.get_cell_count(),
-                
-                # Instructions for getting notebook content
                 "notebook_access_hint": (
-                    "Use __NOTEBOOK_OP__get_cells() to view all notebook cells. "
+                    "Use the get_cells tool to view all notebook cells. "
                     f"The notebook has {self.problem.get_cell_count()} cells."
                 ),
             })
         
         return template_vars
-    
-    def _check_finished(self, exec_result: Optional[CellExecutionResult]):
-        """
-        Check if the output indicates task completion.
-        """
-        outputs = exec_result.get("outputs", []) if exec_result else []
-        text = outputs[0].get("text", "") if outputs else ""
-        if ("COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in text 
-            and "__RETURNCODE__=0" in text):
-            raise Submitted(  {
-                    "role": "exit",
-                    "content": text,
-                    "extra": {"exit_status": "Submitted", "submission": text},
-                }) # type: ignore exec_result is a not null dict.
-
-    def _execute_notebook_command(self, command: str) -> dict[str, Any]:
-        if not self.problem.get_cell_count():
-            return self._wrap_error("Notebook not initialized")
-        try:
-            parsed = parse_notebook_command(command)
-            match parsed.kind:
-                case NotebookCommandType.GET_CELL_COUNT:
-                    return self._wrap_success(str(self.problem.get_cell_count()))
-                case NotebookCommandType.GET_CELLS:
-                    cells = self.problem.get_cells()
-                    return self._wrap_success("\n\n".join(cells))
-                case NotebookCommandType.GET_CELL:
-                    index = parsed.args[0]
-                    return self._wrap_success(self.problem.get_cell(index))
-                case NotebookCommandType.EDIT_CELL:
-                    index, code = parsed.args
-                    self.problem.edit_cell(index, code)
-                    return self._wrap_success(f"Cell {index} edited successfully")
-                case NotebookCommandType.RUN_CELL:
-                    index = parsed.args[0]
-                    exec_result = self.problem.run_cell(index)
-                    return self._wrap_success(self._format_exec_result(exec_result))
-                case NotebookCommandType.RUN_ALL:
-                    exec_results = self.problem.run_all()
-                    output_parts = []
-                    for i, exec_result in enumerate(exec_results):
-                        cell_output = self._format_exec_result(exec_result)
-                        output_parts.append(f"Cell {i}:\n{cell_output}")
-                    return self._wrap_success("\n\n".join(output_parts))
-                case NotebookCommandType.RUN_CUSTOM_CODE:
-                    code = parsed.args[0]
-                    exec_result = self.problem.execute_python_command(code)
-                    return self._wrap_success(self._format_exec_result(exec_result))
-        except Exception as exc:
-            return self._wrap_error(f"Error executing notebook command: {exc}")
 
     def _wrap_success(self, output: str) -> dict[str, Any]:
         return {

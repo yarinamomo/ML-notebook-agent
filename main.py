@@ -127,7 +127,7 @@ def run_single_instance(
         
         # Check if task completed successfully
         if misc_config.get("enable_summary_log", False):
-            if submission and "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT" in str(submission):
+            if exit_status == "Submitted":
                 get_logger().mark_success(step=agent.n_calls)
                 logger.info(f"Task completed successfully: {instance_name}")
             # Set cost and save summary

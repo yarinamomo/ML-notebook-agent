@@ -15,8 +15,17 @@ def agent(output: str, *, action: str | None = None, return_code: int | None = N
         get_logger().log_operation(action or "(no action)", output, return_code if return_code is not None else -1, step or 0)
     console.print(Panel(_truncate(output), title=f"🤖Agent Response (Step {step})", style="green", title_align="left"))
 
-def system(content: str, actions: str = "", step: int | None = None) -> None:
-    console.print(Panel(_truncate(content) + f"\n\n[yellow]Actions:\n {_truncate(actions)}[/yellow]", title=f"🧠LLM Response (Step {step})", style="cyan", title_align="left"))
+def system(content: str, actions: str = "", step: int | None = None, reasoning: str = "") -> None:
+    parts = []
+    if reasoning:
+        # Show reasoning in a dim indented block, like a blockquote
+        reasoning_lines = _truncate(reasoning, max_lines=20).split("\n")
+        reasoning_block = "\n".join(f"  {line}" for line in reasoning_lines)
+        parts.append(f"[dim italic]💭 Reasoning:\n{reasoning_block}[/dim italic]")
+    parts.append(_truncate(content))
+    if actions:
+        parts.append(f"[yellow]Actions:\n {_truncate(actions)}[/yellow]")
+    console.print(Panel("\n\n".join(parts), title=f"🧠LLM Response (Step {step})", style="cyan", title_align="left"))
     get_logger().log_llm_response(content, step or 0)
 
 

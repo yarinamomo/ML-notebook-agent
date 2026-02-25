@@ -6,7 +6,14 @@ class UiAgent(DefaultAgent):
         with ui.wait_llm():
             response = super().query()
         actions = "\n".join([action.get("command", "") for action in response.get("extra", {}).get("actions", [])])
-        ui.system(response.get("content", ""), actions=actions, step=self.n_calls)
+        # Extract reasoning_content from the response or from the nested LLM response
+        reasoning = response.get("reasoning_content", "")
+        if not reasoning:
+            llm_resp = response.get("extra", {}).get("response", {})
+            choices = llm_resp.get("choices", [])
+            if choices:
+                reasoning = choices[0].get("message", {}).get("reasoning_content", "") or ""
+        ui.system(response.get("content", ""), actions=actions, step=self.n_calls, reasoning=reasoning)
         return response
 
 
@@ -16,6 +23,7 @@ class UiAgent(DefaultAgent):
         with ui.wait_tool(commands):
             response_list = super().execute_actions(message)
             for response in response_list:
+                cmd = None
                 tool_call_id = response.get('tool_call_id', '')
                 for action in actions:
                     if action.get('tool_call_id', '') == tool_call_id:
