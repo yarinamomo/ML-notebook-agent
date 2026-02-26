@@ -61,12 +61,6 @@ def run_single_instance(
     
     # Initialize summary logger with instance-specific path
     misc_config = config.get("misc", {})
-    if misc_config.get("enable_summary_log", False):
-        initialize_logger(
-            enabled=True,
-            output_path=str(instance_summary_path)
-        )
-        logger.info(f"Summary logging enabled: {instance_summary_path}")
     
     # Create environment
     env = NotebookEnvironment(
@@ -83,6 +77,14 @@ def run_single_instance(
         output_dir=str(run_output_dir)
     )
     
+    # start tracking execution time in the summary log after the environment is set up
+    if misc_config.get("enable_summary_log", False):
+        initialize_logger(
+            enabled=True,
+            output_path=str(instance_summary_path)
+        )
+        logger.info(f"Summary logging enabled: {instance_summary_path}")
+
     # Create and run agent
     agent = UiAgent(model, env, **config.get("agent", {}))
     exit_status, submission, extra_info, cost, total_steps = "", None, None, 0.0, 0
@@ -134,7 +136,7 @@ def run_single_instance(
             get_logger().set_cost(cost)
             get_logger().save_summary()
         
-        # Save trajectory
+        # Save trajectory. Stop tracking execution time in the summary log before environment is killed.
         agent.save(instance_traj_path, extra_info)
         logger.info(f"Saved trajectory to: {instance_traj_path}")
         
