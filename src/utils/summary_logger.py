@@ -10,75 +10,48 @@ from datetime import datetime
 class SummaryLogger:
     """Tracks agent execution and generates summarized logs."""
     
-    def __init__(self, enabled: bool = False, output_path: Path | str | None = None):
-        self.enabled = enabled
+    def __init__(self, output_path: Path | str | None = None):
         self.output_path = Path(output_path) if output_path else Path("./trajectories/last_run_summary.json")
-        self.steps = []
-        self.operations = []
+        self.steps: list[dict] = []
+        self.operations: list[dict] = []
         self.success = False
         self.start_time = datetime.now()
-        self.original_cells = {}  # cell_id -> original source
-        self.edited_cells = {}    # cell_id -> edited source
+        self.original_cells: dict[int, str] = {}  # cell_id -> original source
+        self.edited_cells: dict[int, list[str]] = {}    # cell_id -> edited source
         self.cost = 0.0  # Total cost for this instance
-        self._step_counter = 0  # Independent step counter to handle agent restarts
         
     def log_llm_response(self, content: str, reasoning: str, step: int) -> None:
         """Log an LLM response."""
-        if not self.enabled:
-            return
-        self._step_counter += 1
         self.steps.append({
-            "step": self._step_counter,
+            "step": step,
             "content": content,
             "reasoning": reasoning
         })
     
     def log_operation(self, action: str, output: str, return_code: int, step: int) -> None:
         """Log an operation/action."""
-        if not self.enabled:
-            return
         # Use the same step counter from the LLM response
         self.operations.append({
-            "step": self._step_counter,
+            "step": step,
             "action": action,
             "output": output,
             "return_code": return_code,
             "success": return_code == 0
         })
+        self.success = action == "Submitted" and return_code == 0
     
     def log_cell_edit(self, cell_id: int, original: str, edited: str) -> None:
         """Log a cell edit."""
-        if not self.enabled:
-            return
         if cell_id not in self.original_cells:
             self.original_cells[cell_id] = original
-        self.edited_cells[cell_id] = edited
-    
-    def mark_success(self, step: int) -> None:
-        """Mark the execution as successfully completed."""
-        if not self.enabled:
-            return
-        self.success = True
-        self._step_counter += 1
-        self.operations.append({
-            "step": self._step_counter,
-            "action": "Job Submitted",
-            "output": "Task completed successfully",
-            "return_code": 0,
-            "success": True
-        })
+        self.edited_cells[cell_id] = self.edited_cells.get(cell_id, []) + [edited]
     
     def set_cost(self, cost: float) -> None:
         """Set the total cost for this instance."""
-        if not self.enabled:
-            return
         self.cost = cost
     
     def save_summary(self) -> None:
         """Generate and save the summary as JSON."""
-        if not self.enabled:
-            return
-        
         summary = self._generate_summary()
         self.output_path.parent.mkdir(parents=True, exist_ok=True)
         self.output_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -90,10 +63,13 @@ class SummaryLogger:
         # Build code changes list
         code_changes = []
         for cell_id in sorted(self.edited_cells.keys()):
+            original = self.original_cells.get(cell_id, "")
+            edits = self.edited_cells[cell_id]
             code_changes.append({
                 "cell_id": cell_id,
-                "original_code": self.original_cells.get(cell_id, ""),
-                "fixed_code": self.edited_cells[cell_id]
+                "original_code": original,
+                "fixed_code": edits[-1] if edits else original,
+                "steps": [original] + edits,
             })
         
         # Count successful operations
@@ -119,20 +95,50 @@ class SummaryLogger:
             "code_changes": code_changes
         }
 
-# Global instances
+
+class NoOpSummary(SummaryLogger):
+    """No-op logger used when logging is disabled. All methods do nothing."""
+
+    def __init__(self) -> None:
+        # Minimal init — no state needed since nothing is ever recorded
+        pass
+
+    def log_llm_response(self, content: str, reasoning: str, step: int) -> None:
+        pass
+
+    def log_operation(self, action: str, output: str, return_code: int, step: int) -> None:
+        pass
+
+    def log_cell_edit(self, cell_id: int, original: str, edited: str) -> None:
+        pass
+
+    def mark_success(self, step: int) -> None:
+        pass
+
+    def set_cost(self, cost: float) -> None:
+        pass
+
+    def save_summary(self) -> None:
+        pass
+
+
+# Global instance
 _logger_instance: SummaryLogger | None = None
 
 
-def get_logger() -> SummaryLogger:
+def get_summary() -> SummaryLogger:
     """Get the global summary logger instance."""
     global _logger_instance
     if _logger_instance is None:
-        _logger_instance = SummaryLogger(enabled=False)
+        _logger_instance = NoOpSummary()
     return _logger_instance
 
 
 def initialize_logger(enabled: bool = False, output_path: Path | str | None = None) -> SummaryLogger:
     """Initialize the global summary logger."""
     global _logger_instance
-    _logger_instance = SummaryLogger(enabled=enabled, output_path=output_path)
+    if enabled:
+        _logger_instance = SummaryLogger(output_path=output_path)
+    else:
+        _logger_instance = NoOpSummary()
     return _logger_instance

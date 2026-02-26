@@ -7,7 +7,7 @@ import src.utils.preprocess_notebook as preprocess_notebook
 import src.utils.nbformat_helper as nbformat_helper
 from src.utils.nb_types import CellExecutionResult
 from src.sandbox import DockerSandbox
-from src.utils.summary_logger import get_logger
+from src.utils.summary_logger import get_summary
 
 def setup_environment(src, dst):
     if not src.exists():
@@ -74,7 +74,7 @@ class BenchmarkProblem:
         nbformat_helper.save_cells(self._cells, self._original_cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
         
         # Log to summary logger about before and after cell change
-        get_logger().log_cell_edit(index, original_content, new_content)
+        get_summary().log_cell_edit(index, original_content, new_content)
 
     def run_cell(self, index: int):
         code = self._get_cell_source(index)

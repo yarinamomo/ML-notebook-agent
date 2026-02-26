@@ -1,7 +1,7 @@
 from rich.console import Console
 from rich.panel import Panel
 from contextlib import contextmanager
-from src.utils.summary_logger import get_logger
+from src.utils.summary_logger import get_summary
 
 console = Console()
 
@@ -9,13 +9,13 @@ __all__ = ["agent","system","info","warn","error", "wait","wait_llm","wait_tool"
 
 
 
-def agent(output: str, *, action: str | None = None, return_code: int | None = None, step: int | None = None) -> None:
+def agent(step: int, output: str, *, action: str | None = None, return_code: int | None = None) -> None:
     if action and return_code is not None:
         console.print(Panel(f"Executed {action}, with Return Code {return_code}", title=f"🔧Tool Executed (Step {step})", style="yellow", title_align="left"))
-        get_logger().log_operation(action or "(no action)", output, return_code if return_code is not None else -1, step or 0)
+        get_summary().log_operation(action or "(no action)", output, return_code if return_code is not None else -1, step)
     console.print(Panel(_truncate(output), title=f"🤖Agent Response (Step {step})", style="green", title_align="left"))
 
-def system(content: str, actions: str = "", step: int | None = None, reasoning: str = "") -> None:
+def system(step: int, content: str, actions: str = "", reasoning: str = "") -> None:
     parts = []
     if reasoning:
         # Show reasoning in a dim indented block, like a blockquote
@@ -26,7 +26,7 @@ def system(content: str, actions: str = "", step: int | None = None, reasoning: 
     if actions:
         parts.append(f"[yellow]Actions:\n {_truncate(actions)}[/yellow]")
     console.print(Panel("\n\n".join(parts), title=f"🧠LLM Response (Step {step})", style="cyan", title_align="left"))
-    get_logger().log_llm_response(content, reasoning, step or 0)
+    get_summary().log_llm_response(content, reasoning, step)
 
 
 def info(message: str) -> None:

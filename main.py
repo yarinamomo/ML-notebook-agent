@@ -1,7 +1,7 @@
 import os
 import traceback
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 import threading
 
 import typer
@@ -11,7 +11,7 @@ from src.utils.log import logger
 from src.ui_agent import UiAgent
 from src.utils.summary_logger import (
     initialize_logger,
-    get_logger
+    get_summary
 )
 from src.utils.yaml_parser import (
     load_config,
@@ -33,7 +33,7 @@ def run_single_instance(
     run_number: int,
     config: dict,
     trajectories_dir: Path
-) -> tuple[str, Any, dict | None, float, int]:
+) -> tuple[str, Optional[str], float, int]:
     """Run a single instance with a specific model and run number.
     
     Returns:
@@ -82,18 +82,13 @@ def run_single_instance(
         run_all_timeout=env_config.get("run_all_timeout", 0),
         output_dir=str(run_output_dir)
     )
-    
+
     # start tracking execution time in the summary log after the environment is set up
-    if misc_config.get("enable_summary_log", False):
-        initialize_logger(
-            enabled=True,
-            output_path=str(instance_summary_path)
-        )
-        logger.info(f"Summary logging enabled: {instance_summary_path}")
+    initialize_logger(enabled=misc_config.get("enable_summary_log", False), output_path=instance_summary_path)    
 
     # Create and run agent
     agent = UiAgent(model, env, **config.get("agent", {}))
-    exit_status, submission, extra_info, cost, total_steps = "", None, None, 0.0, 0
+    exit_status, submission, cost, total_steps = "", None, 0.0, 0
     
     # Get total_timeout from environment config
     total_timeout = env_config.get("total_timeout", 0)
@@ -122,7 +117,6 @@ def run_single_instance(
                 logger.error(f"Agent run exceeded total timeout of {total_timeout}s")
                 exit_status = "TIMEOUT"
                 submission = f"Agent execution exceeded total timeout of {total_timeout} seconds"
-                extra_info = {"reason": "total_timeout_exceeded"}
         else:
             # Run without timeout
             run_agent()
@@ -134,16 +128,13 @@ def run_single_instance(
         total_steps = getattr(agent.model, 'n_calls', 0)
         
         # Check if task completed successfully
-        if misc_config.get("enable_summary_log", False):
-            if exit_status == "Submitted":
-                get_logger().mark_success(step=agent.n_calls)
-                logger.info(f"Task completed successfully: {instance_name}")
-            # Set cost and save summary
-            get_logger().set_cost(cost)
-            get_logger().save_summary()
+        get_summary().log_operation(exit_status, submission or "", 0, total_steps)
+        # Set cost and save summary
+        get_summary().set_cost(cost)
+        get_summary().save_summary()
         
         # Save trajectory. Stop tracking execution time in the summary log before environment is killed.
-        agent.save(instance_traj_path, extra_info)
+        agent.save(instance_traj_path)
         logger.info(f"Saved trajectory to: {instance_traj_path}")
         
         # Close environment
@@ -151,7 +142,7 @@ def run_single_instance(
         import time
         time.sleep(2)  # Ensure clean shutdown
     
-    return exit_status, submission, extra_info, cost, total_steps
+    return exit_status, submission, cost, total_steps
 
 # fmt: off
 @app.command(help="_HELP_TEXT")
@@ -191,7 +182,7 @@ def main(
         for instance_name in instances:
             for run_num in range(1, total_run_count + 1):
                 try:
-                    exit_status, submission, _, cost, total_steps = run_single_instance(
+                    exit_status, submission, cost, total_steps = run_single_instance(
                         model_config=model_config,
                         instance_name=instance_name,
                         run_number=run_num,

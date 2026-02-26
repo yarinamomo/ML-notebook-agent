@@ -13,7 +13,7 @@ class UiAgent(DefaultAgent):
             choices = llm_resp.get("choices", [])
             if choices:
                 reasoning = choices[0].get("message", {}).get("reasoning_content", "") or ""
-        ui.system(response.get("content", ""), actions=actions, step=self.n_calls, reasoning=reasoning)
+        ui.system(self.n_calls, response.get("content", ""), actions=actions, reasoning=reasoning)
         return response
 
 
@@ -34,6 +34,6 @@ class UiAgent(DefaultAgent):
                 returncode = extra.get('returncode', '')
                 # timestamp = extra.get('timestamp', '')
                 # exception_info = extra.get('exception_info', '')
-                ui.agent(output, action=cmd, return_code=returncode, step=self.n_calls)
+                ui.agent(self.n_calls, output, action=cmd, return_code=returncode)
 
         return response_list
