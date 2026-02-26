@@ -59,8 +59,14 @@ def run_single_instance(
     instance_traj_path = run_output_dir / f"{instance_name}.traj.json"
     instance_summary_path = run_output_dir / f"{instance_name}_summary.json"
     
-    # Initialize summary logger with instance-specific path
+    # Skip if both trajectory and summary already exist
     misc_config = config.get("misc", {})
+    if misc_config.get("skip_existing", False):
+        if instance_traj_path.exists() and instance_summary_path.exists():
+            logger.info(f"Skipping (already completed): {instance_name} run {run_number} — "
+                        f"trajectory and summary already exist at {run_output_dir}")
+            return "skipped", None, 0.0, 0
+
     
     # Create environment
     env = NotebookEnvironment(
