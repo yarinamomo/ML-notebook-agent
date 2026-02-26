@@ -37,7 +37,7 @@ def run_single_instance(
     """Run a single instance with a specific model and run number.
     
     Returns:
-        tuple: (exit_status, submission, extra_info, cost, total_steps)
+        tuple: (exit_status, submission)
     """
     
     model_name = model_config.get("model_name", "unknown")
@@ -88,7 +88,7 @@ def run_single_instance(
 
     # Create and run agent
     agent = UiAgent(model, env, **config.get("agent", {}))
-    exit_status, submission, cost, total_steps = "", None, 0.0, 0
+    exit_status, submission = "", None
     
     # Get total_timeout from environment config
     total_timeout = env_config.get("total_timeout", 0)
@@ -122,15 +122,11 @@ def run_single_instance(
             run_agent()
     except Exception as e:
         logger.error(f"Error running agent: {e}", exc_info=True)
-    finally:
-        # Capture cost information
-        cost = getattr(agent.model, 'cost', 0.0)
-        total_steps = getattr(agent.model, 'n_calls', 0)
-        
+    finally:     
         # Check if task completed successfully
-        get_summary().log_operation(exit_status, submission or "", 0, total_steps)
+        get_summary().log_operation(exit_status, submission or "", 0, getattr(agent.model, 'step', 0))
         # Set cost and save summary
-        get_summary().set_cost(cost)
+        get_summary().set_cost(getattr(agent, 'cost', 0))
         get_summary().save_summary()
         
         # Save trajectory. Stop tracking execution time in the summary log before environment is killed.
@@ -142,7 +138,7 @@ def run_single_instance(
         import time
         time.sleep(2)  # Ensure clean shutdown
     
-    return exit_status, submission, cost, total_steps
+    return exit_status, submission
 
 # fmt: off
 @app.command(help="_HELP_TEXT")
@@ -182,7 +178,7 @@ def main(
         for instance_name in instances:
             for run_num in range(1, total_run_count + 1):
                 try:
-                    exit_status, submission, cost, total_steps = run_single_instance(
+                    run_single_instance(
                         model_config=model_config,
                         instance_name=instance_name,
                         run_number=run_num,
