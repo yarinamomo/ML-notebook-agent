@@ -6,8 +6,6 @@ from pathlib import Path
 from typing import Any
 import json
 from datetime import datetime
-from src.utils.log import logger as main_logger
-
 
 class SummaryLogger:
     """Tracks agent execution and generates summarized logs."""
@@ -24,14 +22,15 @@ class SummaryLogger:
         self.cost = 0.0  # Total cost for this instance
         self._step_counter = 0  # Independent step counter to handle agent restarts
         
-    def log_llm_response(self, content: str, step: int) -> None:
+    def log_llm_response(self, content: str, reasoning: str, step: int) -> None:
         """Log an LLM response."""
         if not self.enabled:
             return
         self._step_counter += 1
         self.steps.append({
             "step": self._step_counter,
-            "content": content
+            "content": content,
+            "reasoning": reasoning
         })
     
     def log_operation(self, action: str, output: str, return_code: int, step: int) -> None:
@@ -115,23 +114,8 @@ class SummaryLogger:
                 "failed_operations": len(self.operations) - successful_ops,
                 "cells_edited": len(self.edited_cells)
             },
-            "llm_responses": [
-                {
-                    "step": step_data["step"],
-                    "content": step_data["content"],
-                }
-                for step_data in self.steps
-            ],
-            "operations": [
-                {
-                    "step": op["step"],
-                    "action": op["action"],
-                    "output": op["output"],
-                    "return_code": op["return_code"],
-                    "success": op.get("success", False)
-                }
-                for op in self.operations
-            ],
+            "llm_responses": self.steps,
+            "operations": self.operations,
             "code_changes": code_changes
         }
 

@@ -26,7 +26,7 @@ def system(content: str, actions: str = "", step: int | None = None, reasoning: 
     if actions:
         parts.append(f"[yellow]Actions:\n {_truncate(actions)}[/yellow]")
     console.print(Panel("\n\n".join(parts), title=f"🧠LLM Response (Step {step})", style="cyan", title_align="left"))
-    get_logger().log_llm_response(content, step or 0)
+    get_logger().log_llm_response(content, reasoning, step or 0)
 
 
 def info(message: str) -> None:
