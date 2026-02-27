@@ -1,34 +1,42 @@
+import json
+import time
+from pathlib import Path
+
 from minisweagent.agents.default import DefaultAgent
 import src.utils.ui as ui
+from src.utils.summary_util import build_summary, extract_reasoning, find_action
+from typing import override
 
 class UiAgent(DefaultAgent):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._start_time: float | None = None
+
+    @override
+    def run(self, task: str = "", **kwargs) -> dict:
+        """ """
+        self._start_time = time.monotonic()
+        return super().run(task, **kwargs)
+
+    @override
     def query(self) -> dict:
         with ui.wait_llm():
             response = super().query()
         actions = "\n".join([action.get("command", "") for action in response.get("extra", {}).get("actions", [])])
-        # Extract reasoning_content from the response or from the nested LLM response
-        reasoning = response.get("reasoning_content", "")
-        if not reasoning:
-            llm_resp = response.get("extra", {}).get("response", {})
-            choices = llm_resp.get("choices", [])
-            if choices:
-                reasoning = choices[0].get("message", {}).get("reasoning_content", "") or ""
+        reasoning = extract_reasoning(response)
         ui.system(self.n_calls, response.get("content", ""), actions=actions, reasoning=reasoning)
         return response
 
-
+    @override
     def execute_actions(self, message: dict) -> list[dict]:
         actions = message.get("extra", {}).get("actions", []) # command, tool_call_id
         commands = "\n".join([action.get("command", "") for action in actions])
         with ui.wait_tool(commands):
             response_list = super().execute_actions(message)
             for response in response_list:
-                cmd = None
                 tool_call_id = response.get('tool_call_id', '')
-                for action in actions:
-                    if action.get('tool_call_id', '') == tool_call_id:
-                        cmd = action.get('command', '')
-                        break
+                matched = find_action(actions, tool_call_id)
+                cmd = matched.get('command', '') if matched else None
                 extra = response.get('extra', {})
                 output = extra.get('raw_output', '')
                 returncode = extra.get('returncode', '')
@@ -37,3 +45,13 @@ class UiAgent(DefaultAgent):
                 ui.agent(self.n_calls, output, action=cmd, return_code=returncode)
 
         return response_list
+    
+
+    def save_summary(self, path: Path | None = None) -> dict:
+        """Build an execution summary from the message history. Save to *path* if given."""
+        elapsed = (time.monotonic() - self._start_time) if self._start_time else 0.0
+        summary = build_summary(self, execution_time_seconds=elapsed)
+        if path:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
+        return summary

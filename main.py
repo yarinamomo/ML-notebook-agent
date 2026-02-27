@@ -9,10 +9,6 @@ from src.notebook_environment import NotebookEnvironment
 from src.LoggingLitellmModel import LoggingLitellmModel
 from src.utils.log import logger
 from src.ui_agent import UiAgent
-from src.utils.summary_logger import (
-    initialize_logger,
-    get_summary
-)
 from src.utils.yaml_parser import (
     load_config,
     load_api_keys,
@@ -56,13 +52,14 @@ def run_single_instance(
     run_output_dir = trajectories_dir / model_name / f"run_{run_number}"
     run_output_dir.mkdir(parents=True, exist_ok=True)
     
+    misc_config = config.get("misc", {})
+
     instance_traj_path = run_output_dir / f"{instance_name}.traj.json"
-    instance_summary_path = run_output_dir / f"{instance_name}_summary.json"
+    instance_summary_path = run_output_dir / f"{instance_name}_summary.json" if misc_config.get("enable_summary_log", False) else None
     
     # Skip if both trajectory and summary already exist
-    misc_config = config.get("misc", {})
     if misc_config.get("skip_existing", False):
-        if instance_traj_path.exists() and instance_summary_path.exists():
+        if instance_traj_path.exists() and (instance_summary_path is None or instance_summary_path.exists()):
             logger.info(f"Skipping (already completed): {instance_name} run {run_number} — "
                         f"trajectory and summary already exist at {run_output_dir}")
             return "skipped", None, 0.0, 0
@@ -82,9 +79,6 @@ def run_single_instance(
         run_all_timeout=env_config.get("run_all_timeout", 0),
         output_dir=str(run_output_dir)
     )
-
-    # start tracking execution time in the summary log after the environment is set up
-    initialize_logger(enabled=misc_config.get("enable_summary_log", False), output_path=instance_summary_path)    
 
     # Create and run agent
     agent = UiAgent(model, env, **config.get("agent", {}))
@@ -122,15 +116,10 @@ def run_single_instance(
             run_agent()
     except Exception as e:
         logger.error(f"Error running agent: {e}", exc_info=True)
-    finally:     
-        # Check if task completed successfully
-        get_summary().log_operation(exit_status, submission or "", 0, getattr(agent.model, 'step', 0))
-        # Set cost and save summary
-        get_summary().set_cost(getattr(agent, 'cost', 0))
-        get_summary().save_summary()
-        
-        # Save trajectory. Stop tracking execution time in the summary log before environment is killed.
+    finally:
+        # Save trajectory and summary
         agent.save(instance_traj_path)
+        agent.save_summary(instance_summary_path)
         logger.info(f"Saved trajectory to: {instance_traj_path}")
         
         # Close environment
