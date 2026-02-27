@@ -5,9 +5,14 @@ from pathlib import Path
 from minisweagent.agents.default import DefaultAgent
 import src.utils.ui as ui
 from src.utils.summary_util import build_summary, extract_reasoning, find_action
-from typing import override
+from typing import override, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.notebook_environment import NotebookEnvironment
 
 class UiAgent(DefaultAgent):
+    env: "NotebookEnvironment"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._start_time: float | None = None
@@ -16,6 +21,11 @@ class UiAgent(DefaultAgent):
     def run(self, task: str = "", **kwargs) -> dict:
         """ """
         self._start_time = time.monotonic()
+        # Store initial cells before the agent starts modifying the notebook
+        if hasattr(self.env, 'problem') and self.env.problem:
+            self._initial_cells = self.env.problem.get_cells()
+        else:
+            self._initial_cells = []
         return super().run(task, **kwargs)
 
     @override
@@ -50,7 +60,8 @@ class UiAgent(DefaultAgent):
     def save_summary(self, path: Path | None = None) -> dict:
         """Build an execution summary from the message history. Save to *path* if given."""
         elapsed = (time.monotonic() - self._start_time) if self._start_time else 0.0
-        summary = build_summary(self, execution_time_seconds=elapsed)
+        initial_cells = getattr(self, '_initial_cells', [])
+        summary = build_summary(self, execution_time_seconds=elapsed, initial_cells=initial_cells)
         if path:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")

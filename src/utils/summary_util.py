@@ -32,12 +32,18 @@ def find_action(actions: list[dict], tool_call_id: str) -> dict | None:
     return None
 
 
-def build_summary(agent: "DefaultAgent", *, execution_time_seconds: float = 0.0) -> dict[str, Any]:
+def build_summary(
+    agent: "DefaultAgent",
+    *,
+    execution_time_seconds: float = 0.0,
+    initial_cells: list[str] | None = None,
+) -> dict[str, Any]:
     """Build a human-readable summary dict from an agent's state.
 
     Args:
         agent: The agent instance (provides ``messages``, ``cost``, ``n_calls``).
         execution_time_seconds: Wall-clock seconds the run took.
+        initial_cells: The original notebook cells captured before the agent run.
 
     Returns:
         A JSON-serialisable summary dictionary.
@@ -46,7 +52,7 @@ def build_summary(agent: "DefaultAgent", *, execution_time_seconds: float = 0.0)
     cost = agent.cost
     llm_responses: list[dict] = []
     operations: list[dict] = []
-    cell_edits: dict[int, list[str]] = {}  # cell_index -> [code_v1, code_v2, ...]
+    code_changes: list[dict] = []
 
     last_assistant: dict = {}
     step = 0
@@ -72,7 +78,7 @@ def build_summary(agent: "DefaultAgent", *, execution_time_seconds: float = 0.0)
                     cell_index = int(args.get("cell_index", -1))
                     code = args.get("code", "")
                     if cell_index >= 0:
-                        cell_edits.setdefault(cell_index, []).append(code)
+                        code_changes.append({"cell_index": cell_index, "step": step, "code": code})
 
         elif role == "tool":
             tool_call_id = msg.get("tool_call_id", "")
@@ -110,16 +116,8 @@ def build_summary(agent: "DefaultAgent", *, execution_time_seconds: float = 0.0)
         for op in operations
     )
 
-    # Build code changes list
-    code_changes = []
-    for cell_index in sorted(cell_edits.keys()):
-        edits = cell_edits[cell_index]
-        code_changes.append({
-            "cell_id": cell_index,
-            "fixed_code": edits[-1] if edits else "",
-            "edit_count": len(edits),
-        })
-
+    # Build code changes list (each edit as a separate entry with step)
+    unique_cells_edited = len({c["cell_index"] for c in code_changes})
     successful_ops = sum(1 for op in operations if op.get("success", False))
 
     return {
@@ -135,8 +133,10 @@ def build_summary(agent: "DefaultAgent", *, execution_time_seconds: float = 0.0)
             "total_operations": len(operations),
             "successful_operations": successful_ops,
             "failed_operations": len(operations) - successful_ops,
-            "cells_edited": len(cell_edits),
+            "cells_edited": len(code_changes),
+            "unique_cells_edited": unique_cells_edited,
         },
+        "original_notebook": initial_cells or [],
         "llm_responses": llm_responses,
         "operations": operations,
         "code_changes": code_changes,
