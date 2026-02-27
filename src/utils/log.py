@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 
 from rich.logging import RichHandler
+from src.utils.ui import console
 
 
 def _setup_root_logger() -> None:
@@ -13,6 +14,7 @@ def _setup_root_logger() -> None:
         show_time=False,
         show_level=False,
         markup=True,
+        console=console,
     )
     _formatter = logging.Formatter("%(name)s: %(levelname)s: %(message)s")
     _handler.setFormatter(_formatter)
