@@ -75,7 +75,7 @@ def run_single_instance(
         source_path=str(source_path_parent / instance_name),
         docker_mount_path=env_config.get("docker_mount_path", "example/docker_mount/"),
         problem_mode=env_config.get("problem_mode", "JunoBench_Buggy"),
-        timeout=env_config.get("timeout", 30),
+        timeout=env_config.get("timeout", 600),
         run_all_timeout=env_config.get("run_all_timeout", 0),
         output_dir=str(run_output_dir)
     )

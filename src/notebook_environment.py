@@ -23,7 +23,7 @@ class NotebookEnvironmentConfig(BaseModel):
     docker_mount_path: str
     output_dir: str  # Path to save patched files
     problem_mode: str = "JunoBench_Buggy"
-    timeout: int = 30
+    timeout: int = 600
     run_all_timeout: int = 0  # Total timeout for run_all() operation
 
 

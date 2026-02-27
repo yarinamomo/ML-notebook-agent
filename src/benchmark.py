@@ -28,7 +28,7 @@ def setup_environment(src, dst):
 
 # actual environment for the agent
 class BenchmarkProblem:
-    def __init__(self, sandbox_settings: dict, source_path: str, output_dir: str, problem_mode: str = "JunoBench_Buggy", docker_source_path: str = "docker_source", timeout: int = 30, run_all_timeout: int = 0):
+    def __init__(self, sandbox_settings: dict, source_path: str, output_dir: str, problem_mode: str = "JunoBench_Buggy", docker_source_path: str = "docker_source", timeout: int = 600, run_all_timeout: int = 0):
         self.source_path = Path(source_path)
         self.docker_source_path = Path(docker_source_path).resolve()
         self.output_dir = Path(output_dir)
