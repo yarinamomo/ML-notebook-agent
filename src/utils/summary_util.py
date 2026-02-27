@@ -90,13 +90,24 @@ def build_summary(
             matched = find_action(last_assistant.get("extra", {}).get("actions", []), tool_call_id)
             command = matched.get("command", "") if matched else ""
 
-            operations.append({
+            # Calculate tool execution time
+            execution_time = None
+            if last_assistant and msg.get("extra", {}).get("timestamp") and last_assistant.get("extra", {}).get("timestamp"):
+                obs_timestamp = msg.get("extra", {}).get("timestamp")
+                llm_timestamp = last_assistant.get("extra", {}).get("timestamp")
+                execution_time = round(obs_timestamp - llm_timestamp, 4)
+
+            operation = {
                 "step": step,
                 "action": command,
                 "output": raw_output,
                 "return_code": returncode,
                 "success": returncode == 0,
-            })
+            }
+            if execution_time is not None:
+                operation["execution_time_seconds"] = execution_time
+
+            operations.append(operation)
 
         elif role == "exit":
             extra = msg.get("extra", {})
@@ -119,6 +130,14 @@ def build_summary(
     # Build code changes list (each edit as a separate entry with step)
     unique_cells_edited = len({c["cell_index"] for c in code_changes})
     successful_ops = sum(1 for op in operations if op.get("success", False))
+    
+    # Calculate average tool execution time
+    execution_times = [
+        float(op["execution_time_seconds"])
+        for op in operations
+        if op.get("execution_time_seconds") is not None
+    ]
+    avg_execution_time = round(sum(execution_times) / len(execution_times), 2) if execution_times else 0.0
 
     return {
         "metadata": {
@@ -135,6 +154,7 @@ def build_summary(
             "failed_operations": len(operations) - successful_ops,
             "cells_edited": len(code_changes),
             "unique_cells_edited": unique_cells_edited,
+            "avg_tool_execution_time_seconds": avg_execution_time,
         },
         "original_notebook": initial_cells or [],
         "llm_responses": llm_responses,
