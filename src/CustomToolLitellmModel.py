@@ -8,12 +8,11 @@ from src.utils.log import logger
 from src.notebook_tools import NOTEBOOK_TOOLS, parse_notebook_tool_actions, parse_tool_calls_from_content
 
 
-class LoggingLitellmModel(LitellmModel):
+class CustomToolLitellmModel(LitellmModel):
     """LitellmModel subclass that uses dedicated notebook tools instead of a single bash tool."""
 
     def __init__(self, *args, **kwargs):
-        logger.info("Initializing LoggingLitellmModel with args: %s, kwargs: %s", args, kwargs)
-        self.step = 0
+        logger.info("Initializing CustomToolLitellmModel with args: %s, kwargs: %s", args, kwargs)
         super().__init__(*args, **kwargs)
 
     # ------------------------------------------------------------------
@@ -64,36 +63,4 @@ class LoggingLitellmModel(LitellmModel):
     def query(self, *args, **kwargs):
         logger.debug("Calling query with args: %s, kwargs: %s", args, kwargs)
         result = super().query(*args, **kwargs)
-        self._log_response(result)
         return result
-
-
-    def _log_response(self, response):
-        """Log the response and track costs."""
-        self.step += 1
-        
-        # Handle dict responses (from litellm)
-        if isinstance(response, dict):
-            content = response.get('content', '')
-            extra = response.get('extra', {})
-            
-            logger.debug(f"\n{'='*60}")
-            logger.debug(f"🤖 AGENT RESPONSE (Step {self.step}):")
-            logger.debug(f"CONTENT (what agent wants to execute):")
-            logger.debug(content)
-            logger.debug(f"\nMETADATA:")
-            if 'response' in extra:
-                llm_response = extra['response']
-                logger.debug(f"  Model: {llm_response.get('model', 'unknown')}")
-                logger.debug(f"  Tokens: {llm_response.get('usage', {})}")
-            logger.debug(f"{'='*60}\n")
-        else:
-            # String response
-            response_str = str(response)
-            
-            logger.debug(f"\n{'='*60}")
-            logger.debug(f"🤖 AGENT RESPONSE (Step {self.step}):")
-            logger.debug(response_str[:1000])
-            if len(response_str) > 1000:
-                    logger.debug(f"\n... (truncated, total length: {len(response_str)} chars)")
-

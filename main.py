@@ -6,7 +6,7 @@ import threading
 
 import typer
 from src.notebook_environment import NotebookEnvironment
-from src.LoggingLitellmModel import LoggingLitellmModel
+from src.CustomToolLitellmModel import CustomToolLitellmModel
 from src.utils.log import logger
 from src.ui_agent import UiAgent
 from src.utils.yaml_parser import (
@@ -42,7 +42,7 @@ def run_single_instance(
     logger.info(f"{'='*80}\n")
     
     # Create model instance
-    model = LoggingLitellmModel(**model_config)
+    model = CustomToolLitellmModel(**model_config)
     
     # Setup environment
     env_config = config.get("environment", {})
