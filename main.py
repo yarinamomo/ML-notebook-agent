@@ -5,6 +5,7 @@ from typing import Any, Optional
 import threading
 
 import typer
+from tqdm import tqdm
 from src.notebook_environment import NotebookEnvironment
 from src.CustomToolLitellmModel import CustomToolLitellmModel
 from src.utils.log import logger
@@ -164,20 +165,27 @@ def main(
         logger.info(f"# Starting runs for model: {model_name_str}")
         logger.info(f"{'#'*80}\n")
         
-        for instance_name in instances:
-            for run_num in range(1, total_run_count + 1):
-                try:
-                    run_single_instance(
-                        model_config=model_config,
-                        instance_name=instance_name,
-                        run_number=run_num,
-                        config=config,
-                        trajectories_dir=trajectories_dir
-                    )
-                    
-                except Exception as e:
-                    logger.error(f"Failed to run model={model_name_str}, instance={instance_name}, run={run_num}: {e}")
-                    logger.exception(e)
+        # Calculate total iterations for progress bar
+        total_iterations = len(instances) * total_run_count
+        
+        with tqdm(total=total_iterations, desc=f"Model: {model_name_str}", unit="run", leave=True) as pbar:
+            for instance_name in instances:
+                for run_num in range(1, total_run_count + 1):
+                    try:
+                        run_single_instance(
+                            model_config=model_config,
+                            instance_name=instance_name,
+                            run_number=run_num,
+                            config=config,
+                            trajectories_dir=trajectories_dir
+                        )
+                        
+                    except Exception as e:
+                        logger.error(f"Failed to run model={model_name_str}, instance={instance_name}, run={run_num}: {e}")
+                        logger.exception(e)
+                    finally:
+                        pbar.update(1)
+                        pbar.set_postfix({"instance": instance_name, "run": run_num})
 
 if __name__ == "__main__":
     app()
