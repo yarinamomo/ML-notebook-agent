@@ -6,7 +6,7 @@ import threading
 
 import typer
 from src.notebook_environment import NotebookEnvironment
-from src.LoggingLitellmModel import LoggingLitellmModel
+from src.CustomToolLitellmModel import CustomToolLitellmModel
 from src.utils.log import logger
 from src.ui_agent import UiAgent
 from src.utils.summary_logger import (
@@ -46,7 +46,7 @@ def run_single_instance(
     logger.info(f"{'='*80}\n")
     
     # Create model instance
-    model = LoggingLitellmModel(**model_config)
+    model = CustomToolLitellmModel(**model_config)
     
     # Setup environment
     env_config = config.get("environment", {})
@@ -122,11 +122,11 @@ def run_single_instance(
             run_agent()
     except Exception as e:
         logger.error(f"Error running agent: {e}", exc_info=True)
-    finally:     
+    finally:
         # Check if task completed successfully
-        get_summary().log_operation(exit_status, submission or "", 0, getattr(agent.model, 'step', 0))
+        get_summary().log_operation(exit_status, submission or "", 0, agent.n_calls or 0)
         # Set cost and save summary
-        get_summary().set_cost(getattr(agent, 'cost', 0))
+        get_summary().set_cost(agent.cost or 0)
         get_summary().save_summary()
         
         # Save trajectory. Stop tracking execution time in the summary log before environment is killed.
