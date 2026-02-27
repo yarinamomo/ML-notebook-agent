@@ -67,7 +67,7 @@ class DockerSandbox:
             logger.exception("Failed to start kernel")
             raise RuntimeError("Failed to start kernel") from exc
 
-    def run(self, code: str, timeout=30, max_retries=2) -> CellExecutionResult:
+    def run(self, code: str, timeout=600, max_retries=2) -> CellExecutionResult:
         """
         Execute code in the container kernel and return outputs.
         Automatically attempts to reconnect the kernel if disconnected before execution.
