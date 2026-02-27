@@ -1,10 +1,35 @@
-from rich.console import Console
+from rich.console import Console, Group
+from rich.live import Live
 from rich.panel import Panel
+from rich.progress import (
+    Progress,
+    SpinnerColumn,
+    BarColumn,
+    TaskID,
+    TextColumn,
+    TimeElapsedColumn,
+)
+from rich.text import Text
 from contextlib import contextmanager
+from typing import Iterator
 
 console = Console()
+status_renderable = Text("")
 
-__all__ = ["agent","system","info","warn","error", "wait","wait_llm","wait_tool", "console"]
+__all__ = [
+    "agent",
+    "system",
+    "info",
+    "warn",
+    "error",
+    "wait",
+    "wait_llm",
+    "wait_tool",
+    "console",
+    "status_renderable",
+    "format_eta",
+    "progress_live",
+]
 
 
 
@@ -43,8 +68,13 @@ def wait(label: str, *, color: str = "cyan"):
     """
     Generic spinner for indeterminate waits.
     """
-    with console.status(f"[{color}]{label}…[/]"):
+    status_renderable.plain = f"{label}…"
+    status_renderable.style = color
+    try:
         yield
+    finally:
+        status_renderable.plain = ""
+        status_renderable.style = ""
 
 @contextmanager
 def wait_llm():
@@ -62,6 +92,43 @@ def wait_tool(command: str | None = None):
     label = f"🔧Executing {command}" if command else "tool"
     with wait(label, color="yellow"):
         yield
+
+
+def format_eta(seconds: float | None) -> str:
+    if seconds is None or seconds < 0:
+        return "--:--:--"
+    total_seconds = int(seconds)
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+
+@contextmanager
+def progress_live(total: int, description: str) -> Iterator[tuple[Progress, TaskID]]:
+    progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[bold]{task.description}"),
+        BarColumn(bar_width=None),
+        TextColumn("{task.completed}/{task.total} runs"),
+        TimeElapsedColumn(),
+        TextColumn("ETA {task.fields[eta]}", style="cyan"),
+        console=console,
+        transient=False,
+        auto_refresh=False,
+    )
+
+    with Live(
+        Group(status_renderable, progress),
+        console=console,
+        transient=False,
+        refresh_per_second=10,
+    ):
+        task_id = progress.add_task(
+            description,
+            total=total,
+            eta="--:--:--",
+        )
+        yield progress, task_id
 
 def _truncate(content: str, max_lines: int = 50, max_chars_per_line: int = 200) -> str:
     lines = content.split('\n')

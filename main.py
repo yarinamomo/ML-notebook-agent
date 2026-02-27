@@ -1,15 +1,16 @@
 import os
+import time
 import traceback
 from pathlib import Path
 from typing import Any, Optional
 import threading
 
 import typer
-from tqdm import tqdm
 from src.notebook_environment import NotebookEnvironment
 from src.CustomToolLitellmModel import CustomToolLitellmModel
 from src.utils.log import logger
 from src.ui_agent import UiAgent
+from src.utils.ui import format_eta, progress_live
 from src.utils.yaml_parser import (
     load_config,
     load_api_keys,
@@ -167,8 +168,12 @@ def main(
         
         # Calculate total iterations for progress bar
         total_iterations = len(instances) * total_run_count
-        
-        with tqdm(total=total_iterations, desc=f"Model: {model_name_str}", unit="run", leave=True) as pbar:
+
+        with progress_live(total_iterations, f"Model: {model_name_str}") as (progress, task_id):
+
+            start_time = time.monotonic()
+            completed_count = 0
+
             for instance_name in instances:
                 for run_num in range(1, total_run_count + 1):
                     try:
@@ -184,8 +189,16 @@ def main(
                         logger.error(f"Failed to run model={model_name_str}, instance={instance_name}, run={run_num}: {e}")
                         logger.exception(e)
                     finally:
-                        pbar.update(1)
-                        pbar.set_postfix({"instance": instance_name, "run": run_num})
+                        completed_count += 1
+                        elapsed = time.monotonic() - start_time
+                        avg_per_run = elapsed / completed_count
+                        remaining = avg_per_run * (total_iterations - completed_count)
+                        progress.update(
+                            task_id,
+                            advance=1,
+                            description=f"Model: {model_name_str} | {instance_name} | run {run_num}",
+                            eta=format_eta(remaining),
+                        )
 
 if __name__ == "__main__":
     app()
