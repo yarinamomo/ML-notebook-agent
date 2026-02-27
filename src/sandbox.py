@@ -67,14 +67,13 @@ class DockerSandbox:
             logger.exception("Failed to start kernel")
             raise RuntimeError("Failed to start kernel") from exc
 
-    def run(self, code: str, timeout=600, max_retries=2) -> CellExecutionResult:
+    def run(self, code: str, max_retries=2) -> CellExecutionResult:
         """
         Execute code in the container kernel and return outputs.
         Automatically attempts to reconnect the kernel if disconnected before execution.
         
         Args:
             code: Python code to execute
-            timeout: Execution timeout in seconds
             max_retries: Maximum number of reconnection attempts if kernel is disconnected (default: 2)
             
         Returns:
@@ -105,11 +104,11 @@ class DockerSandbox:
         
         # Execute code
         try:
-            result = self.kernel_client.execute(code, timeout=timeout)
+            result = self.kernel_client.execute(code)
             return cast(CellExecutionResult, result)
         except (TimeoutError, queue.Empty) as exc:
-            logger.error("Kernel execution timed out after %s seconds", timeout)
-            raise TimeoutError(f"Kernel execution timed out after {timeout} seconds") from exc
+            logger.error(f"Kernel connection timed out: {exc}")
+            raise TimeoutError(f"Kernel connection timed out") from exc
         except (ConnectionError, OSError) as exc:
             # Kernel died during execution - mark as disconnected for next call
             logger.exception("Kernel connectivity lost during execution: %s", exc)

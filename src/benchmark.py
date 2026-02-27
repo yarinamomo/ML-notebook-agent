@@ -78,7 +78,7 @@ class BenchmarkProblem:
         code = self._get_cell_source(index)
         # Change working directory inside the Docker container before executing code
         code = f"import os\nos.chdir('/app/container')\n{code}" # TODO this should be moved into sandbox.
-        result = self.sandbox.run(code, timeout=self.timeout)
+        result = self.sandbox.run(code)
         self._exec_states[index] = result
         nbformat_helper.save_cells(self._cells, self._original_cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
         return result
@@ -137,7 +137,7 @@ class BenchmarkProblem:
     def execute_python_command(self, command: str):
         if not self._cells:
             raise RuntimeError("Notebook not initialized")
-        exec_result = self.sandbox.run(command, timeout=self.timeout)
+        exec_result = self.sandbox.run(command)
         # print(f"Raw execution result: {exec_result}")
         return exec_result
 
