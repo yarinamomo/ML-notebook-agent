@@ -7,6 +7,8 @@ import src.utils.preprocess_notebook as preprocess_notebook
 import src.utils.nbformat_helper as nbformat_helper
 from src.utils.nb_types import CellExecutionResult
 from src.sandbox import DockerSandbox
+import logging
+
 
 def setup_environment(src, dst):
     if not src.exists():
@@ -148,7 +150,6 @@ class BenchmarkProblem:
             try:
                 shutil.rmtree(self.docker_source_path)
             except Exception as e:
-                import logging
                 logging.warning(f"⚠️ Warning: Could not clean up mount path {self.docker_source_path}: {e}")
 
     def _safe_get_cell(self, index: int):

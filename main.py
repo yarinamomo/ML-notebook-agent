@@ -177,6 +177,7 @@ def main(
                     
                 except Exception as e:
                     logger.error(f"Failed to run model={model_name_str}, instance={instance_name}, run={run_num}: {e}")
+                    logger.exception(e)
 
 if __name__ == "__main__":
     app()
