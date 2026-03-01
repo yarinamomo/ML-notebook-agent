@@ -6,6 +6,7 @@ import docker
 from jupyter_kernel_client import KernelClient
 from src.utils.log import logger
 from src.utils.nb_types import CellExecutionResult
+import os
 
 class DockerSandbox:
     def __init__(self, image_name, base_url="http://127.0.0.1", port=8888, token="Super_Duper_Secret_Token", mount_volume=None, start_command=None):
@@ -28,9 +29,7 @@ class DockerSandbox:
         except Exception:
             pass
 
-        # Start container with Jupyter server
-        self.container = self.docker_client.containers.run(
-            self.image_name,
+        docker_kwargs = dict(
             name=f"sandbox_{self.port}",
             detach=True,
             tty=True,
@@ -38,6 +37,15 @@ class DockerSandbox:
             volumes={self.mount_volume: {'bind': '/app/container', 'mode': 'rw'}} if self.mount_volume else None,
             ports={'8888/tcp': self.port},
             command=self.start_command
+        )
+
+        # Only set user on Unix systems to give write permissions to mounted volume without needing to change permissions on host
+        if os.name == "posix":
+            docker_kwargs["user"] = f"{os.getuid()}:{os.getgid()}"
+
+        self.container = self.docker_client.containers.run(
+            self.image_name,
+            **docker_kwargs
         )
 
         # Wait until server is ready
