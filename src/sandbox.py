@@ -36,7 +36,8 @@ class DockerSandbox:
             stdin_open=True,
             volumes={self.mount_volume: {'bind': '/app/container', 'mode': 'rw'}} if self.mount_volume else None,
             ports={'8888/tcp': self.port},
-            command=self.start_command
+            command=self.start_command,
+            environment={"HOME": "/app/container"}
         )
 
         # Only set user on Unix systems to give write permissions to mounted volume without needing to change permissions on host
