@@ -45,7 +45,7 @@ def system(step: int, content: str, actions: str = "", reasoning: str = "") -> N
         reasoning_lines = _truncate(reasoning, max_lines=20).split("\n")
         reasoning_block = "\n".join(f"  {line}" for line in reasoning_lines)
         parts.append(f"[dim italic]💭 Reasoning:\n{reasoning_block}[/dim italic]")
-    parts.append(_truncate(content))
+    parts.append(_truncate(content or ""))
     if actions:
         parts.append(f"[yellow]Actions:\n {_truncate(actions)}[/yellow]")
     console.print(Panel("\n\n".join(parts), title=f"🧠LLM Response (Step {step})", style="cyan", title_align="left"))
@@ -131,6 +131,8 @@ def progress_live(total: int, description: str) -> Iterator[tuple[Progress, Task
         yield progress, task_id
 
 def _truncate(content: str, max_lines: int = 50, max_chars_per_line: int = 200) -> str:
+    if content is None:
+        content = ""
     lines = content.split('\n')
     was_truncated_lines = len(lines) > max_lines
     
