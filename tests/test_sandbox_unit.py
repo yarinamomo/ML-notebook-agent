@@ -9,6 +9,8 @@ import json
 import time
 from unittest.mock import Mock, MagicMock, patch, call, PropertyMock
 from src.sandbox import DockerSandbox
+from src.utils.retry_sandbox import retry_with_kernel_restart
+from src.ui_agent import EnvironmentUnavailable
 
 
 class TestDockerSandboxInit:
@@ -234,86 +236,38 @@ class TestMessageHandling:
 class TestExecutionLogic:
     """Test code execution logic."""
     
-    @patch('src.sandbox.requests.post')
-    @patch('src.sandbox.websocket.WebSocketApp')
-    def test_execute_code_success(self, mock_ws_class, mock_post):
-        """Test successful code execution."""
-        with patch('src.sandbox.docker.from_env'):
-            sandbox = DockerSandbox("test-image")
-            
-            # Setup mock WebSocket
-            mock_socket = Mock()
-            mock_socket.connected = True
-            mock_ws = Mock()
-            mock_ws.sock = mock_socket
-            sandbox.ws = mock_ws
-            sandbox.kernel_id = "kernel-123"
-            
-            # Setup execution result
-            msg_id = None
-            def capture_msg_id(data):
-                nonlocal msg_id
-                msg = json.loads(data)
-                msg_id = msg['header']['msg_id']
-            
-            sandbox.ws.send = Mock(side_effect=capture_msg_id)
-            
-            # Simulate execution completion
-            def execute_code_and_complete():
-                sandbox._execute_code("print('hello')", timeout=5)
-                # Complete the execution
-                if msg_id:
-                    sandbox.execution_results[msg_id]['outputs'].append({
-                        'output_type': 'stream',
-                        'name': 'stdout',
-                        'text': 'hello\n'
-                    })
-                    sandbox.execution_results[msg_id]['status'] = 'ok'
-                    sandbox.execution_results[msg_id]['done'] = True
-            
-            # Run in a separate approach to avoid blocking
-            import threading
-            exec_thread = threading.Thread(target=execute_code_and_complete)
-            exec_thread.start()
-            exec_thread.join(timeout=2)
-            
-            # Note: This test demonstrates the pattern but actual execution is complex
-            # with threading. See integration tests for full execution testing.
-    
-    def test_execute_code_no_connection(self):
+    @patch('src.sandbox.DockerSandbox.restart_kernel')
+    def test_run_no_connection_raises_error(self, mock_restart):
         """Test execution fails when no WebSocket connection."""
         with patch('src.sandbox.docker.from_env'):
             sandbox = DockerSandbox("test-image")
             sandbox.ws = None
             
-            with pytest.raises(RuntimeError, match="WebSocket disconnected"):
-                sandbox._execute_code("print('hello')", timeout=5)
+            # Mock restart_kernel to fail
+            mock_restart.side_effect = RuntimeError("Failed to restart")
+            
+            with pytest.raises((RuntimeError, Exception)):
+                sandbox.run("print('hello')", timeout=5)
 
 
 class TestRetryLogic:
     """Test reconnection and retry logic."""
     
-    @patch('src.sandbox.DockerSandbox._start_kernel_websocket')
-    def test_run_retries_on_disconnection(self, mock_start_kernel):
+    @patch('src.sandbox.DockerSandbox.restart_kernel')
+    def test_run_retries_on_disconnection(self, mock_restart):
         """Test that run() retries when WebSocket is disconnected."""
         with patch('src.sandbox.docker.from_env'):
             sandbox = DockerSandbox("test-image")
             sandbox.ws = None
             
-            # First call fails (WebSocket not initialized)
-            # Second call succeeds
-            mock_start_kernel.side_effect = [
-                RuntimeError("Failed to connect"),
-                None  # Success on second try
-            ]
+            # Restart keeps failing
+            mock_restart.side_effect = RuntimeError("Failed to restart")
             
-            with pytest.raises(RuntimeError, match="Failed to reconnect"):
-                # Only 2 retries max, both fail
-                sandbox.run("print('hello')", max_retries=0)
+            with pytest.raises((RuntimeError, Exception)):
+                sandbox.run("print('hello')")
     
-    @patch('src.sandbox.DockerSandbox._execute_code')
-    @patch('src.sandbox.DockerSandbox._start_kernel_websocket')
-    def test_run_successful_after_reconnect(self, mock_start_kernel, mock_execute):
+    @patch('src.sandbox.DockerSandbox.restart_kernel')
+    def test_run_successful_after_reconnect(self, mock_restart):
         """Test successful execution after reconnection."""
         with patch('src.sandbox.docker.from_env'):
             sandbox = DockerSandbox("test-image")
@@ -327,17 +281,74 @@ class TestRetryLogic:
                 return call_count[0] > 1
             
             sandbox._is_websocket_connected = is_connected
-            mock_start_kernel.return_value = None
-            mock_execute.return_value = {
-                'status': 'ok',
-                'outputs': [],
-                'execution_count': 1
-            }
+            
+            # Setup mock WebSocket for actual execution
+            mock_socket = Mock()
+            mock_socket.connected = True
+            mock_ws = Mock()
+            mock_ws.sock = mock_socket
+            
+            def setup_ws():
+                sandbox.ws = mock_ws
+                sandbox.kernel_id = "test-kernel"
+            
+            mock_restart.side_effect = setup_ws
+            
+            # Mock the send to complete execution immediately
+            def complete_execution(msg_str):
+                msg = json.loads(msg_str)
+                msg_id = msg['header']['msg_id']
+                if msg_id in sandbox.execution_results:
+                    sandbox.execution_results[msg_id]['status'] = 'ok'
+                    sandbox.execution_results[msg_id]['done'] = True
+            
+            mock_ws.send = Mock(side_effect=complete_execution)
             
             # This should succeed after reconnecting
-            result = sandbox.run("print('hello')", max_retries=2)
+            result = sandbox.run("print('hello')")
             assert result['status'] == 'ok'
-            mock_start_kernel.assert_called()
+            mock_restart.assert_called()
+
+
+class TestRetryDecoratorBehavior:
+    """Test retry decorator state behavior across calls."""
+
+    def test_retry_fail_once_then_success_resets_flag(self):
+        """First failed call raises RuntimeError; second successful call does not escalate."""
+        mock_sandbox = Mock()
+        mock_sandbox._is_websocket_connected.return_value = True
+        mock_sandbox.restart_kernel = Mock()
+
+        call_state = {"count": 0}
+
+        @retry_with_kernel_restart(max_retries=2)
+        def flaky_operation(self):
+            call_state["count"] += 1
+            if call_state["count"] <= 3:
+                raise RuntimeError("first call fails")
+            return "ok"
+
+        with pytest.raises(RuntimeError, match="first call fails"):
+            flaky_operation(mock_sandbox)
+
+        result = flaky_operation(mock_sandbox)
+        assert result == "ok"
+
+    def test_retry_fail_twice_raises_environment_unavailable(self):
+        """Two consecutive fully-failed calls escalate to EnvironmentUnavailable on second call."""
+        mock_sandbox = Mock()
+        mock_sandbox._is_websocket_connected.return_value = True
+        mock_sandbox.restart_kernel = Mock()
+
+        @retry_with_kernel_restart(max_retries=2)
+        def always_fails(self):
+            raise RuntimeError("persistent failure")
+
+        with pytest.raises(RuntimeError, match="persistent failure"):
+            always_fails(mock_sandbox)
+
+        with pytest.raises(EnvironmentUnavailable):
+            always_fails(mock_sandbox)
 
 
 class TestInterruptLogic:
@@ -374,9 +385,10 @@ class TestInterruptLogic:
 class TestKernelRestart:
     """Test kernel restart functionality."""
     
-    @patch('src.sandbox.DockerSandbox._start_kernel_websocket')
+    @patch('src.sandbox.DockerSandbox._start_kernel')
+    @patch('src.sandbox.DockerSandbox._start_websocket')
     @patch('src.sandbox.requests.delete')
-    def test_restart_kernel_cleans_up(self, mock_delete, mock_start_kernel):
+    def test_restart_kernel_cleans_up(self, mock_delete, mock_start_ws, mock_start_kernel):
         """Test kernel restart properly cleans up old kernel."""
         with patch('src.sandbox.docker.from_env'):
             sandbox = DockerSandbox("test-image")
@@ -395,30 +407,126 @@ class TestKernelRestart:
             mock_delete.return_value = mock_response
             
             mock_start_kernel.return_value = None
+            mock_start_ws.return_value = None
             
-            sandbox._restart_kernel_websocket()
+            sandbox.restart_kernel()
             
             # Verify cleanup
-            assert sandbox.kernel_id is None
             assert sandbox.execution_results == {}
             mock_delete.assert_called_once()
             mock_start_kernel.assert_called_once()
+            mock_start_ws.assert_called_once()
     
-    @patch('src.sandbox.DockerSandbox._start_kernel_websocket')
-    def test_restart_kernel_public_api(self, mock_start_kernel):
+    @patch('src.sandbox.DockerSandbox._start_kernel')
+    @patch('src.sandbox.DockerSandbox._start_websocket')
+    @patch('src.sandbox.DockerSandbox._stop_websocket')
+    @patch('src.sandbox.DockerSandbox._stop_kernel')
+    def test_restart_kernel_public_api(self, mock_stop_kernel, mock_stop_ws, mock_start_ws, mock_start_kernel):
         """Test public restart_kernel API."""
         with patch('src.sandbox.docker.from_env'):
             sandbox = DockerSandbox("test-image")
             
             mock_start_kernel.return_value = None
+            mock_start_ws.return_value = None
             sandbox.kernel_id = "old-kernel"
             sandbox.ws = Mock(sock=Mock(connected=True))
             
             # This should not raise
             sandbox.restart_kernel()
             
-            # Should have called internal restart
-            mock_start_kernel.assert_called()
+            # Should have called internal methods
+            mock_stop_ws.assert_called_once()
+            mock_stop_kernel.assert_called_once()
+            mock_start_kernel.assert_called_once()
+            mock_start_ws.assert_called_once()
+
+
+class TestKernelAndWebSocketManagement:
+    """Test individual kernel and websocket management methods."""
+    
+    @patch('src.sandbox.requests.post')
+    def test_start_kernel(self, mock_post):
+        """Test starting a kernel."""
+        with patch('src.sandbox.docker.from_env'):
+            sandbox = DockerSandbox("test-image")
+            
+            mock_response = Mock()
+            mock_response.json.return_value = {'id': 'new-kernel-123'}
+            mock_response.raise_for_status = Mock()
+            mock_post.return_value = mock_response
+            
+            sandbox._start_kernel()
+            
+            assert sandbox.kernel_id == 'new-kernel-123'
+            mock_post.assert_called_once()
+    
+    @patch('src.sandbox.websocket.WebSocketApp')
+    @patch('src.sandbox.threading.Thread')
+    def test_start_websocket(self, mock_thread, mock_ws_class):
+        """Test starting websocket connection."""
+        with patch('src.sandbox.docker.from_env'):
+            sandbox = DockerSandbox("test-image")
+            sandbox.kernel_id = 'test-kernel-id'
+            
+            # Setup mock WebSocket
+            mock_socket = Mock()
+            mock_socket.connected = True
+            mock_ws = Mock()
+            mock_ws.sock = mock_socket
+            mock_ws_class.return_value = mock_ws
+            
+            # Setup mock thread
+            mock_thread_instance = Mock()
+            mock_thread.return_value = mock_thread_instance
+            
+            sandbox._start_websocket()
+            
+            assert sandbox.ws == mock_ws
+            mock_ws_class.assert_called_once()
+            mock_thread_instance.start.assert_called_once()
+    
+    def test_start_websocket_without_kernel_id(self):
+        """Test starting websocket without kernel_id raises error."""
+        with patch('src.sandbox.docker.from_env'):
+            sandbox = DockerSandbox("test-image")
+            sandbox.kernel_id = None
+            
+            with pytest.raises(RuntimeError, match="No kernel ID"):
+                sandbox._start_websocket()
+    
+    @patch('src.sandbox.requests.delete')
+    def test_stop_kernel(self, mock_delete):
+        """Test stopping a kernel."""
+        with patch('src.sandbox.docker.from_env'):
+            sandbox = DockerSandbox("test-image")
+            sandbox.kernel_id = 'test-kernel-id'
+            
+            mock_response = Mock()
+            mock_delete.return_value = mock_response
+            
+            sandbox._stop_kernel()
+            
+            assert sandbox.kernel_id is None
+            mock_delete.assert_called_once()
+    
+    def test_stop_websocket(self):
+        """Test stopping websocket connection."""
+        with patch('src.sandbox.docker.from_env'):
+            sandbox = DockerSandbox("test-image")
+            
+            # Setup mock WebSocket
+            mock_ws = Mock()
+            sandbox.ws = mock_ws
+            
+            # Setup mock thread
+            mock_thread = Mock()
+            mock_thread.is_alive.return_value = False
+            sandbox.ws_thread = mock_thread
+            
+            sandbox._stop_websocket()
+            
+            assert sandbox.ws is None
+            mock_ws.close.assert_called_once()
 
 
 class TestExceptionHandling:

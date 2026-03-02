@@ -13,6 +13,9 @@ if TYPE_CHECKING:
 class AgentTimeout(InterruptAgentFlow):
     """Raised when the agent exceeds its configured total timeout."""
 
+class EnvironmentUnavailable(InterruptAgentFlow):
+    """Raised when the environment is unavailable or encounters a critical error."""
+
 class UiAgent(DefaultAgent):
     env: "NotebookEnvironment"
 

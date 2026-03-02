@@ -11,6 +11,7 @@ import yaml
 import logging
 from pathlib import Path
 from src.sandbox import DockerSandbox
+from src.ui_agent import EnvironmentUnavailable
 from src.utils.log import logger
 
 
@@ -215,11 +216,55 @@ class TestReconnection:
             sandbox.ws.close()
             sandbox.ws = None
         
-        # Execution should reconnect and succeed
-        result = sandbox.run("print('reconnected')", max_retries=2)
+        # Execution should reconnect and succeed (retry decorator handles this)
+        result = sandbox.run("print('reconnected')")
         assert result['status'] == 'ok'
         output_texts = [o.get('text', '') for o in result['outputs'] if o.get('output_type') == 'stream']
         assert any('reconnected' in text for text in output_texts)
+
+
+class TestRetryEscalationIntegration:
+    """Integration-level checks for retry escalation across calls."""
+
+    def test_fail_once_then_success(self, sandbox, monkeypatch):
+        """First call fully fails, second call succeeds and does not escalate."""
+        original_is_connected = sandbox._is_websocket_connected
+        original_restart_kernel = sandbox.restart_kernel
+
+        def always_disconnected():
+            return False
+
+        def restart_fails():
+            raise RuntimeError("forced restart failure")
+
+        monkeypatch.setattr(sandbox, "_is_websocket_connected", always_disconnected)
+        monkeypatch.setattr(sandbox, "restart_kernel", restart_fails)
+
+        with pytest.raises(RuntimeError, match="forced restart failure"):
+            sandbox.run("print('first call fails')")
+
+        monkeypatch.setattr(sandbox, "_is_websocket_connected", original_is_connected)
+        monkeypatch.setattr(sandbox, "restart_kernel", original_restart_kernel)
+
+        result = sandbox.run("print('second call succeeds')")
+        assert result["status"] == "ok"
+
+    def test_fail_twice_raises_environment_unavailable(self, sandbox, monkeypatch):
+        """Two consecutive fully-failed calls escalate to EnvironmentUnavailable on second call."""
+        def always_disconnected():
+            return False
+
+        def restart_fails():
+            raise RuntimeError("forced restart failure")
+
+        monkeypatch.setattr(sandbox, "_is_websocket_connected", always_disconnected)
+        monkeypatch.setattr(sandbox, "restart_kernel", restart_fails)
+
+        with pytest.raises(RuntimeError, match="forced restart failure"):
+            sandbox.run("print('first full failure')")
+
+        with pytest.raises(EnvironmentUnavailable):
+            sandbox.run("print('second full failure')")
 
 
 class TestKernelRestart:

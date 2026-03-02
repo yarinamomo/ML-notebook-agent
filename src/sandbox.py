@@ -1,5 +1,4 @@
 from typing import Optional, cast, Dict, Any
-import queue
 import time
 import requests
 import docker
@@ -7,8 +6,10 @@ import websocket
 import json
 import uuid
 import threading
+from functools import wraps
 from src.utils.log import logger
 from src.utils.nb_types import CellExecutionResult
+from src.utils.retry_sandbox import retry_with_kernel_restart
 import os
 import datetime
 
@@ -62,7 +63,8 @@ class DockerSandbox:
         self._wait_for_server()
 
         # Start kernel and connect WebSocket client
-        self._start_kernel_websocket()
+        self._start_kernel()
+        self._start_websocket()
 
     def _wait_for_server(self, timeout=30):
         url = f"{self.base_url}:{self.port}/api/status"
@@ -76,10 +78,9 @@ class DockerSandbox:
                 time.sleep(1)
         raise RuntimeError("Jupyter server not responding")
 
-    def _start_kernel_websocket(self):
-        """Create a new kernel and establish WebSocket connection."""
+    def _start_kernel(self):
+        """Create a new kernel via REST API."""
         try:
-            # Create new kernel via REST API
             resp = requests.post(
                 f"{self.base_url}:{self.port}/api/kernels",
                 headers={"Authorization": f"Token {self.token}"},
@@ -90,7 +91,16 @@ class DockerSandbox:
             kernel_info = resp.json()
             self.kernel_id = kernel_info['id']
             logger.info(f"Created kernel: {self.kernel_id}")
-            
+        except Exception as exc:
+            logger.exception("Failed to create kernel")
+            raise RuntimeError("Failed to create kernel") from exc
+    
+    def _start_websocket(self):
+        """Establish WebSocket connection to existing kernel."""
+        if not self.kernel_id:
+            raise RuntimeError("No kernel ID available for WebSocket connection")
+        
+        try:
             # Connect WebSocket
             ws_url = f"ws://127.0.0.1:{self.port}/api/kernels/{self.kernel_id}/channels?token={self.token}"
             self.ws = websocket.WebSocketApp(
@@ -107,10 +117,9 @@ class DockerSandbox:
             # Wait for WebSocket to actually connect (not just started)
             self._wait_for_websocket_connection()
             logger.info("WebSocket connected for kernel %s", self.kernel_id)
-            
         except Exception as exc:
-            logger.exception("Failed to start kernel WebSocket")
-            raise RuntimeError("Failed to start kernel") from exc
+            logger.exception("Failed to start WebSocket")
+            raise RuntimeError("Failed to start WebSocket") from exc
     
     def _wait_for_websocket_connection(self, timeout=10):
         """Wait for WebSocket to be properly connected."""
@@ -181,51 +190,6 @@ class DockerSandbox:
         logger.info("WebSocket closed (code: %s, msg: %s)", close_status_code, close_msg)
         self.ws = None
 
-    def run(self, code: str, timeout=30, max_retries=2) -> CellExecutionResult:
-        """
-        Execute code in the container kernel and return outputs.
-        
-        Args:
-            code: Python code to execute
-            timeout: Maximum execution time in seconds before interrupting (default: 30)
-            max_retries: Maximum reconnection attempts (default: 2)
-            
-        Returns:
-            CellExecutionResult with execution output
-            
-        Raises:
-            RuntimeError: If kernel is unresponsive or execution fails
-        """
-        # Ensure WebSocket is connected with retries
-        for attempt in range(max_retries + 1):
-            if not self._is_websocket_connected():
-                if attempt == 0:
-                    logger.warning("WebSocket disconnected, attempting to reconnect...")
-                else:
-                    logger.info("Reconnection attempt %d/%d", attempt, max_retries)
-                
-                try:
-                    self._start_kernel_websocket()
-                except Exception as e:
-                    if attempt == max_retries:
-                        raise RuntimeError(f"Failed to reconnect to kernel after {max_retries} attempts") from e
-                    time.sleep(1)
-                    continue
-            
-            # WebSocket is connected, attempt execution
-            try:
-                return self._execute_code(code, timeout)
-            except RuntimeError as e:
-                # If WebSocket disconnected during execution, try reconnecting
-                if "WebSocket disconnected" in str(e) and attempt < max_retries:
-                    logger.warning("WebSocket disconnected during execution, retrying...")
-                    time.sleep(1)
-                    continue
-                # Otherwise, re-raise the error
-                raise
-        
-        raise RuntimeError("Failed to execute code after all retry attempts")
-    
     def _is_websocket_connected(self) -> bool:
         """Check if WebSocket is properly connected."""
         try:
@@ -236,9 +200,23 @@ class DockerSandbox:
             )
         except Exception:
             return False
-    
-    def _execute_code(self, code: str, timeout=30) -> CellExecutionResult:
-        """Internal method to execute code without retry logic."""
+
+    @retry_with_kernel_restart()
+    def run(self, code: str, timeout=30) -> CellExecutionResult:
+        """
+        Execute code in the container kernel and return outputs.
+        
+        Args:
+            code: Python code to execute
+            timeout: Maximum execution time in seconds before interrupting (default: 30)
+            
+        Returns:
+            CellExecutionResult with execution output
+            
+        Raises:
+            RuntimeError: If kernel is unresponsive or execution fails
+            EnvironmentUnavailable: If the environment is unavailable or encounters critical errors
+        """
         if not self._is_websocket_connected():
             raise RuntimeError("WebSocket disconnected before execution")
         
@@ -309,12 +287,8 @@ class DockerSandbox:
                     'output_type': 'error',
                     'ename': 'TimeoutError',
                     'evalue': f"Execution exceeded timeout of {timeout} seconds and was interrupted",
+                    'traceback': []
                 })
-                try:
-                    self._restart_kernel_websocket()
-                except Exception as e:
-                    logger.exception("Failed to restart kernel after timeout")                            
-
             return result
             
         except Exception as exc:
@@ -339,75 +313,56 @@ class DockerSandbox:
             logger.exception("Failed to interrupt kernel: %s", e)
             raise
 
-    def _restart_kernel_websocket(self):
-        """Cleanly shutdown kernel and restart it with fresh WebSocket connection."""
-        try:
-            # Close WebSocket
-            if self.ws:
-                with self.ws_lock:
-                    try:
-                        self.ws.close()
-                    except Exception:
-                        pass
-                    self.ws = None
-            
-            # Wait for thread to finish
-            if self.ws_thread and self.ws_thread.is_alive():
-                self.ws_thread.join(timeout=2)
-            
-            # Delete old kernel via REST API
-            if self.kernel_id:
+    def _stop_websocket(self):
+        """Close WebSocket connection and wait for thread to finish."""
+        if self.ws:
+            with self.ws_lock:
                 try:
-                    requests.delete(
-                        f"{self.base_url}:{self.port}/api/kernels/{self.kernel_id}",
-                        headers={"Authorization": f"Token {self.token}"},
-                        timeout=5
-                    )
-                    logger.info("Deleted old kernel: %s", self.kernel_id)
-                except Exception as e:
-                    logger.warning("Failed to delete old kernel: %s", e)
-                
-                self.kernel_id = None
+                    self.ws.close()
+                except Exception:
+                    pass
+                self.ws = None
+        
+        # Wait for thread to finish
+        if self.ws_thread and self.ws_thread.is_alive():
+            self.ws_thread.join(timeout=2)
+        
+        logger.debug("WebSocket connection closed")
+    
+    def _stop_kernel(self):
+        """Delete kernel via REST API."""
+        if self.kernel_id:
+            try:
+                requests.delete(
+                    f"{self.base_url}:{self.port}/api/kernels/{self.kernel_id}",
+                    headers={"Authorization": f"Token {self.token}"},
+                    timeout=5
+                )
+                logger.info("Deleted kernel: %s", self.kernel_id)
+            except Exception as e:
+                logger.warning("Failed to delete kernel: %s", e)
             
-            # Clear pending execution results
+            self.kernel_id = None
+    
+    def restart_kernel(self):
+        """Restart kernel and reconnect WebSocket."""
+        try:
+            logger.info("Restarting kernel...")
+            self._stop_websocket()
+            self._stop_kernel()
             self.execution_results.clear()
-            
-            # Start fresh kernel
-            self._start_kernel_websocket()
+            self._start_kernel()
+            self._start_websocket()
             logger.info("Kernel restarted successfully")
-            
         except Exception as e:
             logger.exception("Failed to restart kernel")
             raise RuntimeError("Failed to restart kernel") from e
-    
-    def restart_kernel(self):
-        """Public method to restart the kernel without stopping the container."""
-        self._restart_kernel_websocket()
 
     def stop(self):
         """Stop kernel and remove container."""
         try:
-            if self.ws:
-                with self.ws_lock:
-                    try:
-                        self.ws.close()
-                    except Exception:
-                        pass
-                    self.ws = None
-            
-            if self.ws_thread and self.ws_thread.is_alive():
-                self.ws_thread.join(timeout=2)
-            
-            if self.kernel_id:
-                try:
-                    requests.delete(
-                        f"{self.base_url}:{self.port}/api/kernels/{self.kernel_id}",
-                        headers={"Authorization": f"Token {self.token}"},
-                        timeout=5
-                    )
-                except Exception as e:
-                    logger.warning("Error deleting kernel: %s", e)
-                self.kernel_id = None
+            self._stop_websocket()
+            self._stop_kernel()
         except Exception as e:
             logger.exception("Error stopping kernel: %s", e)
         
