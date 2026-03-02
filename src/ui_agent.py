@@ -37,9 +37,11 @@ class UiAgent(DefaultAgent):
         if self.total_timeout > 0 and self._start_time is not None:
             elapsed = time.monotonic() - self._start_time
             if elapsed >= self.total_timeout:
-                raise AgentTimeout(
-                    f"Agent execution exceeded total timeout of {self.total_timeout} seconds"
-                )
+                raise AgentTimeout({
+                    "role": "exit",
+                    "content": "AgentTimeout",
+                    "extra": {"exit_status": "AgentTimeout", "submission": f"Agent execution exceeded total timeout of {self.total_timeout} seconds"},
+                })
 
         with ui.wait_llm():
             response = super().query()
