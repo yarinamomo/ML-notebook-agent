@@ -49,6 +49,7 @@ class NotebookEnvironment:
         """
         self.config: NotebookEnvironmentConfig = config_class(**kwargs)
         self.source_path = source_path
+        self.is_submittable = False # Flag to track if submission is allowed (after successful run_all)
         self.problem: BenchmarkProblem = BenchmarkProblem(
             sandbox_settings={
                 "image_name": self.config.docker_image_name,
@@ -96,7 +97,8 @@ class NotebookEnvironment:
         """Route a structured tool call to the appropriate handler."""
         if not self.problem.get_cell_count() and tool_name not in ("submit",):
             return self._wrap_error("Notebook not initialized")
-
+        tmp_is_submittable = self.is_submittable
+        self.is_submittable = False  # Reset submittable flag on any action
         match tool_name:
             case "get_cell_count":
                 return self._wrap_success(str(self.problem.get_cell_count()))
@@ -130,6 +132,8 @@ class NotebookEnvironment:
                     output_parts.append(f"Cell {i}:\n{cell_output}")
 
                 result["output"] = "\n\n".join(output_parts)
+                self.is_submittable = result["returncode"] == 0
+                print(f"Run all completed. Submittable: {self.is_submittable}")
                 return result
             case "run_code":
                 code = str(args["code"])
@@ -142,7 +146,7 @@ class NotebookEnvironment:
                     "role": "exit",
                     "content": summary,
                     "extra": {
-                        "exit_status": "Submitted",
+                        "exit_status": "Submitted" if tmp_is_submittable else "SubmittedWithErrors",
                         "submission": summary,
                     },
                 })
@@ -200,7 +204,7 @@ class NotebookEnvironment:
             "exception_info": exception_info or message,
         }
 
-    def _wrap_execution_result(self, exec_result: CellExecutionResult) -> EnvironmentResult:
+    def _wrap_execution_result(self, exec_result: CellExecutionResult | None) -> EnvironmentResult:
         """Wrap a cell execution result into the standard tool output format."""
         formatted_output = self._format_exec_result(exec_result)
         error = self._get_execution_error(exec_result)
@@ -208,7 +212,7 @@ class NotebookEnvironment:
             return self._wrap_error(formatted_output, exception_info=str(error))
         return self._wrap_success(formatted_output)
 
-    def _get_execution_error(self, exec_result: CellExecutionResult) -> Optional[ErrorOutput]:
+    def _get_execution_error(self, exec_result: CellExecutionResult | None) -> Optional[ErrorOutput]:
         """Check if execution result contains errors."""
         if exec_result is None or not isinstance(exec_result, dict):
             return None
@@ -221,7 +225,7 @@ class NotebookEnvironment:
                 return cast(ErrorOutput, out)
         return None
 
-    def _format_exec_result(self, exec_result: CellExecutionResult) -> str:
+    def _format_exec_result(self, exec_result: CellExecutionResult | None) -> str:
         if exec_result is None:
             return "(No output)"
         if isinstance(exec_result, dict) and 'outputs' in exec_result:
