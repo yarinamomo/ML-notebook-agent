@@ -113,7 +113,7 @@ class BenchmarkProblem:
         for i in range(len(self._cells)):
             result: CellExecutionResult = self.run_cell(i)
             results.append(result)
-            if result["status"] == "error":
+            if result["status"] in ["error", "timeout"]:
                 # If a cell fails, we stop execution and return results so far
                 logging.info(f"Cell {i} execution failed. Stopping run_all." + (f" Last output: {result.get('outputs', [])[-1]}" if result.get('outputs', []) else ""))
                 break
