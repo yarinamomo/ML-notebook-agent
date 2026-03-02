@@ -5,17 +5,21 @@ This module creates an environment adapter that allows mini-swe-agent to work
 with the self-defined Docker-based Jupyter notebook sandbox.
 """
 
-import asyncio
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, TypedDict, Literal, cast
 from pathlib import Path
 from pydantic import BaseModel
 
 from minisweagent.exceptions import Submitted
-from src.utils.nb_types import CellExecutionResult, format_for_llm
+from src.utils.nb_types import CellExecutionResult, ErrorOutput, format_for_llm
 
 from .benchmark import BenchmarkProblem
 from src.utils.log import logger
+
+class EnvironmentResult(TypedDict):
+    output: str
+    returncode: Literal[0, 1]
+    exception_info: Optional[str]
 
 class NotebookEnvironmentConfig(BaseModel):
     """Configuration for the notebook environment."""
@@ -58,7 +62,7 @@ class NotebookEnvironment:
             timeout=self.config.timeout,
         )        
     
-    def execute(self, action: dict, cwd: str = "") -> dict[str, Any]:
+    def execute(self, action: dict, cwd: str = "") -> EnvironmentResult:
         """Execute a structured tool action.
 
         The *action* dict is produced by ``parse_notebook_tool_actions`` and
@@ -88,7 +92,7 @@ class NotebookEnvironment:
     # Tool dispatch
     # ------------------------------------------------------------------
 
-    def _dispatch_tool(self, tool_name: str, args: dict) -> dict[str, Any]:
+    def _dispatch_tool(self, tool_name: str, args: dict) -> EnvironmentResult:
         """Route a structured tool call to the appropriate handler."""
         if not self.problem.get_cell_count() and tool_name not in ("submit",):
             return self._wrap_error("Notebook not initialized")
@@ -114,20 +118,23 @@ class NotebookEnvironment:
             case "run_cell":
                 index = int(args["cell_index"])
                 exec_result = self.problem.run_cell(index)
-                return self._wrap_success(self._format_exec_result(exec_result))
+                return self._wrap_execution_result(exec_result)
 
             case "run_all":
                 exec_results = self.problem.run_all()
+                last_exec_result = exec_results[-1] if exec_results else None
+                result = self._wrap_execution_result(last_exec_result)
                 output_parts = []
                 for i, exec_result in enumerate(exec_results):
                     cell_output = self._format_exec_result(exec_result)
                     output_parts.append(f"Cell {i}:\n{cell_output}")
-                return self._wrap_success("\n\n".join(output_parts))
 
+                result["output"] = "\n\n".join(output_parts)
+                return result
             case "run_code":
                 code = str(args["code"])
                 exec_result = self.problem.execute_python_command(code)
-                return self._wrap_success(self._format_exec_result(exec_result))
+                return self._wrap_execution_result(exec_result)
 
             case "submit":
                 summary = args.get("summary", "")
@@ -179,19 +186,40 @@ class NotebookEnvironment:
         
         return template_vars
 
-    def _wrap_success(self, output: str) -> dict[str, Any]:
+    def _wrap_success(self, output: str) -> EnvironmentResult:
         return {
             "output": output,
             "returncode": 0,
             "exception_info": "",
         }
 
-    def _wrap_error(self, message: str, exception_info: Optional[str] = None) -> dict[str, Any]:
+    def _wrap_error(self, message: str, exception_info: Optional[str] = None) -> EnvironmentResult:
         return {
             "output": message,
             "returncode": 1,
             "exception_info": exception_info or message,
         }
+
+    def _wrap_execution_result(self, exec_result: CellExecutionResult) -> EnvironmentResult:
+        """Wrap a cell execution result into the standard tool output format."""
+        formatted_output = self._format_exec_result(exec_result)
+        error = self._get_execution_error(exec_result)
+        if error is not None:
+            return self._wrap_error(formatted_output, exception_info=str(error))
+        return self._wrap_success(formatted_output)
+
+    def _get_execution_error(self, exec_result: CellExecutionResult) -> Optional[ErrorOutput]:
+        """Check if execution result contains errors."""
+        if exec_result is None or not isinstance(exec_result, dict):
+            return None
+                
+        # Check for error outputs
+        outputs = exec_result.get('outputs', [])
+        for out in outputs:
+            msg_type = out.get('output_type', '')
+            if msg_type == 'error':
+                return cast(ErrorOutput, out)
+        return None
 
     def _format_exec_result(self, exec_result: CellExecutionResult) -> str:
         if exec_result is None:

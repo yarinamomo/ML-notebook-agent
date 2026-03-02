@@ -53,6 +53,7 @@ def build_summary(
     llm_responses: list[dict] = []
     operations: list[dict] = []
     code_changes: list[dict] = []
+    exit_status: str = ""
 
     last_assistant: dict = {}
     step = 0
@@ -117,15 +118,9 @@ def build_summary(
                 "step": step,
                 "action": exit_status,
                 "output": submission,
-                "return_code": 0,
+                "return_code": 0 if exit_status == "Submitted" else 1,
                 "success": exit_status == "Submitted",
             })
-
-    # Determine overall success
-    success = any(
-        op.get("action") == "Submitted" and op.get("success")
-        for op in operations
-    )
 
     # Build code changes list (each edit as a separate entry with step)
     unique_cells_edited = len({c["cell_index"] for c in code_changes})
@@ -143,8 +138,8 @@ def build_summary(
         "metadata": {
             "generated_at": datetime.now().isoformat(),
             "execution_time_seconds": round(execution_time_seconds, 2),
-            "success": success,
-            "status": "SUCCESS" if success else "INCOMPLETE",
+            "success": exit_status == "Submitted",
+            "status": exit_status or "INCOMPLETE",
             "cost": round(cost, 4),
         },
         "statistics": {
