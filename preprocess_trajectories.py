@@ -191,7 +191,7 @@ def process_trajectory(traj_dir: str, model: str, library: str, run: str, instan
             continue
 
         step_num += 1
-        assistant_content = msg.get("content", "")
+        assistant_content = msg.get("content", "") or ""
 
         # Get reasoning/thinking if available
         reasoning = None
