@@ -7,10 +7,12 @@ Tests core functionality with mocked Docker and WebSocket components.
 import pytest
 import json
 import time
+from typing import cast
 from unittest.mock import Mock, MagicMock, patch, call, PropertyMock
 from src.sandbox import DockerSandbox
 from src.utils.retry_sandbox import retry_with_kernel_restart
 from src.ui_agent import EnvironmentUnavailable
+from src.utils.nb_types import StreamOutput, ExecuteResultOutput, ErrorOutput, CellExecutionResult
 
 
 class TestDockerSandboxInit:
@@ -124,8 +126,9 @@ class TestMessageHandling:
             sandbox._on_ws_message(None, message)
             
             assert len(sandbox.execution_results[msg_id]['outputs']) == 1
-            assert sandbox.execution_results[msg_id]['outputs'][0]['output_type'] == 'stream'
-            assert sandbox.execution_results[msg_id]['outputs'][0]['text'] == 'Hello World\n'
+            output = cast(StreamOutput, sandbox.execution_results[msg_id]['outputs'][0])
+            assert output['output_type'] == 'stream'
+            assert output['text'] == 'Hello World\n'
     
     def test_on_ws_message_execute_result(self):
         """Test handling execute result messages."""
@@ -152,8 +155,9 @@ class TestMessageHandling:
             sandbox._on_ws_message(None, message)
             
             assert len(sandbox.execution_results[msg_id]['outputs']) == 1
-            assert sandbox.execution_results[msg_id]['outputs'][0]['output_type'] == 'execute_result'
-            assert sandbox.execution_results[msg_id]['outputs'][0]['data'] == {'text/plain': '42'}
+            output = cast(ExecuteResultOutput, sandbox.execution_results[msg_id]['outputs'][0])
+            assert output['output_type'] == 'execute_result'
+            assert output['data'] == {'text/plain': '42'}
     
     def test_on_ws_message_error(self):
         """Test handling error messages."""
@@ -181,8 +185,9 @@ class TestMessageHandling:
             sandbox._on_ws_message(None, message)
             
             assert len(sandbox.execution_results[msg_id]['outputs']) == 1
-            assert sandbox.execution_results[msg_id]['outputs'][0]['output_type'] == 'error'
-            assert sandbox.execution_results[msg_id]['outputs'][0]['ename'] == 'ValueError'
+            output = cast(ErrorOutput, sandbox.execution_results[msg_id]['outputs'][0])
+            assert output['output_type'] == 'error'
+            assert output['ename'] == 'ValueError'
     
     def test_on_ws_message_execute_reply(self):
         """Test handling execute reply messages."""
@@ -400,7 +405,9 @@ class TestKernelRestart:
             mock_ws.sock = mock_socket
             sandbox.ws = mock_ws
             sandbox.kernel_id = "old-kernel-id"
-            sandbox.execution_results = {"msg-1": {}}
+            sandbox.execution_results = {
+                "msg-1": cast(CellExecutionResult, {"status": "ok", "done": True, "execution_count": 1, "outputs": []})
+            }
             
             mock_response = Mock()
             mock_response.raise_for_status = Mock()
