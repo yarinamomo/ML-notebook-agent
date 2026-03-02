@@ -18,10 +18,11 @@ from .benchmark import BenchmarkProblem
 
 class NotebookEnvironmentConfig(BaseModel):
     """Configuration for the notebook environment."""
-    sandbox_settings: dict[str, Any]
-    source_path: str
-    docker_mount_path: str
-    output_dir: str  # Path to save patched files
+    source_path_parent: str = "example/JunoBench/"
+    docker_image_name: str = "yarinamomo/junobench-simple"
+    port : int = 8888
+    docker_start_command: str | None = None
+    docker_mount_path: str =  "example/docker_mount/"
     problem_mode: str = "JunoBench_Buggy"
     timeout: int = 600
     run_all_timeout: int = 0  # Total timeout for run_all() operation
@@ -31,7 +32,8 @@ class NotebookEnvironment:
     """mini-swe-agent Environment for Jupyter Notebook Sandbox."""
     def __init__(
         self,
-        *,
+        source_path: str,
+        output_dir: str,
         config_class: type = NotebookEnvironmentConfig,
         **kwargs
     ):
@@ -42,11 +44,16 @@ class NotebookEnvironment:
             config_class: Configuration class to use
             **kwargs: Configuration parameters (sandbox_settings, source_path, docker_mount_path, etc.)
         """
-        self.config = config_class(**kwargs)
+        self.config: NotebookEnvironmentConfig = config_class(**kwargs)
+        self.source_path = source_path
         self.problem: BenchmarkProblem = BenchmarkProblem(
-            sandbox_settings=self.config.sandbox_settings,
-            source_path=self.config.source_path,
-            output_dir=self.config.output_dir,
+            sandbox_settings={
+                "image_name": self.config.docker_image_name,
+                "port": self.config.port,
+                "start_command": self.config.docker_start_command,
+            },
+            source_path=source_path,
+            output_dir=output_dir,
             problem_mode=self.config.problem_mode,
             docker_source_path=self.config.docker_mount_path,
             timeout=self.config.timeout,
@@ -149,7 +156,7 @@ class NotebookEnvironment:
         """
         template_vars = {
             # Paths
-            "source_path": self.config.source_path,
+            "source_path": self.source_path,
             "docker_mount_path": self.config.docker_mount_path,
             "problem_mode": self.config.problem_mode,
             "container_working_dir": "/app/container",

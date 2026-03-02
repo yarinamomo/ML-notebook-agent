@@ -6,7 +6,7 @@ from typing import Any, Optional
 import threading
 
 import typer
-from src.notebook_environment import NotebookEnvironment
+from src.notebook_environment import NotebookEnvironment, NotebookEnvironmentConfig
 from src.CustomToolLitellmModel import CustomToolLitellmModel
 from src.utils.log import logger
 from src.ui_agent import UiAgent
@@ -31,7 +31,7 @@ def run_single_instance(
     run_number: int,
     config: dict,
     trajectories_dir: Path
-) -> tuple[str, Optional[str], float, int]:
+) -> tuple[str, Optional[str]]:
     """Run a single instance with a specific model and run number.
     
     Returns:
@@ -64,22 +64,14 @@ def run_single_instance(
         if instance_traj_path.exists() and (instance_summary_path is None or instance_summary_path.exists()):
             logger.info(f"Skipping (already completed): {instance_name} run {run_number} — "
                         f"trajectory and summary already exist at {run_output_dir}")
-            return "skipped", None, 0.0, 0
+            return "skipped", None
 
     
     # Create environment
     env = NotebookEnvironment(
-        sandbox_settings={
-            "image_name": env_config.get("docker_image_name", "yarinamomo/junobench-simple"),
-            "port": 8888,
-            "start_command": env_config.get("docker_start_command", None)
-        },
         source_path=str(source_path_parent / instance_name),
-        docker_mount_path=env_config.get("docker_mount_path", "example/docker_mount/"),
-        problem_mode=env_config.get("problem_mode", "JunoBench_Buggy"),
-        timeout=env_config.get("timeout", 600),
-        run_all_timeout=env_config.get("run_all_timeout", 0),
-        output_dir=str(run_output_dir)
+        output_dir=str(run_output_dir),
+        **env_config
     )
 
     # Create and run agent
