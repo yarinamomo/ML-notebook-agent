@@ -10,6 +10,7 @@ import threading
 from src.utils.log import logger
 from src.utils.nb_types import CellExecutionResult
 import os
+import datetime
 
 class DockerSandbox:
     def __init__(self, image_name, base_url="http://127.0.0.1", port=8888, token="Super_Duper_Secret_Token", mount_volume=None, start_command=None):
@@ -258,7 +259,7 @@ class DockerSandbox:
                     'msg_type': 'execute_request',
                     'session': self.session_id,
                     'username': 'user',
-                    'date': time.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+                    'date': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
                 },
                 'metadata': {},
                 'content': {
