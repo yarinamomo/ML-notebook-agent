@@ -15,6 +15,7 @@ from minisweagent.exceptions import Submitted
 from src.utils.nb_types import CellExecutionResult, format_for_llm
 
 from .benchmark import BenchmarkProblem
+from src.utils.log import logger
 
 class NotebookEnvironmentConfig(BaseModel):
     """Configuration for the notebook environment."""
@@ -82,6 +83,8 @@ class NotebookEnvironment:
         except Submitted:
             raise  # Let the agent framework handle submission
         except Exception as exc:
+            logger.exception(f"Error executing tool '{tool_name}'")
+            logger.exception(exc)
             return self._wrap_error(f"Error executing {tool_name}: {exc}")
 
     # ------------------------------------------------------------------

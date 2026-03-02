@@ -24,7 +24,7 @@ class DockerSandbox:
         self.ws_thread: Optional[threading.Thread] = None
         self.kernel_id: Optional[str] = None
         self.session_id = str(uuid.uuid4())
-        self.execution_results: Dict[str, Dict[str, Any]] = {}
+        self.execution_results: Dict[str, CellExecutionResult] = {}
         self.ws_lock = threading.Lock()
         self.start_command = start_command
 
@@ -104,7 +104,7 @@ class DockerSandbox:
             self.ws_thread.start()
             
             # Wait for WebSocket to actually connect (not just started)
-            self._wait_for_websocket_connection(timeout=10)
+            self._wait_for_websocket_connection()
             logger.info("WebSocket connected for kernel %s", self.kernel_id)
             
         except Exception as exc:
@@ -193,7 +193,6 @@ class DockerSandbox:
             CellExecutionResult with execution output
             
         Raises:
-            TimeoutError: If execution exceeds timeout
             RuntimeError: If kernel is unresponsive or execution fails
         """
         # Ensure WebSocket is connected with retries
@@ -299,27 +298,24 @@ class DockerSandbox:
                     self.execution_results[msg_id]['done'] = True
                     self.execution_results[msg_id]['status'] = 'timeout'
                     
-                    # Clean up and restart kernel
-                    try:
-                        self._restart_kernel_websocket()
-                    except Exception as e:
-                        logger.exception("Failed to restart kernel after timeout")
-                    
-                    raise TimeoutError(f"Code execution exceeded {timeout} seconds and was interrupted")
-                
+                    logger.info(f"Code execution exceeded {timeout} seconds and was interrupted")
                 time.sleep(0.05)
             
             result = self.execution_results.pop(msg_id)
+            if result['status'] == 'timeout':
+                # Clean up and restart kernel
+                result['outputs'].append({
+                    'output_type': 'error',
+                    'ename': 'TimeoutError',
+                    'evalue': f"Execution exceeded timeout of {timeout} seconds and was interrupted",
+                })
+                try:
+                    self._restart_kernel_websocket()
+                except Exception as e:
+                    logger.exception("Failed to restart kernel after timeout")                            
+
+            return result
             
-            return cast(CellExecutionResult, {
-                'status': result['status'],
-                'outputs': result['outputs'],
-                'execution_count': result['execution_count'],
-            })
-            
-        except TimeoutError:
-            self.execution_results.pop(msg_id, None)
-            raise
         except Exception as exc:
             self.execution_results.pop(msg_id, None)
             logger.exception("Execution failed: %s", exc)

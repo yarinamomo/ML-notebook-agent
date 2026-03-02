@@ -181,15 +181,23 @@ class TestTimeout:
 import time
 time.sleep(5)
 """
-        # Should timeout after 1 second
-        with pytest.raises(TimeoutError):
-            sandbox.run(code, timeout=1)
+        # Should return timeout status after 1 second
+        result = sandbox.run(code, timeout=1)
+        assert result['status'] == 'timeout'
+        assert len(result['outputs']) > 0
+        last_output = result['outputs'][-1]
+        assert last_output.get('output_type') == 'error'
+        assert last_output.get('ename') == 'TimeoutError'
     
     def test_kernel_restarted_after_timeout(self, sandbox):
         """Test that kernel is restarted after timeout."""
-        # First execution times out
-        with pytest.raises(TimeoutError):
-            sandbox.run("while True: pass", timeout=1)
+        # First execution times out and returns timeout message
+        timeout_result = sandbox.run("while True: pass", timeout=1)
+        assert timeout_result['status'] == 'timeout'
+        assert len(timeout_result['outputs']) > 0
+        last_output = timeout_result['outputs'][-1]
+        assert last_output.get('output_type') == 'error'
+        assert last_output.get('ename') == 'TimeoutError'
         
         # Kernel should be restarted and working again
         assert sandbox.kernel_id is not None
