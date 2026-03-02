@@ -133,7 +133,6 @@ class NotebookEnvironment:
 
                 result["output"] = "\n\n".join(output_parts)
                 self.is_submittable = result["returncode"] == 0
-                print(f"Run all completed. Submittable: {self.is_submittable}")
                 return result
             case "run_code":
                 code = str(args["code"])
