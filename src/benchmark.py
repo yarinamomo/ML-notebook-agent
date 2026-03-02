@@ -2,7 +2,6 @@ from typing import Any, List, Optional
 from pathlib import Path
 import shutil
 import time
-import threading
 import src.utils.preprocess_notebook as preprocess_notebook
 import src.utils.nbformat_helper as nbformat_helper
 from src.utils.nb_types import CellExecutionResult
@@ -19,7 +18,7 @@ def setup_environment(src, dst):
         if dst.is_file():
             dst.unlink()
         else:
-            shutil.rmtree(dst)
+            _remove_directory_with_retry(dst, max_retries=3, delay=1.0)
 
     # Copy recursively
     shutil.copytree(src, dst)
@@ -27,6 +26,32 @@ def setup_environment(src, dst):
     # Delay to ensure filesystem sync for Docker volume mounts on macOS
     # Docker Desktop can have delays seeing newly created files after rmtree + copytree
     time.sleep(5.0) # 5x longer than tests needed to be absolutely certain
+
+def _remove_directory_with_retry(path: Path, max_retries: int = 3, delay: float = 1.0):
+    """Remove directory with retry logic for Docker mounted volumes.
+    
+    Args:
+        path: Directory path to remove
+        max_retries: Number of retry attempts
+        delay: Delay between retries in seconds
+    """
+    for attempt in range(max_retries):
+        try:
+            # Use ignore_errors=True for problematic files (like .DS_Store on macOS)
+            shutil.rmtree(path, ignore_errors=True)
+            # Verify directory is actually gone
+            if not path.exists():
+                return
+        except OSError as e:
+            if attempt < max_retries - 1:
+                logging.warning(f"Failed to remove {path} (attempt {attempt + 1}/{max_retries}), retrying in {delay}s: {e}")
+                time.sleep(delay)
+            else:
+                raise
+    
+    # Final check - if directory still exists, raise error
+    if path.exists():
+        raise OSError(f"Failed to remove directory {path} after {max_retries} attempts")
 
 # actual environment for the agent
 class BenchmarkProblem:
@@ -74,64 +99,26 @@ class BenchmarkProblem:
         self._exec_states.pop(index, None) # reset execution state since content changed
         nbformat_helper.save_cells(self._cells, self._original_cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
 
-    def run_cell(self, index: int):
+    def run_cell(self, index: int) -> CellExecutionResult:
         code = self._get_cell_source(index)
         # Change working directory inside the Docker container before executing code
         code = f"import os\nos.chdir('/app/container')\n{code}" # TODO this should be moved into sandbox.
-        result = self.sandbox.run(code)
+        result = self.sandbox.run(code, timeout=self.timeout)
         self._exec_states[index] = result
         nbformat_helper.save_cells(self._cells, self._original_cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
         return result
 
     def run_all(self) -> List[CellExecutionResult]:
         self.sandbox.restart_kernel()
-        
-        # If run_all_timeout is set, run with timeout
-        if self.run_all_timeout and self.run_all_timeout > 0:
-            results = []
-            timeout_occurred = False
-            exception = None
-            
-            def run_cells():
-                nonlocal results, exception
-                try:
-                    for i in range(len(self._cells)):
-                        results.append(self.run_cell(i))
-                except Exception as e:
-                    exception = e
-            
-            thread = threading.Thread(target=run_cells)
-            thread.daemon = True
-            thread.start()
-            thread.join(timeout=self.run_all_timeout)
-            
-            if thread.is_alive():
-                # Timeout occurred
-                timeout_occurred = True
-                # Create a timeout error result for remaining cells in CellExecutionResult format
-                for i in range(len(results), len(self._cells)):
-                    results.append({
-                        "execution_count": i + 1,
-                        "status": "error",
-                        "outputs": [{
-                            "output_type": "error",
-                            "ename": "TimeoutError",
-                            "evalue": f"run_all() operation timed out after {self.run_all_timeout} seconds. Cell {i} was not executed.",
-                        }]
-                    })
-            
-            if exception:
-                raise exception
-                
-            nbformat_helper.save_cells(self._cells, self._original_cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
-            return results
-        else:
-            # Run without timeout (original behavior)
-            results = []
-            for i in range(len(self._cells)):
-                results.append(self.run_cell(i))
-            nbformat_helper.save_cells(self._cells, self._original_cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
-            return results
+        results = []
+        for i in range(len(self._cells)):
+            result: CellExecutionResult = self.run_cell(i)
+            results.append(result)
+            if result["status"] == "error":
+                # If a cell fails, we stop execution and return results so far
+                logging.info(f"Cell {i} execution failed with error: {result['outputs'][-1]['text']}. Stopping run_all.")
+                break
+        return results
 
 
     def execute_python_command(self, command: str):
@@ -142,13 +129,20 @@ class BenchmarkProblem:
         return exec_result
 
     def close(self):
+        # Stop sandbox first to release Docker volume mounts
         if self.sandbox:
-            self.sandbox.stop()
+            try:
+                self.sandbox.stop()
+            except Exception as e:
+                logging.warning(f"Error stopping sandbox: {e}")
+        
+        # Give Docker time to release volume locks
+        time.sleep(0.5)
         
         # Clean up the mount path (docker_source_path)
         if self.docker_source_path and self.docker_source_path.exists():
             try:
-                shutil.rmtree(self.docker_source_path)
+                _remove_directory_with_retry(self.docker_source_path, max_retries=3, delay=1.0)
             except Exception as e:
                 logging.warning(f"⚠️ Warning: Could not clean up mount path {self.docker_source_path}: {e}")
 
