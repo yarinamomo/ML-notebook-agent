@@ -26,8 +26,6 @@ class NotebookEnvironmentConfig(BaseModel):
     docker_mount_path: str =  "example/docker_mount/"
     problem_mode: str = "JunoBench_Buggy"
     timeout: int = 600
-    run_all_timeout: int = 0  # Total timeout for run_all() operation
-
 
 class NotebookEnvironment:
     """mini-swe-agent Environment for Jupyter Notebook Sandbox."""
@@ -58,7 +56,6 @@ class NotebookEnvironment:
             problem_mode=self.config.problem_mode,
             docker_source_path=self.config.docker_mount_path,
             timeout=self.config.timeout,
-            run_all_timeout=self.config.run_all_timeout
         )        
     
     def execute(self, action: dict, cwd: str = "") -> dict[str, Any]:

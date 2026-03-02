@@ -55,7 +55,7 @@ def _remove_directory_with_retry(path: Path, max_retries: int = 3, delay: float 
 
 # actual environment for the agent
 class BenchmarkProblem:
-    def __init__(self, sandbox_settings: dict, source_path: str, output_dir: str, problem_mode: str = "JunoBench_Buggy", docker_source_path: str = "docker_source", timeout: int = 600, run_all_timeout: int = 0):
+    def __init__(self, sandbox_settings: dict, source_path: str, output_dir: str, problem_mode: str = "JunoBench_Buggy", docker_source_path: str = "docker_source", timeout: int = 600):
         self.source_path = Path(source_path)
         self.docker_source_path = Path(docker_source_path).resolve()
         self.output_dir = Path(output_dir)
@@ -79,7 +79,6 @@ class BenchmarkProblem:
         # Store original cell contents for tracking true original state
         self._original_cells: dict[int, str] = {i: self._get_cell_source(i) for i in range(len(self._cells))}
         self.timeout = timeout # TODO Move into sandbox settings.
-        self.run_all_timeout = run_all_timeout  # Total timeout for run_all() operation 
 
     def get_cells(self):
         return [self.get_cell(i) for i in range(len(self._cells))]

@@ -3,17 +3,21 @@ import time
 from pathlib import Path
 
 from minisweagent.agents.default import DefaultAgent
+from minisweagent.exceptions import InterruptAgentFlow
 import src.utils.ui as ui
 from src.utils.summary_util import build_summary, extract_reasoning, find_action
 from typing import override, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.notebook_environment import NotebookEnvironment
+class AgentTimeout(InterruptAgentFlow):
+    """Raised when the agent exceeds its configured total timeout."""
 
 class UiAgent(DefaultAgent):
     env: "NotebookEnvironment"
 
     def __init__(self, *args, **kwargs):
+        self.total_timeout: int = kwargs.pop("total_timeout", 0)
         super().__init__(*args, **kwargs)
         self._start_time: float | None = None
 
@@ -30,6 +34,13 @@ class UiAgent(DefaultAgent):
 
     @override
     def query(self) -> dict:
+        if self.total_timeout > 0 and self._start_time is not None:
+            elapsed = time.monotonic() - self._start_time
+            if elapsed >= self.total_timeout:
+                raise AgentTimeout(
+                    f"Agent execution exceeded total timeout of {self.total_timeout} seconds"
+                )
+
         with ui.wait_llm():
             response = super().query()
         actions = "\n".join([action.get("command", "") for action in response.get("extra", {}).get("actions", [])])

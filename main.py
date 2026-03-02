@@ -3,7 +3,6 @@ import time
 import traceback
 from pathlib import Path
 from typing import Any, Optional
-import threading
 
 import typer
 from src.notebook_environment import NotebookEnvironment, NotebookEnvironmentConfig
@@ -77,38 +76,13 @@ def run_single_instance(
     # Create and run agent
     agent = UiAgent(model, env, **config.get("agent", {}))
     exit_status, submission = "", None
-    
-    # Get total_timeout from environment config
-    total_timeout = env_config.get("total_timeout", 0)
-    
-    # Run agent with optional total timeout
-    def run_agent():
-        nonlocal exit_status, submission
-        try:
-            exit_info = agent.run("")  # type: ignore[arg-type]
-            exit_status = exit_info.get("exit_status", "")
-            submission = exit_info.get("submission", "")
-        except Exception as e:
-            exit_status, submission = type(e).__name__, str(e)
-            raise
-    
+
     try:
-        if total_timeout is not None and total_timeout > 0:
-            # Run with timeout
-            thread = threading.Thread(target=run_agent)
-            thread.daemon = True
-            thread.start()
-            thread.join(timeout=total_timeout)
-            
-            if thread.is_alive():
-                # Timeout occurred
-                logger.error(f"Agent run exceeded total timeout of {total_timeout}s")
-                exit_status = "TIMEOUT"
-                submission = f"Agent execution exceeded total timeout of {total_timeout} seconds"
-        else:
-            # Run without timeout
-            run_agent()
+        exit_info = agent.run("")  # type: ignore[arg-type]
+        exit_status = exit_info.get("exit_status", "")
+        submission = exit_info.get("submission", "")
     except Exception as e:
+        exit_status, submission = type(e).__name__, str(e)
         logger.error(f"Error running agent: {e}", exc_info=True)
     finally:
         # Save trajectory and summary
