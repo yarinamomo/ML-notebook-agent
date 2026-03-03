@@ -25,7 +25,7 @@ class NotebookEnvironmentConfig(BaseModel):
     """Configuration for the notebook environment."""
     source_path_parent: str = "example/JunoBench/"
     docker_image_name: str = "yarinamomo/junobench-simple"
-    port : int = 8888
+    port: int = 8888
     docker_start_command: str | None = None
     docker_mount_path: str =  "example/docker_mount/"
     problem_mode: str = "JunoBench_Buggy"

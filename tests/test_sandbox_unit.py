@@ -6,7 +6,6 @@ Tests core functionality with mocked Docker and WebSocket components.
 
 import pytest
 import json
-import time
 from typing import cast
 from unittest.mock import Mock, MagicMock, patch, call, PropertyMock
 from src.sandbox import DockerSandbox
