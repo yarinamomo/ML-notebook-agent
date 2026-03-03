@@ -1,6 +1,7 @@
 import os
 import time
 import traceback
+import json
 from pathlib import Path
 from typing import Any, Optional
 
@@ -9,7 +10,7 @@ from src.notebook_environment import NotebookEnvironment, NotebookEnvironmentCon
 from src.CustomToolLitellmModel import CustomToolLitellmModel
 from src.utils.log import logger
 from src.ui_agent import UiAgent
-from src.utils.ui import format_eta, progress_live
+from src.utils.ui import format_eta, progress_live, set_ui_enabled
 from src.utils.yaml_parser import (
     load_config,
     load_api_keys,
@@ -21,6 +22,74 @@ from src.utils.yaml_parser import (
 
 app = typer.Typer(rich_markup_mode="rich")
 DEFAULT_CONFIG = Path(os.getenv("NOTEBOOK_AGENT_CONFIG_PATH", "./config/default.yaml"))
+
+
+def should_skip_instance(summary_path: Path) -> bool:
+    """Check if an instance should be skipped based on summary status.
+    
+    Returns True if the instance should be skipped (already completed successfully),
+    False if it should be run (doesn't exist or has failed/incomplete status).
+    """
+    if not summary_path.exists():
+        return False
+    
+    try:
+        with open(summary_path, 'r') as f:
+            summary = json.load(f)
+        
+        status = summary.get("metadata", {}).get("status", "")
+        
+        # Do NOT skip if status is EnvironmentUnavailable or INCOMPLETE
+        if status in ["EnvironmentUnavailable", "INCOMPLETE"]:
+            return False
+        
+        # Skip if status indicates successful completion
+        return True
+    except Exception as e:
+        logger.warning(f"Failed to read summary {summary_path}: {e}")
+        # If we can't read the summary, don't skip (safer to re-run)
+        return False
+
+
+def build_runs_to_execute(
+    instances: list[str],
+    total_run_count: int,
+    model_name: str,
+    trajectories_dir: Path,
+    config: dict
+) -> list[tuple[str, int]]:
+    """Build a filtered list of (instance_name, run_number) pairs to execute.
+    
+    Filters out already completed runs based on summary status if skip_existing is enabled.
+    
+    Args:
+        instances: List of instance names to process
+        total_run_count: Number of runs per instance
+        model_name: Name of the model being used
+        trajectories_dir: Base directory for trajectory outputs
+        config: Configuration dictionary
+        
+    Returns:
+        List of (instance_name, run_number) tuples to execute
+    """
+    misc_config = config.get("misc", {})
+    skip_existing = misc_config.get("skip_existing", False)
+    enable_summary_log = misc_config.get("enable_summary_log", False)
+    
+    runs_to_execute = []
+    for instance_name in instances:
+        for run_num in range(1, total_run_count + 1):
+            if skip_existing and enable_summary_log:
+                run_output_dir = trajectories_dir / model_name / f"run_{run_num}"
+                summary_path = run_output_dir / f"{instance_name}_summary.json"
+                
+                if should_skip_instance(summary_path):
+                    logger.info(f"Skipping (already completed): {instance_name} run {run_num}")
+                    continue
+            
+            runs_to_execute.append((instance_name, run_num))
+    
+    return runs_to_execute
 
 
 def run_single_instance(
@@ -56,14 +125,6 @@ def run_single_instance(
 
     instance_traj_path = run_output_dir / f"{instance_name}.traj.json"
     instance_summary_path = run_output_dir / f"{instance_name}_summary.json" if misc_config.get("enable_summary_log", False) else None
-    
-    # Skip if both trajectory and summary already exist
-    if misc_config.get("skip_existing", False):
-        if instance_traj_path.exists() and (instance_summary_path is None or instance_summary_path.exists()):
-            logger.info(f"Skipping (already completed): {instance_name} run {run_number} — "
-                        f"trajectory and summary already exist at {run_output_dir}")
-            return "skipped", None
-
     
     # Create environment
     env = NotebookEnvironment(
@@ -126,39 +187,51 @@ def main(
         logger.info(f"# Starting runs for model: {model_name_str}")
         logger.info(f"{'#'*80}\n")
         
+        # Build list of (instance, run) pairs to execute
+        runs_to_execute = build_runs_to_execute(
+            instances=instances,
+            total_run_count=total_run_count,
+            model_name=model_name_str,
+            trajectories_dir=trajectories_dir,
+            config=config
+        )
+        
         # Calculate total iterations for progress bar
-        total_iterations = len(instances) * total_run_count
+        total_iterations = len(runs_to_execute)
+        
+        if total_iterations == 0:
+            logger.info(f"No runs to execute for model {model_name_str} - all already completed")
+            continue
 
         with progress_live(total_iterations, f"Model: {model_name_str}") as (progress, task_id):
 
             start_time = time.monotonic()
             completed_count = 0
 
-            for instance_name in instances:
-                for run_num in range(1, total_run_count + 1):
-                    try:
-                        run_single_instance(
-                            model_config=model_config,
-                            instance_name=instance_name,
-                            run_number=run_num,
-                            config=config,
-                            trajectories_dir=trajectories_dir
-                        )
-                        
-                    except Exception as e:
-                        logger.error(f"Failed to run model={model_name_str}, instance={instance_name}, run={run_num}: {e}")
-                        logger.exception(e)
-                    finally:
-                        completed_count += 1
-                        elapsed = time.monotonic() - start_time
-                        avg_per_run = elapsed / completed_count
-                        remaining = avg_per_run * (total_iterations - completed_count)
-                        progress.update(
-                            task_id,
-                            advance=1,
-                            description=f"Model: {model_name_str} | {instance_name} | run {run_num}",
-                            eta=format_eta(remaining),
-                        )
+            for instance_name, run_num in runs_to_execute:
+                try:
+                    run_single_instance(
+                        model_config=model_config,
+                        instance_name=instance_name,
+                        run_number=run_num,
+                        config=config,
+                        trajectories_dir=trajectories_dir
+                    )
+                    
+                except Exception as e:
+                    logger.error(f"Failed to run model={model_name_str}, instance={instance_name}, run={run_num}: {e}")
+                    logger.exception(e)
+                finally:
+                    completed_count += 1
+                    elapsed = time.monotonic() - start_time
+                    avg_per_run = elapsed / completed_count
+                    remaining = avg_per_run * (total_iterations - completed_count)
+                    progress.update(
+                        task_id,
+                        advance=1,
+                        description=f"Model: {model_name_str} | {instance_name} | run {run_num}",
+                        eta=format_eta(remaining),
+                    )
 
 if __name__ == "__main__":
     app()
