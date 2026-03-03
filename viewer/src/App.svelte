@@ -10,8 +10,8 @@
   // Selection state
   let selectedModel = $state('');
   let selectedLibrary = $state('');
-  let selectedRun = $state('');
   let selectedInstance = $state('');
+  let selectedRun = $state('');
   let currentStepIndex = $state(0);
 
   // Derived: available options
@@ -19,31 +19,96 @@
     data ? [...new Set(data.trajectories.map(t => t.model))].sort() : []
   );
 
-  let libraries = $derived(
-    data && selectedModel
-      ? [...new Set(data.trajectories.filter(t => t.model === selectedModel).map(t => t.library))].sort()
-      : []
-  );
+  // Library with success counts (instance is successful if all runs are successful)
+  let librariesWithStats = $derived.by(() => {
+    if (!data || !selectedModel) return [];
+    
+    const filtered = data.trajectories.filter(t => t.model === selectedModel);
+    const libraryMap = new Map();
+    
+    filtered.forEach(t => {
+      if (!libraryMap.has(t.library)) {
+        libraryMap.set(t.library, new Map());
+      }
+      const instances = libraryMap.get(t.library);
+      if (!instances.has(t.instance)) {
+        instances.set(t.instance, []);
+      }
+      instances.get(t.instance).push(t.metadata.success);
+    });
+    
+    const result = [];
+    libraryMap.forEach((instances, library) => {
+      let successfulInstances = 0;
+      let totalInstances = instances.size;
+      
+      instances.forEach((runs) => {
+        // Instance is successful if all runs were successful
+        if (runs.every(success => success)) {
+          successfulInstances++;
+        }
+      });
+      
+      result.push({
+        name: library,
+        successCount: successfulInstances,
+        totalCount: totalInstances
+      });
+    });
+    
+    return result.sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  let libraries = $derived(librariesWithStats.map(l => l.name));
+
+  // Instances with success counts (per run)
+  let instancesWithStats = $derived.by(() => {
+    if (!data || !selectedModel || !selectedLibrary) return [];
+    
+    const filtered = data.trajectories.filter(t => 
+      t.model === selectedModel && t.library === selectedLibrary
+    );
+    
+    const instanceMap = new Map();
+    filtered.forEach(t => {
+      if (!instanceMap.has(t.instance)) {
+        instanceMap.set(t.instance, []);
+      }
+      instanceMap.get(t.instance).push(t.metadata.success);
+    });
+    
+    const result = [];
+    instanceMap.forEach((runs, instance) => {
+      const successCount = runs.filter(s => s).length;
+      result.push({
+        name: instance,
+        successCount: successCount,
+        totalCount: runs.length
+      });
+    });
+    
+    return result.sort((a, b) => {
+      const numA = parseInt(a.name.replace(/\D/g, ''));
+      const numB = parseInt(b.name.replace(/\D/g, ''));
+      return numA - numB;
+    });
+  });
+
+  let instances = $derived(instancesWithStats.map(i => i.name));
 
   let runs = $derived(
-    data && selectedModel && selectedLibrary
-      ? [...new Set(data.trajectories.filter(t => t.model === selectedModel && t.library === selectedLibrary).map(t => t.run))].sort()
-      : []
-  );
-
-  let instances = $derived(
-    data && selectedModel && selectedLibrary && selectedRun
-      ? [...new Set(data.trajectories.filter(t => t.model === selectedModel && t.library === selectedLibrary && t.run === selectedRun).map(t => t.instance))].sort((a, b) => {
-          const numA = parseInt(a.replace(/\D/g, ''));
-          const numB = parseInt(b.replace(/\D/g, ''));
-          return numA - numB;
-        })
+    data && selectedModel && selectedLibrary && selectedInstance
+      ? [...new Set(data.trajectories.filter(t => 
+          t.model === selectedModel && 
+          t.library === selectedLibrary && 
+          t.instance === selectedInstance
+        ).map(t => t.run))].sort()
       : []
   );
 
   let currentTrajectory = $derived(
     data
-      ? data.trajectories.find(t => t.model === selectedModel && t.library === selectedLibrary && t.run === selectedRun && t.instance === selectedInstance)
+      ? data.trajectories.find(t => t.model === selectedModel && t.library === selectedLibrary && t.instance === selectedInstance && t.run === selectedRun)
       : null
   );
 
@@ -65,8 +130,8 @@
         const first = d.trajectories[0];
         selectedModel = first.model;
         selectedLibrary = first.library;
-        selectedRun = first.run;
         selectedInstance = first.instance;
+        selectedRun = first.run;
         currentStepIndex = 0;
       }
     } catch (e) {
@@ -82,13 +147,13 @@
     }
   });
   $effect(() => {
-    if (selectedLibrary && runs.length && !runs.includes(selectedRun)) {
-      selectedRun = runs[0];
+    if (selectedLibrary && instances.length && !instances.includes(selectedInstance)) {
+      selectedInstance = instances[0];
     }
   });
   $effect(() => {
-    if (selectedRun && instances.length && !instances.includes(selectedInstance)) {
-      selectedInstance = instances[0];
+    if (selectedInstance && runs.length && !runs.includes(selectedRun)) {
+      selectedRun = runs[0];
       currentStepIndex = 0;
     }
   });
@@ -145,8 +210,20 @@
       <label>
         <span>Library</span>
         <select bind:value={selectedLibrary}>
-          {#each libraries as l}
-            <option value={l}>{l}</option>
+          {#each librariesWithStats as lib}
+            <option value={lib.name}>
+              {lib.name} ({lib.successCount}/{lib.totalCount} ✓)
+            </option>
+          {/each}
+        </select>
+      </label>
+      <label>
+        <span>Instance</span>
+        <select bind:value={selectedInstance}>
+          {#each instancesWithStats as inst}
+            <option value={inst.name}>
+              {inst.name} ({inst.successCount}/{inst.totalCount} ✓)
+            </option>
           {/each}
         </select>
       </label>
@@ -155,14 +232,6 @@
         <select bind:value={selectedRun}>
           {#each runs as r}
             <option value={r}>{r}</option>
-          {/each}
-        </select>
-      </label>
-      <label>
-        <span>Instance</span>
-        <select bind:value={selectedInstance}>
-          {#each instances as inst}
-            <option value={inst}>{inst}</option>
           {/each}
         </select>
       </label>
@@ -200,6 +269,9 @@
         <NotebookPanel
           cells={currentTrajectory.notebook_cells}
           step={currentStep}
+          steps={currentTrajectory.steps}
+          codeChanges={currentTrajectory.code_changes}
+          {currentStepIndex}
         />
       </div>
     </div>
@@ -269,6 +341,7 @@
     padding: 4px 8px;
     font-size: 12px;
     cursor: pointer;
+    min-width: 120px;
   }
   .topbar-selectors select:hover {
     border-color: #58a6ff;

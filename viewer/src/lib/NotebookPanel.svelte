@@ -1,10 +1,62 @@
 <script>
   import DiffView from './DiffView.svelte';
 
-  /** @type {{ cells: any[], step: any }} */
-  let { cells, step } = $props();
+  /** @type {{ cells: any[], step: any, steps: any[], codeChanges: any[], currentStepIndex: number }} */
+  let { cells, step, steps, codeChanges, currentStepIndex } = $props();
 
   let cellsContainer = $state(null);
+
+  // Get the most recent cell statuses at or before the current step
+  let currentCellStatuses = $derived.by(() => {
+    if (!steps || !step) return null;
+    
+    // Find the most recent step with cell_statuses up to current step
+    const currentStep = step.step;
+    for (let i = currentStep; i >= 1; i--) {
+      const s = steps.find(s => s.step === i);
+      if (s && s.cell_statuses) {
+        return s.cell_statuses;
+      }
+    }
+    return null;
+  });
+
+  // Compute the current state of cells based on the current step
+  let cellsWithCurrentState = $derived.by(() => {
+    if (!cells || !codeChanges) return cells;
+    
+    // Build a map of cell_index -> current code
+    const cellStateMap = new Map();
+    
+    // Initialize with original code
+    cells.forEach(cell => {
+      cellStateMap.set(cell.index, cell.original_code);
+    });
+    
+    // Apply changes up to and including the current step
+    const currentStep = step ? step.step : 0;
+    codeChanges.forEach(change => {
+      if (change.step <= currentStep) {
+        cellStateMap.set(change.cell_index, change.code);
+      }
+    });
+    
+    // Track which cells have been edited up to this point
+    const editedCells = new Set(
+      codeChanges.filter(c => c.step <= currentStep).map(c => c.cell_index)
+    );
+    
+    // Return cells with computed state
+    return cells.map(cell => {
+      const status = currentCellStatuses ? currentCellStatuses[cell.index.toString()] : null;
+      return {
+        ...cell,
+        code: cellStateMap.get(cell.index) || cell.original_code,
+        state: editedCells.has(cell.index) ? 'edited' : 'unchanged',
+        executionStatus: status,
+      };
+    });
+  });
 
   // The cell index being edited in the current step
   let editedCellIndex = $derived(
@@ -20,12 +72,6 @@
       }
     }
   });
-
-  function getStatusColor(status) {
-    if (status === 'ok') return '#3fb950';
-    if (status === 'error') return '#f85149';
-    return '#8b949e';
-  }
 </script>
 
 <div class="notebook-header">
@@ -37,7 +83,7 @@
 </div>
 
 <div class="cells-container" bind:this={cellsContainer}>
-  {#each cells as cell}
+  {#each cellsWithCurrentState as cell}
     <div
       class="cell-card"
       class:edited={cell.state === 'edited'}
@@ -47,12 +93,14 @@
       <div class="cell-header">
         <span class="cell-index">Cell {cell.index}</span>
         <div class="cell-badges">
+          {#if cell.executionStatus}
+            <span class="cell-badge status-badge status-{cell.executionStatus}">
+              {cell.executionStatus}
+            </span>
+          {/if}
           {#if cell.state === 'edited'}
             <span class="cell-badge edit-badge">edited</span>
           {/if}
-          <span class="cell-status" style="color: {getStatusColor(cell.execution_status)}">
-            {cell.execution_status}
-          </span>
         </div>
       </div>
 
@@ -145,14 +193,30 @@
     padding: 1px 6px;
     border-radius: 8px;
   }
+  
   .edit-badge {
     background: #3d2e00;
     color: #d29922;
   }
 
-  .cell-status {
-    font-size: 10px;
+  .status-badge {
     font-weight: 600;
+    text-transform: lowercase;
+  }
+
+  .status-ok {
+    background: #0f2e0f;
+    color: #3fb950;
+  }
+
+  .status-error {
+    background: #3d1f1f;
+    color: #f85149;
+  }
+
+  .status-timeout {
+    background: #3d2e00;
+    color: #d29922;
   }
 
   .cell-code {
