@@ -1,0 +1,344 @@
+{
+  "metadata": {
+    "generated_at": "2026-03-02T23:51:38.146603",
+    "execution_time_seconds": 211.87,
+    "success": true,
+    "status": "Submitted",
+    "cost": 0.1044
+  },
+  "statistics": {
+    "total_steps": 22,
+    "total_operations": 22,
+    "successful_operations": 19,
+    "failed_operations": 3,
+    "cells_edited": 5,
+    "unique_cells_edited": 3,
+    "avg_tool_execution_time_seconds": 0.93
+  },
+  "original_notebook": [
+    "# --- [CELL 0]: ---\n\nimport pandas as pd\nimport numpy as np\nimport warnings\nwarnings.filterwarnings('ignore')",
+    "# --- [CELL 1]: ---\n\nimport logging\nimport random\n\nimport torch\n\nlogging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(levelname)s: %(message)s')\n\nseed = 2023\nrandom.seed(seed)\nnp.random.seed(seed)\ntorch.cuda.manual_seed(seed)\ntorch.manual_seed(seed)\n\ndevice = 'cuda' if torch.cuda.is_available() else 'cpu'",
+    "# --- [CELL 2]: ---\n\nfrom gensim.models.word2vec import Word2Vec\n\nnum_features = 10\nnum_workers = 8\n\n\ntrain_df = pd.read_csv('data/train_set.csv.zip', sep='\\t', nrows=5000)\ntrain_text = list(map(lambda x:list(x.split()), train_df.iloc[:, 1]))\nmodel = Word2Vec(train_text, workers=num_workers, vector_size=num_features)\nmodel.init_sims(replace=True)\n\nmodel.wv.save_word2vec_format('data/word2vec.txt', binary=False)",
+    "# --- [CELL 3]: ---\n\nfrom collections import Counter\nfrom transformers import BasicTokenizer\n\nbasic_tokenizer = BasicTokenizer()\n\nclass Vocab():\n    def __init__(self, train_data):\n        self.min_count = 5\n        self.pad = 0\n        self.unk = 1\n        self._id2word = ['[PAD]', '[UNK]']\n        self._id2extword = ['[PAD]', '[UNK]']\n\n        self._id2label = []\n        self.target_names = []\n\n        self.build_vocab(train_data)\n\n        reverse = lambda x: dict(zip(x, range(len(x))))\n        self._word2id = reverse(self._id2word)\n        self._label2id = reverse(self._id2label)\n\n    def build_vocab(self, data):\n        self.word_counter = Counter()\n\n        for text in data['text']:\n            words = text.split()\n            for word in words:\n                self.word_counter[word] += 1\n\n        for word, count in self.word_counter.most_common():\n            if count >= self.min_count:\n                self._id2word.append(word)\n\n        label2name = {0: '科技', 1: '股票', 2: '体育', 3: '娱乐', 4: '时政', 5: '社会', 6: '教育',\n                      7: '财经', 8: '家居', 9: '游戏', 10: '房产', 11: '时尚', 12: '彩票', 13: '星座'}\n        self.label_counter = Counter(data['label'])\n\n        for label in range(len(self.label_counter)):\n            count = self.label_counter[label]\n            self._id2label.append(label)\n            self.target_names.append(label2name[label])\n\n    def load_pretrained_embs(self, embfile):\n        with open(embfile, encoding='utf-8') as f:\n            lines = f.readlines()\n            items = lines[0].split()\n            word_count, embedding_dim = int(items[0]), int(items[1])\n\n        index = len(self._id2extword)\n        embeddings = np.zeros((word_count + index, embedding_dim))\n        for line in lines[1:]:\n            values = line.split()\n            self._id2extword.append(values[0])\n            vector = np.array(values[1:], dtype='float64')\n            embeddings[self.unk] += vector\n            embeddings[index] = vector\n            index += 1\n\n        embeddings[self.unk] = embeddings[self.unk] / word_count\n        embeddings = embeddings / np.std(embeddings)\n\n        reverse = lambda x: dict(zip(x, range(len(x))))\n        self._extword2id = reverse(self._id2extword)\n\n        assert len(set(self._id2extword)) == len(self._id2extword)\n\n        return embeddings\n\n    def word2id(self, xs):\n        if isinstance(xs, list):\n            return [self._word2id.get(x, self.unk) for x in xs]\n        return self._word2id.get(xs, self.unk)\n\n    def extword2id(self, xs):\n        if isinstance(xs, list):\n            return [self._extword2id.get(x, self.unk) for x in xs]\n        return self._extword2id.get(xs, self.unk)\n\n    def label2id(self, xs):\n        if isinstance(xs, list):\n            return [self._label2id.get(x, self.unk) for x in xs]\n        return self._label2id.get(xs, self.unk)\n\n    def word_size(self):\n        return len(self._id2word)\n\n    def extword_size(self):\n        return len(self._id2extword)\n\n    def label_size(self):\n        return len(self._id2label)\n\nvocab = Vocab(train_df)\n",
+    "# --- [CELL 4]: ---\n\nimport torch.nn as nn\nimport torch.nn.functional as F\n\nclass Attention(nn.Module):\n    '''Scaled Dot-Product Attention'''\n    def __init__(self, hidden_size):\n        super(Attention, self).__init__()\n        self.weight = nn.Parameter(torch.Tensor(hidden_size, hidden_size))\n        self.weight.data.normal_(mean=0.0, std=0.05)\n\n        self.bias = nn.Parameter(torch.Tensor(hidden_size))\n        b = np.zeros(hidden_size, dtype=np.float32)\n        self.bias.data.copy_(torch.from_numpy(b))\n\n        self.query = nn.Parameter(torch.Tensor(hidden_size))\n        self.query.data.normal_(mean=0.0, std=0.05)\n\n    def forward(self, batch_hidden, batch_masks):\n\n\n\n\n        key = torch.matmul(batch_hidden, self.weight) + self.bias\n\n        outputs = torch.matmul(key, self.query)\n\n\n        masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32))\n\n        attn_scores = F.softmax(masked_outputs, dim=1)\n\n\n        masked_attn_scores = attn_scores.masked_fill((1 - batch_masks).bool(), 0.0)\n\n\n        batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)\n\n        return batch_outputs, attn_scores\n",
+    "# --- [CELL 5]: ---\n\nword2vec_path = 'data/word2vec.txt'\ndropout = 0.15\nword_hidden_size = 128\nword_num_layers = 2\n\nclass WordLSTMEncoder(nn.Module):\n    '''\n    结合word2vec（预训练）和nn.Embedding()（待训练）的词向量表示，然后进一步用lstm提取序列信息，更新词向量表示\n    '''\n    def __init__(self, vocab):\n        super(WordLSTMEncoder, self).__init__()\n        self.dropout = nn.Dropout(dropout)\n        self.word_dims = num_features\n\n        self.word_embed = nn.Embedding(vocab.word_size, self.word_dims, padding_idx=0)\n\n        extword_embed = vocab.load_pretrained_embs(word2vec_path)\n        extword_size, word_dims = extword_embed.shape\n\n        self.extword_embed = nn.Embedding(extword_size, word_dims, padding_idx=0)\n        self.extword_embed.weight.data.copy_(torch.from_numpy(extword_embed))\n        self.extword_embed.weight.requires_grad = False\n\n        input_size = self.word_dims\n\n        self.word_lstm = nn.LSTM(input_size=input_size,\n                                 hidden_size=word_hidden_size,\n                                 num_layers=word_num_layers,\n                                 batch_first=True,\n                                 bidirectional=True)\n\n    def forward(self, word_ids, extword_ids, batch_masks):\n\n\n\n\n        word_embed = self.word_embed(word_ids)\n        extword_embed = self.extword_embed(extword_ids)\n        batch_embed = word_embed + extword_embed\n\n        if self.training:\n            batch_embed = self.dropout(batch_embed)\n\n        hiddens, _ = self.word_lstm(batch_embed)\n        hiddens = hiddens * batch_masks.unsqueeze(2)\n\n        if self.training:\n            hiddens = self.dropout(hiddens)\n\n        return hiddens",
+    "# --- [CELL 6]: ---\n\nsent_hidden_size = 256\nsent_num_layers = 2\n\nclass SentEncoder(nn.Module):\n    '''句子级别的语义表示'''\n    def __init__(self, sent_rep_size):\n        super(SentEncoder, self).__init__()\n        self.dropout = nn.Dropout(dropout)\n\n        self.sent_lstm = nn.LSTM(input_size=sent_rep_size,\n                                 hidden_size=sent_hidden_size,\n                                 num_layers=sent_num_layers,\n                                 batch_first=True,\n                                 bidirectional=True)\n\n    def forward(self, sent_reps, sent_masks):\n\n        sent_hiddens, _ = self.sent_lstm(sent_reps)\n        sent_hiddens = sent_hiddens * sent_masks.unsqueeze(2)\n\n        if self.training:\n            sent_hiddens = self.dropout(sent_hiddens)\n\n        return sent_hiddens",
+    "# --- [CELL 7]: ---\n\nclass Model(nn.Module):\n    def __init__(self, vocab):\n        super(Model, self).__init__()\n        self.sent_rep_size = word_hidden_size * 2\n        self.doc_rep_size = sent_hidden_size * 2\n        self.all_parameters = {}\n\n        parameters = []\n        self.word_encoder = WordLSTMEncoder(vocab)\n        self.word_attention = Attention(self.sent_rep_size)\n\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.word_encoder.parameters())))\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.word_attention.parameters())))\n        self.sent_encoder = SentEncoder(self.sent_rep_size)\n        self.sent_attention = Attention(self.doc_rep_size)\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_encoder.parameters())))\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_attention.parameters())))\n        self.out = nn.Linear(self.doc_rep_size, vocab.label_size, bias=True)\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.out.parameters())))\n\n        self.to(device)\n\n        if len(parameters) > 0:\n            self.all_parameters['basic_parameters'] = parameters\n\n\n        para_num = sum([np.prod(list(p.size())) for p in self.parameters()])\n\n    def forward(self, batch_inputs):\n\n\n\n        batch_inputs1, batch_inputs2, batch_masks = batch_inputs\n        batch_size, max_doc_len, max_sent_len = batch_inputs1.shape[0], batch_inputs1.shape[1], batch_inputs1.shape[2]\n        batch_inputs1 = batch_inputs1.view(batch_size * max_doc_len, max_sent_len)\n        batch_inputs2 = batch_inputs2.view(batch_size * max_doc_len, max_sent_len)\n        batch_masks = batch_masks.view(batch_size * max_doc_len, max_sent_len)\n        batch_hiddens = self.word_encoder(batch_inputs1, batch_inputs2, batch_masks)\n        sent_reps, atten_scores = self.word_attention(batch_hiddens, batch_masks)\n        sent_reps = sent_reps.view(batch_size, max_doc_len, self.sent_rep_size)\n        batch_masks = batch_masks.view(batch_size, max_doc_len, max_sent_len)\n        sent_masks = batch_masks.bool().any(2).float()\n        sent_hiddens = self.sent_encoder(sent_reps, sent_masks)\n        doc_reps, atten_scores = self.sent_attention(sent_hiddens, sent_masks)\n        batch_outputs = self.out(doc_reps)\n\n        return batch_outputs\n\nmodel = Model(vocab)"
+  ],
+  "llm_responses": [
+    {
+      "step": 1,
+      "content": "I'll start by running all the cells to identify which ones have errors.<tool_call>run_all</tool_call>",
+      "reasoning": "I need to run all the cells first to identify which ones crash, then fix any errors found. Let me start by running all cells."
+    },
+    {
+      "step": 2,
+      "content": "I found an error in cell 2. The error is \"BadZipFile: File is not a zip file\", which suggests that the file 'data/train_set.csv.zip' either doesn't exist or is not a valid zip file. Let me examine the code in the cells to understand the issue better.<tool_call>get_cells</tool_call>",
+      "reasoning": "I can see there's an error in cell 2. The error is \"BadZipFile: File is not a zip file\". This suggests that the code is trying to read a file that pandas thinks is a zip file ('data/train_set.csv.zip'), but the file doesn't exist or is corrupted.\n\nLet me first get the cells to see what's in each one, particularly cell 2 where the error occurs."
+    },
+    {
+      "step": 3,
+      "content": "Let me check if the data directory and files exist:",
+      "reasoning": "I can see that cell 2 tries to read 'data/train_set.csv.zip', which apparently doesn't exist or is corrupted. The error tells me it's not a valid zip file. Let me check if the data directory and file exist, and see what's in the data directory.\n\nAlso, I notice that cell 3 depends on the `train_df` variable from cell 2, and cell 5 depends on the word2vec.txt file that is supposed to be created by cell 2. So if cell 2 fails, the whole notebook will fail.\n\nLet me check what files exist in the data directory."
+    },
+    {
+      "step": 4,
+      "content": "Let me check if the file is a valid zip file:",
+      "reasoning": "Good, the data directory exists and contains 'train_set.csv.zip'. The error says \"File is not a zip file\", which suggests the file might be corrupted or empty. Let me check the file size and whether it's actually a valid zip file."
+    },
+    {
+      "step": 5,
+      "content": "Let me check the actual content of the file:",
+      "reasoning": "The file is not a valid zip file. It's only 134 bytes and starts with 'vers', which suggests it might be a text file with 'version' or similar text. Let me check its actual content:"
+    },
+    {
+      "step": 6,
+      "content": "Let me check what files are available in the data directory and their contents:",
+      "reasoning": "The file is actually a Git LFS pointer file, not a real CSV file. The real data file hasn't been downloaded. Let me check if there's a real CSV file in the data directory:"
+    },
+    {
+      "step": 7,
+      "content": "Now I understand the issue. The data files are Git LFS pointer files, not actual data files. Since these are placeholder files, I need to create synthetic data to make the notebook run. Let me fix cell 2 by generating synthetic training data:",
+      "reasoning": "All the files in the data directory are Git LFS pointer files, not the actual files. They don't contain the actual data. This means we need to either:\n1. Create some synthetic data to make the notebook run\n2. Modify the code to handle missing data gracefully\n\nSince the goal is to make the notebook run without errors, I'll need to create synthetic training data that mimics the expected structure. Looking at the code:\n- Cell 2 tries to read 'data/train_set.csv.zip' with tab separator and expects at least 2 columns\n- Cell 3 expects train_df to have 'text' and 'label' columns based on the Vocab class\n- The labels range from 0 to 13 based on label2name mapping\n\nLet me create synthetic data that will allow the notebook to run."
+    },
+    {
+      "step": 8,
+      "content": "",
+      "reasoning": "Now let me run cell 2 to see if my fix works:"
+    },
+    {
+      "step": 9,
+      "content": "I made a typo - it should be `random.seed()`, not `set.seed()`. Let me fix it:",
+      "reasoning": "Oops, I made a typo. I wrote \"set.seed(2023)\" but it should be \"random.seed(2023)\". Let me fix this."
+    },
+    {
+      "step": 10,
+      "content": "",
+      "reasoning": "Good, now let me run the cell again to see if it works."
+    },
+    {
+      "step": 11,
+      "content": "Great! Cell 2 runs successfully now. Let me verify the word2vec.txt file was created properly:",
+      "reasoning": "Good! Cell 2 runs successfully now. I see it's also saving word2vec.txt which is needed later. Now let me continue running all cells to see if there are more errors."
+    },
+    {
+      "step": 12,
+      "content": "Now let me run all cells again to check if there are any remaining errors:<tool_call>run_all</tool_call>",
+      "reasoning": "Good, the word2vec.txt file was created properly. Now let me continue running all cells to see if there are any more errors."
+    },
+    {
+      "step": 13,
+      "content": "There's an error in cell 7. The error is occurring when creating the Embedding layer in `WordLSTMEncoder.__init__()`. Let me check what's happening with the vocab:",
+      "reasoning": "Now there's an error in cell 7. The error is:\n```\nTypeError: empty() received an invalid combination of arguments - got (tuple, dtype=NoneType, device=NoneType)\n```\n\nThis is happening in the `WordLSTMEncoder.__init__()` method when trying to create an Embedding layer. The error suggests that `vocab.word_size()` or `self.word_dims` (which is `num_features`) might be None or invalid.\n\nLet me check what vocab.word_size() returns and what num_features is:"
+    },
+    {
+      "step": 14,
+      "content": "",
+      "reasoning": "The word_size is 102 and num_features is 10. Let me check what type these actually are:"
+    },
+    {
+      "step": 15,
+      "content": "Let me look at the WordLSTMEncoder class more closely:",
+      "reasoning": "The types look correct. The issue might be that `vocab.word_size()` is a method that returns a callable instead of a value. Let me check the Vocab class implementation more carefully. Looking at the code:\n\n```python\n    def word_size(self):\n        return len(self._id2word)\n```\n\nThis looks correct. The error mentions that torch.empty is receiving an invalid combination of arguments. Let me check if there's something wrong with how `vocab.word_size()` is being called or if there's a return type issue.\n\nActually, looking more carefully at the error message and the Vocabulary class, I think the issue might be that `vocab.word_size` is being referenced without being called, or there's a method call issue somewhere.\n\nWait, let me look at the error trace more carefully. It says the error is in Cell 7, which is the Model class definition, but the stack trace shows the error happens when creating WordLSTMEncoder.\n\nLet me examine if there's a problem with the vocab class methods. Actually, I realize that in the Vocab class, the methods like `word_size()`, `extword_size()`, and `label_size()` are methods, not properties. They need to be called with `()`.\n\nLooking at cell 7, I see:\n```python\nself.word_encoder = WordLSTMEncoder(vocab)\n```\n\nAnd in WordLSTMEncoder.__init__ (cell 5), we have:\n```python\nself.word_embed = nn.Embedding(vocab.word_size, self.word_dims, padding_idx=0)\n```\n\nAha! There's the issue! In cell 5, `vocab.word_size` should be `vocab.word_size()` - it's missing the parentheses to call the method!\n\nSame issue might exist for `vocab.label_size` in the Model class. Let me check:"
+    },
+    {
+      "step": 16,
+      "content": "I found the issue! In cell 5, line 17, the code calls `vocab.word_size` but it should be `vocab.word_size()` since it's a method, not a property. Let me fix it:",
+      "reasoning": "I see the issue now! The code is calling `vocab.word_size` (as a property/method call) but it should be `vocab.word_size()` (as a method). Let me check the Vocab class again to see what `word_size` actually is.\n\nLooking at cell 3, I can see:\n```python\ndef word_size(self):\n    return len(self._id2word)\n```\n\nSo `word_size` is a method, not a property. The code in cell 5 is calling `vocab.word_size` without parentheses. Let me fix this."
+    },
+    {
+      "step": 17,
+      "content": "",
+      "reasoning": "I notice there's a typo in the forward method parameter - I wrote `extword_id` instead of `extword_ids`. Let me fix that:"
+    },
+    {
+      "step": 18,
+      "content": "",
+      "reasoning": "Good, I fixed the method call and the parameter name. Now let me check cell 7 again to make sure there aren't any similar issues:"
+    },
+    {
+      "step": 19,
+      "content": "",
+      "reasoning": "Now I see the issue with line 38 in cell 7. It's calling `vocab.label_size` but it should be `vocab.label_size()` since it's a method, not a property. Let me fix that."
+    },
+    {
+      "step": 20,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Now let me run all cells again to check if all errors are fixed."
+    },
+    {
+      "step": 21,
+      "content": "Perfect! All cells are now running successfully. Let me run all cells one more time to confirm everything is stable:<tool_call>run_all</tool_call>",
+      "reasoning": "Excellent! All cells are running successfully now. Let me verify there are no crashes by running all cells one more time to ensure everything is stable:"
+    },
+    {
+      "step": 22,
+      "content": "",
+      "reasoning": "Excellent! All cells are now running successfully without any errors. Let me summarize what I fixed:\n\n1. **Cell 2**: The original code tried to read from a zip file that was actually a Git LFS pointer file, not a real data file. I replaced it with code that generates synthetic training data, trains a Word2Vec model on it, and saves the embeddings to the expected file path.\n\n2. **Cell 5**: Fixed a typo where `vocab.word_size` was called as a property but it's actually a method, so needed to be `vocab.word_size()`.\n\n3. **Cell 7**: Similarly fixed `vocab.label_size` to `vocab.label_size()` for the same reason.\n\nAll cells now execute successfully without any crashes."
+    }
+  ],
+  "operations": [
+    {
+      "step": 1,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: error\n\n---ERROR---: BadZipFile: File is not a zip file\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 3.6304
+    },
+    {
+      "step": 2,
+      "action": "get_cells()",
+      "output": "# --- [CELL 0]: ---\n\nimport pandas as pd\nimport numpy as np\nimport warnings\nwarnings.filterwarnings('ignore')\n\n# --- [CELL 1]: ---\n\nimport logging\nimport random\n\nimport torch\n\nlogging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(levelname)s: %(message)s')\n\nseed = 2023\nrandom.seed(seed)\nnp.random.seed(seed)\ntorch.cuda.manual_seed(seed)\ntorch.manual_seed(seed)\n\ndevice = 'cuda' if torch.cuda.is_available() else 'cpu'\n\n# --- [CELL 2]: ---\n\nfrom gensim.models.word2vec import Word2Vec\n\nnum_features = 10\nnum_workers = 8\n\n\ntrain_df = pd.read_csv('data/train_set.csv.zip', sep='\\t', nrows=5000)\ntrain_text = list(map(lambda x:list(x.split()), train_df.iloc[:, 1]))\nmodel = Word2Vec(train_text, workers=num_workers, vector_size=num_features)\nmodel.init_sims(replace=True)\n\nmodel.wv.save_word2vec_format('data/word2vec.txt', binary=False)\n\n# --- [CELL 3]: ---\n\nfrom collections import Counter\nfrom transformers import BasicTokenizer\n\nbasic_tokenizer = BasicTokenizer()\n\nclass Vocab():\n    def __init__(self, train_data):\n        self.min_count = 5\n        self.pad = 0\n        self.unk = 1\n        self._id2word = ['[PAD]', '[UNK]']\n        self._id2extword = ['[PAD]', '[UNK]']\n\n        self._id2label = []\n        self.target_names = []\n\n        self.build_vocab(train_data)\n\n        reverse = lambda x: dict(zip(x, range(len(x))))\n        self._word2id = reverse(self._id2word)\n        self._label2id = reverse(self._id2label)\n\n    def build_vocab(self, data):\n        self.word_counter = Counter()\n\n        for text in data['text']:\n            words = text.split()\n            for word in words:\n                self.word_counter[word] += 1\n\n        for word, count in self.word_counter.most_common():\n            if count >= self.min_count:\n                self._id2word.append(word)\n\n        label2name = {0: '科技', 1: '股票', 2: '体育', 3: '娱乐', 4: '时政', 5: '社会', 6: '教育',\n                      7: '财经', 8: '家居', 9: '游戏', 10: '房产', 11: '时尚', 12: '彩票', 13: '星座'}\n        self.label_counter = Counter(data['label'])\n\n        for label in range(len(self.label_counter)):\n            count = self.label_counter[label]\n            self._id2label.append(label)\n            self.target_names.append(label2name[label])\n\n    def load_pretrained_embs(self, embfile):\n        with open(embfile, encoding='utf-8') as f:\n            lines = f.readlines()\n            items = lines[0].split()\n            word_count, embedding_dim = int(items[0]), int(items[1])\n\n        index = len(self._id2extword)\n        embeddings = np.zeros((word_count + index, embedding_dim))\n        for line in lines[1:]:\n            values = line.split()\n            self._id2extword.append(values[0])\n            vector = np.array(values[1:], dtype='float64')\n            embeddings[self.unk] += vector\n            embeddings[index] = vector\n            index += 1\n\n        embeddings[self.unk] = embeddings[self.unk] / word_count\n        embeddings = embeddings / np.std(embeddings)\n\n        reverse = lambda x: dict(zip(x, range(len(x))))\n        self._extword2id = reverse(self._id2extword)\n\n        assert len(set(self._id2extword)) == len(self._id2extword)\n\n        return embeddings\n\n    def word2id(self, xs):\n        if isinstance(xs, list):\n            return [self._word2id.get(x, self.unk) for x in xs]\n        return self._word2id.get(xs, self.unk)\n\n    def extword2id(self, xs):\n        if isinstance(xs, list):\n            return [self._extword2id.get(x, self.unk) for x in xs]\n        return self._extword2id.get(xs, self.unk)\n\n    def label2id(self, xs):\n        if isinstance(xs, list):\n            return [self._label2id.get(x, self.unk) for x in xs]\n        return self._label2id.get(xs, self.unk)\n\n    def word_size(self):\n        return len(self._id2word)\n\n    def extword_size(self):\n        return len(self._id2extword)\n\n    def label_size(self):\n        return len(self._id2label)\n\nvocab = Vocab(train_df)\n\n\n# --- [CELL 4]: ---\n\nimport torch.nn as nn\nimport torch.nn.functional as F\n\nclass Attention(nn.Module):\n    '''Scaled Dot-Product Attention'''\n    def __init__(self, hidden_size):\n        super(Attention, self).__init__()\n        self.weight = nn.Parameter(torch.Tensor(hidden_size, hidden_size))\n        self.weight.data.normal_(mean=0.0, std=0.05)\n\n        self.bias = nn.Parameter(torch.Tensor(hidden_size))\n        b = np.zeros(hidden_size, dtype=np.float32)\n        self.bias.data.copy_(torch.from_numpy(b))\n\n        self.query = nn.Parameter(torch.Tensor(hidden_size))\n        self.query.data.normal_(mean=0.0, std=0.05)\n\n    def forward(self, batch_hidden, batch_masks):\n\n\n\n\n        key = torch.matmul(batch_hidden, self.weight) + self.bias\n\n        outputs = torch.matmul(key, self.query)\n\n\n        masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32))\n\n        attn_scores = F.softmax(masked_outputs, dim=1)\n\n\n        masked_attn_scores = attn_scores.masked_fill((1 - batch_masks).bool(), 0.0)\n\n\n        batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)\n\n        return batch_outputs, attn_scores\n\n\n# --- [CELL 5]: ---\n\nword2vec_path = 'data/word2vec.txt'\ndropout = 0.15\nword_hidden_size = 128\nword_num_layers = 2\n\nclass WordLSTMEncoder(nn.Module):\n    '''\n    结合word2vec（预训练）和nn.Embedding()（待训练）的词向量表示，然后进一步用lstm提取序列信息，更新词向量表示\n    '''\n    def __init__(self, vocab):\n        super(WordLSTMEncoder, self).__init__()\n        self.dropout = nn.Dropout(dropout)\n        self.word_dims = num_features\n\n        self.word_embed = nn.Embedding(vocab.word_size, self.word_dims, padding_idx=0)\n\n        extword_embed = vocab.load_pretrained_embs(word2vec_path)\n        extword_size, word_dims = extword_embed.shape\n\n        self.extword_embed = nn.Embedding(extword_size, word_dims, padding_idx=0)\n        self.extword_embed.weight.data.copy_(torch.from_numpy(extword_embed))\n        self.extword_embed.weight.requires_grad = False\n\n        input_size = self.word_dims\n\n        self.word_lstm = nn.LSTM(input_size=input_size,\n                                 hidden_size=word_hidden_size,\n                                 num_layers=word_num_layers,\n                                 batch_first=True,\n                                 bidirectional=True)\n\n    def forward(self, word_ids, extword_ids, batch_masks):\n\n\n\n\n        word_embed = self.word_embed(word_ids)\n        extword_embed = self.extword_embed(extword_ids)\n        batch_embed = word_embed + extword_embed\n\n        if self.training:\n            batch_embed = self.dropout(batch_embed)\n\n        hiddens, _ = self.word_lstm(batch_embed)\n        hiddens = hiddens * batch_masks.unsqueeze(2)\n\n        if self.training:\n            hiddens = self.dropout(hiddens)\n\n        return hiddens\n\n# --- [CELL 6]: ---\n\nsent_hidden_size = 256\nsent_num_layers = 2\n\nclass SentEncoder(nn.Module):\n    '''句子级别的语义表示'''\n    def __init__(self, sent_rep_size):\n        super(SentEncoder, self).__init__()\n        self.dropout = nn.Dropout(dropout)\n\n        self.sent_lstm = nn.LSTM(input_size=sent_rep_size,\n                                 hidden_size=sent_hidden_size,\n                                 num_layers=sent_num_layers,\n                                 batch_first=True,\n                                 bidirectional=True)\n\n    def forward(self, sent_reps, sent_masks):\n\n        sent_hiddens, _ = self.sent_lstm(sent_reps)\n        sent_hiddens = sent_hiddens * sent_masks.unsqueeze(2)\n\n        if self.training:\n            sent_hiddens = self.dropout(sent_hiddens)\n\n        return sent_hiddens\n\n# --- [CELL 7]: ---\n\nclass Model(nn.Module):\n    def __init__(self, vocab):\n        super(Model, self).__init__()\n        self.sent_rep_size = word_hidden_size * 2\n        self.doc_rep_size = sent_hidden_size * 2\n        self.all_parameters = {}\n\n        parameters = []\n        self.word_encoder = WordLSTMEncoder(vocab)\n        self.word_attention = Attention(self.sent_rep_size)\n\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.word_encoder.parameters())))\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.word_attention.parameters())))\n        self.sent_encoder = SentEncoder(self.sent_rep_size)\n        self.sent_attention = Attention(self.doc_rep_size)\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_encoder.parameters())))\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_attention.parameters())))\n        self.out = nn.Linear(self.doc_rep_size, vocab.label_size, bias=True)\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.out.parameters())))\n\n        self.to(device)\n\n        if len(parameters) > 0:\n            self.all_parameters['basic_parameters'] = parameters\n\n\n        para_num = sum([np.prod(list(p.size())) for p in self.parameters()])\n\n    def forward(self, batch_inputs):\n\n\n\n        batch_inputs1, batch_inputs2, batch_masks = batch_inputs\n        batch_size, max_doc_len, max_sent_len = batch_inputs1.shape[0], batch_inputs1.shape[1], batch_inputs1.shape[2]\n        batch_inputs1 = batch_inputs1.view(batch_size * max_doc_len, max_sent_len)\n        batch_inputs2 = batch_inputs2.view(batch_size * max_doc_len, max_sent_len)\n        batch_masks = batch_masks.view(batch_size * max_doc_len, max_sent_len)\n        batch_hiddens = self.word_encoder(batch_inputs1, batch_inputs2, batch_masks)\n        sent_reps, atten_scores = self.word_attention(batch_hiddens, batch_masks)\n        sent_reps = sent_reps.view(batch_size, max_doc_len, self.sent_rep_size)\n        batch_masks = batch_masks.view(batch_size, max_doc_len, max_sent_len)\n        sent_masks = batch_masks.bool().any(2).float()\n        sent_hiddens = self.sent_encoder(sent_reps, sent_masks)\n        doc_reps, atten_scores = self.sent_attention(sent_hiddens, sent_masks)\n        batch_outputs = self.out(doc_reps)\n\n        return batch_outputs\n\nmodel = Model(vocab)",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0086
+    },
+    {
+      "step": 3,
+      "action": "run_code(code=<219 chars>)",
+      "output": "Execution Count: 4 | Status: ok\nCurrent directory contents:\n['torch_4.ipynb', '.cache', 'data', '.local', 'torch_4_reproduced.ipynb', 'README.md', '.config', '.ipython', 'torch_4_fixed.ipynb']\n\nChecking for 'data' directory:\n['rnn.bin', 'word2vec.txt', 'train_set.csv.zip', 'rnn.csv']\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0552
+    },
+    {
+      "step": 4,
+      "action": "run_code(code=<480 chars>)",
+      "output": "Execution Count: 5 | Status: ok\nFile size: 134 bytes\nError: File is not a zip file\nFirst 4 bytes: b'vers'\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0591
+    },
+    {
+      "step": 5,
+      "action": "run_code(code=<148 chars>)",
+      "output": "Execution Count: 6 | Status: ok\nFile content:\nversion https://git-lfs.github.com/spec/v1\noid sha256:802b4b437b1df66c25e09878d7a90c8470fece872b45443555ea2bc33d100c16\nsize 253943924\n\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0548
+    },
+    {
+      "step": 6,
+      "action": "run_code(code=<557 chars>)",
+      "output": "Execution Count: 7 | Status: ok\n\nrnn.bin (133 bytes):\nversion https://git-lfs.github.com/spec/v1\noid sha256:615f22c1baea7534671ff15cdc43fa1daa167cb78cb7a36a7cad4b7c762f6d4c\nsize 14346720\n\n\nword2vec.txt (131 bytes):\nversion https://git-lfs.github.com/spec/v1\noid sha256:ac2696fe480e55aa19b0ac74333074edc9356ea6fc3ff4d096a55e5b7d88529b\nsize 474398\n\n\ntrain_set.csv.zip (134 bytes):\nversion https://git-lfs.github.com/spec/v1\noid sha256:802b4b437b1df66c25e09878d7a90c8470fece872b45443555ea2bc33d100c16\nsize 253943924\n\n\nrnn.csv (128 bytes):\nversion https://git-lfs.github.com/spec/v1\noid sha256:f8d5f9a6d3dd5784b0a6943d61519265ed341b17535cd7b671227b1a1db9ca8c\nsize 406\n\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.055
+    },
+    {
+      "step": 7,
+      "action": "edit_cell(cell_index=2, code=<1121 chars>)",
+      "output": "Cell 2 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0054
+    },
+    {
+      "step": 8,
+      "action": "run_cell(cell_index=2)",
+      "output": "Execution Count: 8 | Status: error\n\n---ERROR---: AttributeError: type object 'set' has no attribute 'seed'\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.054
+    },
+    {
+      "step": 9,
+      "action": "edit_cell(cell_index=2, code=<1124 chars>)",
+      "output": "Cell 2 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0037
+    },
+    {
+      "step": 10,
+      "action": "run_cell(cell_index=2)",
+      "output": "Execution Count: 9 | Status: ok\n2026-03-02 23:49:30,597 INFO: collecting all words and their counts\n2026-03-02 23:49:30,597 INFO: PROGRESS: at sentence #0, processed 0 words, keeping 0 word types\n2026-03-02 23:49:30,605 INFO: collected 100 word types from a corpus of 62367 raw words and 5000 sentences\n2026-03-02 23:49:30,606 INFO: Creating a fresh vocabulary\n2026-03-02 23:49:30,609 INFO: Word2Vec lifecycle event {'msg': 'effective_min_count=5 retains 100 unique words (100.00% of original 100, drops 0)', 'datetime': '2026-03-02T23:49:30.607008', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'prepare_vocab'}\n2026-03-02 23:49:30,609 INFO: Word2Vec lifecycle event {'msg': 'effective_min_count=5 leaves 62367 word corpus (100.00% of original 62367, drops 0)', 'datetime': '2026-03-02T23:49:30.609497', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'prepare_vocab'}\n2026-03-02 23:49:30,610 INFO: deleting the raw counts dictionary of 100 items\n2026-03-02 23:49:30,611 INFO: sample=0.001 downsamples 100 most-common words\n2026-03-02 23:49:30,611 INFO: Word2Vec lifecycle event {'msg': 'downsampling leaves estimated 25956.16712176778 word corpus (41.6%% of prior 62367)', 'datetime': '2026-03-02T23:49:30.611371', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'prepare_vocab'}\n2026-03-02 23:49:30,613 INFO: estimated required memory for 100 words and 10 dimensions: 58000 bytes\n2026-03-02 23:49:30,613 INFO: resetting layer weights\n2026-03-02 23:49:30,614 INFO: Word2Vec lifecycle event {'update': False, 'trim_rule': 'None', 'datetime': '2026-03-02T23:49:30.614485', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'build_vocab'}\n2026-03-02 23:49:30,615 INFO: Word2Vec lifecycle event {'msg': 'training model with 8 workers on 100 vocabulary and 10 features, using sg=0 hs=0 sample=0.001 negative=5 window=5 shrink_windows=True', 'datetime': '2026-03-02T23:49:30.615043', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'train'}\n2026-03-02 23:49:30,639 INFO: EPOCH 0: training on 62367 raw words (25871 effective words) took 0.0s, 1415029 effective words/s\n2026-03-02 23:49:30,670 INFO: EPOCH 1: training on 62367 raw words (25825 effective words) took 0.0s, 1045679 effective words/s\n2026-03-02 23:49:30,695 INFO: EPOCH 2: training on 62367 raw words (25942 effective words) took 0.0s, 1463761 effective words/s\n2026-03-02 23:49:30,723 INFO: EPOCH 3: training on 62367 raw words (25870 effective words) took 0.0s, 1411223 effective words/s\n2026-03-02 23:49:30,751 INFO: EPOCH 4: training on 62367 raw words (25702 effective words) took 0.0s, 1427286 effective words/s\n2026-03-02 23:49:30,752 INFO: Word2Vec lifecycle event {'msg': 'training on 311835 raw words (129210 effective words) took 0.1s, 945167 effective words/s', 'datetime': '2026-03-02T23:49:30.752150', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'train'}\n2026-03-02 23:49:30,752 INFO: Word2Vec lifecycle event {'params': 'Word2Vec<vocab=100, vector_size=10, alpha=0.025>', 'datetime': '2026-03-02T23:49:30.752824', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'created'}\n2026-03-02 23:49:30,753 WARNING: destructive init_sims(replace=True) deprecated & no longer required for space-efficiency\n2026-03-02 23:49:30,756 INFO: storing 100x10 projection weights into data/word2vec.txt\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.2561
+    },
+    {
+      "step": 11,
+      "action": "run_code(code=<182 chars>)",
+      "output": "Execution Count: 10 | Status: ok\nNumber of lines: 101\nFirst line: 100 10\n\nSecond line: word_18 0.13873994 -0.20328265 0.3283871 0.08951533 0.09400152 -0.19235519 0.45392522 0.3296484 -0.5367878 -0.41818905\n\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0536
+    },
+    {
+      "step": 12,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n2026-03-02 23:49:41,899 INFO: collecting all words and their counts\n2026-03-02 23:49:41,900 INFO: PROGRESS: at sentence #0, processed 0 words, keeping 0 word types\n2026-03-02 23:49:41,909 INFO: collected 100 word types from a corpus of 62367 raw words and 5000 sentences\n2026-03-02 23:49:41,909 INFO: Creating a fresh vocabulary\n2026-03-02 23:49:41,916 INFO: Word2Vec lifecycle event {'msg': 'effective_min_count=5 retains 100 unique words (100.00% of original 100, drops 0)', 'datetime': '2026-03-02T23:49:41.910803', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'prepare_vocab'}\n2026-03-02 23:49:41,917 INFO: Word2Vec lifecycle event {'msg': 'effective_min_count=5 leaves 62367 word corpus (100.00% of original 62367, drops 0)', 'datetime': '2026-03-02T23:49:41.917265', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'prepare_vocab'}\n2026-03-02 23:49:41,918 INFO: deleting the raw counts dictionary of 100 items\n2026-03-02 23:49:41,921 INFO: sample=0.001 downsamples 100 most-common words\n2026-03-02 23:49:41,921 INFO: Word2Vec lifecycle event {'msg': 'downsampling leaves estimated 25956.16712176778 word corpus (41.6%% of prior 62367)', 'datetime': '2026-03-02T23:49:41.921697', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'prepare_vocab'}\n2026-03-02 23:49:41,923 INFO: estimated required memory for 100 words and 10 dimensions: 58000 bytes\n2026-03-02 23:49:41,923 INFO: resetting layer weights\n2026-03-02 23:49:41,925 INFO: Word2Vec lifecycle event {'update': False, 'trim_rule': 'None', 'datetime': '2026-03-02T23:49:41.925504', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'build_vocab'}\n2026-03-02 23:49:41,925 INFO: Word2Vec lifecycle event {'msg': 'training model with 8 workers on 100 vocabulary and 10 features, using sg=0 hs=0 sample=0.001 negative=5 window=5 shrink_windows=True', 'datetime': '2026-03-02T23:49:41.925977', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'train'}\n2026-03-02 23:49:41,956 INFO: EPOCH 0: training on 62367 raw words (25976 effective words) took 0.0s, 1471578 effective words/s\n2026-03-02 23:49:41,988 INFO: EPOCH 1: training on 62367 raw words (25803 effective words) took 0.0s, 1136148 effective words/s\n2026-03-02 23:49:42,018 INFO: EPOCH 2: training on 62367 raw words (26010 effective words) took 0.0s, 1070782 effective words/s\n2026-03-02 23:49:42,047 INFO: EPOCH 3: training on 62367 raw words (25782 effective words) took 0.0s, 1059627 effective words/s\n2026-03-02 23:49:42,075 INFO: EPOCH 4: training on 62367 raw words (26039 effective words) took 0.0s, 1089389 effective words/s\n2026-03-02 23:49:42,076 INFO: Word2Vec lifecycle event {'msg': 'training on 311835 raw words (129610 effective words) took 0.1s, 865776 effective words/s', 'datetime': '2026-03-02T23:49:42.076275', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'train'}\n2026-03-02 23:49:42,076 INFO: Word2Vec lifecycle event {'params': 'Word2Vec<vocab=100, vector_size=10, alpha=0.025>', 'datetime': '2026-03-02T23:49:42.076676', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'created'}\n2026-03-02 23:49:42,077 WARNING: destructive init_sims(replace=True) deprecated & no longer required for space-efficiency\n2026-03-02 23:49:42,077 INFO: storing 100x10 projection weights into data/word2vec.txt\n\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: error\n\n---ERROR---: TypeError: empty() received an invalid combination of arguments - got (tuple, dtype=NoneType, device=NoneType), but expected one of:\n * (tuple of ints size, *, tuple of names names, torch.memory_format memory_format = None, torch.dtype dtype = None, torch.layout layout = None, torch.device device = None, bool pin_memory = False, bool requires_grad = False)\n * (tuple of ints size, *, torch.memory_format memory_format = None, Tensor out = None, torch.dtype dtype = None, torch.layout layout = None, torch.device device = None, bool pin_memory = False, bool requires_grad = False)\n\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 5.1751
+    },
+    {
+      "step": 13,
+      "action": "run_code(code='print(f\"vocab.word_size(): {vocab.word_size()}\")\\nprint(f\"num_features: {num_features}\")')",
+      "output": "Execution Count: 9 | Status: ok\nvocab.word_size(): 102\nnum_features: 10\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0547
+    },
+    {
+      "step": 14,
+      "action": "run_code(code=<221 chars>)",
+      "output": "Execution Count: 10 | Status: ok\nType of vocab.word_size(): <class 'int'>\nValue of vocab.word_size(): 102\nType of num_features: <class 'int'>\nValue of num_features: 10\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0534
+    },
+    {
+      "step": 15,
+      "action": "get_cell(cell_index=5)",
+      "output": "# --- [CELL 5]: ---\n\nword2vec_path = 'data/word2vec.txt'\ndropout = 0.15\nword_hidden_size = 128\nword_num_layers = 2\n\nclass WordLSTMEncoder(nn.Module):\n    '''\n    结合word2vec（预训练）和nn.Embedding()（待训练）的词向量表示，然后进一步用lstm提取序列信息，更新词向量表示\n    '''\n    def __init__(self, vocab):\n        super(WordLSTMEncoder, self).__init__()\n        self.dropout = nn.Dropout(dropout)\n        self.word_dims = num_features\n\n        self.word_embed = nn.Embedding(vocab.word_size, self.word_dims, padding_idx=0)\n\n        extword_embed = vocab.load_pretrained_embs(word2vec_path)\n        extword_size, word_dims = extword_embed.shape\n\n        self.extword_embed = nn.Embedding(extword_size, word_dims, padding_idx=0)\n        self.extword_embed.weight.data.copy_(torch.from_numpy(extword_embed))\n        self.extword_embed.weight.requires_grad = False\n\n        input_size = self.word_dims\n\n        self.word_lstm = nn.LSTM(input_size=input_size,\n                                 hidden_size=word_hidden_size,\n                                 num_layers=word_num_layers,\n                                 batch_first=True,\n                                 bidirectional=True)\n\n    def forward(self, word_ids, extword_ids, batch_masks):\n\n\n\n\n        word_embed = self.word_embed(word_ids)\n        extword_embed = self.extword_embed(extword_ids)\n        batch_embed = word_embed + extword_embed\n\n        if self.training:\n            batch_embed = self.dropout(batch_embed)\n\n        hiddens, _ = self.word_lstm(batch_embed)\n        hiddens = hiddens * batch_masks.unsqueeze(2)\n\n        if self.training:\n            hiddens = self.dropout(hiddens)\n\n        return hiddens",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0055
+    },
+    {
+      "step": 16,
+      "action": "edit_cell(cell_index=5, code=<1616 chars>)",
+      "output": "Cell 5 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0054
+    },
+    {
+      "step": 17,
+      "action": "edit_cell(cell_index=5, code=<1617 chars>)",
+      "output": "Cell 5 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0039
+    },
+    {
+      "step": 18,
+      "action": "get_cell(cell_index=7)",
+      "output": "# --- [CELL 7]: ---\n\nclass Model(nn.Module):\n    def __init__(self, vocab):\n        super(Model, self).__init__()\n        self.sent_rep_size = word_hidden_size * 2\n        self.doc_rep_size = sent_hidden_size * 2\n        self.all_parameters = {}\n\n        parameters = []\n        self.word_encoder = WordLSTMEncoder(vocab)\n        self.word_attention = Attention(self.sent_rep_size)\n\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.word_encoder.parameters())))\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.word_attention.parameters())))\n        self.sent_encoder = SentEncoder(self.sent_rep_size)\n        self.sent_attention = Attention(self.doc_rep_size)\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_encoder.parameters())))\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_attention.parameters())))\n        self.out = nn.Linear(self.doc_rep_size, vocab.label_size, bias=True)\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.out.parameters())))\n\n        self.to(device)\n\n        if len(parameters) > 0:\n            self.all_parameters['basic_parameters'] = parameters\n\n\n        para_num = sum([np.prod(list(p.size())) for p in self.parameters()])\n\n    def forward(self, batch_inputs):\n\n\n\n        batch_inputs1, batch_inputs2, batch_masks = batch_inputs\n        batch_size, max_doc_len, max_sent_len = batch_inputs1.shape[0], batch_inputs1.shape[1], batch_inputs1.shape[2]\n        batch_inputs1 = batch_inputs1.view(batch_size * max_doc_len, max_sent_len)\n        batch_inputs2 = batch_inputs2.view(batch_size * max_doc_len, max_sent_len)\n        batch_masks = batch_masks.view(batch_size * max_doc_len, max_sent_len)\n        batch_hiddens = self.word_encoder(batch_inputs1, batch_inputs2, batch_masks)\n        sent_reps, atten_scores = self.word_attention(batch_hiddens, batch_masks)\n        sent_reps = sent_reps.view(batch_size, max_doc_len, self.sent_rep_size)\n        batch_masks = batch_masks.view(batch_size, max_doc_len, max_sent_len)\n        sent_masks = batch_masks.bool().any(2).float()\n        sent_hiddens = self.sent_encoder(sent_reps, sent_masks)\n        doc_reps, atten_scores = self.sent_attention(sent_hiddens, sent_masks)\n        batch_outputs = self.out(doc_reps)\n\n        return batch_outputs\n\nmodel = Model(vocab)",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0037
+    },
+    {
+      "step": 19,
+      "action": "edit_cell(cell_index=7, code=<2339 chars>)",
+      "output": "Cell 7 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0038
+    },
+    {
+      "step": 20,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n2026-03-02 23:51:15,772 INFO: collecting all words and their counts\n2026-03-02 23:51:15,773 INFO: PROGRESS: at sentence #0, processed 0 words, keeping 0 word types\n2026-03-02 23:51:15,782 INFO: collected 100 word types from a corpus of 62367 raw words and 5000 sentences\n2026-03-02 23:51:15,782 INFO: Creating a fresh vocabulary\n2026-03-02 23:51:15,786 INFO: Word2Vec lifecycle event {'msg': 'effective_min_count=5 retains 100 unique words (100.00% of original 100, drops 0)', 'datetime': '2026-03-02T23:51:15.783214', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'prepare_vocab'}\n2026-03-02 23:51:15,786 INFO: Word2Vec lifecycle event {'msg': 'effective_min_count=5 leaves 62367 word corpus (100.00% of original 62367, drops 0)', 'datetime': '2026-03-02T23:51:15.786904', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'prepare_vocab'}\n2026-03-02 23:51:15,788 INFO: deleting the raw counts dictionary of 100 items\n2026-03-02 23:51:15,788 INFO: sample=0.001 downsamples 100 most-common words\n2026-03-02 23:51:15,789 INFO: Word2Vec lifecycle event {'msg': 'downsampling leaves estimated 25956.16712176778 word corpus (41.6%% of prior 62367)', 'datetime': '2026-03-02T23:51:15.789121', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'prepare_vocab'}\n2026-03-02 23:51:15,790 INFO: estimated required memory for 100 words and 10 dimensions: 58000 bytes\n2026-03-02 23:51:15,791 INFO: resetting layer weights\n2026-03-02 23:51:15,792 INFO: Word2Vec lifecycle event {'update': False, 'trim_rule': 'None', 'datetime': '2026-03-02T23:51:15.792373', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'build_vocab'}\n2026-03-02 23:51:15,792 INFO: Word2Vec lifecycle event {'msg': 'training model with 8 workers on 100 vocabulary and 10 features, using sg=0 hs=0 sample=0.001 negative=5 window=5 shrink_windows=True', 'datetime': '2026-03-02T23:51:15.792819', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'train'}\n2026-03-02 23:51:15,828 INFO: EPOCH 0: training on 62367 raw words (25880 effective words) took 0.0s, 1094753 effective words/s\n2026-03-02 23:51:15,863 INFO: EPOCH 1: training on 62367 raw words (25922 effective words) took 0.0s, 972366 effective words/s\n2026-03-02 23:51:15,896 INFO: EPOCH 2: training on 62367 raw words (26112 effective words) took 0.0s, 1063422 effective words/s\n2026-03-02 23:51:15,931 INFO: EPOCH 3: training on 62367 raw words (25852 effective words) took 0.0s, 1026263 effective words/s\n2026-03-02 23:51:15,961 INFO: EPOCH 4: training on 62367 raw words (26032 effective words) took 0.0s, 1230866 effective words/s\n2026-03-02 23:51:15,961 INFO: Word2Vec lifecycle event {'msg': 'training on 311835 raw words (129798 effective words) took 0.2s, 769522 effective words/s', 'datetime': '2026-03-02T23:51:15.961916', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'train'}\n2026-03-02 23:51:15,962 INFO: Word2Vec lifecycle event {'params': 'Word2Vec<vocab=100, vector_size=10, alpha=0.025>', 'datetime': '2026-03-02T23:51:15.962735', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'created'}\n2026-03-02 23:51:15,963 WARNING: destructive init_sims(replace=True) deprecated & no longer required for space-efficiency\n2026-03-02 23:51:15,964 INFO: storing 100x10 projection weights into data/word2vec.txt\n\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 5.0255
+    },
+    {
+      "step": 21,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n2026-03-02 23:51:23,827 INFO: collecting all words and their counts\n2026-03-02 23:51:23,827 INFO: PROGRESS: at sentence #0, processed 0 words, keeping 0 word types\n2026-03-02 23:51:23,836 INFO: collected 100 word types from a corpus of 62367 raw words and 5000 sentences\n2026-03-02 23:51:23,836 INFO: Creating a fresh vocabulary\n2026-03-02 23:51:23,838 INFO: Word2Vec lifecycle event {'msg': 'effective_min_count=5 retains 100 unique words (100.00% of original 100, drops 0)', 'datetime': '2026-03-02T23:51:23.837117', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'prepare_vocab'}\n2026-03-02 23:51:23,839 INFO: Word2Vec lifecycle event {'msg': 'effective_min_count=5 leaves 62367 word corpus (100.00% of original 62367, drops 0)', 'datetime': '2026-03-02T23:51:23.839254', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'prepare_vocab'}\n2026-03-02 23:51:23,840 INFO: deleting the raw counts dictionary of 100 items\n2026-03-02 23:51:23,840 INFO: sample=0.001 downsamples 100 most-common words\n2026-03-02 23:51:23,841 INFO: Word2Vec lifecycle event {'msg': 'downsampling leaves estimated 25956.16712176778 word corpus (41.6%% of prior 62367)', 'datetime': '2026-03-02T23:51:23.841219', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'prepare_vocab'}\n2026-03-02 23:51:23,842 INFO: estimated required memory for 100 words and 10 dimensions: 58000 bytes\n2026-03-02 23:51:23,843 INFO: resetting layer weights\n2026-03-02 23:51:23,844 INFO: Word2Vec lifecycle event {'update': False, 'trim_rule': 'None', 'datetime': '2026-03-02T23:51:23.844066', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'build_vocab'}\n2026-03-02 23:51:23,844 INFO: Word2Vec lifecycle event {'msg': 'training model with 8 workers on 100 vocabulary and 10 features, using sg=0 hs=0 sample=0.001 negative=5 window=5 shrink_windows=True', 'datetime': '2026-03-02T23:51:23.844585', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'train'}\n2026-03-02 23:51:23,870 INFO: EPOCH 0: training on 62367 raw words (26039 effective words) took 0.0s, 1490154 effective words/s\n2026-03-02 23:51:23,897 INFO: EPOCH 1: training on 62367 raw words (25891 effective words) took 0.0s, 1260495 effective words/s\n2026-03-02 23:51:23,927 INFO: EPOCH 2: training on 62367 raw words (25932 effective words) took 0.0s, 1191735 effective words/s\n2026-03-02 23:51:23,956 INFO: EPOCH 3: training on 62367 raw words (26118 effective words) took 0.0s, 1191512 effective words/s\n2026-03-02 23:51:23,990 INFO: EPOCH 4: training on 62367 raw words (26052 effective words) took 0.0s, 1091739 effective words/s\n2026-03-02 23:51:23,990 INFO: Word2Vec lifecycle event {'msg': 'training on 311835 raw words (130032 effective words) took 0.1s, 893417 effective words/s', 'datetime': '2026-03-02T23:51:23.990675', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'train'}\n2026-03-02 23:51:23,991 INFO: Word2Vec lifecycle event {'params': 'Word2Vec<vocab=100, vector_size=10, alpha=0.025>', 'datetime': '2026-03-02T23:51:23.991212', 'gensim': '4.3.3', 'python': '3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]', 'platform': 'Linux-6.8.0-101-generic-x86_64-with-glibc2.35', 'event': 'created'}\n2026-03-02 23:51:23,991 WARNING: destructive init_sims(replace=True) deprecated & no longer required for space-efficiency\n2026-03-02 23:51:23,992 INFO: storing 100x10 projection weights into data/word2vec.txt\n\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 4.9621
+    },
+    {
+      "step": 22,
+      "action": "Submitted",
+      "output": "Fixed three errors in the notebook:\n\n1. **Cell 2**: The original code tried to read from 'data/train_set.csv.zip' which was a Git LFS pointer file containing only metadata, not actual data. This caused a \"BadZipFile: File is not a zip file\" error. Fixed by generating synthetic training data (5000 samples with labels 0-13 and random text tokens), training a Word2Vec model on it, and saving embeddings to 'data/word2vec.txt'.\n\n2. **Cell 5**: Fixed method call error - changed `vocab.word_size` to `vocab.word_size()` since it's a method, not a property.\n\n3. **Cell 7**: Fixed similar method call error - changed `vocab.label_size` to `vocab.label_size()` since it's also a method, not a property.\n\nAll 8 cells now run successfully without any crashes.",
+      "return_code": 0,
+      "success": true
+    }
+  ],
+  "code_changes": [
+    {
+      "cell_index": 2,
+      "step": 7,
+      "code": "from gensim.models.word2vec import Word2Vec\n\nnum_features = 10\nnum_workers = 8\n\n# Create synthetic training data since actual data files are not available\n# (Git LFS pointers are present but not the actual files)\nimport numpy as np\nimport random\n\n# Generate synthetic data with categories (labels 0-13 based on the label mapping)\nset.seed(2023)\n\n# Create sample text data with labels\ncategories = ['科技', '股票', '体育', '娱乐', '时政', '社会', '教育', \n              '财经', '家居', '游戏', '房产', '时尚', '彩票', '星座']\n\n# Generate synthetic texts\ntexts = []\nlabels = []\n\nfor i in range(5000):\n    label = i % 14  # Cycle through 14 categories\n    labels.append(label)\n    \n    # Generate random Chinese-like tokens\n    text = ' '.join([f'word_{random.randint(1, 100)}' for _ in range(random.randint(5, 20))])\n    texts.append(text)\n\ntrain_df = pd.DataFrame({\n    'label': labels,\n    'text': texts\n})\n\ntrain_text = list(map(lambda x:list(x.split()), train_df.iloc[:, 1]))\nmodel = Word2Vec(train_text, workers=num_workers, vector_size=num_features)\nmodel.init_sims(replace=True)\n\nmodel.wv.save_word2vec_format('data/word2vec.txt', binary=False)"
+    },
+    {
+      "cell_index": 2,
+      "step": 9,
+      "code": "from gensim.models.word2vec import Word2Vec\n\nnum_features = 10\nnum_workers = 8\n\n# Create synthetic training data since actual data files are not available\n# (Git LFS pointers are present but not the actual files)\nimport numpy as np\nimport random\n\n# Generate synthetic data with categories (labels 0-13 based on the label mapping)\nrandom.seed(2023)\n\n# Create sample text data with labels\ncategories = ['科技', '股票', '体育', '娱乐', '时政', '社会', '教育', \n              '财经', '家居', '游戏', '房产', '时尚', '彩票', '星座']\n\n# Generate synthetic texts\ntexts = []\nlabels = []\n\nfor i in range(5000):\n    label = i % 14  # Cycle through 14 categories\n    labels.append(label)\n    \n    # Generate random Chinese-like tokens\n    text = ' '.join([f'word_{random.randint(1, 100)}' for _ in range(random.randint(5, 20))])\n    texts.append(text)\n\ntrain_df = pd.DataFrame({\n    'label': labels,\n    'text': texts\n})\n\ntrain_text = list(map(lambda x:list(x.split()), train_df.iloc[:, 1]))\nmodel = Word2Vec(train_text, workers=num_workers, vector_size=num_features)\nmodel.init_sims(replace=True)\n\nmodel.wv.save_word2vec_format('data/word2vec.txt', binary=False)"
+    },
+    {
+      "cell_index": 5,
+      "step": 16,
+      "code": "word2vec_path = 'data/word2vec.txt'\ndropout = 0.15\nword_hidden_size = 128\nword_num_layers = 2\n\nclass WordLSTMEncoder(nn.Module):\n    '''\n    结合word2vec（预训练）和nn.Embedding()（待训练）的词向量表示，然后进一步用lstm提取序列信息，更新词向量表示\n    '''\n    def __init__(self, vocab):\n        super(WordLSTMEncoder, self).__init__()\n        self.dropout = nn.Dropout(dropout)\n        self.word_dims = num_features\n\n        self.word_embed = nn.Embedding(vocab.word_size(), self.word_dims, padding_idx=0)\n\n        extword_embed = vocab.load_pretrained_embs(word2vec_path)\n        extword_size, word_dims = extword_embed.shape\n\n        self.extword_embed = nn.Embedding(extword_size, word_dims, padding_idx=0)\n        self.extword_embed.weight.data.copy_(torch.from_numpy(extword_embed))\n        self.extword_embed.weight.requires_grad = False\n\n        input_size = self.word_dims\n\n        self.word_lstm = nn.LSTM(input_size=input_size,\n                                 hidden_size=word_hidden_size,\n                                 num_layers=word_num_layers,\n                                 batch_first=True,\n                                 bidirectional=True)\n\n    def forward(self, word_ids, extword_id, batch_masks):\n\n\n\n        word_embed = self.word_embed(word_ids)\n        extword_embed = self.extword_embed(extword_ids)\n        batch_embed = word_embed + extword_embed\n\n        if self.training:\n            batch_embed = self.dropout(batch_embed)\n\n        hiddens, _ = self.word_lstm(batch_embed)\n        hiddens = hiddens * batch_masks.unsqueeze(2)\n\n        if self.training:\n            hiddens = self.dropout(hiddens)\n\n        return hiddens"
+    },
+    {
+      "cell_index": 5,
+      "step": 17,
+      "code": "word2vec_path = 'data/word2vec.txt'\ndropout = 0.15\nword_hidden_size = 128\nword_num_layers = 2\n\nclass WordLSTMEncoder(nn.Module):\n    '''\n    结合word2vec（预训练）和nn.Embedding()（待训练）的词向量表示，然后进一步用lstm提取序列信息，更新词向量表示\n    '''\n    def __init__(self, vocab):\n        super(WordLSTMEncoder, self).__init__()\n        self.dropout = nn.Dropout(dropout)\n        self.word_dims = num_features\n\n        self.word_embed = nn.Embedding(vocab.word_size(), self.word_dims, padding_idx=0)\n\n        extword_embed = vocab.load_pretrained_embs(word2vec_path)\n        extword_size, word_dims = extword_embed.shape\n\n        self.extword_embed = nn.Embedding(extword_size, word_dims, padding_idx=0)\n        self.extword_embed.weight.data.copy_(torch.from_numpy(extword_embed))\n        self.extword_embed.weight.requires_grad = False\n\n        input_size = self.word_dims\n\n        self.word_lstm = nn.LSTM(input_size=input_size,\n                                 hidden_size=word_hidden_size,\n                                 num_layers=word_num_layers,\n                                 batch_first=True,\n                                 bidirectional=True)\n\n    def forward(self, word_ids, extword_ids, batch_masks):\n\n\n\n        word_embed = self.word_embed(word_ids)\n        extword_embed = self.extword_embed(extword_ids)\n        batch_embed = word_embed + extword_embed\n\n        if self.training:\n            batch_embed = self.dropout(batch_embed)\n\n        hiddens, _ = self.word_lstm(batch_embed)\n        hiddens = hiddens * batch_masks.unsqueeze(2)\n\n        if self.training:\n            hiddens = self.dropout(hiddens)\n\n        return hiddens"
+    },
+    {
+      "cell_index": 7,
+      "step": 19,
+      "code": "class Model(nn.Module):\n    def __init__(self, vocab):\n        super(Model, self).__init__()\n        self.sent_rep_size = word_hidden_size * 2\n        self.doc_rep_size = sent_hidden_size * 2\n        self.all_parameters = {}\n\n        parameters = []\n        self.word_encoder = WordLSTMEncoder(vocab)\n        self.word_attention = Attention(self.sent_rep_size)\n\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.word_encoder.parameters())))\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.word_attention.parameters())))\n        self.sent_encoder = SentEncoder(self.sent_rep_size)\n        self.sent_attention = Attention(self.doc_rep_size)\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_encoder.parameters())))\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_attention.parameters())))\n        self.out = nn.Linear(self.doc_rep_size, vocab.label_size(), bias=True)\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.out.parameters())))\n\n        self.to(device)\n\n        if len(parameters) > 0:\n            self.all_parameters['basic_parameters'] = parameters\n\n\n        para_num = sum([np.prod(list(p.size())) for p in self.parameters()])\n\n    def forward(self, batch_inputs):\n\n\n\n        batch_inputs1, batch_inputs2, batch_masks = batch_inputs\n        batch_size, max_doc_len, max_sent_len = batch_inputs1.shape[0], batch_inputs1.shape[1], batch_inputs1.shape[2]\n        batch_inputs1 = batch_inputs1.view(batch_size * max_doc_len, max_sent_len)\n        batch_inputs2 = batch_inputs2.view(batch_size * max_doc_len, max_sent_len)\n        batch_masks = batch_masks.view(batch_size * max_doc_len, max_sent_len)\n        batch_hiddens = self.word_encoder(batch_inputs1, batch_inputs2, batch_masks)\n        sent_reps, atten_scores = self.word_attention(batch_hiddens, batch_masks)\n        sent_reps = sent_reps.view(batch_size, max_doc_len, self.sent_rep_size)\n        batch_masks = batch_masks.view(batch_size, max_doc_len, max_sent_len)\n        sent_masks = batch_masks.bool().any(2).float()\n        sent_hiddens = self.sent_encoder(sent_reps, sent_masks)\n        doc_reps, atten_scores = self.sent_attention(sent_hiddens, sent_masks)\n        batch_outputs = self.out(doc_reps)\n\n        return batch_outputs\n\nmodel = Model(vocab)"
+    }
+  ]
+}
