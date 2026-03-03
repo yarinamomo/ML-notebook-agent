@@ -16,6 +16,9 @@ from typing import Iterator
 console = Console()
 status_renderable = Text("")
 
+# Global flag to enable/disable UI
+UI_ENABLED = True
+
 __all__ = [
     "agent",
     "system",
@@ -29,15 +32,38 @@ __all__ = [
     "status_renderable",
     "format_eta",
     "progress_live",
+    "set_ui_enabled",
+    "is_ui_enabled",
 ]
 
 
+def set_ui_enabled(enabled: bool) -> None:
+    """Enable or disable all UI output globally."""
+    global UI_ENABLED
+    UI_ENABLED = enabled
 
+
+def is_ui_enabled() -> bool:
+    """Check if UI is currently enabled."""
+    return UI_ENABLED
+
+
+def ui_enabled_only(func):
+    """Decorator that makes a function return None if UI is disabled."""
+    def wrapper(*args, **kwargs):
+        if not UI_ENABLED:
+            return None
+        return func(*args, **kwargs)
+    return wrapper
+
+
+@ui_enabled_only
 def agent(step: int, output: str, *, action: str | None = None, return_code: int | None = None) -> None:
     if action and return_code is not None:
         console.print(Panel(f"Executed {action}, with Return Code {return_code}", title=f"🔧Tool Executed (Step {step})", style="yellow", title_align="left"))
     console.print(Panel(_truncate(output), title=f"🤖Agent Response (Step {step})", style="green", title_align="left"))
 
+@ui_enabled_only
 def system(step: int, content: str, actions: str = "", reasoning: str = "") -> None:
     parts = []
     if reasoning:
@@ -51,12 +77,15 @@ def system(step: int, content: str, actions: str = "", reasoning: str = "") -> N
     console.print(Panel("\n\n".join(parts), title=f"🧠LLM Response (Step {step})", style="cyan", title_align="left"))
 
 
+@ui_enabled_only
 def info(message: str) -> None:
     console.print(f"[bold cyan]▶[/] {message}")
 
+@ui_enabled_only
 def warn(message: str) -> None:
     console.print(f"[bold yellow]⚠[/] {message}")
 
+@ui_enabled_only
 def error(message: str) -> None:
     console.print(f"[bold red]✖[/] {message}")
 
@@ -68,6 +97,10 @@ def wait(label: str, *, color: str = "cyan"):
     """
     Generic spinner for indeterminate waits.
     """
+    if not UI_ENABLED:
+        yield
+        return
+    
     status_renderable.plain = f"{label}…"
     status_renderable.style = color
     try:
@@ -105,6 +138,14 @@ def format_eta(seconds: float | None) -> str:
 
 @contextmanager
 def progress_live(total: int, description: str) -> Iterator[tuple[Progress, TaskID]]:
+    if not UI_ENABLED:
+        # Return dummy progress and task_id when UI is disabled
+        class DummyProgress:
+            def update(self, *args, **kwargs):
+                pass
+        yield DummyProgress(), 0  # type: ignore
+        return
+    
     progress = Progress(
         SpinnerColumn(),
         TextColumn("[bold]{task.description}"),
