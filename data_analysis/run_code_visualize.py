@@ -1,5 +1,8 @@
 """
 Visualize the patterns in run_code operations.
+
+This script automatically runs the analysis first to ensure data is up to date,
+then generates visualizations from the analyzed data.
 """
 
 import json
@@ -7,12 +10,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 
+# Import the analyze module to run analysis first
+import run_code_analyze
 
-def plot_category_distribution():
+
+def plot_category_distribution(input_dir, output_dir):
     """Plot the distribution of run_code operation categories."""
     
     # Load the JSON data
-    json_file = Path('analysis/run_code_operations.json')
+    json_file = input_dir / 'run_code_operations.json'
     with open(json_file, 'r', encoding='utf-8') as f:
         operations = json.load(f)
     
@@ -89,17 +95,17 @@ def plot_category_distribution():
     plt.tight_layout()
     
     # Save figure
-    output_file = 'analysis/run_code_patterns_visualization.png'
+    output_file = output_dir / 'run_code_patterns_visualization.png'
     plt.savefig(output_file, dpi=300, bbox_inches='tight')
     print(f"Visualization saved to: {output_file}")
     plt.close()
 
 
-def plot_code_length_distribution():
+def plot_code_length_distribution(input_dir, output_dir):
     """Plot the distribution of code lengths."""
     
     # Load the JSON data
-    json_file = Path('analysis/run_code_operations.json')
+    json_file = input_dir / 'run_code_operations.json'
     with open(json_file, 'r', encoding='utf-8') as f:
         operations = json.load(f)
     
@@ -143,17 +149,17 @@ def plot_code_length_distribution():
     plt.tight_layout()
     
     # Save figure
-    output_file = 'analysis/run_code_length_distribution.png'
+    output_file = output_dir / 'run_code_length_distribution.png'
     plt.savefig(output_file, dpi=300, bbox_inches='tight')
     print(f"Visualization saved to: {output_file}")
     plt.close()
 
 
-def plot_operations_by_run():
+def plot_operations_by_run(input_dir, output_dir):
     """Plot comparison of operations across runs."""
     
     # Load the JSON data
-    json_file = Path('analysis/run_code_operations.json')
+    json_file = input_dir / 'run_code_operations.json'
     with open(json_file, 'r', encoding='utf-8') as f:
         operations = json.load(f)
     
@@ -206,7 +212,7 @@ def plot_operations_by_run():
     plt.tight_layout()
     
     # Save figure
-    output_file = 'analysis/run_code_by_run_comparison.png'
+    output_file = output_dir / 'run_code_by_run_comparison.png'
     plt.savefig(output_file, dpi=300, bbox_inches='tight')
     print(f"Visualization saved to: {output_file}")
     plt.close()
@@ -214,14 +220,28 @@ def plot_operations_by_run():
 
 def main():
     """Generate all visualizations."""
-    print("Generating visualizations...")
+    base_dir = 'trajectories_monday/glm-4.7-355b'
+    input_dir = Path(base_dir) / 'analysis'
+    output_dir = Path(base_dir) / 'plots'
+    output_dir.mkdir(exist_ok=True)
     
-    plot_category_distribution()
-    plot_code_length_distribution()
-    plot_operations_by_run()
+    print("="*60)
+    print("STEP 1: Running analysis to ensure data is up to date...")
+    print("="*60)
+    
+    # Run the analysis first to generate/update the JSON data
+    run_code_analyze.main(input_dir)
+    
+    print("\n" + "="*60)
+    print("STEP 2: Generating visualizations...")
+    print("="*60)
+    
+    plot_category_distribution(input_dir, output_dir)
+    plot_code_length_distribution(input_dir, output_dir)
+    plot_operations_by_run(input_dir, output_dir)
     
     print("\nAll visualizations generated successfully!")
-    print("Check the 'analysis' folder for PNG files.")
+    print(f"Charts saved to: {output_dir.absolute()}")
 
 
 if __name__ == '__main__':

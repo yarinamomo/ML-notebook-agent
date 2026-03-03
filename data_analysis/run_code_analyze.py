@@ -344,10 +344,8 @@ def save_all_codes_json(analysis_results, output_file):
     print(f"All codes saved to: {output_file}")
 
 
-def main():
+def main(output_dir: Path):
     """Main function to run the analysis."""
-    base_dir = 'trajectories_monday/glm-4.7-355b'
-    output_dir = Path('analysis')
     output_dir.mkdir(exist_ok=True)
     
     print("="*60)
@@ -355,7 +353,7 @@ def main():
     print("="*60)
     
     # Analyze all runs
-    analysis_results = analyze_all_runs(base_dir)
+    analysis_results = analyze_all_runs(output_dir.parent)
     
     # Generate report
     report_file = output_dir / 'run_code_analysis_report.txt'
@@ -375,4 +373,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(Path('trajectories_monday/glm-4.7-355b/analysis'))
