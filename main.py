@@ -13,7 +13,6 @@ from src.utils.ui import format_eta, progress_live
 from src.utils.yaml_parser import (
     load_config,
     load_api_keys,
-    apply_cli_overrides,
     get_models_config,
     get_run_count,
     get_instances,
@@ -98,13 +97,9 @@ def run_single_instance(
     return exit_status, submission
 
 # fmt: off
-@app.command(help="_HELP_TEXT")
+@app.command()
 def main(
-    model_name: str | None = typer.Option( None, "-m", "--model", help="Model to use (overrides config)",),
-    cost_limit: float | None = typer.Option(None, "-l", "--cost-limit", help="Cost limit. Set to 0 to disable."),
     config_spec: Path = typer.Option(DEFAULT_CONFIG, "-c", "--config", help="Path to config file"),
-    run_count: int | None = typer.Option(None, "-r", "--run-count", help="Number of runs (overrides config)"),
-    run_all: bool | None = typer.Option(None, "--run-all/--single", help="Run all instances (overrides config)")
 ) -> Any:
 
     logger.info("Starting notebook agent....")
@@ -112,12 +107,11 @@ def main(
     # Load and parse configuration
     config = load_config(config_spec)
     load_api_keys(config)
-    config = apply_cli_overrides(config, cost_limit, run_count)
     
     # Get configuration parameters
-    models_config = get_models_config(config, model_name)
+    models_config = get_models_config(config)
     total_run_count = get_run_count(config)
-    instances = get_instances(config, run_all)
+    instances = get_instances(config)
     trajectories_dir = get_trajectories_dir(config)
     
     # Validate instances
