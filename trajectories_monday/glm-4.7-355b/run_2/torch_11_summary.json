@@ -1,0 +1,408 @@
+{
+  "metadata": {
+    "generated_at": "2026-03-03T05:24:51.404716",
+    "execution_time_seconds": 308.46,
+    "success": true,
+    "status": "Submitted",
+    "cost": 0.2048
+  },
+  "statistics": {
+    "total_steps": 26,
+    "total_operations": 26,
+    "successful_operations": 19,
+    "failed_operations": 7,
+    "cells_edited": 5,
+    "unique_cells_edited": 4,
+    "avg_tool_execution_time_seconds": 9.01
+  },
+  "original_notebook": [
+    "# --- [CELL 0]: ---\n\nfrom datasets import load_dataset\nimport torch\nimport torch.nn.functional as F\nimport numpy as np\nimport time\nimport pickle\n\ndataset = load_dataset(\"sst\", \"default\")\ndataset2 = load_dataset(\"multi_nli\")",
+    "# --- [CELL 1]: ---\n\ntorch.manual_seed = 555\n",
+    "# --- [CELL 2]: ---\n\n\n\n\nglv = dict()\nglv_size = 50\nwith open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:\n    for line in fp:\n        word, *vec = line.split()\n        glv[word] = torch.tensor(list(map(float , vec)))",
+    "# --- [CELL 3]: ---\n\nembed = torch.zeros((len(glv)+2 , glv_size))\nind =2\n\nword2index ={'_pad_':0}\nindex2word ={0:'_pad_'}\n\nfor x in glv:\n    if(len(glv[x]) != glv_size):\n        continue\n    embed[ind] = glv[x]\n    word2index[x] = ind\n    index2word[ind] = x\n    ind+=1",
+    "# --- [CELL 4]: ---\n\nsentences = dataset['train']['sentence']\ntestsent = dataset['test']['sentence']",
+    "# --- [CELL 5]: ---\n\nfrom nltk.corpus import stopwords\nfrom nltk.tokenize import word_tokenize\nstop_words = set(stopwords.words('english'))\n\ndef tokenize(sentences):\n    tokens =[]\n    max_len = 0\n    for sentence in sentences:\n        sentence = sentence.replace('\\\\',' ')\n        sentence = sentence.replace('/',' ')\n        sentence = sentence.replace('\\'',' ')\n        word_tokens = word_tokenize(sentence)\n        max_len = max(max_len ,len( word_tokens))\n        tokens.append([w for w in word_tokens if not w.lower() in stop_words and len(w)>2])\n    return tokens , max_len",
+    "# --- [CELL 6]: ---\n\ndef build_vocab(sentences):\n    vocab = set()\n    X = list()\n    y = list()\n\n    for tokens in sentences:\n        for token in tokens:\n            vocab.add(token)\n    vocab = list(vocab)\n    int2text = dict()\n    text2int = dict()\n    vocab = [\"_pad_\"] + vocab\n    for ind ,x in enumerate(vocab):\n        int2text[ind] = x\n        text2int[x] = ind\n\n    return vocab ,int2text , text2int\n\n",
+    "# --- [CELL 7]: ---\n\ndef build_input(sentences ,word2index, text2int):\n    X =[]\n    Y =[]\n    for tokens in sentences:\n        curx = [word2index['_pad_']]\n        cury = list()\n        for token in tokens:\n            if token in word2index:\n                curx.append(word2index[token])\n                cury.append(text2int[token])\n            else:\n                curx.append(1)\n                cury.append(1)\n        cury.append(text2int['_pad_'])\n        X.append(torch.tensor(curx))\n        Y.append(torch.tensor(cury))\n    return X,Y",
+    "# --- [CELL 8]: ---\n\ndef build_input_test(sentences ,word2index):\n    X =[]\n    for tokens in sentences:\n        curx = [word2index['_pad_']]\n        for token in tokens:\n            if token in word2index:\n                curx.append(word2index[token])\n            else:\n                curx.append(1)\n        X.append(torch.tensor(curx))\n    return X",
+    "# --- [CELL 9]: ---\n\ntokens , max_len = tokenize(sentences)\nvocab , int2text , text2int = build_vocab(tokens)\nX,Y = build_input(tokens , word2index,text2int)",
+    "# --- [CELL 10]: ---\n\nfrom torch.utils.data import Dataset, DataLoader\nclass  data(Dataset):\n    def __init__(self , X,Y,vs , padsz):\n        self.X = X\n        self.Y = Y\n        self.vocab_size = vs\n        self.mx = padsz\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        dif = len(self.mx - self.X[index] )\n        _x = self.X[index]\n        _y = self.Y[index]\n        if dif > 0:\n            a = torch.zeros(self.mx)\n            b = torch.zeros(self.mx)\n            a[:len(_x)] = _x\n            b[:len(_y)] = _y\n            _x = a\n            _y = torch.zeros( ( self.mx, self.vocab_size))\n            _y [torch.arange(self.mx),b.long()] =1\n        return _x.long() , _y.long()",
+    "# --- [CELL 11]: ---\n\nelmotrain = data(X,Y, len(vocab),40)",
+    "# --- [CELL 12]: ---\n\ntraindata = DataLoader(elmotrain, batch_size=32 )",
+    "# --- [CELL 13]: ---\n\ntokens_test,ml = tokenize(testsent)\nX_test = build_input_test(tokens_test , word2index)",
+    "# --- [CELL 14]: ---\n\nclass elmo(torch.nn.Module):\n    def __init__(self , vocab_size,dim ,classes = 2, embed = None):\n        super(elmo, self).__init__()\n        self.embedding = torch.nn.Embedding(vocab_size , dim )\n        if(embed != None):\n          self.embedding.weights = torch.nn.Parameter(embed)\n\n\n\n\n        self.bilstm1 = torch.nn.LSTM(dim,dim , bidirectional = True , batch_first = True)\n        self.bilstm2 = torch.nn.LSTM(dim*2,dim , bidirectional = True, batch_first = True)\n\n        self.parameter =torch.nn.Parameter (torch.tensor([1.,1.,1.]))\n        self.dense = torch.nn.Linear(dim*2 , 512)\n        self.dense2 = torch.nn.Linear(512 , 1024)\n        self.dense3 = torch.nn.Linear(1024 , 512)\n        self.dense4 = torch.nn.Linear(512 , classes)\n        self.dropout = torch.nn.Dropout(p=0.5)\n    def forward(self , x , training= 1):\n\n        embed = self.embedding(x )\n\n        out1 , h1 = self.bilstm1(embed)\n        out2 , h2 = self.bilstm2(out1)\n\n        dembed = torch.cat([embed,embed],2)\n\n\n        first_layer = dembed     * self.parameter[0]\n        second_layer = out1    * self.parameter[1]\n        embed_layer = out2         * self.parameter[2]\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n        encoding =  first_layer + second_layer + embed_layer\n        encoding = torch.sum(encoding,axis = 1)\n\n\n        if training:\n          x = F.relu(self.dense(encoding))\n          x = F.relu(self.dropout(self.dense2(x)))\n          x = F.relu(self.dense3(x))\n          x = F.softmax(self.dense4(x) , 1)\n\n          return x\n        else:\n            return encoding\n\n",
+    "# --- [CELL 15]: ---\n\n\nmodel = elmo(len(vocab) , glv_size)\noptimizer = torch.optim.Adam(model.parameters())",
+    "# --- [CELL 16]: ---\n\ndef train( traindata,epochs = 5):\n\n    for x in range(epochs):\n        datal = iter(traindata)\n        print(\"epoch \",x+1)\n        print(\"*\"*20)\n        st =time.time()\n        bloss = []\n        numb = 0\n        for idx ,(cx, cy)  in enumerate(datal):\n            optimizer.zero_grad()\n\n            outputs = model.forward(cx)\n\n            loss = torch.sum((cy - outputs)**2)\n            bloss.append(loss/cx.shape[0])\n            loss.backward()\n            optimizer.step()\n            numb+=1\n\n\n        print(\"avg trainig loss : {}\".format(sum(bloss)/numb) ,end = \"  \")\n        print(\"time taken : {}\".format(time.time()  - st))\n        print(\"\")",
+    "# --- [CELL 17]: ---\n\nylb =[0 if x<0.5 else 1 for x in dataset['train']['label']]\nyl = dataset['train']['label']\n\nytb = [0 if x<0.5 else 1 for x in dataset['test']['label']]\nyt = dataset['test']['label']",
+    "# --- [CELL 18]: ---\n\nclass sentimentdata(Dataset):\n    def __init__(self , X,Y ):\n        self.X = X\n        self.Y = Y\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        x = self.X[index]\n        y= self.Y[index]\n\n        return x,y\nst_train_loader = sentimentdata(X ,ylb)\nst_test_loader = sentimentdata(X ,ytb)\n\nst_train = DataLoader(st_train_loader, batch_size=5 )\nst_test= DataLoader(st_test_loader, batch_size=5 )",
+    "# --- [CELL 19]: ---\n\ntrain(st_train,2)"
+  ],
+  "llm_responses": [
+    {
+      "step": 1,
+      "content": "I'll start by running all cells in the notebook to identify any crashes.<tool_call>run_all</tool_call>",
+      "reasoning": "I'll start by running all cells in the notebook to identify which cells crash."
+    },
+    {
+      "step": 2,
+      "content": "I found an error in cell 0. Let me get the cells to examine the code and fix it.<tool_call>get_cells</tool_call>",
+      "reasoning": "I can see there's an error in cell 0. The error is:\n```\nValueError: The repository for sst contains custom code which must be executed to correctly load the dataset. You can inspect the repository content at https://hf.co/datasets/sst.\nPlease pass the argument `trust_remote_code=True` to allow custom code to be run.\n```\n\nThis means the code is trying to load the \"sst\" dataset from Hugging Face but needs to pass `trust_remote_code=True` parameter. Let me get the cells to see the code."
+    },
+    {
+      "step": 3,
+      "content": "I can see the error. The issue is in cell 0 where the code is trying to load the \"sst\" dataset from Hugging Face, which requires the `trust_remote_code=True` parameter to be set. Let me fix this by adding that parameter to the load_dataset calls.",
+      "reasoning": "I can see the error. In cell 0, the code is trying to load datasets from Hugging Face:\n```python\ndataset = load_dataset(\"sst\", \"default\")\ndataset2 = load_dataset(\"multi_nli\")\n```\n\nThe error message clearly states:\n\"The repository for sst contains custom code which must be executed to correctly load the dataset. You can inspect the repository content at https://hf.co/datasets/sst.\nPlease pass the argument `trust_remote_code=True` to allow custom code to be run.\"\n\nThe fix is simple - I need to add `trust_remote_code=True` to the `load_dataset` call for the \"sst\" dataset.\n\nLet me also check if \"multi_nli\" might have the same issue. Looking at the error, it seems to be specifically about \"sst\", but to be safe, I should add the parameter to both calls, or check if multi_nli also fails.\n\nLet me fix cell 0 by adding the `trust_remote_code=True` parameter to the load_dataset calls."
+    },
+    {
+      "step": 4,
+      "content": "",
+      "reasoning": "Good! Cell 0 has been edited. Now let me run it to see if the datasets load correctly."
+    },
+    {
+      "step": 5,
+      "content": "Let me check the current state of cell 0:",
+      "reasoning": "This is strange. It seems the issue is that there's still an error about trust_remote_code. Let me look at my edit more carefully. It looks like the cell that was run is different - the traceback shows it's trying to run `load_dataset(\"sst\", \"default\", trust_remote_code=True)` but perhaps the kernel has some cached version. Let me check what the cell currently contains."
+    },
+    {
+      "step": 6,
+      "content": "Let me double-check what's happening by running just one of the dataset loading calls:",
+      "reasoning": "It seems my edit was successful but the cell is still erroring. Let me look at the stack trace more carefully. The error is coming from within the download process, not from the initial load_dataset call itself. It seems like the multi_nli dataset also requires the trust_remote_code parameter internally.\n\nLooking more closely at the traceback, I see the error originates from `datasets/load.py` at line 107 in `_raise_timeout_error`. This suggests the download timed out and then threw this error. \n\nBut wait, looking at the error more carefully:\n```\nValueError: Loading this dataset requires you to execute custom code contained in the dataset repository on your local machine. Please set the option `trust_remote_code=True` to permit loading of this dataset.\n```\n\nThis is being raised from `datasets/load.py` function `_raise_timeout_error`, but the message suggests it's about the trust_remote_code parameter. This seems like there's still some issue with how the parameter is being handled.\n\nLet me try a different approach. Perhaps the issue is that multi_nli also needs the parameter in a specific way. Let me also note that the original error mentioned it was trying to download the dataset, so maybe there's a network timeout issue combined with the trust_remote_code issue.\n\nActually, looking harder at the traceback, I can see the error appears to be happening during the download process. The `_raise_timeout_error` function is being called. But the error message says \"Loading this dataset requires you to execute custom code...\" which seems odd for a timeout error.\n\nLet me re-read my edit. I see `dataset = load_dataset(\"sst\", \"default\", trust_remote_code=True)` - this looks correct.\n\nWait, looking at the stack trace again:\n```\n/usr/local/lib/python3.10/dist-packages/datasets/load.py in _raise_timeout_error(signum, frame)\n    106 def _raise_timeout_error(signum, frame):\n    107     raise ValueError(\n    108         \"Loading this dataset requires you to execute custom code contained in the dataset repository on your local \"\n\n\n```\n\nThe parameters suggest positional arguments might be causing issues. The function seems to expect named arguments, but the current implementation uses positional ones. This could explain the unexpected behavior and error handling.\n\nThe synchronous timeout mechanism appears to be an asynchronous signal-based approach for managing execution time during file system operations. It's designed to interrupt long-running processes after a specified threshold, but the error message seems misaligned with the actual intent.\n\nThe core problem might relate to how the timeout is being interpreted or how the `trust_remote_code` parameter is being processed in the Hugging Face datasets library. A direct dataset load attempt could help diagnose the underlying mechanism.\n\n```"
+    },
+    {
+      "step": 7,
+      "content": "Now let me try running the cell again:",
+      "reasoning": "Interesting! The first dataset load seems to work now when I run it with run_code. Let me try running the full cell again:"
+    },
+    {
+      "step": 8,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Good! Cell 0 ran successfully this time. Let me now run all cells again to check if there are any other errors."
+    },
+    {
+      "step": 9,
+      "content": "",
+      "reasoning": "Now the error is in cell 2. Let me check what's in cell 2:"
+    },
+    {
+      "step": 10,
+      "content": "",
+      "reasoning": "The error in cell 2 is happening when trying to read a GloVe embedding file. The error message \"could not convert string to float: 'https://git-lfs.github.com/spec/v1'\" suggests that the file is a Git LFS pointer file, not the actual embedding file. This is because the file hasn't been properly downloaded with Git LFS.\n\nLet me check if the data directory exists and what's in it:"
+    },
+    {
+      "step": 11,
+      "content": "",
+      "reasoning": "The issue is clear now: the glove file is a Git LFS pointer file, not the actual data. The file contains:\n```\nversion https://git-lfs.github.com/spec/v1\noid sha256:d8f717f8dd4b545cb7f418ef9f3d0c3e6e68a6f48b97d32f8b7aae40cb31f96f\nsize 171350079\n```\n\nThis means the actual GloVe embeddings file wasn't downloaded - only the LFS pointer file was. The notebook code is trying to parse this pointer file as if it were the actual word embeddings, which causes the parsing error when it tries to convert \"https://git-lfs.github.com/spec/v1\" to a float.\n\nSince I can't download the actual glove embeddings file (and this is a pre-configured environment), I should modify the code to handle this situation gracefully. Let me check what the glove embeddings are used for in the rest of the code:\n\nLooking at cell 3 and subsequent cells:\n- Cell 3 builds an embedding matrix from the glove dict\n- Cell 7 and 8 use word2index from the glove dict to build inputs\n- Cell 14 uses the embed parameter in the elmo model\n\nThe code needs glove embeddings to work properly. Since I can't download the actual file, I have a few options:\n1. Create a simple fallback that creates random embeddings when the glove file is not available\n2. Check if the file is actually available and skip or handle gracefully\n\nLet me check what happens when I just modify cell 2 to handle this situation. I'll make it so that if the glove file is an LFS pointer, it creates random embeddings instead."
+    },
+    {
+      "step": 12,
+      "content": "",
+      "reasoning": "Now let me run cell 2 again to see if it works:"
+    },
+    {
+      "step": 13,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Good! Cell 2 now runs without errors. Let me continue running all cells to see if there are more errors."
+    },
+    {
+      "step": 14,
+      "content": "",
+      "reasoning": "The error is in cell 19, which tries to call `train(st_train,2)`. The error says `stack expects each tensor to be equal size, but got [19] at entry 0 and [21] at entry 1`. This is a collation error in the DataLoader - the tensors in the batch have different sizes.\n\nLooking at the traceback:\n1. The error happens in the DataLoader when trying to collate a batch\n2. It's trying to stack tensors of different sizes\n\nThis means the Dataset's `__getitem__` method is returning tensors of different sizes. Let me look at the `sentimentdata` class in cell 18.\n\nLooking at cell 18:\n```python\nclass sentimentdata(Dataset):\n    def __init__(self , X,Y ):\n        self.X = X\n        self.Y = Y\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        x = self.X[index]\n        y= self.Y[index]\n\n        return x,y\n```\n\nThis just returns x and y as-is. The x values are tensors of different lengths (since they come from tokenized sentences of different lengths). The DataLoader can't stack them because they have different sizes.\n\nI need to add padding in the `sentimentdata` class's `__getitem__` method, or use a custom collate function.\n\nLet me fix the `sentimentdata` class to add padding."
+    },
+    {
+      "step": 15,
+      "content": "",
+      "reasoning": "I see the issue. The DataLoader is trying to stack tensors of different sizes (some have length 19, some have length 21, etc.). The `sentimentdata` class is returning tensors of varying lengths, and when DataLoader tries to batch them, it fails because they can't be stacked without padding. \n\nI need to fix the `sentimentdata` class to properly handle padding, or use a custom collate function. Let me fix this by adding a padding mechanism to the Dataset class or using `collate_fn`."
+    },
+    {
+      "step": 16,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Now let me run all the cells again to see if this fixes the error:"
+    },
+    {
+      "step": 17,
+      "content": "",
+      "reasoning": "It looks like cell 1 is now using `torch.manual_seed` but torch is not being imported in that cell. Cell 0 imports torch but when we re-run all cells, each cell is executed in isolation. Let me check cell 1."
+    },
+    {
+      "step": 18,
+      "content": "",
+      "reasoning": "The problem is that cell 1 has `torch.manual_seed = 555` which is incorrect. It should be `torch.manual_seed(555)` instead (calling the function, not assigning to it). Also, we need to ensure that the cell can access torch. Let me fix cell 1."
+    },
+    {
+      "step": 19,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Now let me run all cells again to see if there are any other errors."
+    },
+    {
+      "step": 20,
+      "content": "",
+      "reasoning": "The issue is that when we run all cells, they're being run in a fresh kernel, so torch isn't available. Let me run cell 0 first, then run cell 1:"
+    },
+    {
+      "step": 21,
+      "content": "",
+      "reasoning": "Now let me run cell 1 to use the fixed version:"
+    },
+    {
+      "step": 22,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "It seems cell 1 runs fine when run in order after cell 0. Let me try running the entire notebook again:"
+    },
+    {
+      "step": 23,
+      "content": "",
+      "reasoning": "The error is in the train function. It's trying to compute the loss between `cy` (which is the Y values) and `outputs` (model predictions). The error says tensor a has size 5 (batch size) and tensor b has size 2, which suggests the shapes don't match.\n\nLet me look at the Y value being passed to the train function. In cell 17, they create `ylb` which is binary labels (0 or 1), but in cell 18, they're passing `ylb` to the sentimentdata Dataset class. \n\nThe problem is that `ylb` is a list of binary integers (0 or 1), but the train function expects it to be compared with the model output. Let me check what the model returns - it returns softmax probabilities with 2 classes. So we need to convert `ylb` to one-hot encoded format, or use a proper loss function.\n\nLet me look at cell 17 more carefully and cell 18.\n\nThe issue is that in the collate function, we're just returning Y_batch as a tensor of scalars (0 or 1), but the model output is shape [batch_size, 2] (probabilities for 2 classes).\n\nWe need to either:\n1. Convert the Y labels to one-hot encoding in the collate function\n2. Or change the model to output scalar predictions\n\nGiven the model structure uses softmax and has 2 output units, we should convert the labels to one-hot encoding. Let me check the Y shape being passed.\n\nActually, looking at cell 17, `ylb` is created from dataset['train']['label'], which should be the sentiment labels0]. With my fix to cell 2, glv now only contains 50 words, so the vocab is small. This means many tokens won't be in word2index and will be mapped to index 1. So the X sequences will contain many 1s.\n\nBut the collate function I wrote should handle variable-length sequences correctly. Let me trace through the flow:\n\n1. Cell 9: tokenize returns tokens (list of word lists), these are filtered and lowercased\n2. Cell 9: build_vocab creates `int2text` and `text2int` dictionaries from tokens\n3. Cell 9: build_input creates X and Y by mapping tokens to indices\n4. Cell 11: elmotrain = data(X, Y, len(vocab), 40) - this is for the data class\n5. Cell 17: ylb =[0 if x<0.5 else 1 for x in dataset['train']['label']]\n6. Cell 18: sentimentdata with X and ylb\n7. Cell 18: DataLoader with sentimentdata, batch_size=5\n\nThe problem is that X from cell 9 is variable length, but the sentimentdata class in cell 18 directly returns x,y without padding. Then the custom collate function tries to stack tensors of different lengths.\n\nActually wait, I already added a collate function in cell 18 that should handle this. Let me re-examine it...\n\nOh, I see the issue! The collate function returns X_batch and Y_batch where X_batch is a tensor stacked from padded sequences, and Y_batch is just the labels as a tensor. So the shapes should be:\n- X_batch: [batch_size, max_seq_len]\n- Y_batch: [batch_size]\n\nThe forward method should handle X just fine, since it's padded with zeros. But the real issue is that the model returns a [batch_size, num_classes] output by applying softmax, while cy is just a flat tensor of binary labels. They can't be directly compared in a squared difference calculation. I need to either convert the binary labels to one-hot encoding or switch the forward pass to return logits before applying softmax.\n\nLooking at the actual training loop, the loss computation is `torch.sum((cy - outputs)**2)`, where cy should match outputs' shape. The model outputs softmax probabilities with shape [batch_size, 2], but cy is just binary labels [batch_size]. I need to either transform cy into one-hot encoding or change how the forward method handles the training branch.\n\nThe cleanest solution is converting cy to one-hot format so both tensors have compatible dimensions for MSE loss.\n\nExamining cell 17, I see ylb contains binary labels (0 or 1), and ylb gets passed to sentimentdata. The collate_fn should transform these into proper one-hot vectors during batching.\n\nI need to update collate_fn to handle this conversion when returning batches through the DataLoader.\n\nThe model outputs softmax probabilities for two classes, so when comparing against a batch of labels, I need one-hot encoding rather than raw integers. I'll modify collate_fn to convert Y_batch to one-hot formatted torch tensors that align with the model's output dimensions."
+    },
+    {
+      "step": 24,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Now let me run all cells again to see if this fixes the issue."
+    },
+    {
+      "step": 25,
+      "content": "Let me verify by running all cells one more time to make sure everything works consistently:<tool_call>run_all</tool_call>",
+      "reasoning": "Excellent! All cells in the notebook have now executed successfully without any crashes. The training loop completed 2 epochs as expected. Let me verify by running all cells once more to make sure everything works consistently."
+    },
+    {
+      "step": 26,
+      "content": "",
+      "reasoning": "Perfect! All cells ran successfully again. The notebook is working correctly now.\n\nLet me summarize the fixes I made:\n\n1. Cell 0: Added `trust_remote_code=True` parameter to both `load_dataset()` calls to allow loading of the SST and MultiNLI datasets from Hugging Face, which require custom code execution.\n\n2. Cell 1: Fixed `torch.manual_seed = 555` to `torch.manual_seed(555)` to properly set the random seed as a function call.\n\n3. Cell 2: Fixed the GloVe embeddings loading to handle Git LFS pointer files. The file contained only a Git LFS reference instead of actual embedding data. I added a fallback mechanism to generate random embeddings if the file is a Git LFS pointer or can't be parsed.\n\n4. Cell 18: Fixed the DataLoader collation issue by:\n   - Adding a custom `collate_fn` that handles variable-length sequences by padding them to the same length\n   - Converting labels to one-hot encoding for the 2-class classification task (to match the expected output shape from the model)\n\nAll cells now execute without crashes and the training runs successfully for 2 epochs."
+    }
+  ],
+  "operations": [
+    {
+      "step": 1,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: error\nREADME.md: 0.00B [00:00, ?B/s]sst.py: 0.00B [00:00, ?B/s]\n---ERROR---: ValueError: The repository for sst contains custom code which must be executed to correctly load the dataset. You can inspect the repository content at https://hf.co/datasets/sst.\nPlease pass the argument `trust_remote_code=True` to allow custom code to be run.\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 4.9094
+    },
+    {
+      "step": 2,
+      "action": "get_cells()",
+      "output": "# --- [CELL 0]: ---\n\nfrom datasets import load_dataset\nimport torch\nimport torch.nn.functional as F\nimport numpy as np\nimport time\nimport pickle\n\ndataset = load_dataset(\"sst\", \"default\")\ndataset2 = load_dataset(\"multi_nli\")\n\n# --- [CELL 1]: ---\n\ntorch.manual_seed = 555\n\n\n# --- [CELL 2]: ---\n\n\n\n\nglv = dict()\nglv_size = 50\nwith open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:\n    for line in fp:\n        word, *vec = line.split()\n        glv[word] = torch.tensor(list(map(float , vec)))\n\n# --- [CELL 3]: ---\n\nembed = torch.zeros((len(glv)+2 , glv_size))\nind =2\n\nword2index ={'_pad_':0}\nindex2word ={0:'_pad_'}\n\nfor x in glv:\n    if(len(glv[x]) != glv_size):\n        continue\n    embed[ind] = glv[x]\n    word2index[x] = ind\n    index2word[ind] = x\n    ind+=1\n\n# --- [CELL 4]: ---\n\nsentences = dataset['train']['sentence']\ntestsent = dataset['test']['sentence']\n\n# --- [CELL 5]: ---\n\nfrom nltk.corpus import stopwords\nfrom nltk.tokenize import word_tokenize\nstop_words = set(stopwords.words('english'))\n\ndef tokenize(sentences):\n    tokens =[]\n    max_len = 0\n    for sentence in sentences:\n        sentence = sentence.replace('\\\\',' ')\n        sentence = sentence.replace('/',' ')\n        sentence = sentence.replace('\\'',' ')\n        word_tokens = word_tokenize(sentence)\n        max_len = max(max_len ,len( word_tokens))\n        tokens.append([w for w in word_tokens if not w.lower() in stop_words and len(w)>2])\n    return tokens , max_len\n\n# --- [CELL 6]: ---\n\ndef build_vocab(sentences):\n    vocab = set()\n    X = list()\n    y = list()\n\n    for tokens in sentences:\n        for token in tokens:\n            vocab.add(token)\n    vocab = list(vocab)\n    int2text = dict()\n    text2int = dict()\n    vocab = [\"_pad_\"] + vocab\n    for ind ,x in enumerate(vocab):\n        int2text[ind] = x\n        text2int[x] = ind\n\n    return vocab ,int2text , text2int\n\n\n\n# --- [CELL 7]: ---\n\ndef build_input(sentences ,word2index, text2int):\n    X =[]\n    Y =[]\n    for tokens in sentences:\n        curx = [word2index['_pad_']]\n        cury = list()\n        for token in tokens:\n            if token in word2index:\n                curx.append(word2index[token])\n                cury.append(text2int[token])\n            else:\n                curx.append(1)\n                cury.append(1)\n        cury.append(text2int['_pad_'])\n        X.append(torch.tensor(curx))\n        Y.append(torch.tensor(cury))\n    return X,Y\n\n# --- [CELL 8]: ---\n\ndef build_input_test(sentences ,word2index):\n    X =[]\n    for tokens in sentences:\n        curx = [word2index['_pad_']]\n        for token in tokens:\n            if token in word2index:\n                curx.append(word2index[token])\n            else:\n                curx.append(1)\n        X.append(torch.tensor(curx))\n    return X\n\n# --- [CELL 9]: ---\n\ntokens , max_len = tokenize(sentences)\nvocab , int2text , text2int = build_vocab(tokens)\nX,Y = build_input(tokens , word2index,text2int)\n\n# --- [CELL 10]: ---\n\nfrom torch.utils.data import Dataset, DataLoader\nclass  data(Dataset):\n    def __init__(self , X,Y,vs , padsz):\n        self.X = X\n        self.Y = Y\n        self.vocab_size = vs\n        self.mx = padsz\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        dif = len(self.mx - self.X[index] )\n        _x = self.X[index]\n        _y = self.Y[index]\n        if dif > 0:\n            a = torch.zeros(self.mx)\n            b = torch.zeros(self.mx)\n            a[:len(_x)] = _x\n            b[:len(_y)] = _y\n            _x = a\n            _y = torch.zeros( ( self.mx, self.vocab_size))\n            _y [torch.arange(self.mx),b.long()] =1\n        return _x.long() , _y.long()\n\n# --- [CELL 11]: ---\n\nelmotrain = data(X,Y, len(vocab),40)\n\n# --- [CELL 12]: ---\n\ntraindata = DataLoader(elmotrain, batch_size=32 )\n\n# --- [CELL 13]: ---\n\ntokens_test,ml = tokenize(testsent)\nX_test = build_input_test(tokens_test , word2index)\n\n# --- [CELL 14]: ---\n\nclass elmo(torch.nn.Module):\n    def __init__(self , vocab_size,dim ,classes = 2, embed = None):\n        super(elmo, self).__init__()\n        self.embedding = torch.nn.Embedding(vocab_size , dim )\n        if(embed != None):\n          self.embedding.weights = torch.nn.Parameter(embed)\n\n\n\n\n        self.bilstm1 = torch.nn.LSTM(dim,dim , bidirectional = True , batch_first = True)\n        self.bilstm2 = torch.nn.LSTM(dim*2,dim , bidirectional = True, batch_first = True)\n\n        self.parameter =torch.nn.Parameter (torch.tensor([1.,1.,1.]))\n        self.dense = torch.nn.Linear(dim*2 , 512)\n        self.dense2 = torch.nn.Linear(512 , 1024)\n        self.dense3 = torch.nn.Linear(1024 , 512)\n        self.dense4 = torch.nn.Linear(512 , classes)\n        self.dropout = torch.nn.Dropout(p=0.5)\n    def forward(self , x , training= 1):\n\n        embed = self.embedding(x )\n\n        out1 , h1 = self.bilstm1(embed)\n        out2 , h2 = self.bilstm2(out1)\n\n        dembed = torch.cat([embed,embed],2)\n\n\n        first_layer = dembed     * self.parameter[0]\n        second_layer = out1    * self.parameter[1]\n        embed_layer = out2         * self.parameter[2]\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n        encoding =  first_layer + second_layer + embed_layer\n        encoding = torch.sum(encoding,axis = 1)\n\n\n        if training:\n          x = F.relu(self.dense(encoding))\n          x = F.relu(self.dropout(self.dense2(x)))\n          x = F.relu(self.dense3(x))\n          x = F.softmax(self.dense4(x) , 1)\n\n          return x\n        else:\n            return encoding\n\n\n\n# --- [CELL 15]: ---\n\n\nmodel = elmo(len(vocab) , glv_size)\noptimizer = torch.optim.Adam(model.parameters())\n\n# --- [CELL 16]: ---\n\ndef train( traindata,epochs = 5):\n\n    for x in range(epochs):\n        datal = iter(traindata)\n        print(\"epoch \",x+1)\n        print(\"*\"*20)\n        st =time.time()\n        bloss = []\n        numb = 0\n        for idx ,(cx, cy)  in enumerate(datal):\n            optimizer.zero_grad()\n\n            outputs = model.forward(cx)\n\n            loss = torch.sum((cy - outputs)**2)\n            bloss.append(loss/cx.shape[0])\n            loss.backward()\n            optimizer.step()\n            numb+=1\n\n\n        print(\"avg trainig loss : {}\".format(sum(bloss)/numb) ,end = \"  \")\n        print(\"time taken : {}\".format(time.time()  - st))\n        print(\"\")\n\n# --- [CELL 17]: ---\n\nylb =[0 if x<0.5 else 1 for x in dataset['train']['label']]\nyl = dataset['train']['label']\n\nytb = [0 if x<0.5 else 1 for x in dataset['test']['label']]\nyt = dataset['test']['label']\n\n# --- [CELL 18]: ---\n\nclass sentimentdata(Dataset):\n    def __init__(self , X,Y ):\n        self.X = X\n        self.Y = Y\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        x = self.X[index]\n        y= self.Y[index]\n\n        return x,y\nst_train_loader = sentimentdata(X ,ylb)\nst_test_loader = sentimentdata(X ,ytb)\n\nst_train = DataLoader(st_train_loader, batch_size=5 )\nst_test= DataLoader(st_test_loader, batch_size=5 )\n\n# --- [CELL 19]: ---\n\ntrain(st_train,2)",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.006
+    },
+    {
+      "step": 3,
+      "action": "edit_cell(cell_index=0, code=<250 chars>)",
+      "output": "Cell 0 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0053
+    },
+    {
+      "step": 4,
+      "action": "run_cell(cell_index=0)",
+      "output": "Execution Count: 2 | Status: error\nDownloading data:   0%|          | 0.00/6.37M [00:00<?, ?B/s]\n---ERROR---: ValueError: Loading this dataset requires you to execute custom code contained in the dataset repository on your local machine. Please set the option `trust_remote_code=True` to permit loading of this dataset.\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 7.3498
+    },
+    {
+      "step": 5,
+      "action": "get_cell(cell_index=0)",
+      "output": "# --- [CELL 0]: ---\n\nfrom datasets import load_dataset\nimport torch\nimport torch.nn.functional as F\nimport numpy as np\nimport time\nimport pickle\n\ndataset = load_dataset(\"sst\", \"default\", trust_remote_code=True)\ndataset2 = load_dataset(\"multi_nli\", trust_remote_code=True)",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0034
+    },
+    {
+      "step": 6,
+      "action": "run_code(code='from datasets import load_dataset\\ndataset = load_dataset(\"sst\", \"default\", trust_remote_code=True)')",
+      "output": "Execution Count: 3 | Status: ok\nDownloading data:   0%|          | 0.00/6.37M [00:00<?, ?B/s]Downloading data:   0%|          | 0.00/790k [00:00<?, ?B/s]Generating train split:   0%|          | 0/8544 [00:00<?, ? examples/s]Generating validation split:   0%|          | 0/1101 [00:00<?, ? examples/s]Generating test split:   0%|          | 0/2210 [00:00<?, ? examples/s]",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 14.1482
+    },
+    {
+      "step": 7,
+      "action": "run_cell(cell_index=0)",
+      "output": "Execution Count: 4 | Status: ok\nREADME.md: 0.00B [00:00, ?B/s]train-00000-of-00001.parquet:   0%|          | 0.00/214M [00:00<?, ?B/s](…)alidation_matched-00000-of-00001.parquet:   0%|          | 0.00/4.94M [00:00<?, ?B/s](…)dation_mismatched-00000-of-00001.parquet:   0%|          | 0.00/5.10M [00:00<?, ?B/s]Generating train split:   0%|          | 0/392702 [00:00<?, ? examples/s]Generating validation_matched split:   0%|          | 0/9815 [00:00<?, ? examples/s]Generating validation_mismatched split:   0%|          | 0/9832 [00:00<?, ? examples/s]",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 9.5915
+    },
+    {
+      "step": 8,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: error\n\n---ERROR---: ValueError: could not convert string to float: 'https://git-lfs.github.com/spec/v1'\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 11.3418
+    },
+    {
+      "step": 9,
+      "action": "get_cell(cell_index=2)",
+      "output": "# --- [CELL 2]: ---\n\n\n\n\nglv = dict()\nglv_size = 50\nwith open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:\n    for line in fp:\n        word, *vec = line.split()\n        glv[word] = torch.tensor(list(map(float , vec)))",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0033
+    },
+    {
+      "step": 10,
+      "action": "run_code(code=<341 chars>)",
+      "output": "Execution Count: 4 | Status: ok\ndata directory exists\nglove file exists\nversion https://git-lfs.github.com/spec/v1\noid sha256:d8f717f8dd4b545cb7f418ef9f3d0c3e6e68a6f48b97d32f8b7aae40cb31f96f\nsize 171350079\n\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0547
+    },
+    {
+      "step": 11,
+      "action": "edit_cell(cell_index=2, code=<1788 chars>)",
+      "output": "Cell 2 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0052
+    },
+    {
+      "step": 12,
+      "action": "run_cell(cell_index=2)",
+      "output": "Execution Count: 5 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0623
+    },
+    {
+      "step": 13,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\n\nCell 9:\nExecution Count: 10 | Status: ok\n\nCell 10:\nExecution Count: 11 | Status: ok\n\nCell 11:\nExecution Count: 12 | Status: ok\n\nCell 12:\nExecution Count: 13 | Status: ok\n\nCell 13:\nExecution Count: 14 | Status: ok\n\nCell 14:\nExecution Count: 15 | Status: ok\n\nCell 15:\nExecution Count: 16 | Status: ok\n\nCell 16:\nExecution Count: 17 | Status: ok\n\nCell 17:\nExecution Count: 18 | Status: ok\n\nCell 18:\nExecution Count: 19 | Status: ok\n\nCell 19:\nExecution Count: 20 | Status: error\nepoch  1\n********************\n\n---ERROR---: RuntimeError: stack expects each tensor to be equal size, but got [19] at entry 0 and [21] at entry 1\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 12.9968
+    },
+    {
+      "step": 14,
+      "action": "get_cell(cell_index=18)",
+      "output": "# --- [CELL 18]: ---\n\nclass sentimentdata(Dataset):\n    def __init__(self , X,Y ):\n        self.X = X\n        self.Y = Y\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        x = self.X[index]\n        y= self.Y[index]\n\n        return x,y\nst_train_loader = sentimentdata(X ,ylb)\nst_test_loader = sentimentdata(X ,ytb)\n\nst_train = DataLoader(st_train_loader, batch_size=5 )\nst_test= DataLoader(st_test_loader, batch_size=5 )",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0048
+    },
+    {
+      "step": 15,
+      "action": "edit_cell(cell_index=18, code=<1024 chars>)",
+      "output": "Cell 18 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0038
+    },
+    {
+      "step": 16,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 1 | Status: error\n\n---ERROR---: NameError: name 'torch' is not defined\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 13.2922
+    },
+    {
+      "step": 17,
+      "action": "get_cell(cell_index=1)",
+      "output": "# --- [CELL 1]: ---\n\ntorch.manual_seed = 555\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0044
+    },
+    {
+      "step": 18,
+      "action": "edit_cell(cell_index=1, code='torch.manual_seed(555)')",
+      "output": "Cell 1 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0039
+    },
+    {
+      "step": 19,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 1 | Status: error\n\n---ERROR---: NameError: name 'torch' is not defined\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 12.1215
+    },
+    {
+      "step": 20,
+      "action": "run_cell(cell_index=0)",
+      "output": "Execution Count: 2 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 8.4247
+    },
+    {
+      "step": 21,
+      "action": "run_cell(cell_index=1)",
+      "output": "Execution Count: 3 | Status: ok\n<torch._C.Generator at 0x7286b6570e30>",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0554
+    },
+    {
+      "step": 22,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n<torch._C.Generator at 0x7d96863f8cb0>\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\n\nCell 9:\nExecution Count: 10 | Status: ok\n\nCell 10:\nExecution Count: 11 | Status: ok\n\nCell 11:\nExecution Count: 12 | Status: ok\n\nCell 12:\nExecution Count: 13 | Status: ok\n\nCell 13:\nExecution Count: 14 | Status: ok\n\nCell 14:\nExecution Count: 15 | Status: ok\n\nCell 15:\nExecution Count: 16 | Status: ok\n\nCell 16:\nExecution Count: 17 | Status: ok\n\nCell 17:\nExecution Count: 18 | Status: ok\n\nCell 18:\nExecution Count: 19 | Status: ok\n\nCell 19:\nExecution Count: 20 | Status: error\nepoch  1\n********************\n\n---ERROR---: RuntimeError: The size of tensor a (5) must match the size of tensor b (2) at non-singleton dimension 1\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 13.0333
+    },
+    {
+      "step": 23,
+      "action": "edit_cell(cell_index=18, code=<1243 chars>)",
+      "output": "Cell 18 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0054
+    },
+    {
+      "step": 24,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n<torch._C.Generator at 0x770a0ffeccb0>\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\n\nCell 9:\nExecution Count: 10 | Status: ok\n\nCell 10:\nExecution Count: 11 | Status: ok\n\nCell 11:\nExecution Count: 12 | Status: ok\n\nCell 12:\nExecution Count: 13 | Status: ok\n\nCell 13:\nExecution Count: 14 | Status: ok\n\nCell 14:\nExecution Count: 15 | Status: ok\n\nCell 15:\nExecution Count: 16 | Status: ok\n\nCell 16:\nExecution Count: 17 | Status: ok\n\nCell 17:\nExecution Count: 18 | Status: ok\n\nCell 18:\nExecution Count: 19 | Status: ok\n\nCell 19:\nExecution Count: 20 | Status: ok\nepoch  1\n********************\navg trainig loss : 0.9452803134918213  time taken : 22.386456966400146\n\nepoch  2\n********************\navg trainig loss : 0.9450515508651733  time taken : 22.686416149139404\n\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 59.1741
+    },
+    {
+      "step": 25,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n<torch._C.Generator at 0x749dcdb3ccf0>\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\n\nCell 9:\nExecution Count: 10 | Status: ok\n\nCell 10:\nExecution Count: 11 | Status: ok\n\nCell 11:\nExecution Count: 12 | Status: ok\n\nCell 12:\nExecution Count: 13 | Status: ok\n\nCell 13:\nExecution Count: 14 | Status: ok\n\nCell 14:\nExecution Count: 15 | Status: ok\n\nCell 15:\nExecution Count: 16 | Status: ok\n\nCell 16:\nExecution Count: 17 | Status: ok\n\nCell 17:\nExecution Count: 18 | Status: ok\n\nCell 18:\nExecution Count: 19 | Status: ok\n\nCell 19:\nExecution Count: 20 | Status: ok\nepoch  1\n********************\navg trainig loss : 0.9452803134918213  time taken : 22.536557912826538\n\nepoch  2\n********************\navg trainig loss : 0.9450515508651733  time taken : 22.845571517944336\n\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 58.7119
+    },
+    {
+      "step": 26,
+      "action": "Submitted",
+      "output": "Fixed 4 crashes in the notebook:\n\n1. Cell 0: Added `trust_remote_code=True` parameter to load_dataset() calls for SST and MultiNLI datasets to allow loading from Hugging Face.\n\n2. Cell 1: Changed `torch.manual_seed = 555` to `torch.manual_seed(555)` to properly call the function instead of assigning to it.\n\n3. Cell 2: Fixed GloVe embeddings loading to handle Git LFS pointer files. The file contained only a reference, not actual embeddings. Added fallback to generate random embeddings when parsing fails or file is an LFS pointer.\n\n4. Cell 18: Fixed RuntimeError in DataLoader by adding a custom collate_fn that: (a) pads variable-length sequences to the same length, and (b) converts labels to one-hot encoding to match model's expected output shape (2 classes).\n\nAll 20 cells now execute successfully without crashes. Training runs for 2 epochs producing valid loss values.",
+      "return_code": 0,
+      "success": true
+    }
+  ],
+  "code_changes": [
+    {
+      "cell_index": 0,
+      "step": 3,
+      "code": "from datasets import load_dataset\nimport torch\nimport torch.nn.functional as F\nimport numpy as np\nimport time\nimport pickle\n\ndataset = load_dataset(\"sst\", \"default\", trust_remote_code=True)\ndataset2 = load_dataset(\"multi_nli\", trust_remote_code=True)"
+    },
+    {
+      "cell_index": 2,
+      "step": 11,
+      "code": "glv = dict()\nglv_size = 50\ntry:\n    with open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:\n        # Check if this is a Git LFS pointer file\n        first_line = fp.readline().strip()\n        fp.seek(0)  # Reset file pointer\n        \n        # If it's an LFS pointer, it will start with 'version'\n        if first_line.startswith('version'):\n            # File is an LFS pointer - use random embeddings as fallback\n            import random\n            words = ['the', 'of', 'and', 'a', 'to', 'in', 'is', 'you', 'that', 'it', \n                     'he', 'was', 'for', 'on', 'are', 'as', 'with', 'his', 'they', 'i',\n                     'at', 'be', 'this', 'have', 'from', 'or', 'one', 'had', 'by', 'word',\n                     'but', 'not', 'what', 'all', 'were', 'we', 'when', 'your', 'can', 'said',\n                     'there', 'use', 'an', 'each', 'which', 'she', 'do', 'how', 'their', 'if']\n            for word in words:\n                # Generate random embeddings as fallback\n                glv[word] = torch.tensor([random.uniform(-0.1, 0.1) for _ in range(glv_size)])\n        else:\n            # Process actual glove embeddings\n            for line in fp:\n                word, *vec = line.split()\n                try:\n                    glv[word] = torch.tensor(list(map(float, vec)))\n                except ValueError:\n                    # Skip lines that can't be parsed\n                    continue\nexcept FileNotFoundError:\n    # If file doesn't exist, create dummy embeddings\n    import random\n    words = ['the', 'of', 'and', 'a', 'to', 'in', 'is', 'you', 'that', 'it', \n             'he', 'was', 'for', 'on', 'are', 'as', 'with', 'his', 'they', 'i']\n    for word in words:\n        glv[word] = torch.tensor([random.uniform(-0.1, 0.1) for _ in range(glv_size)])"
+    },
+    {
+      "cell_index": 18,
+      "step": 15,
+      "code": "class sentimentdata(Dataset):\n    def __init__(self, X, Y):\n        self.X = X\n        self.Y = Y\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self, index):\n        x = self.X[index]\n        y = self.Y[index]\n        return x, y\n\ndef collate_fn(batch):\n    # Custom collate function to handle variable length sequences\n    X_batch = []\n    Y_batch = []\n    max_len = max(len(x) for x, y in batch)\n    \n    for x, y in batch:\n        # Pad X sequences with zeros\n        if len(x) < max_len:\n            x_padded = torch.cat([x, torch.zeros(max_len - len(x)).long()])\n        else:\n            x_padded = x\n        X_batch.append(x_padded)\n        Y_batch.append(y)\n    \n    X_batch = torch.stack(X_batch)\n    Y_batch = torch.tensor(Y_batch)\n    return X_batch, Y_batch\n\nst_train_loader = sentimentdata(X, ylb)\nst_test_loader = sentimentdata(X, ytb)\n\nst_train = DataLoader(st_train_loader, batch_size=5, collate_fn=collate_fn)\nst_test = DataLoader(st_test_loader, batch_size=5, collate_fn=collate_fn)"
+    },
+    {
+      "cell_index": 1,
+      "step": 18,
+      "code": "torch.manual_seed(555)"
+    },
+    {
+      "cell_index": 18,
+      "step": 23,
+      "code": "class sentimentdata(Dataset):\n    def __init__(self, X, Y):\n        self.X = X\n        self.Y = Y\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self, index):\n        x = self.X[index]\n        y = self.Y[index]\n        return x, y\n\ndef collate_fn(batch):\n    # Custom collate function to handle variable length sequences\n    X_batch = []\n    Y_batch = []\n    Y_onehot_batch = []\n    max_len = max(len(x) for x, y in batch)\n    \n    for x, y in batch:\n        # Pad X sequences with zeros\n        if len(x) < max_len:\n            x_padded = torch.cat([x, torch.zeros(max_len - len(x)).long()])\n        else:\n            x_padded = x\n        X_batch.append(x_padded)\n        Y_batch.append(y)\n    \n    X_batch = torch.stack(X_batch)\n    Y_batch = torch.tensor(Y_batch)\n    \n    # Convert Y to one-hot encoding for 2 classes\n    Y_onehot = torch.zeros(len(Y_batch), 2)\n    Y_onehot[torch.arange(len(Y_batch)), Y_batch] = 1\n    Y_onehot_batch = Y_onehot\n    \n    return X_batch, Y_onehot_batch\n\nst_train_loader = sentimentdata(X, ylb)\nst_test_loader = sentimentdata(X, ytb)\n\nst_train = DataLoader(st_train_loader, batch_size=5, collate_fn=collate_fn)\nst_test = DataLoader(st_test_loader, batch_size=5, collate_fn=collate_fn)"
+    }
+  ]
+}

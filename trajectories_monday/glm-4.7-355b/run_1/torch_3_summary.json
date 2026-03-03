@@ -1,0 +1,441 @@
+{
+  "metadata": {
+    "generated_at": "2026-03-03T06:37:47.270482",
+    "execution_time_seconds": 93.99,
+    "success": false,
+    "status": "LimitsExceeded",
+    "cost": 0.1156
+  },
+  "statistics": {
+    "total_steps": 30,
+    "total_operations": 31,
+    "successful_operations": 24,
+    "failed_operations": 7,
+    "cells_edited": 1,
+    "unique_cells_edited": 1,
+    "avg_tool_execution_time_seconds": 1.1
+  },
+  "original_notebook": [
+    "# --- [CELL 0]: ---\n\nfrom transformers import AutoModel,AutoConfig,AutoTokenizer,AutoModelForMultipleChoice",
+    "# --- [CELL 1]: ---\n\nMODEL_NAME = 'microsoft/deberta-v2-xlarge'\nMODEL_NAME_CHOICE = 'vinai/phobert-base'",
+    "# --- [CELL 2]: ---\n\nfrom  transformers.modeling_outputs import MultipleChoiceModelOutput",
+    "# --- [CELL 3]: ---\n\nfrom torch import nn",
+    "# --- [CELL 4]: ---\n\nclass CustomModelMultichoice(nn.Module):\n    def __init__(self,config,num_choice):\n        super(CustomModelMultichoice,self).__init__()\n        model = AutoModelForMultipleChoice.from_config(config)\n        model.classifier = nn.Linear(768,2)\n        self.model = model\n\n        self.sigmoid = nn.Sigmoid()\n        self.num_choice = num_choice\n    def forward(self,input_ids = None,token_type_ids = None ,attention_mask = None,labels = None):\n        outputs = self.model(input_ids=input_ids,token_type_ids=token_type_ids,attention_mask=attention_mask)\n        logits = self.sigmoid(outputs.logits)\n        loss = None\n        if labels is not None:\n            loss_func = nn.NLLLoss()\n            loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))\n        return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states= None,attentions =None)\n",
+    "# --- [CELL 5]: ---\n\nconfig = AutoConfig.from_pretrained(MODEL_NAME_CHOICE)\n\nCustomModel = CustomModelMultichoice(config,3)",
+    "# --- [CELL 6]: ---\n\nprompt = \"Bác Hồ là người nước nào ?.\"\ncandidate1 = \"Việt Nam\"\ncandidate2 = \"Mỹ\"\ncandidate3 = 'Việt Nam'",
+    "# --- [CELL 7]: ---\n\nfrom transformers import AutoTokenizer\n\ntokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_CHOICE)\ninputs = tokenizer([[prompt, candidate1], [prompt, candidate2],[prompt, candidate3]], return_tensors=\"pt\", padding=True)",
+    "# --- [CELL 8]: ---\n\nimport torch\nlabels = torch.tensor(0).unsqueeze(0)",
+    "# --- [CELL 9]: ---\n\ninputs['input_ids'] = inputs['input_ids'].unsqueeze(0)\ninputs['token_type_ids'] = inputs['token_type_ids'].unsqueeze(0)\ninputs['attention_mask'] = inputs['attention_mask'].unsqueeze(0)",
+    "# --- [CELL 10]: ---\n\nCustomModel.eval()",
+    "# --- [CELL 11]: ---\n\ntarget = torch.tensor([[1, 0, 1]])\ntarget",
+    "# --- [CELL 12]: ---\n\nout = CustomModel(**inputs,labels = target)"
+  ],
+  "llm_responses": [
+    {
+      "step": 1,
+      "content": "I'll start by running all cells in the notebook to identify any crashes or errors.<tool_call>run_all</tool_call>",
+      "reasoning": "Let me start by running all cells to identify which cells crash."
+    },
+    {
+      "step": 2,
+      "content": "I found an error in cell 12. The error shows a batch size mismatch: `ValueError: Expected input batch_size (2) to match target batch_size (3)`. This occurs in the forward method of the custom model. Let me examine the cells to understand the issue better.<tool_call>get_cells</tool_call>",
+      "reasoning": "The error is in cell 12. The error message is:\n`ValueError: Expected input batch_size (2) to match target batch_size (3).`\n\nLooking at the traceback, the error occurs in the forward method of CustomModel at line 18 in cell 5:\n```python\nloss = loss_func(logits.view(-1, self.num_choice), labels.view(-1))\n```\n\nThe logits are being reshaped to `(-1, self.num_choice)` which seems to result in a batch_size of 2, but the labels have a batch_size of 3.\n\nLet me get the cells to understand the data better and see what's happening."
+    },
+    {
+      "step": 3,
+      "content": "Now I can see the issue clearly. In cell 5, the model is initialized with `num_choice = 3`, but in cell 4, the classifier is set to 2 classes: `model.classifier = nn.Linear(768, 2)`. This creates a mismatch because:\n\n- The model outputs logits with dimension 2\n- The `num_choice` parameter is 3\n- The target in cell 11 is `[[1, 0, 1]]` which has shape `[1, 3]`\n- When reshaping with `logits.view(-1, self.num_choice)`, it expects the logits to have size divisible by 3, but they actually have size 2\n\nThe fix is to make the classifier output match `num_choice = 3`. Let me check the config to get the correct dimensions:",
+      "reasoning": "Now I understand the issue. Let me analyze the code:\n\n1. Cell 5: `CustomModel = CustomModelMultichoice(config,3)` - The model is initialized with `num_choice = 3`\n\n2. Cell 8: `labels = torch.tensor(0).unsqueeze(0)` - Creates a label of shape `[1]`\n\n3. Cell 11: `target = torch.tensor([[1, 0, 1]])` - Creates a target of shape `[1, 3]`\n\n4. Cell 12: `out = CustomModel(**inputs,labels = target)` - Calls the model with the target as labels\n\nThe error is: \"Expected input batch_size (2) to match target batch_size (3).\"\n\nWait, let me think about this more carefully:\n\n- The `inputs` from cell 7 has batch dimension of 3 (since there are 3 candidate options)\n- After cell 9, the inputs are unsqueezed to add a batch dimension, so the shape becomes `[1, 3, ...]`\n\nLet me trace through the forward method:\n- `outputs = self.model(...)` will produce logits from the base model\n- `logits = self.sigmoid(outputs.logits)` - this applies sigmoid\n\nThe issue is that:\n1. The base model (RobertaForMultipleChoice) has a classifier that outputs 2 classes (based on cell 4 where `model.classifier = nn.Linear(768,2)`)\n2. But the `num_choice` is set to 3\n3. The target is `[[1, 0, 1]]` which has shape `[1, 3]`\n4. When the logits are viewed with `logits.view(-1, self.num_choice)`, if `self.num_choice = 3` but the actual output dimension is 2, this would cause issues\n\nActually, looking more carefully at the error: \"Expected input batch_size (2) to match target batch_size (3).\"\n\n\nI see the core problem now. The model's output dimensions are fundamentally mismatched. The classifier produces 2 classes, but we're trying to match a 3-dimensional target. This means we need to realign our model architecture with the expected output size, either by modifying the classifier or adjusting our target labels.\n\nThe current setup creates a conflict between the model's intrinsic output and our labeling scheme. We'll need to reconcile these dimensions to ensure the forward pass works correctly and the loss computation makes sense for our specific task.\n\nThe key action is to modify the model's classifier segment to match the number of choices, ensuring consistent tensor shapes during model training and evaluation.\n\nI see two potential resolution strategies: either adjusting the target tensor's dimensions or realigning the model's architectural configuration. The critical discrepancy appears to be between the expected 3-class output and the current 2-class classifier setup, which causes a batch size mismatch during loss computation.\n\nThe most straightforward approach involves updating the classifier's output dimension to match the specified number of choices, preserving the original intent of multi-label classification across three potential selections."
+    },
+    {
+      "step": 4,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Good! I've updated cell 4 to use `config.hidden_size` for the input size and `num_choice` for the output size of the classifier. This should ensure that the classifier outputs match the expected dimensions.\n\nNow let me run all cells again to verify that the error is fixed."
+    },
+    {
+      "step": 5,
+      "content": "It seems the cell state was lost. Let me run the cells one at a time, starting from cell 0, to ensure all dependencies are properly loaded.",
+      "reasoning": "The error says `MODEL_NAME_CHOICE` is not defined. This is strange - cell 1 should have defined it. Let me check cell 1 again. Looking at the output, the execution counts reset. Maybe there's an issue with how the cells are being run. Let me look at cell 1 again - I see in the first run_all result that cell 1 had:\n\n```python\nMODEL_NAME = 'microsoft/deberta-v2-xlarge'\nMODEL_NAME_CHOICE = 'vinai/phobert-base'\n```\n\nBut in the second run, cell 7 says `MODEL_NAME_CHOICE` is not defined. It seems like the cell execution state might have been lost. Let me try running the cells in order, starting from the beginning."
+    },
+    {
+      "step": 6,
+      "content": "",
+      "reasoning": "Good, cell 0 ran successfully. Let me continue running the cells sequentially."
+    },
+    {
+      "step": 7,
+      "content": "",
+      "reasoning": "Good. Now cells 2-4 should run successfully. Let me continue."
+    },
+    {
+      "step": 8,
+      "content": "",
+      "reasoning": "Now I need to run cell 3."
+    },
+    {
+      "step": 9,
+      "content": "",
+      "reasoning": "Good! Let me continue running the remaining cells one by one."
+    },
+    {
+      "step": 10,
+      "content": "",
+      "reasoning": "Good, cell 4 runs fine. Let me continue running the subsequent cells."
+    },
+    {
+      "step": 11,
+      "content": "",
+      "reasoning": "Good, it's past the previous error (no ValueError). Let me continue with the remaining cells."
+    },
+    {
+      "step": 12,
+      "content": "",
+      "reasoning": "Good, cells 0-6 are all running successfully now. Let me continue with the remaining cells."
+    },
+    {
+      "step": 13,
+      "content": "",
+      "reasoning": "Good, cell 7 ran successfully. Let me continue with the remaining cells."
+    },
+    {
+      "step": 14,
+      "content": "",
+      "reasoning": "Cell 8 executed successfully. Let me continue with cell 9."
+    },
+    {
+      "step": 15,
+      "content": "",
+      "reasoning": "Good, let me continue running the remaining cells."
+    },
+    {
+      "step": 16,
+      "content": "",
+      "reasoning": "Great! Now I can see the model has been updated with `classifier: Linear(in_features=768, out_features=3)` which matches the `num_choice=3`. Let me continue with the remaining cells."
+    },
+    {
+      "step": 17,
+      "content": "",
+      "reasoning": "Good, cell 11 runs successfully. Now let's try the problematic cell 12."
+    },
+    {
+      "step": 18,
+      "content": "Perfect! Let me run all cells once more to confirm everything works correctly:<tool_call>run_all</tool_call>",
+      "reasoning": "Excellent! All cells are now running successfully. The fix I made was changing the classifier layer from `nn.Linear(768, 2)` to `nn.Linear(config.hidden_size, num_choice)` in the CustomModelMultichoice class. This ensures that the classifier output dimension matches the num_choice parameter (3), which fixes the batch size mismatch error.\n\nLet me verify this one more time by running all cells together."
+    },
+    {
+      "step": 19,
+      "content": "The `run_all` restart shows an issue because cell 1 wasn't executed, but when I ran the cells individually in order they all worked. Let me verify the current state runs correctly by running the critical final cell (12) again:",
+      "reasoning": "The run_all is showing an error because it seems to be re-running from a state where CELL 1 hasn't been executed. This is a known behavior in Jupyter notebooks. When I run cells individually in order and they all succeed, that's the correct state.\n\nLet me verify the fix one more time by running the cells sequentially from 0 through 12:"
+    },
+    {
+      "step": 20,
+      "content": "Let me run all cells sequentially to ensure the notebook state is properly set up:",
+      "reasoning": "It looks like running `run_all` previously might have reset the kernel state. Let me run the cells one by one again to ensure everything works. I'll start from the beginning and run all cells in sequential order."
+    },
+    {
+      "step": 21,
+      "content": "",
+      "reasoning": "Good. Now let me continue running all cells in order."
+    },
+    {
+      "step": 22,
+      "content": "",
+      "reasoning": "Good, now let me run the rest of the cells."
+    },
+    {
+      "step": 23,
+      "content": "Let me check cell 2 since it seems to be showing unexpected content:",
+      "reasoning": "Wait, cell 2 showing different content. Let me check what's in cell 2 now."
+    },
+    {
+      "step": 24,
+      "content": "<tool_call>get_cells</tool_call>",
+      "reasoning": "That doesn't look right. Cell 2 has a different content. Let me check all cells to understand the current state:"
+    },
+    {
+      "step": 25,
+      "content": "",
+      "reasoning": "All the cells look correct. The issue with `run_all` seems to be that it might be running cells from a different notebook or state. Let me try running cell 12 directly to see if the state is properly set up:"
+    },
+    {
+      "step": 26,
+      "content": "",
+      "reasoning": "The kernel has been restarted again. Let me run all cells in sequence to build up the state properly."
+    },
+    {
+      "step": 27,
+      "content": "",
+      "reasoning": "I see! The kernel is resetting between cell executions and something is interfering. Let me first run cells 0-3 to establish the imports, and then quickly test the full run again. The notebook seems to be getting into a weird state. Let me run all cells properly in sequence."
+    },
+    {
+      "step": 28,
+      "content": "",
+      "reasoning": "Good, cell 0 ran successfully. Let me continue with the other cells."
+    },
+    {
+      "step": 29,
+      "content": "",
+      "reasoning": "Let me continue running the remaining cells:"
+    },
+    {
+      "step": 30,
+      "content": "",
+      "reasoning": "Cell 2 ran successfully. Let me now run cell 3:"
+    }
+  ],
+  "operations": [
+    {
+      "step": 1,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\nconfig.json:   0%|          | 0.00/557 [00:00<?, ?B/s]\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\nvocab.txt: 0.00B [00:00, ?B/s]bpe.codes: 0.00B [00:00, ?B/s]tokenizer.json: 0.00B [00:00, ?B/s]/usr/local/lib/python3.10/dist-packages/transformers/tokenization_utils_base.py:1601: FutureWarning: `clean_up_tokenization_spaces` was not set. It will be set to `True` by default. This behavior will be depracted in transformers v4.45, and will be then set to `False` by default. For more details check this issue: https://github.com/huggingface/transformers/issues/31884\n  warnings.warn(\n\n\nCell 8:\nExecution Count: 9 | Status: ok\n\nCell 9:\nExecution Count: 10 | Status: ok\n\nCell 10:\nExecution Count: 11 | Status: ok\nCustomModelMultichoice(\n  (model): RobertaForMultipleChoice(\n    (roberta): RobertaModel(\n      (embeddings): RobertaEmbeddings(\n        (word_embeddings): Embedding(64001, 768, padding_idx=1)\n        (position_embeddings): Embedding(258, 768, padding_idx=1)\n        (token_type_embeddings): Embedding(1, 768)\n        (LayerNorm): LayerNorm((768,), eps=1e-05, elementwise_affine=True)\n        (dropout): Dropout(p=0.1, inplace=False)\n      )\n      (encoder): RobertaEncoder(\n        (layer): ModuleList(\n          (0-11): 12 x RobertaLayer(\n            (attention): RobertaAttention(\n              (self): RobertaSelfAttention(\n                (query): Linear(in_features=768, out_features=768, bias=True)\n                (key): Linear(in_features=768, out_features=768, bias=True)\n                (value): Linear(in_features=768, out_features=768, bias=True)\n                (dropout): Dropout(p=0.1, inplace=False)\n              )\n              (output): RobertaSelfOutput(\n                (dense): Linear(in_features=768, out_features=768, bias=True)\n                (LayerNorm): LayerNorm((768,), eps=1e-05, elementwise_affine=True)\n                (dropout): Dropout(p=0.1, inplace=False)\n              )\n            )\n            (intermediate): RobertaIntermediate(\n              (dense): Linear(in_features=768, out_features=3072, bias=True)\n              (intermediate_act_fn): GELUActivation()\n            )\n            (output): RobertaOutput(\n              (dense): Linear(in_features=3072, out_features=768, bias=True)\n              (LayerNorm): LayerNorm((768,), eps=1e-05, elementwise_affine=True)\n              (dropout): Dropout(p=0.1, inplace=False)\n            )\n          )\n        )\n      )\n      (pooler): RobertaPooler(\n        (dense): Linear(in_features=768, out_features=768, bias=True)\n        (activation): Tanh()\n      )\n    )\n    (dropout): Dropout(p=0.1, inplace=False)\n    (classifier): Linear(in_features=768, out_features=2, bias=True)\n  )\n  (sigmoid): Sigmoid()\n)\n\nCell 11:\nExecution Count: 12 | Status: ok\ntensor([[1, 0, 1]])\n\nCell 12:\nExecution Count: 13 | Status: error\n\n---ERROR---: ValueError: Expected input batch_size (2) to match target batch_size (3).\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 7.5874
+    },
+    {
+      "step": 2,
+      "action": "get_cells()",
+      "output": "# --- [CELL 0]: ---\n\nfrom transformers import AutoModel,AutoConfig,AutoTokenizer,AutoModelForMultipleChoice\n\n# --- [CELL 1]: ---\n\nMODEL_NAME = 'microsoft/deberta-v2-xlarge'\nMODEL_NAME_CHOICE = 'vinai/phobert-base'\n\n# --- [CELL 2]: ---\n\nfrom  transformers.modeling_outputs import MultipleChoiceModelOutput\n\n# --- [CELL 3]: ---\n\nfrom torch import nn\n\n# --- [CELL 4]: ---\n\nclass CustomModelMultichoice(nn.Module):\n    def __init__(self,config,num_choice):\n        super(CustomModelMultichoice,self).__init__()\n        model = AutoModelForMultipleChoice.from_config(config)\n        model.classifier = nn.Linear(768,2)\n        self.model = model\n\n        self.sigmoid = nn.Sigmoid()\n        self.num_choice = num_choice\n    def forward(self,input_ids = None,token_type_ids = None ,attention_mask = None,labels = None):\n        outputs = self.model(input_ids=input_ids,token_type_ids=token_type_ids,attention_mask=attention_mask)\n        logits = self.sigmoid(outputs.logits)\n        loss = None\n        if labels is not None:\n            loss_func = nn.NLLLoss()\n            loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))\n        return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states= None,attentions =None)\n\n\n# --- [CELL 5]: ---\n\nconfig = AutoConfig.from_pretrained(MODEL_NAME_CHOICE)\n\nCustomModel = CustomModelMultichoice(config,3)\n\n# --- [CELL 6]: ---\n\nprompt = \"Bác Hồ là người nước nào ?.\"\ncandidate1 = \"Việt Nam\"\ncandidate2 = \"Mỹ\"\ncandidate3 = 'Việt Nam'\n\n# --- [CELL 7]: ---\n\nfrom transformers import AutoTokenizer\n\ntokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_CHOICE)\ninputs = tokenizer([[prompt, candidate1], [prompt, candidate2],[prompt, candidate3]], return_tensors=\"pt\", padding=True)\n\n# --- [CELL 8]: ---\n\nimport torch\nlabels = torch.tensor(0).unsqueeze(0)\n\n# --- [CELL 9]: ---\n\ninputs['input_ids'] = inputs['input_ids'].unsqueeze(0)\ninputs['token_type_ids'] = inputs['token_type_ids'].unsqueeze(0)\ninputs['attention_mask'] = inputs['attention_mask'].unsqueeze(0)\n\n# --- [CELL 10]: ---\n\nCustomModel.eval()\n\n# --- [CELL 11]: ---\n\ntarget = torch.tensor([[1, 0, 1]])\ntarget\n\n# --- [CELL 12]: ---\n\nout = CustomModel(**inputs,labels = target)",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0044
+    },
+    {
+      "step": 3,
+      "action": "edit_cell(cell_index=4, code=<895 chars>)",
+      "output": "Cell 4 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0056
+    },
+    {
+      "step": 4,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 1 | Status: ok\n\nCell 7:\nExecution Count: 2 | Status: error\n\n---ERROR---: NameError: name 'MODEL_NAME_CHOICE' is not defined\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 10.6343
+    },
+    {
+      "step": 5,
+      "action": "run_cell(cell_index=0)",
+      "output": "Execution Count: 3 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.056
+    },
+    {
+      "step": 6,
+      "action": "run_cell(cell_index=1)",
+      "output": "Execution Count: 4 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0538
+    },
+    {
+      "step": 7,
+      "action": "run_cell(cell_index=2)",
+      "output": "Execution Count: 5 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0548
+    },
+    {
+      "step": 8,
+      "action": "run_cell(cell_index=3)",
+      "output": "Execution Count: 6 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0547
+    },
+    {
+      "step": 9,
+      "action": "run_cell(cell_index=4)",
+      "output": "Execution Count: 7 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0536
+    },
+    {
+      "step": 10,
+      "action": "run_cell(cell_index=5)",
+      "output": "Execution Count: 8 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 2.264
+    },
+    {
+      "step": 11,
+      "action": "run_cell(cell_index=6)",
+      "output": "Execution Count: 9 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.055
+    },
+    {
+      "step": 12,
+      "action": "run_cell(cell_index=7)",
+      "output": "Execution Count: 10 | Status: ok\n/usr/local/lib/python3.10/dist-packages/transformers/tokenization_utils_base.py:1601: FutureWarning: `clean_up_tokenization_spaces` was not set. It will be set to `True` by default. This behavior will be depracted in transformers v4.45, and will be then set to `False` by default. For more details check this issue: https://github.com/huggingface/transformers/issues/31884\n  warnings.warn(\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.7069
+    },
+    {
+      "step": 13,
+      "action": "run_cell(cell_index=8)",
+      "output": "Execution Count: 11 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.055
+    },
+    {
+      "step": 14,
+      "action": "run_cell(cell_index=9)",
+      "output": "Execution Count: 12 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0535
+    },
+    {
+      "step": 15,
+      "action": "run_cell(cell_index=10)",
+      "output": "Execution Count: 13 | Status: ok\nCustomModelMultichoice(\n  (model): RobertaForMultipleChoice(\n    (roberta): RobertaModel(\n      (embeddings): RobertaEmbeddings(\n        (word_embeddings): Embedding(64001, 768, padding_idx=1)\n        (position_embeddings): Embedding(258, 768, padding_idx=1)\n        (token_type_embeddings): Embedding(1, 768)\n        (LayerNorm): LayerNorm((768,), eps=1e-05, elementwise_affine=True)\n        (dropout): Dropout(p=0.1, inplace=False)\n      )\n      (encoder): RobertaEncoder(\n        (layer): ModuleList(\n          (0-11): 12 x RobertaLayer(\n            (attention): RobertaAttention(\n              (self): RobertaSelfAttention(\n                (query): Linear(in_features=768, out_features=768, bias=True)\n                (key): Linear(in_features=768, out_features=768, bias=True)\n                (value): Linear(in_features=768, out_features=768, bias=True)\n                (dropout): Dropout(p=0.1, inplace=False)\n              )\n              (output): RobertaSelfOutput(\n                (dense): Linear(in_features=768, out_features=768, bias=True)\n                (LayerNorm): LayerNorm((768,), eps=1e-05, elementwise_affine=True)\n                (dropout): Dropout(p=0.1, inplace=False)\n              )\n            )\n            (intermediate): RobertaIntermediate(\n              (dense): Linear(in_features=768, out_features=3072, bias=True)\n              (intermediate_act_fn): GELUActivation()\n            )\n            (output): RobertaOutput(\n              (dense): Linear(in_features=3072, out_features=768, bias=True)\n              (LayerNorm): LayerNorm((768,), eps=1e-05, elementwise_affine=True)\n              (dropout): Dropout(p=0.1, inplace=False)\n            )\n          )\n        )\n      )\n      (pooler): RobertaPooler(\n        (dense): Linear(in_features=768, out_features=768, bias=True)\n        (activation): Tanh()\n      )\n    )\n    (dropout): Dropout(p=0.1, inplace=False)\n    (classifier): Linear(in_features=768, out_features=3, bias=True)\n  )\n  (sigmoid): Sigmoid()\n)",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0551
+    },
+    {
+      "step": 16,
+      "action": "run_cell(cell_index=11)",
+      "output": "Execution Count: 14 | Status: ok\ntensor([[1, 0, 1]])",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0537
+    },
+    {
+      "step": 17,
+      "action": "run_cell(cell_index=12)",
+      "output": "Execution Count: 15 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.1043
+    },
+    {
+      "step": 18,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 1 | Status: ok\n\nCell 7:\nExecution Count: 2 | Status: error\n\n---ERROR---: NameError: name 'MODEL_NAME_CHOICE' is not defined\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 10.5521
+    },
+    {
+      "step": 19,
+      "action": "run_cell(cell_index=12)",
+      "output": "Execution Count: 3 | Status: error\n\n---ERROR---: NameError: name 'CustomModel' is not defined\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.0556
+    },
+    {
+      "step": 20,
+      "action": "run_cell(cell_index=0)",
+      "output": "Execution Count: 4 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0541
+    },
+    {
+      "step": 21,
+      "action": "run_cell(cell_index=1)",
+      "output": "Execution Count: 5 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0539
+    },
+    {
+      "step": 22,
+      "action": "run_cell(cell_index=2)",
+      "output": "Execution Count: 6 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0537
+    },
+    {
+      "step": 23,
+      "action": "get_cell(cell_index=2)",
+      "output": "# --- [CELL 2]: ---\n\nfrom  transformers.modeling_outputs import MultipleChoiceModelOutput",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0029
+    },
+    {
+      "step": 24,
+      "action": "get_cells()",
+      "output": "# --- [CELL 0]: ---\n\nfrom transformers import AutoModel,AutoConfig,AutoTokenizer,AutoModelForMultipleChoice\n\n# --- [CELL 1]: ---\n\nMODEL_NAME = 'microsoft/deberta-v2-xlarge'\nMODEL_NAME_CHOICE = 'vinai/phobert-base'\n\n# --- [CELL 2]: ---\n\nfrom  transformers.modeling_outputs import MultipleChoiceModelOutput\n\n# --- [CELL 3]: ---\n\nfrom torch import nn\n\n# --- [CELL 4]: ---\n\nclass CustomModelMultichoice(nn.Module):\n    def __init__(self,config,num_choice):\n        super(CustomModelMultichoice,self).__init__()\n        model = AutoModelForMultipleChoice.from_config(config)\n        model.classifier = nn.Linear(config.hidden_size, num_choice)\n        self.model = model\n\n        self.sigmoid = nn.Sigmoid()\n        self.num_choice = num_choice\n    def forward(self,input_ids = None,token_type_ids = None ,attention_mask = None,labels = None):\n        outputs = self.model(input_ids=input_ids,token_type_ids=token_type_ids,attention_mask=attention_mask)\n        logits = self.sigmoid(outputs.logits)\n        loss = None\n        if labels is not None:\n            loss_func = nn.NLLLoss()\n            loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))\n        return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states= None,attentions =None)\n\n# --- [CELL 5]: ---\n\nconfig = AutoConfig.from_pretrained(MODEL_NAME_CHOICE)\n\nCustomModel = CustomModelMultichoice(config,3)\n\n# --- [CELL 6]: ---\n\nprompt = \"Bác Hồ là người nước nào ?.\"\ncandidate1 = \"Việt Nam\"\ncandidate2 = \"Mỹ\"\ncandidate3 = 'Việt Nam'\n\n# --- [CELL 7]: ---\n\nfrom transformers import AutoTokenizer\n\ntokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_CHOICE)\ninputs = tokenizer([[prompt, candidate1], [prompt, candidate2],[prompt, candidate3]], return_tensors=\"pt\", padding=True)\n\n# --- [CELL 8]: ---\n\nimport torch\nlabels = torch.tensor(0).unsqueeze(0)\n\n# --- [CELL 9]: ---\n\ninputs['input_ids'] = inputs['input_ids'].unsqueeze(0)\ninputs['token_type_ids'] = inputs['token_type_ids'].unsqueeze(0)\ninputs['attention_mask'] = inputs['attention_mask'].unsqueeze(0)\n\n# --- [CELL 10]: ---\n\nCustomModel.eval()\n\n# --- [CELL 11]: ---\n\ntarget = torch.tensor([[1, 0, 1]])\ntarget\n\n# --- [CELL 12]: ---\n\nout = CustomModel(**inputs,labels = target)",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0036
+    },
+    {
+      "step": 25,
+      "action": "run_cell(cell_index=12)",
+      "output": "Execution Count: 7 | Status: error\n\n---ERROR---: NameError: name 'CustomModel' is not defined\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.0564
+    },
+    {
+      "step": 26,
+      "action": "run_cell(cell_index=4)",
+      "output": "Execution Count: 8 | Status: error\n\n---ERROR---: NameError: name 'nn' is not defined\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.0551
+    },
+    {
+      "step": 27,
+      "action": "run_cell(cell_index=0)",
+      "output": "Execution Count: 9 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0554
+    },
+    {
+      "step": 28,
+      "action": "run_cell(cell_index=1)",
+      "output": "Execution Count: 10 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0561
+    },
+    {
+      "step": 29,
+      "action": "run_cell(cell_index=2)",
+      "output": "Execution Count: 11 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0552
+    },
+    {
+      "step": 30,
+      "action": "run_cell(cell_index=3)",
+      "output": "Execution Count: 12 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0541
+    },
+    {
+      "step": 30,
+      "action": "LimitsExceeded",
+      "output": "",
+      "return_code": 1,
+      "success": false
+    }
+  ],
+  "code_changes": [
+    {
+      "cell_index": 4,
+      "step": 3,
+      "code": "class CustomModelMultichoice(nn.Module):\n    def __init__(self,config,num_choice):\n        super(CustomModelMultichoice,self).__init__()\n        model = AutoModelForMultipleChoice.from_config(config)\n        model.classifier = nn.Linear(config.hidden_size, num_choice)\n        self.model = model\n\n        self.sigmoid = nn.Sigmoid()\n        self.num_choice = num_choice\n    def forward(self,input_ids = None,token_type_ids = None ,attention_mask = None,labels = None):\n        outputs = self.model(input_ids=input_ids,token_type_ids=token_type_ids,attention_mask=attention_mask)\n        logits = self.sigmoid(outputs.logits)\n        loss = None\n        if labels is not None:\n            loss_func = nn.NLLLoss()\n            loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))\n        return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states= None,attentions =None)"
+    }
+  ]
+}

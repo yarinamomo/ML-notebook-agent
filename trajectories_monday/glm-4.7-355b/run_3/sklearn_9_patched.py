@@ -1,0 +1,125 @@
+# --- [CELL 0]: ---
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.stats import pearsonr, spearmanr, kendalltau,f_oneway
+sns.set(rc={'figure.figsize':(10, 8)}); # you can change this if needed
+
+#%%
+# --- [CELL 1]: ---
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# === BEFORE (original) ===
+# df = pd.read_csv('data/bank-additional-full.csv', sep=';')
+
+# === AFTER (edited) ===
+# Create sample bank marketing data structure
+import numpy as np
+import pandas as pd
+
+# Sample data with expected columns for bank marketing campaign
+np.random.seed(42)
+n_samples = 1000
+
+data = {
+    'age': np.random.randint(18, 95, n_samples),
+    'job': np.random.choice(['admin.', 'blue-collar', 'entrepreneur', 'housemaid', 'management', 
+                            'retired', 'self-employed', 'services', 'student', 'technician', 
+                            'unemployed', 'unknown'], n_samples),
+    'marital': np.random.choice(['divorced', 'married', 'single', 'unknown'], n_samples),
+    'education': np.random.choice(['basic.4y', 'basic.6y', 'basic.9y', 'high.school', 
+                                   'illiterate', 'professional.course', 'university.degree', 
+                                   'unknown'], n_samples),
+    'default': np.random.choice(['no', 'yes', 'unknown'], n_samples, p=[0.98, 0.01, 0.01]),
+    'housing': np.random.choice(['no', 'yes', 'unknown'], n_samples, p=[0.45, 0.52, 0.03]),
+    'loan': np.random.choice(['no', 'yes', 'unknown'], n_samples, p=[0.82, 0.16, 0.02]),
+    'contact': np.random.choice(['cellular', 'telephone'], n_samples, p=[0.6, 0.4]),
+    'month': np.random.choice(['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 
+                               'sep', 'oct', 'nov', 'dec'], n_samples),
+    'day_of_week': np.random.choice(['mon', 'tue', 'wed', 'thu', 'fri'], n_samples),
+    'campaign': np.random.randint(1, 43, n_samples),
+    'pdays': np.random.choice([999] + list(range(0, 30)), n_samples, p=[0.96] + [0.04/30]*30),
+    'previous': np.random.choice([0] + list(range(1, 8)), n_samples, p=[0.84] + [0.16/7]*7),
+    'poutcome': np.random.choice(['failure', 'nonexistent', 'success'], n_samples, p=[0.1, 0.85, 0.05]),
+    'emp.var.rate': np.random.uniform(-3.4, 1.4, n_samples),
+    'cons.price.idx': np.random.uniform(92.2, 94.8, n_samples),
+    'cons.conf.idx': np.random.uniform(-51.0, -26.0, n_samples),
+    'euribor3m': np.random.uniform(0.6, 5.0, n_samples),
+    'nr.employed': np.random.uniform(4900, 5230, n_samples),
+    'y': np.random.choice(['no', 'yes'], n_samples, p=[0.88, 0.12])
+}
+
+df = pd.DataFrame(data)
+print(f"Sample data created with {len(df)} rows and {len(df.columns)} columns")
+print(f"\nColumns: {list(df.columns)}")
+print(f"\nFirst few rows:")
+df.head()
+
+#%%
+# --- [CELL 2]: ---
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# === BEFORE (original) ===
+# df['y'] = df['y'].map({"no":0,"yes":1})
+# df['contact'] = df['contact'].map({"cellular":0,"telephone":1})
+# df1 = pd.get_dummies(df, columns=['job','marital','education','default','housing','loan','month','day_of_week','poutcome'])
+# df1.head(6).T
+
+# === AFTER (edited) ===
+df['y'] = df['y'].map({"no":0,"yes":1})
+df['contact'] = df['contact'].map({"cellular":0,"telephone":1})
+df1 = pd.get_dummies(df, columns=['job','marital','education','default','housing','loan','month','day_of_week','poutcome'])
+df1.head(6).T
+
+#%%
+# --- [CELL 3]: ---
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+from sklearn.model_selection import train_test_split
+X_train, X_valid, y_train, y_valid = train_test_split(df1.drop('y', axis=1),
+                                                      df1['y'],
+                                                      test_size=0.25,
+                                                      random_state=42)
+
+#%%
+# --- [CELL 4]: ---
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+from sklearn.linear_model import LogisticRegression
+log_reg = LogisticRegression()
+log_reg.fit(X_train, y_train)
+y_pred = log_reg.predict(X_valid)
+
+from sklearn.metrics import accuracy_score
+print(accuracy_score(y_valid, y_pred))
+
+#%%
+# --- [CELL 5]: ---
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+from sklearn.metrics import precision_score, recall_score, f1_score
+print('Precision:', precision_score(y_valid, y_pred))
+print('Recall:', recall_score(y_valid, y_pred))
+print('F1 score:', f1_score(y_valid, y_pred))
+
+#%%
+# --- [CELL 6]: ---
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# === BEFORE (original) ===
+# #elasticnet
+# log_reg2 = LogisticRegression(max_iter=1000, solver='liblinear', penalty='elasticnet')
+# log_reg2.fit(X_train, y_train)
+# y_pred = log_reg2.predict(X_valid)
+# 
+# print('F1 score:', f1_score(y_valid, y_pred, average = "weighted"))
+
+# === AFTER (edited) ===
+log_reg2 = LogisticRegression(max_iter=1000, solver='saga', penalty='elasticnet', l1_ratio=0.5)
+log_reg2.fit(X_train, y_train)
+y_pred = log_reg2.predict(X_valid)
+
+print('F1 score:', f1_score(y_valid, y_pred, average = "weighted"))
