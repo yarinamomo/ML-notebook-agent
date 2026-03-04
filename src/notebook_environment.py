@@ -35,8 +35,8 @@ class NotebookEnvironment:
     """mini-swe-agent Environment for Jupyter Notebook Sandbox."""
     def __init__(
         self,
-        source_path: str,
-        output_dir: str,
+        instance_name: str,
+        output_dir: Path,
         config_class: type = NotebookEnvironmentConfig,
         **kwargs
     ):
@@ -48,7 +48,7 @@ class NotebookEnvironment:
             **kwargs: Configuration parameters (sandbox_settings, source_path, docker_mount_path, etc.)
         """
         self.config: NotebookEnvironmentConfig = config_class(**kwargs)
-        self.source_path = source_path
+        self.source_path = Path(self.config.source_path_parent) / instance_name
         self.is_submittable = False # Flag to track if submission is allowed (after successful run_all)
         self.problem: BenchmarkProblem = BenchmarkProblem(
             sandbox_settings={
@@ -56,7 +56,7 @@ class NotebookEnvironment:
                 "port": self.config.port,
                 "start_command": self.config.docker_start_command,
             },
-            source_path=source_path,
+            source_path=self.source_path,
             output_dir=output_dir,
             problem_mode=self.config.problem_mode,
             docker_source_path=self.config.docker_mount_path,
