@@ -9,7 +9,7 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-
+from collections import Counter
 # Import the analyze module to run analysis first
 import run_code_analyze
 
@@ -20,10 +20,11 @@ def plot_category_distribution(input_dir, output_dir):
     # Load the JSON data
     json_file = input_dir / 'run_code_operations.json'
     with open(json_file, 'r', encoding='utf-8') as f:
-        operations = json.load(f)
+        data = json.load(f)
+    
+    operations = data['operations']
     
     # Count categories
-    from collections import Counter
     category_counts = Counter()
     
     for op in operations:
@@ -61,45 +62,74 @@ def plot_category_distribution(input_dir, output_dir):
     ax1.grid(axis='x', alpha=0.3, linestyle='--')
     ax1.set_xlim(0, max(counts) * 1.15)
     
-    # Plot 2: Top libraries pie chart
-    # Extract top imports
-    import_counts = Counter()
+    # Plot 2: Co-occurrence heatmap of pair overlap categories
+    # Check if we have overlap data
+    if not isinstance(data, dict) or 'overlaps' not in data:
+        print("No overlap data found. Run analysis first.")
+        return
+    
+    overlaps = data['overlaps']
+    
+    # Remove 'other' from categories list
+    categories = [cat for cat in overlaps['all_categories'] if cat != 'other']
+    n_cats = len(categories)
+    
+    # Build co-occurrence matrix
+    cooccur_matrix = np.zeros((n_cats, n_cats))
+    
+    # Diagonal: count of each category
+    category_counts = Counter()
     for op in operations:
-        for imp in op['imports']:
-            import_counts[imp] += 1
+        for cat in op['categories']:
+            category_counts[cat] += 1
     
-    top_imports = dict(import_counts.most_common(10))
-    others_count = sum(count for imp, count in import_counts.items() if imp not in top_imports)
+    for i, cat in enumerate(categories):
+        cooccur_matrix[i, i] = category_counts[cat]
     
-    if others_count > 0:
-        top_imports['Others'] = others_count
+    # Off-diagonal: co-occurrence counts
+    for pair_str, count in overlaps['co_occurrence_pairs'].items():
+        cat1, cat2 = pair_str.split('|')
+        # Skip pairs involving 'other' category
+        if cat1 == 'other' or cat2 == 'other':
+            continue
+        i = categories.index(cat1)
+        j = categories.index(cat2)
+        cooccur_matrix[i, j] = count
+        cooccur_matrix[j, i] = count  # Symmetric
     
-    # Create pie chart
-    colors2 = plt.cm.Set3(np.linspace(0, 1, len(top_imports)))
-    wedges, texts, autotexts = ax2.pie(
-        top_imports.values(), 
-        labels=top_imports.keys(),
-        autopct='%1.1f%%',
-        colors=colors2,
-        startangle=90,
-        textprops={'fontsize': 9}
-    )
+    # Plot heatmap
+    im = ax2.imshow(cooccur_matrix, cmap='YlOrRd', aspect='auto')
     
-    # Make percentage text bold
-    for autotext in autotexts:
-        autotext.set_color('white')
-        autotext.set_fontweight('bold')
+    # Set ticks and labels
+    cat_labels = [cat.replace('_', ' ').title() for cat in categories]
+    ax2.set_xticks(np.arange(n_cats))
+    ax2.set_yticks(np.arange(n_cats))
+    ax2.set_xticklabels(cat_labels, rotation=45, ha='right')
+    ax2.set_yticklabels(cat_labels)
     
-    ax2.set_title('Top Libraries Imported in run_code', fontsize=14, fontweight='bold')
+    # Add text annotations
+    for i in range(n_cats):
+        for j in range(n_cats):
+            count = int(cooccur_matrix[i, j])
+            if count > 0:
+                color = 'white' if cooccur_matrix[i, j] > cooccur_matrix.max() / 2 else 'black'
+                ax2.text(j, i, str(count), ha='center', va='center', 
+                        color=color, fontsize=9, fontweight='bold')
+    
+    ax2.set_title('Category Co-occurrence Matrix\n(diagonal = total count, off-diagonal = overlap count)', 
+                  fontsize=12, fontweight='bold')
+    
+    # Add colorbar
+    cbar = plt.colorbar(im, ax=ax2)
+    cbar.set_label('Number of Operations', rotation=270, labelpad=20)
     
     plt.tight_layout()
     
     # Save figure
-    output_file = output_dir / 'run_code_patterns_visualization.png'
+    output_file = output_dir / 'run_code_categories_visualization.png'
     plt.savefig(output_file, dpi=300, bbox_inches='tight')
     print(f"Visualization saved to: {output_file}")
     plt.close()
-
 
 def plot_code_length_distribution(input_dir, output_dir):
     """Plot the distribution of code lengths."""
@@ -107,7 +137,9 @@ def plot_code_length_distribution(input_dir, output_dir):
     # Load the JSON data
     json_file = input_dir / 'run_code_operations.json'
     with open(json_file, 'r', encoding='utf-8') as f:
-        operations = json.load(f)
+        data = json.load(f)
+    
+    operations = data['operations']
     
     # Get code lengths
     code_lengths = [len(op['code']) for op in operations]
@@ -161,7 +193,9 @@ def plot_operations_by_run(input_dir, output_dir):
     # Load the JSON data
     json_file = input_dir / 'run_code_operations.json'
     with open(json_file, 'r', encoding='utf-8') as f:
-        operations = json.load(f)
+        data = json.load(f)
+    
+    operations = data['operations']
     
     # Separate by run
     run_data = {1: [], 2: [], 3: []}
@@ -169,9 +203,7 @@ def plot_operations_by_run(input_dir, output_dir):
     for op in operations:
         run_data[op['run']].append(op)
     
-    # Count categories per run
-    from collections import Counter
-    
+    # Count categories per run    
     categories_per_run = {}
     for run_num, ops in run_data.items():
         category_counts = Counter()
@@ -218,12 +250,68 @@ def plot_operations_by_run(input_dir, output_dir):
     plt.close()
 
 
+def plot_pie_chart_distributions(input_dir, output_dir):
+    """Plot category co-occurrence heatmap."""
+    
+    # Load the JSON data
+    json_file = input_dir / 'run_code_operations.json'
+    with open(json_file, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    
+    operations = data['operations']
+
+    # Plot: Top libraries pie chart
+    # Extract top methods
+    method_counts = Counter()
+    for op in operations:
+        for method in op['methods']:
+            method_counts[method] += 1
+    
+    top_methods = dict(method_counts.most_common(10))
+    others_count = sum(count for method, count in method_counts.items() if method not in top_methods)
+    
+    if others_count > 0:
+        top_methods['Others'] = others_count
+    
+    fig, ax = plt.subplots(figsize=(14, 6))
+
+    # Create pie chart
+    colors2 = plt.cm.Set3(np.linspace(0, 1, len(top_methods)))
+    wedges, texts, autotexts = ax.pie(
+        top_methods.values(), 
+        labels=top_methods.keys(),
+        autopct='%1.1f%%',
+        colors=colors2,
+        startangle=90,
+        textprops={'fontsize': 9}
+    )
+    
+    # Make percentage text bold
+    for autotext in autotexts:
+        autotext.set_color('black')
+        autotext.set_fontweight('bold')
+    
+    ax.set_title('Top Methods Used in run_code', fontsize=14, fontweight='bold')
+    
+    plt.tight_layout()
+    
+    # Save figure
+    output_file = output_dir / 'run_code_methods_visualization.png'
+    plt.savefig(output_file, dpi=300, bbox_inches='tight')
+    print(f"Visualization saved to: {output_file}")
+    plt.close()
+
+
 def main():
     """Generate all visualizations."""
-    base_dir = 'trajectories_monday/glm-4.7-355b'
-    input_dir = Path(base_dir) / 'analysis'
-    output_dir = Path(base_dir) / 'plots'
-    output_dir.mkdir(exist_ok=True)
+    # Get the project root directory (parent of data_analysis)
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent
+    
+    base_dir = project_root / 'trajectories_monday' / 'glm-4.7-355b'
+    input_dir = base_dir / 'analysis'
+    output_dir = base_dir / 'plots'
+    output_dir.mkdir(parents=True, exist_ok=True)
     
     print("="*60)
     print("STEP 1: Running analysis to ensure data is up to date...")
@@ -239,6 +327,7 @@ def main():
     plot_category_distribution(input_dir, output_dir)
     plot_code_length_distribution(input_dir, output_dir)
     plot_operations_by_run(input_dir, output_dir)
+    plot_pie_chart_distributions(input_dir, output_dir)
     
     print("\nAll visualizations generated successfully!")
     print(f"Charts saved to: {output_dir.absolute()}")
