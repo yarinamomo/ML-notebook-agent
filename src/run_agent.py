@@ -42,10 +42,6 @@ def run_single_instance(
     # Create model instance
     model = CustomToolLitellmModel(**model_config)
     
-    # Create structured log paths: trajectories_dir/model_name/run_X/instance_name...
-    run_output_dir.mkdir(parents=True, exist_ok=True)
-    
-    
     # Create environment
     env = NotebookEnvironment(
         instance_name=instance_name,

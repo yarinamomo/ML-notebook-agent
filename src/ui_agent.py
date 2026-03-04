@@ -77,7 +77,7 @@ class UiAgent(DefaultAgent):
         """Build an execution summary from the message history. Save to *path* if given."""
         elapsed = (time.monotonic() - self._start_time) if self._start_time else 0.0
         initial_cells = getattr(self, '_initial_cells', [])
-        summary = build_summary(self, execution_time_seconds=elapsed, initial_cells=initial_cells)
+        summary = build_summary(self.messages, self.cost, execution_time_seconds=elapsed, initial_cells=initial_cells)
         if path:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")

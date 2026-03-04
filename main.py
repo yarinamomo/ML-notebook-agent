@@ -16,6 +16,7 @@ from src.utils.yaml_parser import (
     get_trajectories_dir
 )
 from src.run_agent import run_single_instance
+from src.run_baseline import run_baseline_instance
 
 app = typer.Typer(rich_markup_mode="rich")
 DEFAULT_CONFIG = Path(os.getenv("NOTEBOOK_AGENT_CONFIG_PATH", "./config/default.yaml"))
@@ -111,10 +112,12 @@ def main(
     api_keys_file: Optional[Path] = typer.Option(None, "--api-keys", help="Path to file with API keys (one per line, required for threading)"),
 ) -> Any:
 
-    logger.info("Starting notebook agent....")
-    
     # Load and parse configuration
     config = load_config(config_spec)
+    
+    is_baseline = config.get("misc", {}).get("mode", "agent") == "baseline"
+    mode_label = "Baseline" if is_baseline else "Agent"
+    logger.info(f"Starting notebook {mode_label.lower()} run....")
     
     # Handle threading setup
     api_keys = []
@@ -168,7 +171,9 @@ def main(
         logger.info(f"No runs to execute for model {model_name} - all already completed")
         return None
 
-    with progress_live(total_iterations, f"Model: {model_name}") as (progress, task_id):
+    run_fn = run_baseline_instance if is_baseline else run_single_instance
+
+    with progress_live(total_iterations, f"{mode_label}: {model_name}") as (progress, task_id):
 
         start_time = time.monotonic()
         completed_count = 0
@@ -178,10 +183,10 @@ def main(
                 run_output_dir = trajectories_dir / model_name / f"run_{run_num}"
                 run_output_dir.mkdir(parents=True, exist_ok=True)
 
-                run_single_instance(
+                run_fn(
                     instance_name=instance_name,
                     config=config,
-                    run_output_dir=run_output_dir
+                    run_output_dir=run_output_dir,
                 )
                 
             except Exception as e:
@@ -195,7 +200,7 @@ def main(
                 progress.update(
                     task_id,
                     advance=1,
-                    description=f"Model: {model_name} | {instance_name} | run {run_num}",
+                    description=f"{mode_label}: {model_name} | {instance_name} | run {run_num}",
                     eta=format_eta(remaining),
                 )
 

@@ -32,24 +32,7 @@ def find_action(actions: list[dict], tool_call_id: str) -> dict | None:
     return None
 
 
-def build_summary(
-    agent: "DefaultAgent",
-    *,
-    execution_time_seconds: float = 0.0,
-    initial_cells: list[str] | None = None,
-) -> dict[str, Any]:
-    """Build a human-readable summary dict from an agent's state.
-
-    Args:
-        agent: The agent instance (provides ``messages``, ``cost``, ``n_calls``).
-        execution_time_seconds: Wall-clock seconds the run took.
-        initial_cells: The original notebook cells captured before the agent run.
-
-    Returns:
-        A JSON-serialisable summary dictionary.
-    """
-    messages = agent.messages
-    cost = agent.cost
+def build_summary(messages: list[dict], cost: float | None, execution_time_seconds: float, initial_cells: list[str] | None) -> dict[str, Any]:
     llm_responses: list[dict] = []
     operations: list[dict] = []
     code_changes: list[dict] = []
@@ -119,7 +102,7 @@ def build_summary(
                 "action": exit_status,
                 "output": submission,
                 "return_code": 0 if exit_status == "Submitted" else 1,
-                "success": exit_status == "Submitted",
+                "success": exit_status in ["Submitted", "Success"],
             })
 
     # Build code changes list (each edit as a separate entry with step)
@@ -140,7 +123,7 @@ def build_summary(
             "execution_time_seconds": round(execution_time_seconds, 2),
             "success": exit_status == "Submitted",
             "status": exit_status or "INCOMPLETE",
-            "cost": round(cost, 4),
+            "cost": round(cost, 4) if cost is not None else None,
         },
         "statistics": {
             "total_steps": len(llm_responses),
