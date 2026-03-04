@@ -57,45 +57,50 @@ def categorize_code(code):
     """
     categories = []
     
-    # File/directory operations
-    if any(pattern in code for pattern in ['os.listdir', 'os.path.exists', 'os.getcwd', 'glob.glob']):
-        categories.append('file_system_exploration')
-    
-    # Data inspection
-    if any(pattern in code for pattern in ['.head(', '.info(', '.describe(', '.shape', '.columns', '.dtypes']):
-        categories.append('data_inspection')
-    
-    # Read CSV/data files
-    if any(pattern in code for pattern in ['pd.read_csv', 'pd.read_', 'np.load']):
-        categories.append('read_data')
-    
     # Print/display output
     if 'print(' in code:
         categories.append('print_output')
+
+    # # File/directory/CSV/data files operations
+    # if any(pattern in code for pattern in ['os.listdir', 'os.path.exists', 'os.getcwd', 'glob.glob', 'pd.read_csv', 'pd.read_', 'np.load']):
+    #     categories.append('file_exploration')
+
+    # # code complexity
+    # # Error handling/debugging
+    # if any(pattern in code for pattern in ['try:', 'except:', 'assert', 'raise']):
+    #     categories.append('error_handling')
+
+    # # function definition
+    # if re.search(r'^\s*def\s+\w+\s*\(', code, re.MULTILINE):
+    #     categories.append('function_definition')
+
+    # # class definition
+    # if re.search(r'^\s*class\s+\w+\s*(\(\w+\))?:', code, re.MULTILINE):
+    #     categories.append('class_definition')
+
+    # runtime information categories
+    # structural information (size, shape, count, dimensions)
+    if any(pattern in code for pattern in ['.shape', 'len(', '.dtypes', '.ndim', 'size']):
+        categories.append('runinfo_structural')
+
+    # type semantics (type, dtype, shcema-level properties)
+    if any(pattern in code for pattern in ['type(', '.dtypes', 'isinstance(', 'dtype']):
+        categories.append('runinfo_type')
+
+    # value semantics (concrete values: value range, presence of NaNs, number of classes, example values)
+    if (
+        any(pattern in code for pattern in ['.head(', '.tail(', '.sample(', '.info(', '.describe(', '.columns', '.index', '.values', '.keys', '.listdir(', '.class_names', '.iloc', '.loc']) 
+        or ('in' in code and 'columns' in code)
+        or any(re.search(pattern, code) for pattern in [r'\.read\(\d+\)', r'\[\s*-?\d*\s*:\s*-?\d*\s*\]'])
+    ):
+        categories.append('runinfo_value')
     
-    # Variable inspection
-    if any(pattern in code for pattern in ['type(', 'len(', 'isinstance(']):
-        categories.append('variable_inspection')
-    
-    # DataFrame operations
-    if any(pattern in code for pattern in ['.iloc', '.loc', '.query(', '.groupby(']):
-        categories.append('dataframe_operations')
-    
-    # Error handling/debugging
-    if any(pattern in code for pattern in ['try:', 'except:', 'assert', 'raise']):
-        categories.append('error_handling')
-    
-    # Imports
-    if re.search(r'^\s*(import|from)\s+', code, re.MULTILINE):
-        categories.append('imports')
-    
-    # Check if column exists
-    if 'in' in code and 'columns' in code:
-        categories.append('column_check')
-    
-    # Sample/preview data
-    if any(pattern in code for pattern in ['.sample(', '.head(', '.tail(']):
-        categories.append('data_sampling')
+    # # DataFrame operations
+    # if any(pattern in code for pattern in ['.iloc', '.loc', '.query(', '.groupby(']):
+    #     categories.append('dataframe_operations')
+    # # Imports
+    # if re.search(r'^\s*(import|from)\s+', code, re.MULTILINE):
+    #     categories.append('imports')
     
     if not categories:
         categories.append('other')
@@ -112,30 +117,25 @@ def extract_key_operations(code):
     """
     operations = {
         'imports': [],
-        'pandas_methods': [],
-        'os_functions': [],
+        'methods': [],
         'print_statements': 0,
-        'variables_checked': [],
+        'variables_printed': [],
     }
     
     # Extract imports
     import_matches = re.findall(r'(?:^|\n)\s*(?:import|from)\s+(\S+)', code)
     operations['imports'] = import_matches
     
-    # Extract pandas methods
-    pandas_methods = re.findall(r'\.(\w+)\(', code)
-    operations['pandas_methods'] = list(set(pandas_methods))
+    # Extract methods
+    methods = re.findall(r'\.(\w+)\s*\(', code)
+    operations['methods'] = list(set(methods))
     
     # Count print statements
     operations['print_statements'] = code.count('print(')
     
-    # Extract os functions
-    os_functions = re.findall(r'os\.(\w+)', code)
-    operations['os_functions'] = list(set(os_functions))
-    
-    # Extract variable names being checked
-    var_checks = re.findall(r'print\(["\'].*?["\'],?\s*(\w+)', code)
-    operations['variables_checked'] = var_checks
+    # Extract variable names being printed
+    var_prints = re.findall(r'print\(["\'].*?["\'],?\s*(\w+)', code)
+    operations['variables_printed'] = var_prints
     
     return operations
 
@@ -155,8 +155,7 @@ def analyze_all_runs(base_dir):
     all_run_code_ops = []
     category_counts = Counter()
     import_counts = Counter()
-    pandas_method_counts = Counter()
-    os_function_counts = Counter()
+    method_counts = Counter()
     
     # Process each run
     for run_num in [1, 2, 3]:
@@ -191,13 +190,9 @@ def analyze_all_runs(base_dir):
                 for imp in key_ops['imports']:
                     import_counts[imp] += 1
                 
-                # Count pandas methods
-                for method in key_ops['pandas_methods']:
-                    pandas_method_counts[method] += 1
-                
-                # Count os functions
-                for func in key_ops['os_functions']:
-                    os_function_counts[func] += 1
+                # Count methods
+                for method in key_ops['methods']:
+                    method_counts[method] += 1
                 
                 # Store operation with metadata
                 all_run_code_ops.append({
@@ -214,8 +209,7 @@ def analyze_all_runs(base_dir):
         'operations': all_run_code_ops,
         'category_counts': category_counts,
         'import_counts': import_counts,
-        'pandas_method_counts': pandas_method_counts,
-        'os_function_counts': os_function_counts,
+        'method_counts': method_counts,
     }
 
 
@@ -230,8 +224,7 @@ def generate_report(analysis_results, output_file):
     operations = analysis_results['operations']
     category_counts = analysis_results['category_counts']
     import_counts = analysis_results['import_counts']
-    pandas_method_counts = analysis_results['pandas_method_counts']
-    os_function_counts = analysis_results['os_function_counts']
+    method_counts = analysis_results['method_counts']
     
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write("=" * 80 + "\n")
@@ -258,20 +251,12 @@ def generate_report(analysis_results, output_file):
             f.write(f"{imp:.<40} {count:>5}\n")
         f.write("\n")
         
-        # Top pandas methods
+        # Top methods
         f.write("=" * 80 + "\n")
-        f.write("TOP PANDAS METHODS\n")
+        f.write("TOP METHODS\n")
         f.write("=" * 80 + "\n")
-        for method, count in pandas_method_counts.most_common(20):
+        for method, count in method_counts.most_common(20):
             f.write(f"{method:.<40} {count:>5}\n")
-        f.write("\n")
-        
-        # Top os functions
-        f.write("=" * 80 + "\n")
-        f.write("TOP OS FUNCTIONS\n")
-        f.write("=" * 80 + "\n")
-        for func, count in os_function_counts.most_common(20):
-            f.write(f"{func:.<40} {count:>5}\n")
         f.write("\n")
         
         # Example codes for each major category
@@ -333,8 +318,7 @@ def save_all_codes_json(analysis_results, output_file):
             'code': op['code'],
             'categories': op['categories'],
             'imports': op['key_operations']['imports'],
-            'pandas_methods': op['key_operations']['pandas_methods'],
-            'os_functions': op['key_operations']['os_functions'],
+            'methods': op['key_operations']['methods'],
             'print_count': op['key_operations']['print_statements'],
         })
     
