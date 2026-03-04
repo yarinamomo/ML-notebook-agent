@@ -57,45 +57,50 @@ def categorize_code(code):
     """
     categories = []
     
-    # File/directory operations
-    if any(pattern in code for pattern in ['os.listdir', 'os.path.exists', 'os.getcwd', 'glob.glob']):
-        categories.append('file_system_exploration')
-    
-    # Data inspection
-    if any(pattern in code for pattern in ['.head(', '.info(', '.describe(', '.shape', '.columns', '.dtypes']):
-        categories.append('data_inspection')
-    
-    # Read CSV/data files
-    if any(pattern in code for pattern in ['pd.read_csv', 'pd.read_', 'np.load']):
-        categories.append('read_data')
-    
     # Print/display output
     if 'print(' in code:
         categories.append('print_output')
+
+    # # File/directory/CSV/data files operations
+    # if any(pattern in code for pattern in ['os.listdir', 'os.path.exists', 'os.getcwd', 'glob.glob', 'pd.read_csv', 'pd.read_', 'np.load']):
+    #     categories.append('file_exploration')
+
+    # # code complexity
+    # # Error handling/debugging
+    # if any(pattern in code for pattern in ['try:', 'except:', 'assert', 'raise']):
+    #     categories.append('error_handling')
+
+    # # function definition
+    # if re.search(r'^\s*def\s+\w+\s*\(', code, re.MULTILINE):
+    #     categories.append('function_definition')
+
+    # # class definition
+    # if re.search(r'^\s*class\s+\w+\s*(\(\w+\))?:', code, re.MULTILINE):
+    #     categories.append('class_definition')
+
+    # runtime information categories
+    # structural information (size, shape, count, dimensions)
+    if any(pattern in code for pattern in ['.shape', 'len(', '.dtypes', '.ndim', 'size']):
+        categories.append('runinfo_structural')
+
+    # type semantics (type, dtype, shcema-level properties)
+    if any(pattern in code for pattern in ['type(', '.dtypes', 'isinstance(', 'dtype']):
+        categories.append('runinfo_type')
+
+    # value semantics (concrete values: value range, presence of NaNs, number of classes, example values)
+    if (
+        any(pattern in code for pattern in ['.head(', '.tail(', '.sample(', '.info(', '.describe(', '.columns', '.index', '.values', '.keys', '.listdir(', '.class_names', '.iloc', '.loc']) 
+        or ('in' in code and 'columns' in code)
+        or any(re.search(pattern, code) for pattern in [r'\.read\(\d+\)', r'\[\s*-?\d*\s*:\s*-?\d*\s*\]'])
+    ):
+        categories.append('runinfo_value')
     
-    # Variable inspection
-    if any(pattern in code for pattern in ['type(', 'len(', 'isinstance(']):
-        categories.append('variable_inspection')
-    
-    # DataFrame operations
-    if any(pattern in code for pattern in ['.iloc', '.loc', '.query(', '.groupby(']):
-        categories.append('dataframe_operations')
-    
-    # Error handling/debugging
-    if any(pattern in code for pattern in ['try:', 'except:', 'assert', 'raise']):
-        categories.append('error_handling')
-    
-    # Imports
-    if re.search(r'^\s*(import|from)\s+', code, re.MULTILINE):
-        categories.append('imports')
-    
-    # Check if column exists
-    if 'in' in code and 'columns' in code:
-        categories.append('column_check')
-    
-    # Sample/preview data
-    if any(pattern in code for pattern in ['.sample(', '.head(', '.tail(']):
-        categories.append('data_sampling')
+    # # DataFrame operations
+    # if any(pattern in code for pattern in ['.iloc', '.loc', '.query(', '.groupby(']):
+    #     categories.append('dataframe_operations')
+    # # Imports
+    # if re.search(r'^\s*(import|from)\s+', code, re.MULTILINE):
+    #     categories.append('imports')
     
     if not categories:
         categories.append('other')
@@ -112,30 +117,25 @@ def extract_key_operations(code):
     """
     operations = {
         'imports': [],
-        'pandas_methods': [],
-        'os_functions': [],
+        'methods': [],
         'print_statements': 0,
-        'variables_checked': [],
+        'variables_printed': [],
     }
     
     # Extract imports
     import_matches = re.findall(r'(?:^|\n)\s*(?:import|from)\s+(\S+)', code)
     operations['imports'] = import_matches
     
-    # Extract pandas methods
-    pandas_methods = re.findall(r'\.(\w+)\(', code)
-    operations['pandas_methods'] = list(set(pandas_methods))
+    # Extract methods
+    methods = re.findall(r'\.(\w+)\s*\(', code)
+    operations['methods'] = list(set(methods))
     
     # Count print statements
     operations['print_statements'] = code.count('print(')
     
-    # Extract os functions
-    os_functions = re.findall(r'os\.(\w+)', code)
-    operations['os_functions'] = list(set(os_functions))
-    
-    # Extract variable names being checked
-    var_checks = re.findall(r'print\(["\'].*?["\'],?\s*(\w+)', code)
-    operations['variables_checked'] = var_checks
+    # Extract variable names being printed
+    var_prints = re.findall(r'print\(["\'].*?["\'],?\s*(\w+)', code)
+    operations['variables_printed'] = var_prints
     
     return operations
 
@@ -155,8 +155,7 @@ def analyze_all_runs(base_dir):
     all_run_code_ops = []
     category_counts = Counter()
     import_counts = Counter()
-    pandas_method_counts = Counter()
-    os_function_counts = Counter()
+    method_counts = Counter()
     
     # Process each run
     for run_num in [1, 2, 3]:
@@ -191,13 +190,9 @@ def analyze_all_runs(base_dir):
                 for imp in key_ops['imports']:
                     import_counts[imp] += 1
                 
-                # Count pandas methods
-                for method in key_ops['pandas_methods']:
-                    pandas_method_counts[method] += 1
-                
-                # Count os functions
-                for func in key_ops['os_functions']:
-                    os_function_counts[func] += 1
+                # Count methods
+                for method in key_ops['methods']:
+                    method_counts[method] += 1
                 
                 # Store operation with metadata
                 all_run_code_ops.append({
@@ -214,8 +209,7 @@ def analyze_all_runs(base_dir):
         'operations': all_run_code_ops,
         'category_counts': category_counts,
         'import_counts': import_counts,
-        'pandas_method_counts': pandas_method_counts,
-        'os_function_counts': os_function_counts,
+        'method_counts': method_counts,
     }
 
 
@@ -230,8 +224,10 @@ def generate_report(analysis_results, output_file):
     operations = analysis_results['operations']
     category_counts = analysis_results['category_counts']
     import_counts = analysis_results['import_counts']
-    pandas_method_counts = analysis_results['pandas_method_counts']
-    os_function_counts = analysis_results['os_function_counts']
+    method_counts = analysis_results['method_counts']
+    
+    # Compute overlap stats for report
+    overlaps = compute_category_overlaps(operations)
     
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write("=" * 80 + "\n")
@@ -250,6 +246,61 @@ def generate_report(analysis_results, output_file):
             f.write(f"{category:.<40} {count:>5} ({percentage:>5.1f}%)\n")
         f.write("\n")
         
+        # Category overlap statistics
+        f.write("=" * 80 + "\n")
+        f.write("CATEGORY OVERLAP ANALYSIS\n")
+        f.write("=" * 80 + "\n\n")
+        
+        # Single category operations
+        f.write("Categories appearing alone (no combinations):\n")
+        if overlaps['category_alone']:
+            for cat in sorted(overlaps['all_categories']):
+                count = overlaps['category_alone'].get(cat, 0)
+                if count > 0:
+                    f.write(f"  {cat:.<35} {count:>5}\n")
+        else:
+            f.write("  (None)\n")
+        f.write("\n")
+        
+        # 2-way overlaps
+        f.write("2-way category combinations (pairs):\n")
+        pair_list = sorted(overlaps['co_occurrence_pairs'].items(), key=lambda x: x[1], reverse=True)
+        for i, (pair, count) in enumerate(pair_list[:10], 1):
+            f.write(f"  {i:2d}. {pair:.<45} {count:>5}\n")
+        f.write(f"  ... ({len(overlaps['co_occurrence_pairs'])} total pairs)\n\n")
+        
+        # 3-way overlaps
+        f.write("3-way category combinations (triplets):\n")
+        if overlaps['co_occurrence_triplets']:
+            triplet_list = sorted(overlaps['co_occurrence_triplets'].items(), key=lambda x: x[1], reverse=True)
+            for i, (triplet, count) in enumerate(triplet_list[:10], 1):
+                f.write(f"  {i:2d}. {triplet:.<45} {count:>5}\n")
+            f.write(f"  ... ({len(overlaps['co_occurrence_triplets'])} total triplets)\n")
+        else:
+            f.write("  (None)\n")
+        f.write("\n")
+        
+        # 4-way overlaps
+        f.write("4-way category combinations (quads):\n")
+        if overlaps['co_occurrence_quads']:
+            quad_list = sorted(overlaps['co_occurrence_quads'].items(), key=lambda x: x[1], reverse=True)
+            for i, (quad, count) in enumerate(quad_list[:10], 1):
+                f.write(f"  {i:2d}. {quad:.<45} {count:>5}\n")
+            f.write(f"  ... ({len(overlaps['co_occurrence_quads'])} total quads)\n")
+        else:
+            f.write("  (None)\n")
+        f.write("\n")
+        
+        # Multi-category summary
+        from collections import Counter
+        cat_counts = Counter(overlaps['category_counts_per_operation'])
+        f.write("Operations by number of categories:\n")
+        for n_cats in sorted(cat_counts.keys()):
+            count = cat_counts[n_cats]
+            pct = (count / len(operations)) * 100
+            f.write(f"  {n_cats} category/categories: {count:>5} ({pct:>5.1f}%)\n")
+        f.write("\n")
+        
         # Top imports
         f.write("=" * 80 + "\n")
         f.write("TOP IMPORTS (in run_code operations)\n")
@@ -258,20 +309,12 @@ def generate_report(analysis_results, output_file):
             f.write(f"{imp:.<40} {count:>5}\n")
         f.write("\n")
         
-        # Top pandas methods
+        # Top methods
         f.write("=" * 80 + "\n")
-        f.write("TOP PANDAS METHODS\n")
+        f.write("TOP METHODS\n")
         f.write("=" * 80 + "\n")
-        for method, count in pandas_method_counts.most_common(20):
+        for method, count in method_counts.most_common(20):
             f.write(f"{method:.<40} {count:>5}\n")
-        f.write("\n")
-        
-        # Top os functions
-        f.write("=" * 80 + "\n")
-        f.write("TOP OS FUNCTIONS\n")
-        f.write("=" * 80 + "\n")
-        for func, count in os_function_counts.most_common(20):
-            f.write(f"{func:.<40} {count:>5}\n")
         f.write("\n")
         
         # Example codes for each major category
@@ -303,16 +346,76 @@ def generate_report(analysis_results, output_file):
         
         # Analyze code lengths
         code_lengths = [len(op['code']) for op in operations]
-        avg_length = sum(code_lengths) / len(code_lengths) if code_lengths else 0
-        f.write(f"Average code length: {avg_length:.0f} characters\n")
-        f.write(f"Shortest code: {min(code_lengths)} characters\n")
-        f.write(f"Longest code: {max(code_lengths)} characters\n\n")
+        if code_lengths:
+            avg_length = sum(code_lengths) / len(code_lengths)
+            f.write(f"Average code length: {avg_length:.0f} characters\n")
+            f.write(f"Shortest code: {min(code_lengths)} characters\n")
+            f.write(f"Longest code: {max(code_lengths)} characters\n\n")
+        else:
+            f.write("No operations found to analyze.\n\n")
         
         # Multi-category operations
-        multi_cat_ops = [op for op in operations if len(op['categories']) > 1]
-        f.write(f"Operations with multiple categories: {len(multi_cat_ops)} ({len(multi_cat_ops)/len(operations)*100:.1f}%)\n")
+        if operations:
+            multi_cat_ops = [op for op in operations if len(op['categories']) > 1]
+            f.write(f"Operations with multiple categories: {len(multi_cat_ops)} ({len(multi_cat_ops)/len(operations)*100:.1f}%)\n")
     
     print(f"\nReport saved to: {output_file}")
+
+
+def compute_category_overlaps(operations):
+    """
+    Compute co-occurrence matrix for categories including 2-way, 3-way, 4+ way overlaps,
+    and single category counts (no combinations).
+    
+    Args:
+        operations: List of operations with categories
+    
+    Returns:
+        Dictionary with overlap statistics
+    """
+    from itertools import combinations
+    
+    # Count how many categories each operation has
+    category_counts_per_op = [len(op['categories']) for op in operations]
+    
+    # Co-occurrence tracking for different overlap types
+    category_alone = Counter()  # Categories appearing alone (no combinations)
+    category_pairs = Counter()  # 2-way overlaps
+    category_triplets = Counter()  # 3-way overlaps
+    category_quads = Counter()  # 4-way overlaps
+    all_categories = set()
+    
+    for op in operations:
+        cats = op['categories']
+        all_categories.update(cats)
+        
+        # Count categories appearing alone (only 1 category in operation)
+        if len(cats) == 1:
+            category_alone[cats[0]] += 1
+        
+        # Count pairs of categories that appear together (2-way)
+        if len(cats) >= 2:
+            for cat1, cat2 in combinations(sorted(cats), 2):
+                category_pairs[(cat1, cat2)] += 1
+        
+        # Count triplets (3-way overlaps)
+        if len(cats) >= 3:
+            for cat1, cat2, cat3 in combinations(sorted(cats), 3):
+                category_triplets[(cat1, cat2, cat3)] += 1
+        
+        # Count quads and higher (4-way overlaps)
+        if len(cats) >= 4:
+            for cat1, cat2, cat3, cat4 in combinations(sorted(cats), 4):
+                category_quads[(cat1, cat2, cat3, cat4)] += 1
+    
+    return {
+        'category_counts_per_operation': category_counts_per_op,
+        'category_alone': {cat: count for cat, count in category_alone.items()},
+        'co_occurrence_pairs': {f"{cat1}|{cat2}": count for (cat1, cat2), count in category_pairs.items()},
+        'co_occurrence_triplets': {f"{cat1}|{cat2}|{cat3}": count for (cat1, cat2, cat3), count in category_triplets.items()},
+        'co_occurrence_quads': {f"{cat1}|{cat2}|{cat3}|{cat4}": count for (cat1, cat2, cat3, cat4), count in category_quads.items()},
+        'all_categories': sorted(all_categories)
+    }
 
 
 def save_all_codes_json(analysis_results, output_file):
@@ -333,20 +436,35 @@ def save_all_codes_json(analysis_results, output_file):
             'code': op['code'],
             'categories': op['categories'],
             'imports': op['key_operations']['imports'],
-            'pandas_methods': op['key_operations']['pandas_methods'],
-            'os_functions': op['key_operations']['os_functions'],
+            'methods': op['key_operations']['methods'],
             'print_count': op['key_operations']['print_statements'],
         })
     
+    # Compute category overlaps
+    overlaps = compute_category_overlaps(analysis_results['operations'])
+    
+    # Keep only essential overlap data for plots (remove triplets/quads not used by visualization)
+    essential_overlaps = {
+        'all_categories': overlaps['all_categories'],
+        'co_occurrence_pairs': overlaps['co_occurrence_pairs'],
+        'category_counts_per_operation': overlaps['category_counts_per_operation'],
+    }
+    
+    # Add overlap data to export
+    full_export = {
+        'operations': export_data,
+        'overlaps': essential_overlaps
+    }
+    
     with open(output_file, 'w', encoding='utf-8') as f:
-        json.dump(export_data, f, indent=2, ensure_ascii=False)
+        json.dump(full_export, f, indent=2, ensure_ascii=False)
     
     print(f"All codes saved to: {output_file}")
 
 
 def main(output_dir: Path):
     """Main function to run the analysis."""
-    output_dir.mkdir(exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
     
     print("="*60)
     print("ANALYZING RUN_CODE OPERATIONS")

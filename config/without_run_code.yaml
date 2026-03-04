@@ -1,0 +1,86 @@
+agent:
+  system_template: |
+    You are a Python-based machine learning Jupyter notebook debugging expert.
+    Your task is to fix cell CRASHES in a given machine learning Jupyter notebook.
+
+    IMPORTANT RULES:
+    1. The crashes appear to be ERRORs upon execution. Do not care if the cell does not CRASH but produces wrong output. Only focus on fixing CRASHES (ERRORs).
+    2. Before each action, briefly explain why you're doing it, then call the appropriate tool.
+    3. Call exactly ONE tool per step. Wait for its result before calling the next.
+    4. Do not comment out ALL the code in a cell to fix the crash. Try to keep the original intent of the code cell.
+    5. Focus on fixing code errors. Do not try to install or uninstall any libraries - the environment is pre-configured.
+    6. Do not use edit_cell to write diagnostic code, only write fix code with it.
+
+    EXAMPLE WORKFLOW:
+    Step 1: Call run_all to identify which cells crash.
+    Step 2: If errors are found, call get_cells (or get_cell) to read the problematic code.
+    Step 3: Fix the code with edit_cell.
+    Step 4: Verify the fix with run_cell or run_all.
+    Step 5: Repeat steps 2-4 until all cells run without errors.
+    Step 6: When done, call submit with a brief summary of the fixes.
+  instance_template: |
+    Run all the cells of the notebook in order and make sure no cell crashes, fix any errors you find.
+  action_observation_template: |
+    <returncode>{{output.returncode}}</returncode>
+    {% if output.output | length < 20000 -%}
+    <output>
+    {{ output.output -}}
+    </output>
+    {%- else -%}
+    <warning>
+    The output was too long and has been truncated.
+    Consider using get_cell to inspect specific cells.
+    </warning>
+    {%- set elided_chars = output.output | length - 20000 -%}
+    <output_head>
+    {{ output.output[:10000] }}
+    </output_head>
+    <elided_chars>
+    {{ elided_chars }} characters elided
+    </elided_chars>
+    <output_tail>
+    {{ output.output[-10000:] }}
+    </output_tail>
+    {%- endif -%}
+  format_error_template: |
+    {{ error }}
+    Please call exactly ONE tool per response. Available tools:
+    get_cell_count, get_cells, get_cell, edit_cell, run_cell, run_all, submit.
+  step_limit: 30
+  cost_limit: 2.
+  total_timeout: 3600  # Total timeout for entire agent run in seconds (0 to disable)
+environment:
+  docker_image_name: yarinamomo/kaggle_python_env # yarinamomo/junobench-simple
+  problem_mode: JunoBench_Buggy
+  target_nb_instance: matplotlib_4 # folder
+  source_path_parent: example/test_case/ # source_path is constructed as source_path_parent + target_nb_instance
+# server
+# source_path_parent: benchmark_agent/
+  run_all_instances: true # If true, runs all instances in source_path_parent; if false, only runs target_nb_instance
+  docker_mount_path: example/docker_mount/
+  docker_start_command: "jupyter server --allow-root --ServerApp.ip=0.0.0.0 --ServerApp.port=8888 --ServerApp.token='' --ServerApp.password='' --ServerApp.open_browser=False"
+# docker_start_command: "jupyter notebook --no-browser --ip='0.0.0.0' --port=8888 --notebook-dir=/app/container --allow-root --NotebookApp.token='' --NotebookApp.password='' --NotebookApp.disable_check_xsrf=True"
+# server
+# docker_start_command: "jupyter server --ServerApp.ip=0.0.0.0 --ServerApp.port=8888 --ServerApp.token='' --ServerApp.password='' --ServerApp.open_browser=False"
+  timeout: 1800 # seconds, for each command execution
+# Multiple models configuration - each model will be run on all instances
+models:
+  - model_name: glm-4.7-355b
+    cost_tracking: ignore_errors
+    model_kwargs:
+      custom_llm_provider: openai
+      api_base: https://aqueduct.ai.datalab.tuwien.ac.at/v1
+      # GLM 4.7 pricing: 2 RMB/1M input tokens, 8 RMB/1M output tokens (≈ 7.2 RMB = 1 USD)
+      input_cost_per_token: 0.00000027778    # 2 RMB / 1M tokens ≈ $0.278 per 1M tokens
+      output_cost_per_token: 0.00000111111  # 8 RMB / 1M tokens ≈ $1.111 per 1M tokens
+  # - model_name: gpt-4o-mini
+  # - model_name: claude-3-5-sonnet-20241022
+  #   cost_tracking: ignore_errors
+  #   model_kwargs: {}
+
+misc:
+  run_count: 3  # Number of times to run each instance with each model
+  if_local_key: true # if use .env to override api_key (for glm-4.7-355b)
+  skip_existing: true  # If true, skip instances where trajectory and summary files already exist
+  enable_summary_log: true # Toggle to enable/disable summary log generation
+  trajectory_log_path: ./trajectories_without_run_code # Path for trajectory log output summary log output
