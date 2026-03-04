@@ -69,38 +69,42 @@ def apply_cli_overrides(
     return config
 
 
-def get_models_config(config: dict[str, Any], model_name_override: str | None = None) -> list[dict[str, Any]]:
+def set_model_config(config: dict[str, Any], model_name: str | None = None) -> str | None:
     """
-    Get models configuration from config file.
+    Select a model from the config and set it as config['model'].
     
     Args:
-        config: Configuration dictionary
-        model_name_override: CLI override for model name (only works with single model)
+        config: Configuration dictionary (modified in place)
+        model_name: Model name to select. If None, the first model is used.
         
     Returns:
-        List of model configurations
+        The selected model name, or None if selection failed
     """
     models_config = config.get("models", [])
     
     # If no models list, fall back to legacy single model config
     if not models_config:
         legacy_model = config.get("model", {})
-        if model_name_override is not None:
-            legacy_model["model_name"] = model_name_override
+        if not legacy_model:
+            logger.error("No model configuration found in config")
+            return None
         models_config = [legacy_model]
         logger.info("Using legacy single model configuration")
-    else:
-        # Override model_name if provided via CLI (only for single model)
-        if model_name_override is not None and len(models_config) == 1:
-            models_config[0]["model_name"] = model_name_override
-            logger.info(f"Model name overridden to: {model_name_override}")
-        elif model_name_override is not None:
-            logger.warning(
-                f"Model name override '{model_name_override}' ignored: "
-                f"multiple models configured ({len(models_config)} models)"
-            )
     
-    return models_config
+    if model_name:
+        matching = [m for m in models_config if m.get("model_name") == model_name]
+        if not matching:
+            available = [m.get("model_name", "unknown") for m in models_config]
+            logger.error(f"Model '{model_name}' not found in config. Available: {available}")
+            return None
+        model_config = matching[0]
+    else:
+        model_config = models_config[0]
+    
+    config["model"] = model_config
+    selected_name = model_config.get("model_name", None)
+    logger.info(f"Using model: {selected_name}")
+    return selected_name
 
 
 def get_run_count(config: dict[str, Any]) -> int:

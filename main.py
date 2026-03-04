@@ -1,27 +1,38 @@
+import json
 import os
 import time
-import traceback
-import json
 from pathlib import Path
 from typing import Any, Optional
 
 import typer
-from src.notebook_environment import NotebookEnvironment, NotebookEnvironmentConfig
-from src.CustomToolLitellmModel import CustomToolLitellmModel
 from src.utils.log import logger
-from src.ui_agent import UiAgent
 from src.utils.ui import format_eta, progress_live, set_ui_enabled
 from src.utils.yaml_parser import (
     load_config,
     load_api_keys,
-    get_models_config,
+    set_model_config,
     get_run_count,
     get_instances,
     get_trajectories_dir
 )
+from src.run_agent import run_single_instance
 
 app = typer.Typer(rich_markup_mode="rich")
 DEFAULT_CONFIG = Path(os.getenv("NOTEBOOK_AGENT_CONFIG_PATH", "./config/default.yaml"))
+
+
+def read_api_keys(api_keys_file: Path) -> list[str]:
+    """Read API keys from a text file, one per line.
+    
+    Args:
+        api_keys_file: Path to file containing API keys (one per line)
+        
+    Returns:
+        List of API key strings
+    """
+    with open(api_keys_file, 'r') as f:
+        keys = [line.strip() for line in f if line.strip() and not line.strip().startswith('#')]
+    return keys
 
 
 def should_skip_instance(summary_path: Path) -> bool:
@@ -91,86 +102,47 @@ def build_runs_to_execute(
     
     return runs_to_execute
 
-
-def run_single_instance(
-    model_config: dict,
-    instance_name: str,
-    run_number: int,
-    config: dict,
-    trajectories_dir: Path
-) -> tuple[str, Optional[str]]:
-    """Run a single instance with a specific model and run number.
-    
-    Returns:
-        tuple: (exit_status, submission)
-    """
-    
-    model_name = model_config.get("model_name", "unknown")
-    logger.info(f"\n{'='*80}")
-    logger.info(f"Running: Model={model_name}, Instance={instance_name}, Run={run_number}")
-    logger.info(f"{'='*80}\n")
-    
-    # Create model instance
-    model = CustomToolLitellmModel(**model_config)
-    
-    # Setup environment
-    env_config = config.get("environment", {})
-    source_path_parent = Path(env_config.get("source_path_parent", "example/JunoBench/"))
-    
-    # Create structured log paths: trajectories_dir/model_name/run_X/instance_name...
-    run_output_dir = trajectories_dir / model_name / f"run_{run_number}"
-    run_output_dir.mkdir(parents=True, exist_ok=True)
-    
-    misc_config = config.get("misc", {})
-
-    instance_traj_path = run_output_dir / f"{instance_name}.traj.json"
-    instance_summary_path = run_output_dir / f"{instance_name}_summary.json" if misc_config.get("enable_summary_log", False) else None
-    
-    # Create environment
-    env = NotebookEnvironment(
-        source_path=str(source_path_parent / instance_name),
-        output_dir=str(run_output_dir),
-        **env_config
-    )
-
-    # Create and run agent
-    agent = UiAgent(model, env, **config.get("agent", {}))
-    exit_status, submission = "", None
-
-    try:
-        exit_info = agent.run("")  # type: ignore[arg-type]
-        exit_status = exit_info.get("exit_status", "")
-        submission = exit_info.get("submission", "")
-    except Exception as e:
-        exit_status, submission = type(e).__name__, str(e)
-        logger.error(f"Error running agent: {e}", exc_info=True)
-    finally:
-        # Save trajectory and summary
-        agent.save(instance_traj_path)
-        agent.save_summary(instance_summary_path)
-        logger.info(f"Saved trajectory to: {instance_traj_path}")
-        
-        # Close environment
-        env.close()
-        import time
-        time.sleep(2)  # Ensure clean shutdown
-    
-    return exit_status, submission
-
 # fmt: off
 @app.command()
 def main(
     config_spec: Path = typer.Option(DEFAULT_CONFIG, "-c", "--config", help="Path to config file"),
+    model_name: Optional[str] = typer.Option(None, "-m", "--model", help="Model name to use (defaults to first model in config)"),
+    enable_threading: bool = typer.Option(False, "--threads/--no-threads", help="Enable multi-threaded execution"),
+    api_keys_file: Optional[Path] = typer.Option(None, "--api-keys", help="Path to file with API keys (one per line, required for threading)"),
 ) -> Any:
 
     logger.info("Starting notebook agent....")
     
     # Load and parse configuration
     config = load_config(config_spec)
-    load_api_keys(config)
     
+    # Handle threading setup
+    api_keys = []
+    if enable_threading:
+        if not api_keys_file:
+            logger.error("--api-keys file is required when threading is enabled")
+            return None
+        if not api_keys_file.exists():
+            logger.error(f"API keys file not found: {api_keys_file}")
+            return None
+        
+        api_keys = read_api_keys(api_keys_file)
+        logger.info(f"Threading enabled with {len(api_keys)} worker threads")
+        
+        # Disable UI for agent execution (worker threads)
+        # But progress bar in main thread will still work
+        set_ui_enabled(False)
+        logger.info("Agent UI disabled for threaded execution (progress bar will still display)")
+    else:
+        load_api_keys(config)
+
+
     # Get configuration parameters
-    models_config = get_models_config(config)
+    model_name = set_model_config(config, model_name)
+    if not model_name:
+        logger.error("No valid model configuration found. Exiting.")
+        return None
+    
     total_run_count = get_run_count(config)
     instances = get_instances(config)
     trajectories_dir = get_trajectories_dir(config)
@@ -180,58 +152,52 @@ def main(
         logger.error("No instances to run")
         return None
     
-    # Main execution loops: models -> instances -> runs
-    for model_config in models_config:
-        model_name_str = model_config.get("model_name", "unknown")
-        logger.info(f"\n{'#'*80}")
-        logger.info(f"# Starting runs for model: {model_name_str}")
-        logger.info(f"{'#'*80}\n")
-        
-        # Build list of (instance, run) pairs to execute
-        runs_to_execute = build_runs_to_execute(
-            instances=instances,
-            total_run_count=total_run_count,
-            model_name=model_name_str,
-            trajectories_dir=trajectories_dir,
-            config=config
-        )
-        
-        # Calculate total iterations for progress bar
-        total_iterations = len(runs_to_execute)
-        
-        if total_iterations == 0:
-            logger.info(f"No runs to execute for model {model_name_str} - all already completed")
-            continue
+    # Build list of (instance, run) pairs to execute
+    runs_to_execute = build_runs_to_execute(
+        instances=instances,
+        total_run_count=total_run_count,
+        model_name=model_name,
+        trajectories_dir=trajectories_dir,
+        config=config
+    )
+    
+    # Calculate total iterations for progress bar
+    total_iterations = len(runs_to_execute)
+    
+    if total_iterations == 0:
+        logger.info(f"No runs to execute for model {model_name} - all already completed")
+        return None
 
-        with progress_live(total_iterations, f"Model: {model_name_str}") as (progress, task_id):
+    with progress_live(total_iterations, f"Model: {model_name}") as (progress, task_id):
 
-            start_time = time.monotonic()
-            completed_count = 0
+        start_time = time.monotonic()
+        completed_count = 0
 
-            for instance_name, run_num in runs_to_execute:
-                try:
-                    run_single_instance(
-                        model_config=model_config,
-                        instance_name=instance_name,
-                        run_number=run_num,
-                        config=config,
-                        trajectories_dir=trajectories_dir
-                    )
-                    
-                except Exception as e:
-                    logger.error(f"Failed to run model={model_name_str}, instance={instance_name}, run={run_num}: {e}")
-                    logger.exception(e)
-                finally:
-                    completed_count += 1
-                    elapsed = time.monotonic() - start_time
-                    avg_per_run = elapsed / completed_count
-                    remaining = avg_per_run * (total_iterations - completed_count)
-                    progress.update(
-                        task_id,
-                        advance=1,
-                        description=f"Model: {model_name_str} | {instance_name} | run {run_num}",
-                        eta=format_eta(remaining),
-                    )
+        for instance_name, run_num in runs_to_execute:
+            try:
+                run_output_dir = trajectories_dir / model_name / f"run_{run_num}"
+                run_output_dir.mkdir(parents=True, exist_ok=True)
+
+                run_single_instance(
+                    instance_name=instance_name,
+                    config=config,
+                    run_output_dir=run_output_dir
+                )
+                
+            except Exception as e:
+                logger.error(f"Failed to run model={model_name}, instance={instance_name}, run={run_num}: {e}")
+                logger.exception(e)
+            finally:
+                completed_count += 1
+                elapsed = time.monotonic() - start_time
+                avg_per_run = elapsed / completed_count
+                remaining = avg_per_run * (total_iterations - completed_count)
+                progress.update(
+                    task_id,
+                    advance=1,
+                    description=f"Model: {model_name} | {instance_name} | run {run_num}",
+                    eta=format_eta(remaining),
+                )
 
 if __name__ == "__main__":
     app()
