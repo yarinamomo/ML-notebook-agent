@@ -44,7 +44,7 @@ def plot_category_distribution(input_dir, output_dir):
         percentages.append((count / total_ops) * 100)
     
     # Create figure with two subplots
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6), width_ratios=[0.6, 0.4])
     
     # Plot 1: Horizontal bar chart
     colors = plt.cm.viridis(np.linspace(0.3, 0.9, len(categories)))
@@ -58,7 +58,7 @@ def plot_category_distribution(input_dir, output_dir):
                 ha='left', va='center', fontsize=9)
     
     ax1.set_xlabel('Number of Operations', fontsize=12, fontweight='bold')
-    ax1.set_title('run_code Operation Categories Distribution', fontsize=14, fontweight='bold')
+    ax1.set_title('Tool "run_code" Categories Distribution', fontsize=14, fontweight='bold')
     ax1.grid(axis='x', alpha=0.3, linestyle='--')
     ax1.set_xlim(0, max(counts) * 1.15)
     
@@ -70,8 +70,8 @@ def plot_category_distribution(input_dir, output_dir):
     
     overlaps = data['overlaps']
     
-    # Remove 'other' from categories list
-    categories = [cat for cat in overlaps['all_categories'] if cat != 'other']
+    # Remove 'other' and 'print_output' from categories list
+    categories = [cat for cat in overlaps['all_categories'] if cat != 'other' and cat != 'print_output']
     n_cats = len(categories)
     
     # Build co-occurrence matrix
@@ -89,8 +89,8 @@ def plot_category_distribution(input_dir, output_dir):
     # Off-diagonal: co-occurrence counts
     for pair_str, count in overlaps['co_occurrence_pairs'].items():
         cat1, cat2 = pair_str.split('|')
-        # Skip pairs involving 'other' category
-        if cat1 == 'other' or cat2 == 'other':
+        # Skip pairs involving 'other' or 'print_output' categories
+        if cat1 == 'other' or cat2 == 'other' or cat1 == 'print_output' or cat2 == 'print_output':
             continue
         i = categories.index(cat1)
         j = categories.index(cat2)
@@ -116,7 +116,7 @@ def plot_category_distribution(input_dir, output_dir):
                 ax2.text(j, i, str(count), ha='center', va='center', 
                         color=color, fontsize=9, fontweight='bold')
     
-    ax2.set_title('Category Co-occurrence Matrix\n(diagonal = total count, off-diagonal = overlap count)', 
+    ax2.set_title('Runinfo Category Co-occurrence Matrix\n(diagonal = total count, off-diagonal = overlap count)', 
                   fontsize=12, fontweight='bold')
     
     # Add colorbar
