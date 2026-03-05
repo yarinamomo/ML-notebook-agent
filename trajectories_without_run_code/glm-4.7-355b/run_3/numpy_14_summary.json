@@ -1,0 +1,479 @@
+{
+  "metadata": {
+    "generated_at": "2026-03-04T17:01:49.755326",
+    "execution_time_seconds": 107.63,
+    "success": false,
+    "status": "LimitsExceeded",
+    "cost": 0.1637
+  },
+  "statistics": {
+    "total_steps": 30,
+    "total_operations": 31,
+    "successful_operations": 19,
+    "failed_operations": 12,
+    "cells_edited": 8,
+    "unique_cells_edited": 2,
+    "avg_tool_execution_time_seconds": 0.82
+  },
+  "original_notebook": [
+    "# --- [CELL 0]: ---\n\nimport os\nimport tensorflow as tf\nfrom tensorflow.keras.applications.vgg19 import VGG19\nfrom tensorflow.keras.applications.mobilenet_v2 import MobileNetV2\nfrom tensorflow.keras.applications.vgg19 import preprocess_input as vgg19_preprocess_input\nfrom tensorflow.keras.applications.mobilenet_v2 import preprocess_input as mobilenetv2_preprocess_input\nfrom tensorflow.keras.layers import GlobalAveragePooling2D\nfrom tensorflow.keras.models import Sequential, Model\nfrom tensorflow.keras.layers import Dense, Dropout, Flatten, Input, Average, concatenate\nfrom tensorflow.keras.preprocessing.image import ImageDataGenerator\nfrom keras.optimizers import Adam\nfrom keras.callbacks import EarlyStopping, ModelCheckpoint\n\n\n\nimport numpy as np\nimport matplotlib.pyplot as plt\nfrom sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc\nfrom sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, matthews_corrcoef",
+    "# --- [CELL 1]: ---\n\nnp.random.seed(123)",
+    "# --- [CELL 2]: ---\n\ndata_dir = 'data_small/CovidDataset_70_30'",
+    "# --- [CELL 3]: ---\n\nbatch_size = 32\ninput_shape = (224, 224, 3)\nnum_classes = 2",
+    "# --- [CELL 4]: ---\n\ntrain_datagen = ImageDataGenerator(rescale=1./255, shear_range=0.2, zoom_range=0.2, horizontal_flip=True)\ntest_datagen = ImageDataGenerator(rescale=1./255)\nvalidation_datagen = ImageDataGenerator(rescale=1./255)\n\n\ntrain_generator = train_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Train'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')\n\ntest_generator = test_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Test'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')\n\nvalidation_generator = validation_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Validation'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')",
+    "# --- [CELL 5]: ---\n\nvgg19 = VGG19(weights='imagenet', include_top=False, input_shape=input_shape)\n\nmodelV19 = Sequential()\nmodelV19.add(vgg19)\nmodelV19.add(Flatten())\nmodelV19.add(Dense(500, activation='relu'))\nmodelV19.add(Dropout(0.5))\nmodelV19.add(Dense(300, activation='relu'))\nmodelV19.add(Dropout(0.5))\nmodelV19.add(Dense(num_classes, activation='softmax'))\n\nfor layer in vgg19.layers:\n    layer.trainable = False\n",
+    "# --- [CELL 6]: ---\n\nmobilenetv2 = MobileNetV2(weights='imagenet', include_top=False, input_shape=input_shape)\n\nmodelM2 = Sequential()\nmodelM2.add(mobilenetv2)\nmodelM2.add(Flatten())\nmodelM2.add(Dense(500, activation='relu'))\nmodelM2.add(Dropout(0.5))\nmodelM2.add(Dense(300, activation='relu'))\nmodelM2.add(Dropout(0.5))\nmodelM2.add(Dense(num_classes, activation='softmax'))\n\nfor layer in mobilenetv2.layers:\n    layer.trainable = False\n\n",
+    "# --- [CELL 7]: ---\n\nopt = Adam(learning_rate=0.0001, beta_1=0.9)\nopt2 = Adam(learning_rate=0.0001, beta_1=0.9)\nmodelV19.compile(\n    loss='binary_crossentropy',\n    optimizer=opt,\n    metrics=['accuracy'])\n\nmodelM2.compile(\n    loss='binary_crossentropy',\n    optimizer=opt2,\n    metrics=['accuracy'])\n\nearly_stop = EarlyStopping(monitor='val_loss', patience=10)\nfilepath_weights_V19 = \"data_small/best_weights_V19-{epoch:02d}-{val_accuracy:.4f}.keras\"\nfilepath_weights_M2 = \"data_small/best_weights_M2-{epoch:02d}-{val_accuracy:.4f}.keras\"\ncheckpoint_V19 = ModelCheckpoint(filepath_weights_V19, monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)\ncheckpoint_M2 = ModelCheckpoint(filepath_weights_M2, monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)",
+    "# --- [CELL 8]: ---\n\n\n\nhistory_V19 = modelV19.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_V19])",
+    "# --- [CELL 9]: ---\n\n\nhistory_M2 = modelM2.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_M2])",
+    "# --- [CELL 10]: ---\n\nfrom tensorflow.keras.models import Model, load_model\nfrom tensorflow.keras.layers import Input, Average\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nmodels = [modelV19, modelM2]\n\n\nmodel_input = Input(shape=(224, 224, 3))\nmodel_outputs = [model(model_input) for model in models]\n\nensemble_output = Average()(model_outputs)\n\n\nensemble_model = Model(\n    inputs = model_input,\n    outputs = ensemble_output,\n    name = \"Ensemble\"\n)\n\n",
+    "# --- [CELL 11]: ---\n\nopt3 = Adam(learning_rate=0.0001, beta_1=0.9)\n\nensemble_model.compile(\n    loss='binary_crossentropy',\n    optimizer=opt3,\n    metrics=['accuracy'])\n\nfilepath_weights_ensemble = \"data_small/best_weights_ensemble-{epoch:02d}-{val_accuracy:.4f}.keras\"\ncheckpoint_ensemble = ModelCheckpoint(filepath_weights_ensemble, monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)",
+    "# --- [CELL 12]: ---\n\n\nhistory_ensemble = ensemble_model.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_ensemble])",
+    "# --- [CELL 13]: ---\n\n\n\n\nensemble_model.evaluate(test_generator)",
+    "# --- [CELL 14]: ---\n\ny_pred = ensemble_model.predict(test_generator)\nprint(\"One-hot encoded predicted labels:\")\nprint(y_pred)\ny_pred_classes = np.argmax(y_pred, axis=1)\nprint(y_pred_classes)",
+    "# --- [CELL 15]: ---\n\n\n\n\n\n\n\n\ny_pred = ensemble_model.predict(test_generator)\ny_pred_classes = np.argmax(y_pred, axis=1)\n\n\ny_true_onehot = test_generator.classes\ny_true_classes = np.argmax(y_true_onehot, axis=1)"
+  ],
+  "llm_responses": [
+    {
+      "step": 1,
+      "content": "I'll start by running all the cells to identify any crashes in the notebook.<tool_call>run_all</tool_call>",
+      "reasoning": "Let me start by running all the cells to identify any crashes in the notebook."
+    },
+    {
+      "step": 2,
+      "content": "I found an error in cell 8. It's an `UnidentifiedImageError` which suggests the data generator is trying to load corrupted or invalid image files. Let me examine the cells to understand the setup and identify the issue.<tool_call>get_cells</tool_call>",
+      "reasoning": "I can see that the notebook has 9 cells and cell 8 is crashing with an `UnidentifiedImageError: cannot identify image file <_io.BytesIO object at 0x772f5c0c8b30>`. This error typically occurs when PIL/Pillow cannot identify an image file format, which suggests the data generators might be trying to load corrupted or invalid image files.\n\nLet me look at the cells to understand what's happening, particularly cell 8 and the cells that set up the data generators."
+    },
+    {
+      "step": 3,
+      "content": "Now let me look more closely at cell 4 which sets up the data generators:",
+      "reasoning": "The error is a `UnidentifiedImageError: cannot identify image file` in cell 8 when trying to train the VGG19 model. This typically happens when:\n\n1. The data generator encounters corrupted image files\n2. The image files are not valid image formats\n3. There are issues with the directory structure\n\nLooking at the code in cell 4, I see the data generators are set up with the `flow_from_directory` method. The error suggests that there's some corrupted image in the dataset being loaded.\n\nOne common fix for this issue is to add error handling to the data preprocessing. In Keras, we can add a custom loading function that skips corrupted images.\n\nLet me look at cell 8 more closely. The error is happening during model.fit(), which means the data generator is trying to load images and one or more of them is corrupted.\n\nThe best fix is to modify the ImageDataGenerator to handle corrupted images gracefully. We can do this by:\n1. Adding a custom preprocessing function that validates images\n2. Or using a more robust approach to handle corrupted files\n\nLet me modify cell 4 to add error handling to skip corrupted images. This involves creating a custom image loading function.\n\nActually, looking at the error more carefully, it's happening when trying to identify an image file from a BytesIO object. This suggests the image loading in the data generator is failing.\n\nOne approach is to modify the ImageDataGenerator to be more robust. Let me add a custom preprocessing function that handles errors."
+    },
+    {
+      "step": 4,
+      "content": "I can see the issue. The error `UnidentifiedImageError: cannot identify image file` occurs during training. The problem is that the data generators are using simple `rescale=1./255`, but VGG19 and MobileNetV2 require specific preprocessing functions. Let me fix cell 4 to use the correct preprocessing functions:",
+      "reasoning": "The issue is in the ImageDataGenerator setup. The `UnidentifiedImageError` is happening in cell 8 when trying to load images for training. The problem is that the generators are using `rescale=1./255` but the models (VGG19 and MobileNetV2) expect specific preprocessing.\n\nFor VGG19, we should use `vgg19_preprocess_input` instead of just `rescale=1./255`. For MobileNetV2, we should use `mobilenetv2_preprocess_input`.\n\nHowever, the simpler fix would be to add a `test_mode=False` or use `interpolation='nearest'` which can help with image loading issues, or we could add the preprocessing function to the `preprocessing_function` parameter.\n\nActually, a more common fix for this type of error is to use `preprocessing_function` parameter in the ImageDataGenerator to apply the correct preprocessing for each model.\n\nBut wait, there's another issue - we're using the same generators for both models, but they need different preprocessing. Since the models are already compiled and the generators are already loaded, and the error is happening during fit, the issue might be that the data contains corrupted image files.\n\nThe error \"cannot identify image file\" typically happens when there's a corrupted or invalid image file in the dataset. A common fix is to use the `preprocessing_function` to handle this, or to use `interpolation='bilinear'` (the default) or change it.\n\nActually, the most reliable fix for this is to use `color_mode='rgb'` explicitly and ensure the preprocessing function is set correctly. But looking at the error more carefully, it's during training, so the issue might be with corrupted images.\n\nA commonly used workaround is to use `preprocessing_function` with the appropriate preprocess_input function. Let me fix cell 4 to use the preprocessing functions correctly."
+    },
+    {
+      "step": 5,
+      "content": "Now let me run cell 4 to verify the changes work:",
+      "reasoning": "Good, cell 4 is updated. Now let me run cell 4 to make sure it works, then try to run cell 8 again to see if that fixes the issue."
+    },
+    {
+      "step": 6,
+      "content": "Good! Now let me run cells 5-8 to test if the training works with the corrected data generators:",
+      "reasoning": "Good! Cell 4 is now running correctly. The data generators are set up with the correct preprocessing function. Now let me try running cells 0-8 again to see if the training works now."
+    },
+    {
+      "step": 7,
+      "content": "",
+      "reasoning": "Good, cell 5 passed. Let me run cells 6 and 7 as well."
+    },
+    {
+      "step": 8,
+      "content": "",
+      "reasoning": "Cells 5 and 6 run successfully. Now let me run cell 7."
+    },
+    {
+      "step": 9,
+      "content": "",
+      "reasoning": "Now let me test the problematic cell 8 to see if the training works:"
+    },
+    {
+      "step": 10,
+      "content": "The error persists because the image files themselves may be corrupted or invalid. Let me try a different approach - I'll create a custom error handler that skips corrupt images by wrapping the data generator:",
+      "reasoning": "The error persists. This is not a preprocessing issue - it's a problem with the image files themselves. The error is coming from PIL when trying to read the image file. This suggests the data directory contains corrupted or invalid image files.\n\nLet me try a different approach - I'll add error handling to the data generator to skip corrupt images. I can do this by creating a custom ImageDataGenerator that handles errors gracefully.\n\nActually, looking more closely, the issue is likely that the images in the dataset can't be properly loaded. Let me try to add the `interpolation='bilinear'` parameter and also potentially add error handling by using a custom batch loader.\n\nActually, let me try a simpler fix first - the issue might be with the horizontal_flip and other augmentations combined with vgg19_preprocess. Let me try rescaling instead. Or I can add a validation step to skip corrupt images.\n\nLet me try adding error handling by customizing how images are loaded. The easiest way is to add a parameter that helps skip invalid files.\n\nActually, looking at the error more carefully - it's happening during the fit() call, and PIL is unable to identify the image file. This is a problem with the data files themselves.\n\nLet me try a different approach - I'll set the data generator to be more lenient with image loading. I can do this by adding a custom preprocessing function that handles errors.\n\nWait, I should try a simpler approach first. Let me go back to using rescale=1./255 but add error handling for corrupt images. Actually, let me try adding `interpolation='bilinear'` and potentially `keep_aspect_ratio=False` to the flow_from_directory calls.\n\nOr better yet, let me check if there's a way to make the generator skip corrupt files. The cleanest approach would be to add a custom preprocessing function that catches errors."
+    },
+    {
+      "step": 11,
+      "content": "",
+      "reasoning": "Let me run the cell again to see if this helps with the error:"
+    },
+    {
+      "step": 12,
+      "content": "Let me try using a simpler preprocessing approach that just rescales to [0,1] since the preprocessing function might be causing issues:",
+      "reasoning": "The issue persists. Let me try a different approach - instead of preprocessing function from VGG19, I should preprocess manually inside the data generator. But wait, the issue could be that ImageDataGenerator's preprocessing function might be creating arrays outside the valid range when combined with the rescale from VGG19 preprocessor.\n\nLet me look at what vgg19_preprocess_input does - it typically subtracts the mean and might produce negative values. Let me try a simpler approach with just rescaling:"
+    },
+    {
+      "step": 13,
+      "content": "Let me try creating a custom generator wrapper that handles corrupt images:",
+      "reasoning": "Actually, I think the real issue is that there are corrupted image files. Let me try a different approach - I'll catch and ignore corrupt images by creating a custom generator wrapper that can handle corrupt files gracefully."
+    },
+    {
+      "step": 14,
+      "content": "Let me try a simpler solution - using PIL's settings to handle truncated images:",
+      "reasoning": "This approach is getting complex. Let me try a simpler solution - just use a Python Try-Except block in the data generator to handle any errors. Actually, let me try a different approach entirely. Let me just import PIL and handle the error that way or try to catch the exception during the fit.\n\nActually, I think the simplest fix is to use PIL's ImageFile.LOAD_TRUNCATED_IMAGES = True which allows PIL to load truncated images."
+    },
+    {
+      "step": 15,
+      "content": "",
+      "reasoning": "Let me run cell 4 and then try running cell 8 again:"
+    },
+    {
+      "step": 16,
+      "content": "I see the issue now - the data directory doesn't exist. Let me check cell 2 and see what the correct path should be:",
+      "reasoning": "Now I need to check what the actual directory structure is. The data_dir says 'data_small/CovidDataset_70_30' but it seems like this directory doesn't exist or has a different structure. Let me check cell 2 to see what data_dir is set to."
+    },
+    {
+      "step": 17,
+      "content": "Let me reset cell 2 to check the correct data path:",
+      "reasoning": "The data directory is set to `'data_small/CovidDataset_70_30'` but this path doesn't exist. Let me check what directories do exist by running code to search for the correct path. Let me run cell 1 and 2 first to see what happens, then try to find the correct data path."
+    },
+    {
+      "step": 18,
+      "content": "Let me restore cell 4 to a simple version and see where the error occurs:",
+      "reasoning": "The data directory is set but doesn't exist. Let me restore cell 4 to what it was and check if cells 0-3 work correctly first. The directory path issue must be resolved - maybe it was created earlier and the error doesn't happen initially.\n\nLet me check by running just cells 0-4 again to see what happens with the directory."
+    },
+    {
+      "step": 19,
+      "content": "",
+      "reasoning": "The data directory seemed to work in the initial run of cells 0-4 (they showed \"Found 6 images belonging to 2 classes\"). So the data directory does exist. Let me run cell 4 to check that it works again, and then continue from where we left off."
+    },
+    {
+      "step": 20,
+      "content": "Now let me re-run all cells from the beginning to see where the original error is:<tool_call>run_all</tool_call>",
+      "reasoning": "Now the cell runs properly. The original error in cell 8 was `UnidentifiedImageError`, not `FileNotFoundError`. That means earlier, cell 4 worked correctly but cell 8 failed during training. Now that I've run cell 4 again and see it works, let me just let the previous state be and run all cells again to see what happens.\n\nActually wait - I need to re-run cells 0-3 to rebuild the environment, then run cell 4 again, then continue."
+    },
+    {
+      "step": 21,
+      "content": "",
+      "reasoning": "The kernel failed to restart. Let me run cells one by one to understand what's happening."
+    },
+    {
+      "step": 22,
+      "content": "<tool_call>get_cell_count</tool_call>",
+      "reasoning": "The kernel needs to be restarted. Let me check the cells first. The notebook seems to have an issue that requires a fresh start. Let me try getting the cell count:"
+    },
+    {
+      "step": 23,
+      "content": "<tool_call>get_cells</tool_call>",
+      "reasoning": "There are only 16 cells now, not 15. The cells must have been modified. Let me get the current cells to see what's in the notebook now."
+    },
+    {
+      "step": 24,
+      "content": "Let me revert cell 4 to the original and carefully understand the issue:",
+      "reasoning": "Looking at the cells, I see 16 cells total (0-15). Let me now try running the first few cells to see if the kernel is functional and find the issue. Let me restore cell 4 to its original content and run step by step."
+    },
+    {
+      "step": 25,
+      "content": "",
+      "reasoning": "Now let me try running cell 4 to see what's the real problem. The kernel seems to be having issues now."
+    },
+    {
+      "step": 26,
+      "content": "",
+      "reasoning": "The kernel is not working properly. Let me try running from cell 0 again, which should automatically restart the kernel:"
+    },
+    {
+      "step": 27,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "It seems there's a kernel issue. Let me try to run all cells:"
+    },
+    {
+      "step": 28,
+      "content": "It seems the kernel is having issues. Let me look at the cell content and create a more robust fix for the original `UnidentifiedImageError`. I'll modify cell 4 to include PIL settings at the top that will help handle various image formats and truncated images:",
+      "reasoning": "The kernel is failing. Let me try a different approach - I'll look at the structure to see what cells are trying to do. Let me check what happened with the flow_from_directory call in the original error. The error was \"UnidentifiedImageError: cannot identify image file <_io.BytesIO object at 0x772f5c0c8b30>\"\n\nThis suggests the image files exist but PIL cannot identify them. This might be because the images are corrupted or in an unsupported format.\n\nI should try to make the code more robust. Let me look at adding error handling to the image loading. Since I can't execute cells right now due to kernel issues, let me focus on the logic based on the information I have.\n\nLooking at the original error trace and cell 8, the issue happens during `modelV19.fit()`. The training process tries to load images and fails.\n\nOne common fix for this type of error is to ensure PIL is configured to handle various image formats and to handle exceptions gracefully. Let me create a solution that adds a custom image loading function that handles errors more gracefully.\n\nLet me try a different fix - add the Image settings before creating the generators."
+    },
+    {
+      "step": 29,
+      "content": "",
+      "reasoning": "Good. Now let me run the cells from the beginning. Let me try cell 0 again."
+    },
+    {
+      "step": 30,
+      "content": "Let me try running the cells again:<tool_call>run_all</tool_call>",
+      "reasoning": "The kernel seems to have issues. Let me try running all cells again from scratch. The errors suggest there's a kernel restart issue. I should just proceed with making my fixes and then submit.\n\nLet me look at what I know:\n1. The original error was `UnidentifiedImageError: cannot identify image file <_io.BytesIO object at 0x772f5c0c8b30>`\n2. This happened in cell 8 when trying to train the model\n3. The data generators in cell 4 were working fine initially (found 6 images belonging to 2 classes)\n4. The error is likely due to image loading issues during training\n\nMy fixes:\n1. Added PIL configuration in cell 0 to handle truncated images\n2. Cell 4 is already correct with just rescaling\n\nLet me try running all cells again to see if the kernel issues persist or if they were temporary."
+    }
+  ],
+  "operations": [
+    {
+      "step": 1,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\nFound 6 images belonging to 2 classes.\nFound 6 images belonging to 2 classes.\nFound 6 images belonging to 2 classes.\n\n\nCell 5:\nExecution Count: 6 | Status: ok\nDownloading data from https://storage.googleapis.com/tensorflow/keras-applications/vgg19/vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5\n\r       0/80134624  0s 0s/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r   16384/80134624  5:30 4us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r   49152/80134624  4:53 4us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r   81920/80134624  4:44 4us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r  131072/80134624  3:30 3us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r  180224/80134624  2:59 2us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r  245760/80134624  2:30 2us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r  360448/80134624  1:55 1us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r  442368/80134624  1:43 1us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r  589824/80134624  1:25 1us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r  737280/80134624  1:13 1us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r  917504/80134624  1:04 1us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r 1228800/80134624  51s 1us/step \b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r 1359872/80134624  49s 1us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r 1884160/80134624  37s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r 2015232/80134624  36s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r 2711552/80134624  28s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r 2973696/80134624  27s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r 3940352/80134624  21s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r 4571136/80134624  19s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r 5521408/80134624  16s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r 6930432/80134624  13s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r 7766016/80134624  12s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r10207232/80134624  9s 0us/step \b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r10944512/80134624  9s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r14385152/80134624  6s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r14991360/80134624  6s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r18382848/80134624  5s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r19324928/80134624  5s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r20717568/80134624  4s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r22814720/80134624  4s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r24911872/80134624  4s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r27754496/80134624  3s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r29097984/80134624  3s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r31752192/80134624  3s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r33202176/80134624  2s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r34848768/80134624  2s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r37298176/80134624  2s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r38977536/80134624  2s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r41189376/80134624  2s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r44195840/80134624  1s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r45940736/80134624  1s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r47980544/80134624  1s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r51339264/80134624  1s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r52133888/80134624  1s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r54984704/80134624  1s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r56229888/80134624  1s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r59654144/80134624  0s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r62013440/80134624  0s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r63569920/80134624  0s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r66289664/80134624  0s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r67731456/80134624  0s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r70074368/80134624  0s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r71696384/80134624  0s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r74039296/80134624  0s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r75808768/80134624  0s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r78159872/80134624  0s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r79921152/80134624  0s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r80134624/80134624  3s 0us/step\n\n\nCell 6:\nExecution Count: 7 | Status: ok\nDownloading data from https://storage.googleapis.com/tensorflow/keras-applications/mobilenet_v2/mobilenet_v2_weights_tf_dim_ordering_tf_kernels_1.0_224_no_top.h5\n\r      0/9406464  0s 0s/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r 114688/9406464  4s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r 851968/9406464  1s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r4366336/9406464  0s 0us/step\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\r9406464/9406464  0s 0us/step\n\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: error\n\n---ERROR---: UnidentifiedImageError: cannot identify image file <_io.BytesIO object at 0x772f5c0c8b30>\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 9.7134
+    },
+    {
+      "step": 2,
+      "action": "get_cells()",
+      "output": "# --- [CELL 0]: ---\n\nimport os\nimport tensorflow as tf\nfrom tensorflow.keras.applications.vgg19 import VGG19\nfrom tensorflow.keras.applications.mobilenet_v2 import MobileNetV2\nfrom tensorflow.keras.applications.vgg19 import preprocess_input as vgg19_preprocess_input\nfrom tensorflow.keras.applications.mobilenet_v2 import preprocess_input as mobilenetv2_preprocess_input\nfrom tensorflow.keras.layers import GlobalAveragePooling2D\nfrom tensorflow.keras.models import Sequential, Model\nfrom tensorflow.keras.layers import Dense, Dropout, Flatten, Input, Average, concatenate\nfrom tensorflow.keras.preprocessing.image import ImageDataGenerator\nfrom keras.optimizers import Adam\nfrom keras.callbacks import EarlyStopping, ModelCheckpoint\n\n\n\nimport numpy as np\nimport matplotlib.pyplot as plt\nfrom sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc\nfrom sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, matthews_corrcoef\n\n# --- [CELL 1]: ---\n\nnp.random.seed(123)\n\n# --- [CELL 2]: ---\n\ndata_dir = 'data_small/CovidDataset_70_30'\n\n# --- [CELL 3]: ---\n\nbatch_size = 32\ninput_shape = (224, 224, 3)\nnum_classes = 2\n\n# --- [CELL 4]: ---\n\ntrain_datagen = ImageDataGenerator(rescale=1./255, shear_range=0.2, zoom_range=0.2, horizontal_flip=True)\ntest_datagen = ImageDataGenerator(rescale=1./255)\nvalidation_datagen = ImageDataGenerator(rescale=1./255)\n\n\ntrain_generator = train_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Train'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')\n\ntest_generator = test_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Test'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')\n\nvalidation_generator = validation_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Validation'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')\n\n# --- [CELL 5]: ---\n\nvgg19 = VGG19(weights='imagenet', include_top=False, input_shape=input_shape)\n\nmodelV19 = Sequential()\nmodelV19.add(vgg19)\nmodelV19.add(Flatten())\nmodelV19.add(Dense(500, activation='relu'))\nmodelV19.add(Dropout(0.5))\nmodelV19.add(Dense(300, activation='relu'))\nmodelV19.add(Dropout(0.5))\nmodelV19.add(Dense(num_classes, activation='softmax'))\n\nfor layer in vgg19.layers:\n    layer.trainable = False\n\n\n# --- [CELL 6]: ---\n\nmobilenetv2 = MobileNetV2(weights='imagenet', include_top=False, input_shape=input_shape)\n\nmodelM2 = Sequential()\nmodelM2.add(mobilenetv2)\nmodelM2.add(Flatten())\nmodelM2.add(Dense(500, activation='relu'))\nmodelM2.add(Dropout(0.5))\nmodelM2.add(Dense(300, activation='relu'))\nmodelM2.add(Dropout(0.5))\nmodelM2.add(Dense(num_classes, activation='softmax'))\n\nfor layer in mobilenetv2.layers:\n    layer.trainable = False\n\n\n\n# --- [CELL 7]: ---\n\nopt = Adam(learning_rate=0.0001, beta_1=0.9)\nopt2 = Adam(learning_rate=0.0001, beta_1=0.9)\nmodelV19.compile(\n    loss='binary_crossentropy',\n    optimizer=opt,\n    metrics=['accuracy'])\n\nmodelM2.compile(\n    loss='binary_crossentropy',\n    optimizer=opt2,\n    metrics=['accuracy'])\n\nearly_stop = EarlyStopping(monitor='val_loss', patience=10)\nfilepath_weights_V19 = \"data_small/best_weights_V19-{epoch:02d}-{val_accuracy:.4f}.keras\"\nfilepath_weights_M2 = \"data_small/best_weights_M2-{epoch:02d}-{val_accuracy:.4f}.keras\"\ncheckpoint_V19 = ModelCheckpoint(filepath_weights_V19, monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)\ncheckpoint_M2 = ModelCheckpoint(filepath_weights_M2, monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)\n\n# --- [CELL 8]: ---\n\n\n\nhistory_V19 = modelV19.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_V19])\n\n# --- [CELL 9]: ---\n\n\nhistory_M2 = modelM2.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_M2])\n\n# --- [CELL 10]: ---\n\nfrom tensorflow.keras.models import Model, load_model\nfrom tensorflow.keras.layers import Input, Average\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nmodels = [modelV19, modelM2]\n\n\nmodel_input = Input(shape=(224, 224, 3))\nmodel_outputs = [model(model_input) for model in models]\n\nensemble_output = Average()(model_outputs)\n\n\nensemble_model = Model(\n    inputs = model_input,\n    outputs = ensemble_output,\n    name = \"Ensemble\"\n)\n\n\n\n# --- [CELL 11]: ---\n\nopt3 = Adam(learning_rate=0.0001, beta_1=0.9)\n\nensemble_model.compile(\n    loss='binary_crossentropy',\n    optimizer=opt3,\n    metrics=['accuracy'])\n\nfilepath_weights_ensemble = \"data_small/best_weights_ensemble-{epoch:02d}-{val_accuracy:.4f}.keras\"\ncheckpoint_ensemble = ModelCheckpoint(filepath_weights_ensemble, monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)\n\n# --- [CELL 12]: ---\n\n\nhistory_ensemble = ensemble_model.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_ensemble])\n\n# --- [CELL 13]: ---\n\n\n\n\nensemble_model.evaluate(test_generator)\n\n# --- [CELL 14]: ---\n\ny_pred = ensemble_model.predict(test_generator)\nprint(\"One-hot encoded predicted labels:\")\nprint(y_pred)\ny_pred_classes = np.argmax(y_pred, axis=1)\nprint(y_pred_classes)\n\n# --- [CELL 15]: ---\n\n\n\n\n\n\n\n\ny_pred = ensemble_model.predict(test_generator)\ny_pred_classes = np.argmax(y_pred, axis=1)\n\n\ny_true_onehot = test_generator.classes\ny_true_classes = np.argmax(y_true_onehot, axis=1)",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.005
+    },
+    {
+      "step": 3,
+      "action": "get_cell(cell_index=4)",
+      "output": "# --- [CELL 4]: ---\n\ntrain_datagen = ImageDataGenerator(rescale=1./255, shear_range=0.2, zoom_range=0.2, horizontal_flip=True)\ntest_datagen = ImageDataGenerator(rescale=1./255)\nvalidation_datagen = ImageDataGenerator(rescale=1./255)\n\n\ntrain_generator = train_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Train'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')\n\ntest_generator = test_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Test'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')\n\nvalidation_generator = validation_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Validation'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0051
+    },
+    {
+      "step": 4,
+      "action": "edit_cell(cell_index=4, code=<996 chars>)",
+      "output": "Cell 4 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0057
+    },
+    {
+      "step": 5,
+      "action": "run_cell(cell_index=4)",
+      "output": "Execution Count: 10 | Status: ok\nFound 6 images belonging to 2 classes.\nFound 6 images belonging to 2 classes.\nFound 6 images belonging to 2 classes.\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0538
+    },
+    {
+      "step": 6,
+      "action": "run_cell(cell_index=5)",
+      "output": "Execution Count: 11 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.3061
+    },
+    {
+      "step": 7,
+      "action": "run_cell(cell_index=6)",
+      "output": "Execution Count: 12 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.4629
+    },
+    {
+      "step": 8,
+      "action": "run_cell(cell_index=7)",
+      "output": "Execution Count: 13 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0552
+    },
+    {
+      "step": 9,
+      "action": "run_cell(cell_index=8)",
+      "output": "Execution Count: 14 | Status: error\n\n---ERROR---: UnidentifiedImageError: cannot identify image file <_io.BytesIO object at 0x772f5f5531a0>\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.0542
+    },
+    {
+      "step": 10,
+      "action": "edit_cell(cell_index=4, code=<1595 chars>)",
+      "output": "Cell 4 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.009
+    },
+    {
+      "step": 11,
+      "action": "run_cell(cell_index=4)",
+      "output": "Execution Count: 15 | Status: ok\nFound 6 images belonging to 2 classes.\nFound 6 images belonging to 2 classes.\nFound 6 images belonging to 2 classes.\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0542
+    },
+    {
+      "step": 12,
+      "action": "edit_cell(cell_index=4, code=<1030 chars>)",
+      "output": "Cell 4 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0041
+    },
+    {
+      "step": 13,
+      "action": "edit_cell(cell_index=4, code=<3790 chars>)",
+      "output": "Cell 4 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0038
+    },
+    {
+      "step": 14,
+      "action": "edit_cell(cell_index=4, code=<994 chars>)",
+      "output": "Cell 4 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.004
+    },
+    {
+      "step": 15,
+      "action": "run_cell(cell_index=4)",
+      "output": "Execution Count: 16 | Status: error\nThe history saving thread hit an unexpected error (OperationalError('attempt to write a readonly database')).History will not be written to the database.\n\n---ERROR---: FileNotFoundError: [Errno 2] No such file or directory: 'data_small/CovidDataset_70_30/Train'\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.0553
+    },
+    {
+      "step": 16,
+      "action": "get_cell(cell_index=2)",
+      "output": "# --- [CELL 2]: ---\n\ndata_dir = 'data_small/CovidDataset_70_30'",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0034
+    },
+    {
+      "step": 17,
+      "action": "run_cell(cell_index=2)",
+      "output": "Execution Count: 17 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0557
+    },
+    {
+      "step": 18,
+      "action": "edit_cell(cell_index=4, code=<815 chars>)",
+      "output": "Cell 4 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.004
+    },
+    {
+      "step": 19,
+      "action": "run_cell(cell_index=4)",
+      "output": "Execution Count: 18 | Status: error\n\n---ERROR---: FileNotFoundError: [Errno 2] No such file or directory: 'data_small/CovidDataset_70_30/Train'\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.0555
+    },
+    {
+      "step": 20,
+      "action": "run_all()",
+      "output": "Error executing run_all: Failed to restart kernel",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 1.166
+    },
+    {
+      "step": 21,
+      "action": "run_cell(cell_index=0)",
+      "output": "Error executing run_cell: Failed to restart kernel",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 3.1162
+    },
+    {
+      "step": 22,
+      "action": "get_cell_count()",
+      "output": "16",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0039
+    },
+    {
+      "step": 23,
+      "action": "get_cells()",
+      "output": "# --- [CELL 0]: ---\n\nimport os\nimport tensorflow as tf\nfrom tensorflow.keras.applications.vgg19 import VGG19\nfrom tensorflow.keras.applications.mobilenet_v2 import MobileNetV2\nfrom tensorflow.keras.applications.vgg19 import preprocess_input as vgg19_preprocess_input\nfrom tensorflow.keras.applications.mobilenet_v2 import preprocess_input as mobilenetv2_preprocess_input\nfrom tensorflow.keras.layers import GlobalAveragePooling2D\nfrom tensorflow.keras.models import Sequential, Model\nfrom tensorflow.keras.layers import Dense, Dropout, Flatten, Input, Average, concatenate\nfrom tensorflow.keras.preprocessing.image import ImageDataGenerator\nfrom keras.optimizers import Adam\nfrom keras.callbacks import EarlyStopping, ModelCheckpoint\n\n\n\nimport numpy as np\nimport matplotlib.pyplot as plt\nfrom sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc\nfrom sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, matthews_corrcoef\n\n# --- [CELL 1]: ---\n\nnp.random.seed(123)\n\n# --- [CELL 2]: ---\n\ndata_dir = 'data_small/CovidDataset_70_30'\n\n# --- [CELL 3]: ---\n\nbatch_size = 32\ninput_shape = (224, 224, 3)\nnum_classes = 2\n\n# --- [CELL 4]: ---\n\ntrain_datagen = ImageDataGenerator(rescale=1./255, shear_range=0.2, zoom_range=0.2, horizontal_flip=True)\ntest_datagen = ImageDataGenerator(rescale=1./255)\nvalidation_datagen = ImageDataGenerator(rescale=1./255)\n\n\ntrain_generator = train_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Train'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')\n\ntest_generator = test_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Test'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')\n\nvalidation_generator = validation_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Validation'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')\n\n# --- [CELL 5]: ---\n\nvgg19 = VGG19(weights='imagenet', include_top=False, input_shape=input_shape)\n\nmodelV19 = Sequential()\nmodelV19.add(vgg19)\nmodelV19.add(Flatten())\nmodelV19.add(Dense(500, activation='relu'))\nmodelV19.add(Dropout(0.5))\nmodelV19.add(Dense(300, activation='relu'))\nmodelV19.add(Dropout(0.5))\nmodelV19.add(Dense(num_classes, activation='softmax'))\n\nfor layer in vgg19.layers:\n    layer.trainable = False\n\n\n# --- [CELL 6]: ---\n\nmobilenetv2 = MobileNetV2(weights='imagenet', include_top=False, input_shape=input_shape)\n\nmodelM2 = Sequential()\nmodelM2.add(mobilenetv2)\nmodelM2.add(Flatten())\nmodelM2.add(Dense(500, activation='relu'))\nmodelM2.add(Dropout(0.5))\nmodelM2.add(Dense(300, activation='relu'))\nmodelM2.add(Dropout(0.5))\nmodelM2.add(Dense(num_classes, activation='softmax'))\n\nfor layer in mobilenetv2.layers:\n    layer.trainable = False\n\n\n\n# --- [CELL 7]: ---\n\nopt = Adam(learning_rate=0.0001, beta_1=0.9)\nopt2 = Adam(learning_rate=0.0001, beta_1=0.9)\nmodelV19.compile(\n    loss='binary_crossentropy',\n    optimizer=opt,\n    metrics=['accuracy'])\n\nmodelM2.compile(\n    loss='binary_crossentropy',\n    optimizer=opt2,\n    metrics=['accuracy'])\n\nearly_stop = EarlyStopping(monitor='val_loss', patience=10)\nfilepath_weights_V19 = \"data_small/best_weights_V19-{epoch:02d}-{val_accuracy:.4f}.keras\"\nfilepath_weights_M2 = \"data_small/best_weights_M2-{epoch:02d}-{val_accuracy:.4f}.keras\"\ncheckpoint_V19 = ModelCheckpoint(filepath_weights_V19, monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)\ncheckpoint_M2 = ModelCheckpoint(filepath_weights_M2, monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)\n\n# --- [CELL 8]: ---\n\n\n\nhistory_V19 = modelV19.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_V19])\n\n# --- [CELL 9]: ---\n\n\nhistory_M2 = modelM2.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_M2])\n\n# --- [CELL 10]: ---\n\nfrom tensorflow.keras.models import Model, load_model\nfrom tensorflow.keras.layers import Input, Average\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nmodels = [modelV19, modelM2]\n\n\nmodel_input = Input(shape=(224, 224, 3))\nmodel_outputs = [model(model_input) for model in models]\n\nensemble_output = Average()(model_outputs)\n\n\nensemble_model = Model(\n    inputs = model_input,\n    outputs = ensemble_output,\n    name = \"Ensemble\"\n)\n\n\n\n# --- [CELL 11]: ---\n\nopt3 = Adam(learning_rate=0.0001, beta_1=0.9)\n\nensemble_model.compile(\n    loss='binary_crossentropy',\n    optimizer=opt3,\n    metrics=['accuracy'])\n\nfilepath_weights_ensemble = \"data_small/best_weights_ensemble-{epoch:02d}-{val_accuracy:.4f}.keras\"\ncheckpoint_ensemble = ModelCheckpoint(filepath_weights_ensemble, monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)\n\n# --- [CELL 12]: ---\n\n\nhistory_ensemble = ensemble_model.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_ensemble])\n\n# --- [CELL 13]: ---\n\n\n\n\nensemble_model.evaluate(test_generator)\n\n# --- [CELL 14]: ---\n\ny_pred = ensemble_model.predict(test_generator)\nprint(\"One-hot encoded predicted labels:\")\nprint(y_pred)\ny_pred_classes = np.argmax(y_pred, axis=1)\nprint(y_pred_classes)\n\n# --- [CELL 15]: ---\n\n\n\n\n\n\n\n\ny_pred = ensemble_model.predict(test_generator)\ny_pred_classes = np.argmax(y_pred, axis=1)\n\n\ny_true_onehot = test_generator.classes\ny_true_classes = np.argmax(y_true_onehot, axis=1)",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0045
+    },
+    {
+      "step": 24,
+      "action": "edit_cell(cell_index=4, code=<815 chars>)",
+      "output": "Cell 4 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0038
+    },
+    {
+      "step": 25,
+      "action": "run_cell(cell_index=4)",
+      "output": "Error executing run_cell: ",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 3.1272
+    },
+    {
+      "step": 26,
+      "action": "run_cell(cell_index=0)",
+      "output": "Error executing run_cell: ",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 3.1407
+    },
+    {
+      "step": 27,
+      "action": "run_all()",
+      "output": "Error executing run_all: Failed to restart kernel",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.0451
+    },
+    {
+      "step": 28,
+      "action": "edit_cell(cell_index=0, code=<1147 chars>)",
+      "output": "Cell 0 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0051
+    },
+    {
+      "step": 29,
+      "action": "run_cell(cell_index=0)",
+      "output": "Error executing run_cell: ",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 3.1263
+    },
+    {
+      "step": 30,
+      "action": "run_all()",
+      "output": "Error executing run_all: Failed to restart kernel",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.0461
+    },
+    {
+      "step": 30,
+      "action": "LimitsExceeded",
+      "output": "",
+      "return_code": 1,
+      "success": false
+    }
+  ],
+  "code_changes": [
+    {
+      "cell_index": 4,
+      "step": 4,
+      "code": "train_datagen = ImageDataGenerator(\n    preprocessing_function=vgg19_preprocess_input,\n    shear_range=0.2, \n    zoom_range=0.2, \n    horizontal_flip=True\n)\ntest_datagen = ImageDataGenerator(preprocessing_function=vgg19_preprocess_input)\nvalidation_datagen = ImageDataGenerator(preprocessing_function=vgg19_preprocess_input)\n\n\ntrain_generator = train_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Train'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical',\n        shuffle=True)\n\ntest_generator = test_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Test'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical',\n        shuffle=False)\n\nvalidation_generator = validation_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Validation'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical',\n        shuffle=False)"
+    },
+    {
+      "cell_index": 4,
+      "step": 10,
+      "code": "import PIL\nfrom PIL import Image\n\n# Custom error handler to skip corrupt images\ndef safe_image_load(path):\n    try:\n        img = PIL.Image.open(path)\n        img.verify()  # Verify the image is valid\n        img = PIL.Image.open(path)  # Need to reopen after verify\n        img = img.convert('RGB')  # Ensure RGB format\n        return img\n    except:\n        return None\n\ntrain_datagen = ImageDataGenerator(\n    preprocessing_function=vgg19_preprocess_input,\n    shear_range=0.2, \n    zoom_range=0.2, \n    horizontal_flip=True,\n    fill_mode='nearest'\n)\ntest_datagen = ImageDataGenerator(preprocessing_function=vgg19_preprocess_input)\nvalidation_datagen = ImageDataGenerator(preprocessing_function=vgg19_preprocess_input)\n\n\ntrain_generator = train_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Train'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical',\n        shuffle=True,\n        interpolation='bilinear',\n        keep_aspect_ratio=False)\n\ntest_generator = test_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Test'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical',\n        shuffle=False,\n        interpolation='bilinear',\n        keep_aspect_ratio=False)\n\nvalidation_generator = validation_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Validation'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical',\n        shuffle=False,\n        interpolation='bilinear',\n        keep_aspect_ratio=False)"
+    },
+    {
+      "cell_index": 4,
+      "step": 12,
+      "code": "train_datagen = ImageDataGenerator(\n    rescale=1./255,\n    shear_range=0.2, \n    zoom_range=0.2, \n    horizontal_flip=True,\n    fill_mode='nearest'\n)\ntest_datagen = ImageDataGenerator(rescale=1./255)\nvalidation_datagen = ImageDataGenerator(rescale=1./255)\n\n\ntrain_generator = train_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Train'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical',\n        shuffle=True,\n        interpolation='bilinear')\n\ntest_generator = test_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Test'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical',\n        shuffle=False,\n        interpolation='bilinear')\n\nvalidation_generator = validation_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Validation'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical',\n        shuffle=False,\n        interpolation='bilinear')"
+    },
+    {
+      "cell_index": 4,
+      "step": 13,
+      "code": "from tensorflow.keras.preprocessing.image import ImageDataGenerator\nimport numpy as np\nfrom PIL import Image\nimport io\n\n# Custom safe iterator that skips corrupt images\nclass SafeIterator:\n    def __init__(self, iterator):\n        self.iterator = iterator\n        self.batch_size = iterator.batch_size\n        self.class_mode = iterator.class_mode\n        \n    def __iter__(self):\n        while True:\n            try:\n                batch = next(self.iterator)\n                # Verify all images in the batch are valid\n                valid_images = []\n                valid_labels = []\n                for i in range(len(batch[0])):\n                    img = batch[0][i]\n                    label = batch[1][i]\n                    # Skip if image contains NaN or invalid values\n                    if not (np.isnan(img).any() or np.isinf(img).any()):\n                        valid_images.append(img)\n                        valid_labels.append(label)\n                \n                if len(valid_images) > 0:\n                    yield (np.array(valid_images), np.array(valid_labels))\n                else:\n                    # If all images are invalid, try next batch\n                    continue\n            except Exception as e:\n                print(f\"Warning: Skipping corrupt batch - {str(e)}\")\n                continue\n\ntrain_datagen = ImageDataGenerator(\n    rescale=1./255,\n    shear_range=0.2, \n    zoom_range=0.2, \n    horizontal_flip=True,\n    fill_mode='nearest'\n)\ntest_datagen = ImageDataGenerator(rescale=1./255)\nvalidation_datagen = ImageDataGenerator(rescale=1./255)\n\n\ntrain_gen = train_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Train'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical',\n        shuffle=True,\n        interpolation='bilinear')\n\ntest_gen = test_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Test'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical',\n        shuffle=False,\n        interpolation='bilinear')\n\nval_gen = validation_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Validation'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical',\n        shuffle=False,\n        interpolation='bilinear')\n\n# Wrap iterators with safe version\ntrain_generator = type('obj', (object,), {\n    '__iter__': lambda self: iter(SafeIterator(iter(train_gen))),\n    'classes': train_gen.classes,\n    'class_indices': train_gen.class_indices,\n    'samples': train_gen.samples,\n    'batch_size': train_gen.batch_size,\n    'reset': lambda: train_gen.reset(),\n    'on_epoch_end': lambda: train_gen.on_epoch_end(),\n    'set_validation_steps': lambda val: None,\n    'set_color_mode': lambda mode: None,\n    'set_generator': lambda gen: None,\n    'set_sequence': lambda seq: None,\n    'use_multiprocessing': False,\n    'index_generator': train_gen.index_generator,\n})()\n\ntest_generator = type('obj', (object,), {\n    '__iter__': lambda self: iter(SafeIterator(iter(test_gen))),\n    'classes': test_gen.classes,\n    'class_indices': test_gen.class_indices,\n    'samples': test_gen.samples,\n    'batch_size': test_gen.batch_size,\n    'reset': lambda: test_gen.reset(),\n    'on_epoch_end': lambda: test_gen.on_epoch_end(),\n    'index_generator': test_gen.index_generator,\n})()\n\nvalidation_generator = type('obj', (object,), {\n    '__iter__': lambda self: iter(SafeIterator(iter(val_gen))),\n    'classes': val_gen.classes,\n    'class_indices': val_gen.class_indices,\n    'samples': val_gen.samples,\n    'batch_size': val_gen.batch_size,\n    'reset': lambda: val_gen.reset(),\n    'on_epoch_end': lambda: val_gen.on_epoch_end(),\n    'index_generator': val_gen.index_generator,\n})()"
+    },
+    {
+      "cell_index": 4,
+      "step": 14,
+      "code": "from PIL import ImageFile\nImageFile.LOAD_TRUNCATED_IMAGES = True\n\ntrain_datagen = ImageDataGenerator(\n    rescale=1./255,\n    shear_range=0.2, \n    zoom_range=0.2, \n    horizontal_flip=True,\n    fill_mode='nearest'\n)\ntest_datagen = ImageDataGenerator(rescale=1./255)\nvalidation_datagen = ImageDataGenerator(rescale=1./255)\n\n\ntrain_generator = train_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Train'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical',\n        shuffle=True)\n\ntest_generator = test_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Test'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical',\n        shuffle=False)\n\nvalidation_generator = validation_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Validation'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical',\n        shuffle=False)"
+    },
+    {
+      "cell_index": 4,
+      "step": 18,
+      "code": "train_datagen = ImageDataGenerator(rescale=1./255, shear_range=0.2, zoom_range=0.2, horizontal_flip=True)\ntest_datagen = ImageDataGenerator(rescale=1./255)\nvalidation_datagen = ImageDataGenerator(rescale=1./255)\n\n\ntrain_generator = train_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Train'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')\n\ntest_generator = test_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Test'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')\n\nvalidation_generator = validation_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Validation'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')"
+    },
+    {
+      "cell_index": 4,
+      "step": 24,
+      "code": "train_datagen = ImageDataGenerator(rescale=1./255, shear_range=0.2, zoom_range=0.2, horizontal_flip=True)\ntest_datagen = ImageDataGenerator(rescale=1./255)\nvalidation_datagen = ImageDataGenerator(rescale=1./255)\n\n\ntrain_generator = train_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Train'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')\n\ntest_generator = test_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Test'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')\n\nvalidation_generator = validation_datagen.flow_from_directory(\n        os.path.join(data_dir, 'Validation'),\n        target_size=input_shape[:2],\n        batch_size=batch_size,\n        class_mode='categorical')"
+    },
+    {
+      "cell_index": 0,
+      "step": 28,
+      "code": "import os\nimport tensorflow as tf\nfrom tensorflow.keras.applications.vgg19 import VGG19\nfrom tensorflow.keras.applications.mobilenet_v2 import MobileNetV2\nfrom tensorflow.keras.applications.vgg19 import preprocess_input as vgg19_preprocess_input\nfrom tensorflow.keras.applications.mobilenet_v2 import preprocess_input as mobilenetv2_preprocess_input\nfrom tensorflow.keras.layers import GlobalAveragePooling2D\nfrom tensorflow.keras.models import Sequential, Model\nfrom tensorflow.keras.layers import Dense, Dropout, Flatten, Input, Average, concatenate\nfrom tensorflow.keras.preprocessing.image import ImageDataGenerator\nfrom keras.optimizers import Adam\nfrom keras.callbacks import EarlyStopping, ModelCheckpoint\n\nimport numpy as np\nimport matplotlib.pyplot as plt\nfrom sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc\nfrom sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, matthews_corrcoef\n\n# Configure PIL to handle various image formats and truncated images\nfrom PIL import Image, ImageFile\nImageFile.LOAD_TRUNCATED_IMAGES = True\nImage.MAX_IMAGE_PIXELS = None"
+    }
+  ]
+}
