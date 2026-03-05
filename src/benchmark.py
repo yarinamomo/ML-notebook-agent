@@ -1,5 +1,6 @@
-from typing import Any, List, Optional
+from typing import List, Optional
 from pathlib import Path
+import os
 import shutil
 import time
 import src.utils.preprocess_notebook as preprocess_notebook
@@ -23,9 +24,9 @@ def setup_environment(src, dst):
     # Copy recursively
     shutil.copytree(src, dst)
     
-    # Delay to ensure filesystem sync for Docker volume mounts on macOS
-    # Docker Desktop can have delays seeing newly created files after rmtree + copytree
-    time.sleep(5.0) # 5x longer than tests needed to be absolutely certain
+    # Ensure filesystem buffers are flushed (Unix only)
+    if os.name != "nt" and hasattr(os, "sync"):
+        os.sync()
 
 def _remove_directory_with_retry(path: Path, max_retries: int = 3, delay: float = 1.0):
     """Remove directory with retry logic for Docker mounted volumes.
