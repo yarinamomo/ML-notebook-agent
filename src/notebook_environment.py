@@ -98,7 +98,7 @@ class NotebookEnvironment:
         if not self.problem.get_cell_count() and tool_name not in ("submit",):
             return self._wrap_error("Notebook not initialized")
         tmp_is_submittable = self.is_submittable
-        self.is_submittable = False  # Reset submittable flag on any action
+        self.is_submittable = self.is_submittable and tool_name != "edit_cell"  # Reset submittable flag on edit_cell
         match tool_name:
             case "get_cell_count":
                 return self._wrap_success(str(self.problem.get_cell_count()))
@@ -208,6 +208,7 @@ class NotebookEnvironment:
         formatted_output = self._format_exec_result(exec_result)
         error = self._get_execution_error(exec_result)
         if error is not None:
+            self.is_submittable = False  # Mark as not submittable if there's an execution error
             return self._wrap_error(formatted_output, exception_info=str(error))
         return self._wrap_success(formatted_output)
 
