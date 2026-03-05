@@ -160,7 +160,7 @@ def save_to_file(findings, all_submissions, output_file):
 
 
 def main():
-    base_dir = 'trajectories_monday/glm-4.7-355b'
+    base_dir = 'trajectories_without_run_code/glm-4.7-355b'
     
     findings, all_submissions = find_early_submissions(base_dir, max_step=3)
     

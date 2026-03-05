@@ -186,7 +186,7 @@ def create_stacked_bar_chart(aggregated_data, title, output_path):
 
 def main():
     """Main function to generate all plots."""
-    base_dir = Path('trajectories_monday/glm-4.7-355b')
+    base_dir = Path('trajectories_without_run_code/glm-4.7-355b')
     output_dir = base_dir / 'plots'
     output_dir.mkdir(exist_ok=True)
     
