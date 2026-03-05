@@ -285,7 +285,7 @@ def generate_overall_summary(results, output_path):
 def main():
     # Configure base paths to process
     base_paths = [
-        Path("trajectories_monday/glm-4.7-355b")
+        Path("trajectories_without_run_code/glm-4.7-355b")
     ]
     
     for base in base_paths:
