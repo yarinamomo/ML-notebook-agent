@@ -10,7 +10,7 @@ import os
 from collections import defaultdict, Counter
 from pathlib import Path
 import re
-
+from itertools import combinations
 
 def extract_run_code_operations(traj_file):
     """
@@ -292,7 +292,6 @@ def generate_report(analysis_results, output_file):
         f.write("\n")
         
         # Multi-category summary
-        from collections import Counter
         cat_counts = Counter(overlaps['category_counts_per_operation'])
         f.write("Operations by number of categories:\n")
         for n_cats in sorted(cat_counts.keys()):
@@ -373,8 +372,6 @@ def compute_category_overlaps(operations):
     Returns:
         Dictionary with overlap statistics
     """
-    from itertools import combinations
-    
     # Count how many categories each operation has
     category_counts_per_op = [len(op['categories']) for op in operations]
     
