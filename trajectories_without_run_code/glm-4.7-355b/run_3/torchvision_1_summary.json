@@ -1,0 +1,481 @@
+{
+  "metadata": {
+    "generated_at": "2026-03-05T05:39:29.588210",
+    "execution_time_seconds": 130.48,
+    "success": false,
+    "status": "LimitsExceeded",
+    "cost": 0.2437
+  },
+  "statistics": {
+    "total_steps": 30,
+    "total_operations": 31,
+    "successful_operations": 24,
+    "failed_operations": 7,
+    "cells_edited": 10,
+    "unique_cells_edited": 4,
+    "avg_tool_execution_time_seconds": 0.88
+  },
+  "original_notebook": [
+    "# --- [CELL 0]: ---\n\nfrom IPython.display import Image, display\nimport os\nimport random\n\n\ndirectory_path = 'data_small/indoorCVPR_09/Images/'\n\ndef load_random_image_from_category(category_path):\n\n    image_files = [file for file in os.listdir(category_path) if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))]\n\n\n    random_image = random.choice(image_files)\n\n    return random_image\n\n\ncategories = os.listdir(directory_path)\n\n\nnum_classes = 5\n\n\nselected_categories = random.sample(categories, num_classes)\n\n\nfor category_name in selected_categories:\n    category_path = os.path.join(directory_path, category_name)\n\n\n    if os.path.isdir(category_path):\n        random_image_name = load_random_image_from_category(category_path)\n        random_image_path = os.path.join(category_path, random_image_name)\n\n        print(f\"Category: {category_name}\")\n        display(Image(filename=random_image_path))\n        print(\"\\n\" + \"=\"*30 + \"\\n\")",
+    "# --- [CELL 1]: ---\n\nfrom torchvision.datasets import ImageFolder\nimport torchvision.transforms as transforms\n\ntransformations = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])\n\ndataset = ImageFolder(directory_path, transform = transformations)",
+    "# --- [CELL 2]: ---\n\nimport matplotlib.pyplot as plt\nimport torch\n\ndef show_images(dataset, num_images=6):\n\n\n    random_indices = torch.randperm(len(dataset))[:num_images]\n\n\n    rows = 1\n    cols = num_images\n    fig, axes = plt.subplots(rows, cols, figsize=(15, 3))\n\n    for i, idx in enumerate(random_indices):\n\n        image, label = dataset[idx]\n\n\n        image_np = image.permute(1, 2, 0).numpy()\n\n\n        axes[i].imshow(image_np)\n        axes[i].set_title(f\"Label: {label}\")\n\n\n        axes[i].axis(\"off\")\n\n    plt.show()\n\n\ntransformed = dataset\nshow_images(transformed)",
+    "# --- [CELL 3]: ---\n\nfrom torch.utils.data import random_split\n\nclass_mapping = transformed.class_to_idx\nnum_classes = len(class_mapping)\n\n\ntrain_size = 420\nval_size = 150\ntest_size = 100\n\ntrain_indices, val_indices, test_indices = random_split(\n    range(len(transformed)),\n    [train_size, val_size, test_size]\n)\n\n\ntrain_ds = torch.utils.data.Subset(transformed, train_indices)\nval_ds = torch.utils.data.Subset(transformed, val_indices)\ntest_ds = torch.utils.data.Subset(transformed, test_indices)\n\n\nprint(len(train_ds), len(val_ds), len(test_ds))",
+    "# --- [CELL 4]: ---\n\nfrom torch.utils.data import DataLoader\n\nbatch_size = 25\n\n\n\ntrain_dl = DataLoader(train_ds, batch_size, shuffle = True, num_workers = 0, pin_memory = False)\nval_dl = DataLoader(val_ds, batch_size*2, num_workers = 0, pin_memory = False)",
+    "# --- [CELL 5]: ---\n\nimport torch.nn as nn\ndef accuracy(outputs, labels):\n    _, preds = torch.max(outputs, dim=1)\n    return torch.tensor(torch.sum(preds == labels).item() / len(preds))\n\nclass ImageClassificationBase(nn.Module):\n    def training_step(self, batch):\n        images, labels = batch\n        out = self(images)\n        loss = F.cross_entropy(out, labels)\n        return loss\n\n    def validation_step(self, batch):\n        images, labels = batch\n        out = self(images)\n        loss = F.cross_entropy(out, labels)\n        acc = accuracy(out, labels)\n        return {'val_loss': loss.detach(), 'val_acc': acc}\n\n    def validation_epoch_end(self, outputs):\n        batch_losses = [x['val_loss'] for x in outputs]\n        epoch_loss = torch.stack(batch_losses).mean()\n        batch_accs = [x['val_acc'] for x in outputs]\n        epoch_acc = torch.stack(batch_accs).mean()\n        return {'val_loss': epoch_loss.item(), 'val_acc': epoch_acc.item()}\n\n    def epoch_end(self, epoch, result):\n        print(\"Epoch {}: train_loss: {:.4f}, val_loss: {:.4f}, val_acc: {:.4f}\".format(\n            epoch+1, result['train_loss'], result['val_loss'], result['val_acc']))",
+    "# --- [CELL 6]: ---\n\nimport torchvision.models as models\nclass ResNet(ImageClassificationBase):\n    def __init__(self):\n        super().__init__()\n\n        self.network = models.resnet18(pretrained=True)\n\n        num_ftrs = self.network.fc.in_features\n        self.network.fc = nn.Linear(num_ftrs, len(transformed.classes))\n\n    def forward(self, xb):\n        return torch.sigmoid(self.network(xb))\n\nmodel = ResNet()",
+    "# --- [CELL 7]: ---\n\nimport torch\nimport torch.nn as nn\nimport torch.optim as optim\nimport torch.nn.functional as F\nfrom torch.utils.data import DataLoader\n\n\n\n\n\nresnet_model = models.resnet18(pretrained=True)\n\n\ncriterion = nn.CrossEntropyLoss()\noptimizer = optim.SGD(resnet_model.parameters(), lr=0.001, momentum=0.9)\n\n\nnum_epochs = 1\n\nfor epoch in range(num_epochs):\n    resnet_model.train()\n    for inputs, labels in train_dl:\n        optimizer.zero_grad()\n        outputs = resnet_model(inputs)\n        loss = criterion(outputs, labels)\n        loss.backward()\n        optimizer.step()\n\n\n    resnet_model.eval()\n    with torch.no_grad():\n        correct = 0\n        total = 0\n        for inputs, labels in val_dl:\n            outputs = resnet_model(inputs)\n            _, predicted = torch.max(outputs.data, 1)\n            total += labels.size(0)\n            correct += (predicted == labels).sum().item()\n\n        accuracy = correct / total\n        print(f'Epoch {epoch + 1}/{num_epochs}, Validation Accuracy: {accuracy:.4f}')\n\n\ndef evaluate(model, test_dl):\n    model.eval()\n    with torch.no_grad():\n        correct = 0\n        total = 0\n        for inputs, labels in test_dl:\n\n            inputs = inputs.unsqueeze(-1)\n            outputs = model(inputs)\n\n            _, predicted = torch.max(outputs.data, 1)\n            total += labels.size(0)\n            correct += (predicted == labels).sum().item()\n\n        accuracy = correct / total\n        print(f'Test Accuracy: {accuracy:.4f}')\n\n\n\nevaluate(resnet_model,val_dl)"
+  ],
+  "llm_responses": [
+    {
+      "step": 1,
+      "content": "I'll start by running all cells to identify which ones crash.<tool_call>run_all</tool_call>",
+      "reasoning": "The user wants me to run all cells and fix any crashes. Let me start by running all cells to identify which ones crash."
+    },
+    {
+      "step": 2,
+      "content": "I found a crash in cell 2. The error is an `UnidentifiedImageError` when trying to load an image file that appears to be corrupted. Let me examine the code to understand what's happening and fix it.<tool_call>get_cells</tool_call>",
+      "reasoning": "I can see that cell 2 crashed with an `UnidentifiedImageError`. The error occurs when trying to load an image file that appears to be corrupted or invalid. The image file is: `data_small/indoorCVPR_09/Images/elevator/elevator_google_0078.jpg`\n\nLet me look at the cells to understand what the code is doing and how to fix it."
+    },
+    {
+      "step": 3,
+      "content": "I can see the issue. Cell 2 crashes when trying to display images from the dataset because one of the image files (`elevator_google_0078.jpg`) is corrupted. The `show_images` function randomly selects images from the dataset but doesn't handle corrupted files gracefully.\n\nLet me fix this by adding error handling to skip corrupted images and continue searching for valid ones:",
+      "reasoning": "Now I can see the problem. The error occurs in cell 2 at line 18 when trying to load an image from the dataset. The file `data_small/indoorCVPR_09/Images/elevator/elevator_google_0078.jpg` is corrupted or not a valid image file.\n\nThe issue is that the ImageFolder dataset includes a corrupted file, and when we try to randomly select images to display, we hit that corrupted file. \n\nThe fix should handle cases where an image might be corrupted. One approach is to wrap the image loading in a try-except block and skip corrupted images. Let me modify the show_images function to handle this gracefully.\n\nLooking at the code:\n```python\ndef show_images(dataset, num_images=6):\n    random_indices = torch.randperm(len(dataset))[:num_images]\n    \n    rows = 1\n    cols = num_images\n    fig, axes = plt.subplots(rows, cols, figsize=(15, 3))\n    \n    for i, idx in enumerate(random_indices):\n        image, label = dataset[idx]  # This line crashes due to corrupted image\n        ...\n```\n\nI need to add a try-except block that skips corrupted images and continues trying to find valid ones until we have enough images to display."
+    },
+    {
+      "step": 4,
+      "content": "Now let me run all cells to verify the fix and check for any other errors:<tool_call>run_all</tool_call>",
+      "reasoning": "Good, I've edited cell 2 to add error handling for corrupted images. Now let me run all cells again to check if this fixes the error and if there are any other issues."
+    },
+    {
+      "step": 5,
+      "content": "Good progress! Cell 2 now works. However, cell 7 crashes because the DataLoader encounters another corrupted image during training. I need to fix the dataset to filter out corrupted images from the train/val/test splits. Let me check cell 3 more closely:",
+      "reasoning": "Good! Cell 2 now works. Now I see a new error in cell 7. The training loop is trying to load corrupted images from the train DataLoader. The issue is the same - there are corrupted image files in the dataset that need to be filtered out.\n\nThe dataset was created with ImageFolder, and then we create train/val/test splits using Subset. When the DataLoader tries to access the data, it encounters corrupted images and crashes.\n\nI need to create a custom dataset wrapper that can handle corrupted images gracefully. The best approach is to create a wrapper around ImageFolder that catches errors and skips corrupted files.\n\nLet me get cell 3 to see how the subsets are created, then I'll need to fix the dataset creation to filter out corrupted images."
+    },
+    {
+      "step": 6,
+      "content": "The problem is that the train/val/test splits include corrupted images. I need to filter out corrupted images before creating the splits. Let me modify cell 3 to create a filtered dataset:",
+      "reasoning": "The train/val/test splits are created from the dataset using random_split, which picks random indices. This means corrupted images can be included in the splits. When the DataLoader tries to load them, it crashes.\n\nI need to create a wrapper around the dataset that handles corrupted images gracefully. I can create a custom dataset class that wraps the ImageFolder dataset and catches errors when loading samples.\n\nThe best approach is to:\n1. Create a wrapper dataset that skips corrupted samples\n2. Use this wrapper instead of the raw dataset for the train/val/test splits\n\nLet me modify cell 3 to create a filter dataset first, then use it for splitting."
+    },
+    {
+      "step": 7,
+      "content": "",
+      "reasoning": "Now let me run the cells to verify this fix. First, let me run from cell 3 to cell 7 to check if the corrupted images are now filtered out."
+    },
+    {
+      "step": 8,
+      "content": "",
+      "reasoning": "Interesting. All images are being filtered out. Let me check what's going on by trying to load a single image manually to understand the error better."
+    },
+    {
+      "step": 9,
+      "content": "",
+      "reasoning": "Now let me run cell 1 again and check if it encounters an error:"
+    },
+    {
+      "step": 10,
+      "content": "",
+      "reasoning": "It looks like cell 1 is running properly. The issue is that when I try to load from the `filtered_dataset`, it's trying to access the underlying `transformed` dataset through the `Subset` class, which uses different indices.\n\nLet me trace through the logic more carefully:\n1. `filtered_dataset.valid_indices` contains valid indices from the original `(0 to 669)`\n2. `train_ds = torch.utils.data.Subset(filtered_dataset, train_indices)` - this creates a subset that uses indices from `(0 to len(filtered_dataset)-1)`\n3. When accessing `train_ds[0]`, it calls `filtered_dataset[train_indices[0]]` which calls `filtered_dataset[0]` which returns `transformed[valid_indices[0]]`\n\nThat logic should work. But let me trace through the error more carefully by running cell 7:"
+    },
+    {
+      "step": 11,
+      "content": "The issue is that cell 3 didn't properly filter the dataset (it shows \"Valid images: 0\"). Let me try a different approach - filter at the file level before creating the dataset:",
+      "reasoning": "The error persists in cell 7. The issue is that the DataLoader is trying to load batches of data, and when a corrupted image is encountered during the loading process, it crashes. The problem is that cell 3 was not successfully creating a filtered dataset (it printed \"Total images: 670, Valid images: 0\").\n\nLet me re-examine. The FilteredDataset was checking if it can load items from transformed, but since it used indices from the original dataset (which has a transform applied), it might be getting corrupted data. Actually, I think the issue might be that the FilteredDataset is being created but the transforms might still be causing issues.\n\nLet me look at the original code - cell 1 creates the dataset with a transform. The dataset is named `dataset`. Cell 2 fixes it, but cell 3 refers to `transformed` which should be the same as `dataset`.\n\nWait, I think the problem is that I need to check at the FILE level, not at the transformed dataset level. The ImageFolder's samples attribute contains the paths. Let me try a different approach - filter the dataset before applying the transform, or filter based on the samples list directly.\n\nActually, looking at the error, the issue is that the train_dl, val_dl are created from the train_ds, val_ds, test_ds which reference `transformed`. And `transformed = dataset`. So if I don't modify cell 3 properly, the corrupted images are still in `transformed`.\n\nLet me try a better approach: I'll create a filtered dataset that checks which images are valid at the path level (before transform), then create the ImageFolder with only valid samples."
+    },
+    {
+      "step": 12,
+      "content": "",
+      "reasoning": "Now let me run cell 3 to verify it works and shows valid images."
+    },
+    {
+      "step": 13,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "It's still finding 0 valid images. Let me check what's happening by trying to load the dataset from cell 1 first, and manually checking one image:"
+    },
+    {
+      "step": 14,
+      "content": "Let me fix the image validation logic. `img.verify()` corrupts the image object in PIL. Let me use a different approach:",
+      "reasoning": "The problem is that my filter function is returning 0 valid images. Let me look more carefully at the logic. The `img.verify()` call might be causing issues since it corrupts the image object according to PIL docs. Let me fix this by using a different validation method and also check if the directory_path is being used correctly. Let me simplify and fix cell 3 properly."
+    },
+    {
+      "step": 15,
+      "content": "",
+      "reasoning": "Now let me run cell 3 to see if it finds valid images."
+    },
+    {
+      "step": 16,
+      "content": "Let me debug why no images are being found. Let me check the directory structure:",
+      "reasoning": "Still showing 0 valid images. Let me debug this. Maybe the directory structure is different or there's an issue with the image loading. Let me check what's happening with a simple test."
+    },
+    {
+      "step": 17,
+      "content": "Let me take a simpler approach - wrap the dataset in a class that handles corrupted images by skipping them during iteration:",
+      "reasoning": "It seems like the directory path is correct since cell 0 can load random images successfully. The issue might be with my validation logic. Let me try a simpler approach - instead of trying to validate all images in cell 3, let me wrap the DataLoader to skip corrupted images during training/evaluation.\n\nActually, let me just skip the validation entirely and use a try-except in the data loading process itself. Let me create a dataset wrapper that handles corrupted images."
+    },
+    {
+      "step": 18,
+      "content": "",
+      "reasoning": "Good. Now let me run cell 3 to see if it works."
+    },
+    {
+      "step": 19,
+      "content": "",
+      "reasoning": "The dataset has a length of 0 after loading. This suggests that ImageFolder is filtering out corrupted images and finding none. Let me check if the directory exists and see what's happening with the dataset."
+    },
+    {
+      "step": 20,
+      "content": "Let me try a completely different approach - skip the filtering and just handle errors gracefully in the data loading. I'll modify cell 3 to create a custom DataLoader wrapper:",
+      "reasoning": "Cell 1 works fine. Let me check the state by running cell 2 again. Actually, the problem is that even if cell 1 creates the dataset, when cell 2 was fixed it might have the issue. Let me skip ahead and simplify this entire process. Let me try to just create the splits without filtering, but handle errors in the training loop instead."
+    },
+    {
+      "step": 21,
+      "content": "",
+      "reasoning": "Good, I've restored the original cell 3 and now I need to add a custom collate function that handles corrupted images gracefully. Let me wait and then run the cells to see how far we get."
+    },
+    {
+      "step": 22,
+      "content": "Now I need to modify the DataLoader to handle corrupted images gracefully. Let me update cell 4:",
+      "reasoning": "Good! Now I need to handle corrupted images during training. Let me modify cell 4 to use a custom collate function that skips corrupted images:"
+    },
+    {
+      "step": 23,
+      "content": "Actually, the collate function approach won't work well because the DataLoader expects consistent batch sizes. Let me try a better approach - modify cell 4 to add a try-except in the data loading loop instead:",
+      "reasoning": "Actually, this approach with collate_fn won't work well because DataLoader expects all batches to have consistent sizes. Let me try a different approach - I'll create a custom Dataset class that lazily tries to load images and skips corrupted ones:"
+    },
+    {
+      "step": 24,
+      "content": "Now I need to modify cell 7 to handle corrupted images during training. Let me look at the current cell 7:",
+      "reasoning": "Actually, the DataLoader won't skip corruptions. The right place to fix this is in cell 7, where we iterate over the DataLoader. Let me modify cell 7 to add error handling in the training loop to skip corrupted images."
+    },
+    {
+      "step": 25,
+      "content": "Now let me modify cell 7 to handle corrupted images by skipping them:",
+      "reasoning": "Cell 7 has a training loop and also an evaluate function. The issue is that the DataLoader will try to load corrupted images. \n\nHowever, the DataLoader with num_workers=0 will raise an immediately catchable error when trying to load a corrupted batch. So my strategy could be:\n1. For training/val loops, wrap the iteration in a try-except to skip corrupted batches\n\nBut actually, with num_workers=0, when the DataLoader tries to load a batch and encounters a corrupted image, it should raise immediately. \n\nLet me add try-except blocks around the batch loading in cell 7:"
+    },
+    {
+      "step": 26,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Now let me run all cells to see if it works."
+    },
+    {
+      "step": 27,
+      "content": "The problem is that the DataLoader itself crashes when trying to load a batch containing corrupted images. I need to create a wrapper that catches errors at the dataset level, not in the training loop. Let me fix this with a robust wrapper:",
+      "reasoning": "The error is happening in the DataLoader itself, not in the try-except loop. The DataLoader tries to load the batch before it gets to the try-except in cell 7. I need to create a wrapper class that catches errors at the dataset level, before the collation happens.\n\nLet me create a different wrapper approach - a class that wraps each dataset subset and catches errors on individual items."
+    },
+    {
+      "step": 28,
+      "content": "",
+      "reasoning": "Good, now I've created a SafeSubset wrapper that pre-filters out corrupted images. Let me run cell 3 to see if it works:"
+    },
+    {
+      "step": 29,
+      "content": "Something is wrong with the dataset creation. Let me check cell 1 to see what dataset looks like:",
+      "reasoning": "Interesting! The dataset length is 0 which means when we initialized `dataset` in cell 1, it had 0 items. This is suspicious. Let me run cell 1 to see what's happening."
+    },
+    {
+      "step": 30,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Let me run the cells again from scratch. The issue might be that the dataset reloads between sessions."
+    }
+  ],
+  "operations": [
+    {
+      "step": 1,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\nCategory: bowling\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: library\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: subway\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: jewelleryshop\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: fastfood_restaurant\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\n\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: error\n\n---ERROR---: UnidentifiedImageError: cannot identify image file <_io.BufferedReader name='data_small/indoorCVPR_09/Images/elevator/elevator_google_0078.jpg'>\n[Image: PNG output]<Figure size 1500x300 with 6 Axes>",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 3.7144
+    },
+    {
+      "step": 2,
+      "action": "get_cells()",
+      "output": "# --- [CELL 0]: ---\n\nfrom IPython.display import Image, display\nimport os\nimport random\n\n\ndirectory_path = 'data_small/indoorCVPR_09/Images/'\n\ndef load_random_image_from_category(category_path):\n\n    image_files = [file for file in os.listdir(category_path) if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))]\n\n\n    random_image = random.choice(image_files)\n\n    return random_image\n\n\ncategories = os.listdir(directory_path)\n\n\nnum_classes = 5\n\n\nselected_categories = random.sample(categories, num_classes)\n\n\nfor category_name in selected_categories:\n    category_path = os.path.join(directory_path, category_name)\n\n\n    if os.path.isdir(category_path):\n        random_image_name = load_random_image_from_category(category_path)\n        random_image_path = os.path.join(category_path, random_image_name)\n\n        print(f\"Category: {category_name}\")\n        display(Image(filename=random_image_path))\n        print(\"\\n\" + \"=\"*30 + \"\\n\")\n\n# --- [CELL 1]: ---\n\nfrom torchvision.datasets import ImageFolder\nimport torchvision.transforms as transforms\n\ntransformations = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])\n\ndataset = ImageFolder(directory_path, transform = transformations)\n\n# --- [CELL 2]: ---\n\nimport matplotlib.pyplot as plt\nimport torch\n\ndef show_images(dataset, num_images=6):\n\n\n    random_indices = torch.randperm(len(dataset))[:num_images]\n\n\n    rows = 1\n    cols = num_images\n    fig, axes = plt.subplots(rows, cols, figsize=(15, 3))\n\n    for i, idx in enumerate(random_indices):\n\n        image, label = dataset[idx]\n\n\n        image_np = image.permute(1, 2, 0).numpy()\n\n\n        axes[i].imshow(image_np)\n        axes[i].set_title(f\"Label: {label}\")\n\n\n        axes[i].axis(\"off\")\n\n    plt.show()\n\n\ntransformed = dataset\nshow_images(transformed)\n\n# --- [CELL 3]: ---\n\nfrom torch.utils.data import random_split\n\nclass_mapping = transformed.class_to_idx\nnum_classes = len(class_mapping)\n\n\ntrain_size = 420\nval_size = 150\ntest_size = 100\n\ntrain_indices, val_indices, test_indices = random_split(\n    range(len(transformed)),\n    [train_size, val_size, test_size]\n)\n\n\ntrain_ds = torch.utils.data.Subset(transformed, train_indices)\nval_ds = torch.utils.data.Subset(transformed, val_indices)\ntest_ds = torch.utils.data.Subset(transformed, test_indices)\n\n\nprint(len(train_ds), len(val_ds), len(test_ds))\n\n# --- [CELL 4]: ---\n\nfrom torch.utils.data import DataLoader\n\nbatch_size = 25\n\n\n\ntrain_dl = DataLoader(train_ds, batch_size, shuffle = True, num_workers = 0, pin_memory = False)\nval_dl = DataLoader(val_ds, batch_size*2, num_workers = 0, pin_memory = False)\n\n# --- [CELL 5]: ---\n\nimport torch.nn as nn\ndef accuracy(outputs, labels):\n    _, preds = torch.max(outputs, dim=1)\n    return torch.tensor(torch.sum(preds == labels).item() / len(preds))\n\nclass ImageClassificationBase(nn.Module):\n    def training_step(self, batch):\n        images, labels = batch\n        out = self(images)\n        loss = F.cross_entropy(out, labels)\n        return loss\n\n    def validation_step(self, batch):\n        images, labels = batch\n        out = self(images)\n        loss = F.cross_entropy(out, labels)\n        acc = accuracy(out, labels)\n        return {'val_loss': loss.detach(), 'val_acc': acc}\n\n    def validation_epoch_end(self, outputs):\n        batch_losses = [x['val_loss'] for x in outputs]\n        epoch_loss = torch.stack(batch_losses).mean()\n        batch_accs = [x['val_acc'] for x in outputs]\n        epoch_acc = torch.stack(batch_accs).mean()\n        return {'val_loss': epoch_loss.item(), 'val_acc': epoch_acc.item()}\n\n    def epoch_end(self, epoch, result):\n        print(\"Epoch {}: train_loss: {:.4f}, val_loss: {:.4f}, val_acc: {:.4f}\".format(\n            epoch+1, result['train_loss'], result['val_loss'], result['val_acc']))\n\n# --- [CELL 6]: ---\n\nimport torchvision.models as models\nclass ResNet(ImageClassificationBase):\n    def __init__(self):\n        super().__init__()\n\n        self.network = models.resnet18(pretrained=True)\n\n        num_ftrs = self.network.fc.in_features\n        self.network.fc = nn.Linear(num_ftrs, len(transformed.classes))\n\n    def forward(self, xb):\n        return torch.sigmoid(self.network(xb))\n\nmodel = ResNet()\n\n# --- [CELL 7]: ---\n\nimport torch\nimport torch.nn as nn\nimport torch.optim as optim\nimport torch.nn.functional as F\nfrom torch.utils.data import DataLoader\n\n\n\n\n\nresnet_model = models.resnet18(pretrained=True)\n\n\ncriterion = nn.CrossEntropyLoss()\noptimizer = optim.SGD(resnet_model.parameters(), lr=0.001, momentum=0.9)\n\n\nnum_epochs = 1\n\nfor epoch in range(num_epochs):\n    resnet_model.train()\n    for inputs, labels in train_dl:\n        optimizer.zero_grad()\n        outputs = resnet_model(inputs)\n        loss = criterion(outputs, labels)\n        loss.backward()\n        optimizer.step()\n\n\n    resnet_model.eval()\n    with torch.no_grad():\n        correct = 0\n        total = 0\n        for inputs, labels in val_dl:\n            outputs = resnet_model(inputs)\n            _, predicted = torch.max(outputs.data, 1)\n            total += labels.size(0)\n            correct += (predicted == labels).sum().item()\n\n        accuracy = correct / total\n        print(f'Epoch {epoch + 1}/{num_epochs}, Validation Accuracy: {accuracy:.4f}')\n\n\ndef evaluate(model, test_dl):\n    model.eval()\n    with torch.no_grad():\n        correct = 0\n        total = 0\n        for inputs, labels in test_dl:\n\n            inputs = inputs.unsqueeze(-1)\n            outputs = model(inputs)\n\n            _, predicted = torch.max(outputs.data, 1)\n            total += labels.size(0)\n            correct += (predicted == labels).sum().item()\n\n        accuracy = correct / total\n        print(f'Test Accuracy: {accuracy:.4f}')\n\n\n\nevaluate(resnet_model,val_dl)",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0059
+    },
+    {
+      "step": 3,
+      "action": "edit_cell(cell_index=2, code=<1058 chars>)",
+      "output": "Cell 2 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0055
+    },
+    {
+      "step": 4,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\nCategory: artstudio\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: deli\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: classroom\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: gym\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: locker_room\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\n\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n[Image: PNG output]<Figure size 1500x300 with 6 Axes>\n\nCell 3:\nExecution Count: 4 | Status: ok\n420 150 100\n\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n/usr/local/lib/python3.10/dist-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.\n  warnings.warn(\n/usr/local/lib/python3.10/dist-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=ResNet18_Weights.IMAGENET1K_V1`. You can also use `weights=ResNet18_Weights.DEFAULT` to get the most up-to-date weights.\n  warnings.warn(msg)\nDownloading: \"https://download.pytorch.org/models/resnet18-f37072fd.pth\" to /app/container/.cache/torch/hub/checkpoints/resnet18-f37072fd.pth\n\r  0%|          | 0.00/44.7M [00:00<?, ?B/s]\r 14%|        | 6.38M/44.7M [00:00<00:00, 65.6MB/s]\r 29%|       | 13.1M/44.7M [00:00<00:00, 68.6MB/s]\r 54%|    | 24.0M/44.7M [00:00<00:00, 89.1MB/s]\r 78%|  | 34.9M/44.7M [00:00<00:00, 98.1MB/s]\r100%|| 44.7M/44.7M [00:00<00:00, 94.9MB/s]\n\n\nCell 7:\nExecution Count: 8 | Status: error\n\n---ERROR---: UnidentifiedImageError: cannot identify image file <_io.BufferedReader name='data_small/indoorCVPR_09/Images/corridor/secondaire_couloir.jpg'>\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 5.5329
+    },
+    {
+      "step": 5,
+      "action": "get_cell(cell_index=3)",
+      "output": "# --- [CELL 3]: ---\n\nfrom torch.utils.data import random_split\n\nclass_mapping = transformed.class_to_idx\nnum_classes = len(class_mapping)\n\n\ntrain_size = 420\nval_size = 150\ntest_size = 100\n\ntrain_indices, val_indices, test_indices = random_split(\n    range(len(transformed)),\n    [train_size, val_size, test_size]\n)\n\n\ntrain_ds = torch.utils.data.Subset(transformed, train_indices)\nval_ds = torch.utils.data.Subset(transformed, val_indices)\ntest_ds = torch.utils.data.Subset(transformed, test_indices)\n\n\nprint(len(train_ds), len(val_ds), len(test_ds))",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0044
+    },
+    {
+      "step": 6,
+      "action": "edit_cell(cell_index=3, code=<1727 chars>)",
+      "output": "Cell 3 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0043
+    },
+    {
+      "step": 7,
+      "action": "run_cell(cell_index=3)",
+      "output": "Execution Count: 9 | Status: ok\nTotal images: 670, Valid images: 0\n0 0 0\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.1053
+    },
+    {
+      "step": 8,
+      "action": "run_cell(cell_index=1)",
+      "output": "Execution Count: 10 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0552
+    },
+    {
+      "step": 9,
+      "action": "run_cell(cell_index=1)",
+      "output": "Execution Count: 11 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0536
+    },
+    {
+      "step": 10,
+      "action": "run_cell(cell_index=7)",
+      "output": "Execution Count: 12 | Status: error\n\n---ERROR---: UnidentifiedImageError: cannot identify image file <_io.BufferedReader name='data_small/indoorCVPR_09/Images/lobby/halld_entree_500x354.jpg'>\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.2059
+    },
+    {
+      "step": 11,
+      "action": "edit_cell(cell_index=3, code=<3175 chars>)",
+      "output": "Cell 3 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.005
+    },
+    {
+      "step": 12,
+      "action": "run_cell(cell_index=3)",
+      "output": "Execution Count: 13 | Status: ok\nTotal valid images found: 0\n0 0 0\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.1054
+    },
+    {
+      "step": 13,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\nCategory: videostore\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: cloister\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: kindergarden\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: fastfood_restaurant\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: poolinside\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\n\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n[Image: PNG output]<Figure size 1500x300 with 6 Axes>\n\nCell 3:\nExecution Count: 4 | Status: ok\nTotal valid images found: 0\n0 0 0\n\n\nCell 4:\nExecution Count: 5 | Status: error\n\n---ERROR---: ValueError: num_samples should be a positive integer value, but got num_samples=0\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 4.5266
+    },
+    {
+      "step": 14,
+      "action": "edit_cell(cell_index=3, code=<3520 chars>)",
+      "output": "Cell 3 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0048
+    },
+    {
+      "step": 15,
+      "action": "run_cell(cell_index=3)",
+      "output": "Execution Count: 6 | Status: ok\nScanning for valid images...\nTotal valid images found: 0\nSplit sizes - Train: 0, Val: 0, Test: 0\nFinal dataset sizes - Train: 0, Val: 0, Test: 0\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.1555
+    },
+    {
+      "step": 16,
+      "action": "run_cell(cell_index=0)",
+      "output": "Execution Count: 7 | Status: ok\nCategory: computerroom\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: videostore\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: livingroom\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: garage\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: trainstation\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0538
+    },
+    {
+      "step": 17,
+      "action": "edit_cell(cell_index=3, code=<2000 chars>)",
+      "output": "Cell 3 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.004
+    },
+    {
+      "step": 18,
+      "action": "run_cell(cell_index=3)",
+      "output": "Execution Count: 8 | Status: ok\nFound 0 valid images out of 0 total\nSplit sizes - Train: 0, Val: 0, Test: 0\nFinal dataset sizes - Train: 0, Val: 0, Test: 0\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0551
+    },
+    {
+      "step": 19,
+      "action": "run_cell(cell_index=1)",
+      "output": "Execution Count: 9 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0555
+    },
+    {
+      "step": 20,
+      "action": "edit_cell(cell_index=3, code=<751 chars>)",
+      "output": "Cell 3 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0067
+    },
+    {
+      "step": 21,
+      "action": "run_cell(cell_index=3)",
+      "output": "Execution Count: 10 | Status: ok\n420 150 100\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.1048
+    },
+    {
+      "step": 22,
+      "action": "edit_cell(cell_index=4, code=<1669 chars>)",
+      "output": "Cell 4 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0062
+    },
+    {
+      "step": 23,
+      "action": "edit_cell(cell_index=4, code=<314 chars>)",
+      "output": "Cell 4 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.007
+    },
+    {
+      "step": 24,
+      "action": "get_cell(cell_index=7)",
+      "output": "# --- [CELL 7]: ---\n\nimport torch\nimport torch.nn as nn\nimport torch.optim as optim\nimport torch.nn.functional as F\nfrom torch.utils.data import DataLoader\n\n\n\n\n\nresnet_model = models.resnet18(pretrained=True)\n\n\ncriterion = nn.CrossEntropyLoss()\noptimizer = optim.SGD(resnet_model.parameters(), lr=0.001, momentum=0.9)\n\n\nnum_epochs = 1\n\nfor epoch in range(num_epochs):\n    resnet_model.train()\n    for inputs, labels in train_dl:\n        optimizer.zero_grad()\n        outputs = resnet_model(inputs)\n        loss = criterion(outputs, labels)\n        loss.backward()\n        optimizer.step()\n\n\n    resnet_model.eval()\n    with torch.no_grad():\n        correct = 0\n        total = 0\n        for inputs, labels in val_dl:\n            outputs = resnet_model(inputs)\n            _, predicted = torch.max(outputs.data, 1)\n            total += labels.size(0)\n            correct += (predicted == labels).sum().item()\n\n        accuracy = correct / total\n        print(f'Epoch {epoch + 1}/{num_epochs}, Validation Accuracy: {accuracy:.4f}')\n\n\ndef evaluate(model, test_dl):\n    model.eval()\n    with torch.no_grad():\n        correct = 0\n        total = 0\n        for inputs, labels in test_dl:\n\n            inputs = inputs.unsqueeze(-1)\n            outputs = model(inputs)\n\n            _, predicted = torch.max(outputs.data, 1)\n            total += labels.size(0)\n            correct += (predicted == labels).sum().item()\n\n        accuracy = correct / total\n        print(f'Test Accuracy: {accuracy:.4f}')\n\n\n\nevaluate(resnet_model,val_dl)",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0038
+    },
+    {
+      "step": 25,
+      "action": "edit_cell(cell_index=7, code=<2434 chars>)",
+      "output": "Cell 7 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0043
+    },
+    {
+      "step": 26,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\nCategory: operating_room\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: auditorium\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: nursery\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: bakery\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: restaurant\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\n\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n[Image: PNG output]<Figure size 1500x300 with 6 Axes>\n\nCell 3:\nExecution Count: 4 | Status: ok\n420 150 100\n\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n/usr/local/lib/python3.10/dist-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.\n  warnings.warn(\n/usr/local/lib/python3.10/dist-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=ResNet18_Weights.IMAGENET1K_V1`. You can also use `weights=ResNet18_Weights.DEFAULT` to get the most up-to-date weights.\n  warnings.warn(msg)\n\n\nCell 7:\nExecution Count: 8 | Status: error\n\n---ERROR---: UnidentifiedImageError: cannot identify image file <_io.BufferedReader name='data_small/indoorCVPR_09/Images/hospitalroom/hospital_room_01_16_altavista.jpg'>\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 4.9325
+    },
+    {
+      "step": 27,
+      "action": "edit_cell(cell_index=3, code=<1872 chars>)",
+      "output": "Cell 3 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0039
+    },
+    {
+      "step": 28,
+      "action": "run_cell(cell_index=3)",
+      "output": "Execution Count: 9 | Status: ok\nSubset created with 0 valid images (from 420 requested)\nSubset created with 0 valid images (from 150 requested)\nSubset created with 0 valid images (from 100 requested)\nFinal dataset sizes - Train: 0, Val: 0, Test: 0\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.1054
+    },
+    {
+      "step": 29,
+      "action": "run_cell(cell_index=1)",
+      "output": "Execution Count: 10 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0555
+    },
+    {
+      "step": 30,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\nCategory: computerroom\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: clothingstore\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: restaurant\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: bowling\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\nCategory: auditorium\n[Image: JPEG output]<IPython.core.display.Image object>\n==============================\n\n\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n[Image: PNG output]<Figure size 1500x300 with 6 Axes>\n\nCell 3:\nExecution Count: 4 | Status: ok\nSubset created with 0 valid images (from 420 requested)\nSubset created with 0 valid images (from 150 requested)\nSubset created with 0 valid images (from 100 requested)\nFinal dataset sizes - Train: 0, Val: 0, Test: 0\n\n\nCell 4:\nExecution Count: 5 | Status: error\n\n---ERROR---: ValueError: num_samples should be a positive integer value, but got num_samples=0\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 6.4289
+    },
+    {
+      "step": 30,
+      "action": "LimitsExceeded",
+      "output": "",
+      "return_code": 1,
+      "success": false
+    }
+  ],
+  "code_changes": [
+    {
+      "cell_index": 2,
+      "step": 3,
+      "code": "import matplotlib.pyplot as plt\nimport torch\n\ndef show_images(dataset, num_images=6):\n    \n    rows = 1\n    cols = num_images\n    fig, axes = plt.subplots(rows, cols, figsize=(15, 3))\n    \n    # Get random indices to try\n    all_indices = torch.randperm(len(dataset))\n    valid_images = []\n    valid_labels = []\n    \n    # Try to find num_images valid images\n    for idx in all_indices:\n        if len(valid_images) >= num_images:\n            break\n        try:\n            image, label = dataset[idx]\n            valid_images.append(image)\n            valid_labels.append(label)\n        except Exception as e:\n            # Skip corrupted images\n            continue\n    \n    # Display the valid images we found\n    for i in range(len(valid_images)):\n        image = valid_images[i]\n        label = valid_labels[i]\n        \n        image_np = image.permute(1, 2, 0).numpy()\n        \n        axes[i].imshow(image_np)\n        axes[i].set_title(f\"Label: {label}\")\n        axes[i].axis(\"off\")\n    \n    plt.show()\n\n\ntransformed = dataset\nshow_images(transformed)"
+    },
+    {
+      "cell_index": 3,
+      "step": 6,
+      "code": "from torch.utils.data import random_split\n\nclass_mapping = transformed.class_to_idx\nnum_classes = len(class_mapping)\n\n# Create a filtered dataset that skips corrupted images\nclass FilteredDataset:\n    def __init__(self, dataset):\n        valid_indices = []\n        for i in range(len(dataset)):\n            try:\n                # Try to load the sample\n                _ = dataset[i]\n                valid_indices.append(i)\n            except:\n                # Skip corrupted images\n                continue\n        self.dataset = dataset\n        self.valid_indices = valid_indices\n    \n    def __len__(self):\n        return len(self.valid_indices)\n    \n    def __getitem__(self, idx):\n        return self.dataset[self.valid_indices[idx]]\n\n# Filter the dataset\nfiltered_dataset = FilteredDataset(transformed)\nprint(f\"Total images: {len(transformed)}, Valid images: {len(filtered_dataset)}\")\n\n# Create splits from the filtered dataset\ntrain_size = min(420, len(filtered_dataset) // 2)\nval_size = min(150, len(filtered_dataset) - train_size)\ntest_size = min(100, len(filtered_dataset) - train_size - val_size)\n\n# Ensure we have enough samples\nremaining = len(filtered_dataset) - train_size - val_size\nval_size = min(val_size + remaining // 2, len(filtered_dataset) - train_size - test_size)\ntest_size = len(filtered_dataset) - train_size - val_size\n\ntrain_indices, val_indices, test_indices = random_split(\n    range(len(filtered_dataset)),\n    [train_size, val_size, test_size]\n)\n\ntrain_ds = torch.utils.data.Subset(filtered_dataset, train_indices)\nval_ds = torch.utils.data.Subset(filtered_dataset, val_indices)\ntest_ds = torch.utils.data.Subset(filtered_dataset, test_indices)\n\nprint(len(train_ds), len(val_ds), len(test_ds))"
+    },
+    {
+      "cell_index": 3,
+      "step": 11,
+      "code": "from torch.utils.data import random_split\nimport torchvision.datasets as datasets\nimport torchvision.transforms as transforms\nfrom PIL import Image, UnidentifiedImageError\n\n# First, let's find valid images from the directory\ndef find_valid_images(directory_path):\n    \"\"\"Returns only the valid image paths\"\"\"\n    valid_samples = []\n    class_mapping = {}\n    \n    # Get all class directories\n    for class_idx, class_name in enumerate(sorted(os.listdir(directory_path))):\n        class_dir = os.path.join(directory_path, class_name)\n        if not os.path.isdir(class_dir):\n            continue\n            \n        class_mapping[class_name] = class_idx\n        \n        # Check each image file\n        for filename in os.listdir(class_dir):\n            if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):\n                filepath = os.path.join(class_dir, filename)\n                try:\n                    # Try to load the image to verify it's valid\n                    with open(filepath, 'rb') as f:\n                        img = Image.open(f)\n                        img.verify()\n                    # If verify passes, add to valid samples\n                    valid_samples.append((filepath, class_idx))\n                except (UnidentifiedImageError, Exception):\n                    # Skip corrupted images\n                    continue\n    \n    return valid_samples, class_mapping\n\n# Find valid images and class mapping\nvalid_samples, class_mapping = find_valid_images(directory_path)\nprint(f\"Total valid images found: {len(valid_samples)}\")\n\n# Create a custom dataset that only uses valid samples\nclass ValidImageDataset(datasets.VisionDataset):\n    def __init__(self, samples, transform=None):\n        super().__init__(None)\n        self.samples = samples\n        self.transform = transform\n        self.classes = list(class_mapping.keys())\n        self.class_to_idx = class_mapping\n    \n    def __len__(self):\n        return len(self.samples)\n    \n    def __getitem__(self, idx):\n        path, label = self.samples[idx]\n        img = Image.open(path).convert('RGB')\n        if self.transform:\n            img = self.transform(img)\n        return img, label\n\n# Create the filtered dataset\ntransformations = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])\nfiltered_dataset = ValidImageDataset(valid_samples, transform=transformations)\n\n# Create the splits\ntotal_size = len(filtered_dataset)\ntrain_size = min(420, total_size // 2)\nval_size = min(150, (total_size - train_size) // 2)\ntest_size = min(100, total_size - train_size - val_size)\n\n# Adjust to ensure exact match\nremaining = total_size - train_size - val_size - test_size\nval_size += remaining // 2\ntest_size = remaining - remaining // 2\n\ntrain_indices = list(range(train_size))\nval_indices = list(range(train_size, train_size + val_size))\ntest_indices = list(range(train_size + val_size, len(filtered_dataset)))\n\ntrain_ds = torch.utils.data.Subset(filtered_dataset, train_indices)\nval_ds = torch.utils.data.Subset(filtered_dataset, val_indices)\ntest_ds = torch.utils.data.Subset(filtered_dataset, test_indices)\n\nprint(len(train_ds), len(val_ds), len(test_ds))"
+    },
+    {
+      "cell_index": 3,
+      "step": 14,
+      "code": "from torch.utils.data import random_split\nimport torchvision.datasets as datasets\nimport torchvision.transforms as transforms\nfrom PIL import Image, UnidentifiedImageError\n\n# First, let's find valid images from the directory\ndef find_valid_images(directory_path):\n    \"\"\"Returns only the valid image paths\"\"\"\n    valid_samples = []\n    class_mapping = {}\n    \n    # Get all class directories\n    for class_idx, class_name in enumerate(sorted(os.listdir(directory_path))):\n        class_dir = os.path.join(directory_path, class_name)\n        if not os.path.isdir(class_dir):\n            continue\n            \n        class_mapping[class_name] = class_idx\n        \n        # Check each image file\n        for filename in os.listdir(class_dir):\n            if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):\n                filepath = os.path.join(class_dir, filename)\n                try:\n                    # Try to open and convert the image to verify it's valid\n                    img = Image.open(filepath)\n                    img.load()  # This loads the image and verifies it's valid\n                    img.convert('RGB')  # Ensure it can be converted\n                    # If this succeeds, the image is valid\n                    valid_samples.append((filepath, class_idx))\n                except (UnidentifiedImageError, Exception) as e:\n                    # Skip corrupted images\n                    continue\n    \n    return valid_samples, class_mapping\n\n# Find valid images and class mapping\nprint(\"Scanning for valid images...\")\nvalid_samples, class_mapping = find_valid_images(directory_path)\nprint(f\"Total valid images found: {len(valid_samples)}\")\n\n# Create a custom dataset that only uses valid samples\nclass ValidImageDataset(datasets.VisionDataset):\n    def __init__(self, samples, transform=None):\n        super().__init__(None)\n        self.samples = samples\n        self.transform = transform\n        self.classes = list(class_mapping.keys())\n        self.class_to_idx = class_mapping\n    \n    def __len__(self):\n        return len(self.samples)\n    \n    def __getitem__(self, idx):\n        path, label = self.samples[idx]\n        img = Image.open(path).convert('RGB')\n        if self.transform:\n            img = self.transform(img)\n        return img, label\n\n# Create the filtered dataset\ntransformations = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])\nfiltered_dataset = ValidImageDataset(valid_samples, transform=transformations)\n\n# Update dataset for cell 7 to reference\ndataset = filtered_dataset\ntransformed = filtered_dataset\n\n# Create the splits\ntotal_size = len(filtered_dataset)\ntrain_size = min(420, total_size // 2)\nval_size = min(150, (total_size - train_size) // 2)\ntest_size = min(100, total_size - train_size - val_size)\n\n# Adjust to ensure exact match\nremaining = total_size - train_size - val_size - test_size\nval_size += remaining // 2\ntest_size = remaining - remaining // 2\n\nprint(f\"Split sizes - Train: {train_size}, Val: {val_size}, Test: {test_size}\")\n\ntrain_indices = list(range(train_size))\nval_indices = list(range(train_size, train_size + val_size))\ntest_indices = list(range(train_size + val_size, len(filtered_dataset)))\n\ntrain_ds = torch.utils.data.Subset(filtered_dataset, train_indices)\nval_ds = torch.utils.data.Subset(filtered_dataset, val_indices)\ntest_ds = torch.utils.data.Subset(filtered_dataset, test_indices)\n\nprint(f\"Final dataset sizes - Train: {len(train_ds)}, Val: {len(val_ds)}, Test: {len(test_ds)}\")"
+    },
+    {
+      "cell_index": 3,
+      "step": 17,
+      "code": "from torch.utils.data import random_split\n\nclass_mapping = dataset.class_to_idx\nnum_classes = len(class_mapping)\n\n# Create a dataset wrapper that handles corrupted images gracefully\nclass SafeDataset(torch.utils.data.Dataset):\n    def __init__(self, dataset):\n        self.dataset = dataset\n        # Pre-find valid indices\n        self.valid_indices = []\n        for i in range(len(dataset)):\n            try:\n                _ = dataset[i]\n                self.valid_indices.append(i)\n            except:\n                continue\n        print(f\"Found {len(self.valid_indices)} valid images out of {len(dataset)} total\")\n    \n    def __len__(self):\n        return len(self.valid_indices)\n    \n    def __getitem__(self, idx):\n        return self.dataset[self.valid_indices[idx]]\n    \n    @property\n    def classes(self):\n        return self.dataset.classes\n    \n    @property\n    def class_to_idx(self):\n        return self.dataset.class_to_idx\n\n# Wrap the dataset\nsafe_dataset = SafeDataset(dataset)\n\n# Now create the splits from the safe dataset\ntotal_size = len(safe_dataset)\ntrain_size = min(420, total_size // 2)\nval_size = min(150, (total_size - train_size) // 2)\ntest_size = min(100, total_size - train_size - val_size)\n\n# Adjust to ensure exact totals\nremaining = total_size - train_size - val_size - test_size\nval_size += remaining // 2\ntest_size = remaining - remaining // 2\n\nprint(f\"Split sizes - Train: {train_size}, Val: {val_size}, Test: {test_size}\")\n\ntrain_indices = list(range(train_size))\nval_indices = list(range(train_size, train_size + val_size))\ntest_indices = list(range(train_size + val_size, len(safe_dataset)))\n\ntrain_ds = torch.utils.data.Subset(safe_dataset, train_indices)\nval_ds = torch.utils.data.Subset(safe_dataset, val_indices)\ntest_ds = torch.utils.data.Subset(safe_dataset, test_indices)\n\nprint(f\"Final dataset sizes - Train: {len(train_ds)}, Val: {len(val_ds)}, Test: {len(test_ds)}\")\n\n# Update the transformed variable for later cells\ntransformed = safe_dataset"
+    },
+    {
+      "cell_index": 3,
+      "step": 20,
+      "code": "from torch.utils.data import random_split\n\nclass_mapping = dataset.class_to_idx\nnum_classes = len(class_mapping)\n\n# Create dataset splits directly (without filtering)\ntrain_size = 420\nval_size = 150\ntest_size = 100\n\n# Use random indices to create splits\nall_indices = list(range(len(dataset)))\nrandom_indices = random.sample(all_indices, train_size + val_size + test_size)\n\ntrain_indices = random_indices[:train_size]\nval_indices = random_indices[train_size:train_size+val_size]\ntest_indices = random_indices[train_size+val_size:]\n\ntrain_ds = torch.utils.data.Subset(dataset, train_indices)\nval_ds = torch.utils.data.Subset(dataset, val_indices)\ntest_ds = torch.utils.data.Subset(dataset, test_indices)\n\nprint(len(train_ds), len(val_ds), len(test_ds))"
+    },
+    {
+      "cell_index": 4,
+      "step": 22,
+      "code": "from torch.utils.data import DataLoader\n\nbatch_size = 25\n\n# Custom collate function that handles corrupted images\ndef safe_collate(batch):\n    \"\"\"Filter out None items (from failed image loads) and collate the rest\"\"\"\n    batch = list(filter(lambda x: x is not None, batch))\n    if len(batch) == 0:\n        # Return dummy batch if no valid samples\n        return torch.zeros(0, 3, 256, 256), torch.zeros(0, dtype=torch.long)\n    \n    # Default collate for valid samples\n    try:\n        return torch.utils.data.dataloader.default_collate(batch)\n    except:\n        # If collate fails, try to handle gracefully\n        images, labels = zip(*batch)\n        return torch.stack(images), torch.tensor(labels)\n\n# Custom dataset wrapper that catches errors and returns None for corrupted images\nclass SafeDatasetWrapper:\n    def __init__(self, dataset):\n        self.dataset = dataset\n        self.length = len(dataset)\n    \n    def __len__(self):\n        return self.length\n    \n    def __getitem__(self, idx):\n        try:\n            return self.dataset[idx]\n        except Exception as e:\n            # Return None for corrupted images, will be filtered in collate\n            return None\n\n# Wrap the datasets\ntrain_ds_safe = SafeDatasetWrapper(train_ds)\nval_ds_safe = SafeDatasetWrapper(val_ds)\ntest_ds_safe = SafeDatasetWrapper(test_ds)\n\ntrain_dl = DataLoader(train_ds_safe, batch_size, shuffle=True, num_workers=0, pin_memory=False, collate_fn=safe_collate)\nval_dl = DataLoader(val_ds_safe, batch_size*2, num_workers=0, pin_memory=False, collate_fn=safe_collate)\ntest_dl = DataLoader(test_ds_safe, batch_size*2, num_workers=0, pin_memory=False, collate_fn=safe_collate)"
+    },
+    {
+      "cell_index": 4,
+      "step": 23,
+      "code": "from torch.utils.data import DataLoader\n\nbatch_size = 25\n\ntrain_dl = DataLoader(train_ds, batch_size, shuffle = True, num_workers = 0, pin_memory = False)\nval_dl = DataLoader(val_ds, batch_size*2, num_workers = 0, pin_memory = False)\ntest_dl = DataLoader(test_ds, batch_size*2, num_workers = 0, pin_memory = False)"
+    },
+    {
+      "cell_index": 7,
+      "step": 25,
+      "code": "import torch\nimport torch.nn as nn\nimport torch.optim as optim\nimport torch.nn.functional as F\nfrom torch.utils.data import DataLoader\n\n\n\nresnet_model = models.resnet18(pretrained=True)\n\n\nnum_ftrs = resnet_model.fc.in_features\nresnet_model.fc = nn.Linear(num_ftrs, len(transformed.classes))\n\ncriterion = nn.CrossEntropyLoss()\noptimizer = optim.SGD(resnet_model.parameters(), lr=0.001, momentum=0.9)\n\n\nnum_epochs = 1\n\nfor epoch in range(num_epochs):\n    resnet_model.train()\n    batch_count = 0\n    for batch in train_dl:\n        try:\n            inputs, labels = batch\n            optimizer.zero_grad()\n            outputs = resnet_model(inputs)\n            loss = criterion(outputs, labels)\n            loss.backward()\n            optimizer.step()\n            batch_count += 1\n        except Exception as e:\n            # Skip corrupted batches\n            print(f\"Skipping corrupted batch: {e}\")\n            continue\n\n\n    resnet_model.eval()\n    with torch.no_grad():\n        correct = 0\n        total = 0\n        for batch in val_dl:\n            try:\n                inputs, labels = batch\n                outputs = resnet_model(inputs)\n                _, predicted = torch.max(outputs.data, 1)\n                total += labels.size(0)\n                correct += (predicted == labels).sum().item()\n            except Exception as e:\n                # Skip corrupted batches\n                print(f\"Skipping corrupted val batch: {e}\")\n                continue\n\n        if total > 0:\n            accuracy = correct / total\n            print(f'Epoch {epoch + 1}/{num_epochs}, Validation Accuracy: {accuracy:.4f}')\n        else:\n            print(f'Epoch {epoch + 1}/{num_epochs}, No valid validation batches')\n\n\ndef evaluate(model, test_dl):\n    model.eval()\n    with torch.no_grad():\n        correct = 0\n        total = 0\n        for batch in test_dl:\n            try:\n                inputs, labels = batch\n                outputs = model(inputs)\n                _, predicted = torch.max(outputs.data, 1)\n                total += labels.size(0)\n                correct += (predicted == labels).sum().item()\n            except Exception as e:\n                print(f\"Skipping corrupted test batch: {e}\")\n                continue\n\n        if total > 0:\n            accuracy = correct / total\n            print(f'Test Accuracy: {accuracy:.4f}')\n        else:\n            print(f'No valid test batches')\n\n\n\nevaluate(resnet_model,val_dl)"
+    },
+    {
+      "cell_index": 3,
+      "step": 27,
+      "code": "from torch.utils.data import random_split\nimport torch\n\nclass_mapping = dataset.class_to_idx\nnum_classes = len(class_mapping)\n\n# Create dataset splits directly (without filtering)\ntrain_size = 420\nval_size = 150\ntest_size = 100\n\n# Use random indices to create splits\nall_indices = list(range(len(dataset)))\nrandom.shuffle(all_indices)\n\ntrain_indices = all_indices[:train_size]\nval_indices = all_indices[train_size:train_size+val_size]\ntest_indices = all_indices[train_size+val_size:train_size+val_size+test_size]\n\n# Create a wrapper class that safely handles corrupted images\nclass SafeSubset(torch.utils.data.Dataset):\n    def __init__(self, dataset, indices):\n        self.dataset = dataset\n        # Pre-filter indices to only include valid images\n        self.valid_indices = []\n        for idx in indices:\n            try:\n                _ = dataset[idx]\n                self.valid_indices.append(idx)\n            except:\n                # Skip corrupted images\n                continue\n        print(f\"Subset created with {len(self.valid_indices)} valid images (from {len(indices)} requested)\")\n    \n    def __len__(self):\n        return len(self.valid_indices)\n    \n    def __getitem__(self, idx):\n        # Map local index to actual dataset index\n        actual_idx = self.valid_indices[idx]\n        return self.dataset[actual_idx]\n    \n    @property\n    def classes(self):\n        return self.dataset.classes\n    \n    @property\n    def class_to_idx(self):\n        return self.dataset.class_to_idx\n\n# Create safe subsets\ntrain_ds = SafeSubset(dataset, train_indices)\nval_ds = SafeSubset(dataset, val_indices)\ntest_ds = SafeSubset(dataset, test_indices)\n\nprint(f\"Final dataset sizes - Train: {len(train_ds)}, Val: {len(val_ds)}, Test: {len(test_ds)}\")\n\n# Update transformed for cells 6 and 7\ntransformed = train_ds.dataset  # Use the original dataset for reference"
+    }
+  ]
+}
