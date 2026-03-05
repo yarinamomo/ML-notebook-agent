@@ -1,12 +1,11 @@
 import json
 import os
-import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 import typer
 from src.utils.log import logger
-from src.utils.ui import format_eta, progress_live, set_ui_enabled
+from src.utils.ui import get_progress_advance_fn, progress_live, set_ui_enabled
 from src.utils.yaml_parser import (
     load_config,
     load_api_keys,
@@ -174,9 +173,11 @@ def main(
     run_fn = run_baseline_instance if is_baseline else run_single_instance
 
     with progress_live(total_iterations, f"{mode_label}: {model_name}") as (progress, task_id):
-
-        start_time = time.monotonic()
-        completed_count = 0
+        progress_advance_fn: Callable[[str], None] = get_progress_advance_fn(
+            progress=progress,
+            task_id=task_id,
+            total_iterations=total_iterations,
+        )
 
         for instance_name, run_num in runs_to_execute:
             try:
@@ -193,16 +194,7 @@ def main(
                 logger.error(f"Failed to run model={model_name}, instance={instance_name}, run={run_num}: {e}")
                 logger.exception(e)
             finally:
-                completed_count += 1
-                elapsed = time.monotonic() - start_time
-                avg_per_run = elapsed / completed_count
-                remaining = avg_per_run * (total_iterations - completed_count)
-                progress.update(
-                    task_id,
-                    advance=1,
-                    description=f"{mode_label}: {model_name} | {instance_name} | run {run_num}",
-                    eta=format_eta(remaining),
-                )
+                progress_advance_fn(f"{mode_label}: {model_name} | {instance_name} | run {run_num}")
 
 if __name__ == "__main__":
     app()

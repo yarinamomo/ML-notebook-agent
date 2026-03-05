@@ -11,7 +11,9 @@ from rich.progress import (
 )
 from rich.text import Text
 from contextlib import contextmanager
-from typing import Iterator
+from typing import Callable, Iterator
+import threading
+import time
 
 console = Console()
 status_renderable = Text("")
@@ -32,6 +34,7 @@ __all__ = [
     "status_renderable",
     "format_eta",
     "progress_live",
+    "get_progress_advance_fn",
     "set_ui_enabled",
     "is_ui_enabled",
 ]
@@ -137,8 +140,8 @@ def format_eta(seconds: float | None) -> str:
 
 
 @contextmanager
-def progress_live(total: int, description: str) -> Iterator[tuple[Progress, TaskID]]:
-    if not UI_ENABLED:
+def progress_live(total: int, description: str, force_display: bool = False) -> Iterator[tuple[Progress, TaskID]]:
+    if not UI_ENABLED and not force_display:
         # Return dummy progress and task_id when UI is disabled
         class DummyProgress:
             def update(self, *args, **kwargs):
@@ -170,6 +173,33 @@ def progress_live(total: int, description: str) -> Iterator[tuple[Progress, Task
             eta="--:--:--",
         )
         yield progress, task_id
+
+
+def get_progress_advance_fn(
+    progress: Progress,
+    task_id: TaskID,
+    total_iterations: int,
+) -> Callable[[str], None]:
+    """Return a thread-safe function that advances progress and recomputes ETA."""
+    start_time = time.monotonic()
+    completed_count = 0
+    lock = threading.Lock()
+
+    def advance_fn(description: str) -> None:
+        nonlocal completed_count
+        with lock:
+            completed_count += 1
+            elapsed = time.monotonic() - start_time
+            avg_per_run = elapsed / completed_count
+            remaining = avg_per_run * (total_iterations - completed_count)
+            progress.update(
+                task_id,
+                advance=1,
+                description=description,
+                eta=format_eta(remaining),
+            )
+
+    return advance_fn
 
 def _truncate(content: str, max_lines: int = 50, max_chars_per_line: int = 200) -> str:
     if content is None:
