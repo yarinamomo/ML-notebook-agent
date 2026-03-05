@@ -188,7 +188,7 @@ def get_trajectories_dir(config: dict[str, Any]) -> Path:
     """
     misc_config = config.get("misc", {})
     trajectories_dir = Path(misc_config.get("trajectory_log_path", "./trajectories"))
-    trajectories_dir.mkdir(exist_ok=True)
+    trajectories_dir.mkdir(parents=True, exist_ok=True)
     return trajectories_dir
 
 def apply_port_offset(config: dict[str, Any], port_offset: int) -> dict[str, Any]:
