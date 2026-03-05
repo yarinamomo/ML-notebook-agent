@@ -164,7 +164,7 @@ def run_baseline_instance(
             summary_text = f"Applied {len(actions)} edit(s)"
 
     except Exception as e:
-        exit_status = type(e).__name__
+        exit_status = "INCOMPLETE"
         summary_text = str(e)
         logger.error(f"Error in baseline run: {e}", exc_info=True)
     finally:
