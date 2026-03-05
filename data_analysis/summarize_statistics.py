@@ -23,15 +23,6 @@ def collect_results(run_dir):
                             total_steps = data["statistics"].get("total_steps", 0)
                             execution_time_seconds = data["metadata"].get("execution_time_seconds", 0.0)
                             
-                            # Parse INCOMPLETE status more specifically
-                            if status == "INCOMPLETE":
-                                if total_steps >= 30:
-                                    status = "LimitsExceeded"
-                                elif execution_time_seconds >= 3600:
-                                    status = "AgentTimeout"
-                                else:
-                                    status = "EnvironmentUnavailable"
-                            
                             result = {
                                 "model": run_dir.name,
                                 "instance": file.stem.replace("_summary", ""),
@@ -53,10 +44,13 @@ def generate_overall_summary(results, output_path):
     def is_submit_status(status):
         status_upper = status.upper()
         return status_upper in ['SUCCESS', 'SUBMITTED', 'SUBMITTEDWITHERRORS']
+
+    def is_successful_result(result):
+        return is_submit_status(result.get('exit_status', ''))
     
-    successful = sum(1 for r in results if r.get('success', False))
-    failed = sum(1 for r in results if not r.get('success', False))
-    total_cost = sum(r.get('cost', 0.0) for r in results)
+    successful = sum(1 for r in results if is_successful_result(r))
+    failed = len(results) - successful
+    total_cost = sum(r.get('cost', 0.0) if r.get('cost', 0.0) else 0.0 for r in results)
     total_steps = sum(r.get('total_steps', 0) for r in results)
     total_execution_time_seconds = sum(r.get('execution_time_seconds', 0.0) for r in results)
     total_op_run_code = sum(
@@ -65,7 +59,6 @@ def generate_overall_summary(results, output_path):
     )
     # Determine number of runs (run_* folders) from results
     run_numbers = set(r.get('run', 0) for r in results)
-    num_runs = len(run_numbers) if run_numbers else 1
     
     # Calculate pass@3: for each instance, check if it has a submit status in at least one run
     instance_results = {}
@@ -118,11 +111,11 @@ def generate_overall_summary(results, output_path):
         else:
             return (lst[n // 2 - 1] + lst[n // 2]) / 2
 
-    costs = [r.get('cost', 0.0) for r in results]
+    costs = [r.get('cost', 0.0) if r.get('cost', 0.0) else 0.0 for r in results]
     exec_times = [r.get('execution_time_seconds', 0.0) for r in results]
     steps = [r.get('total_steps', 0) for r in results]
-    failed_instances = [f"run_{r['run']}/{r['instance']}" for r in results if not r.get("success", False)]
-    success_instances = [f"run_{r['run']}/{r['instance']}" for r in results if r.get("success", False)]
+    failed_instances = [f"run_{r['run']}/{r['instance']}" for r in results if not is_successful_result(r)]
+    success_instances = [f"run_{r['run']}/{r['instance']}" for r in results if is_successful_result(r)]
     
     # Per-run statistics
     per_run_stats = {}
@@ -131,10 +124,10 @@ def generate_overall_summary(results, output_path):
         if not run_results:
             continue
         
-        run_costs = [r.get('cost', 0.0) for r in run_results]
+        run_costs = [r.get('cost', 0.0) if r.get('cost', 0.0) else 0.0 for r in run_results]
         run_exec_times = [r.get('execution_time_seconds', 0.0) for r in run_results]
         run_steps = [r.get('total_steps', 0) for r in run_results]
-        run_successful = sum(1 for r in run_results if r.get('success', False))
+        run_successful = sum(1 for r in run_results if is_successful_result(r))
         run_failed = len(run_results) - run_successful
         
         # Status distribution for this run
@@ -228,8 +221,8 @@ def generate_overall_summary(results, output_path):
                 "max_cost": max(costs) if costs else 0.0,
                 "min_cost": min(costs) if costs else 0.0,
                 "median_cost": median(costs),
-                "avg_cost_per_success": sum(r.get('cost', 0.0) for r in results if r.get('success', False)) / successful if successful else 0.0,
-                "avg_cost_per_failure": sum(r.get('cost', 0.0) for r in results if not r.get('success', False)) / failed if failed else 0.0,
+                "avg_cost_per_success": sum(r.get('cost', 0.0) if r.get('cost', 0.0) else 0.0 for r in results if is_successful_result(r)) / successful if successful else 0.0,
+                "avg_cost_per_failure": sum(r.get('cost', 0.0) if r.get('cost', 0.0) else 0.0 for r in results if not is_successful_result(r)) / failed if failed else 0.0,
             },
             "per_run": {run: per_run_stats[run]["cost_distribution"] for run in sorted(per_run_stats.keys())}
         },
@@ -239,8 +232,8 @@ def generate_overall_summary(results, output_path):
                 "max_execution_time_seconds": max(exec_times) if exec_times else 0.0,
                 "min_execution_time_seconds": min(exec_times) if exec_times else 0.0,
                 "median_execution_time_seconds": median(exec_times),
-                "avg_execution_time_per_success": sum(r.get('execution_time_seconds', 0.0) for r in results if r.get('success', False)) / successful if successful else 0.0,
-                "avg_execution_time_per_failure": sum(r.get('execution_time_seconds', 0.0) for r in results if not r.get('success', False)) / failed if failed else 0.0
+                "avg_execution_time_per_success": sum(r.get('execution_time_seconds', 0.0) for r in results if is_successful_result(r)) / successful if successful else 0.0,
+                "avg_execution_time_per_failure": sum(r.get('execution_time_seconds', 0.0) for r in results if not is_successful_result(r)) / failed if failed else 0.0
             },
             "per_run": {run: per_run_stats[run]["execution_time_distribution"] for run in sorted(per_run_stats.keys())}
         },
@@ -250,8 +243,8 @@ def generate_overall_summary(results, output_path):
                 "max_steps": max(steps) if steps else 0,
                 "min_steps": min(steps) if steps else 0,
                 "median_steps": median(steps),
-                "avg_steps_per_success": sum(r.get('total_steps', 0) for r in results if r.get('success', False)) / successful if successful else 0,
-                "avg_steps_per_failure": sum(r.get('total_steps', 0) for r in results if not r.get('success', False)) / failed if failed else 0
+                "avg_steps_per_success": sum(r.get('total_steps', 0) for r in results if is_successful_result(r)) / successful if successful else 0,
+                "avg_steps_per_failure": sum(r.get('total_steps', 0) for r in results if not is_successful_result(r)) / failed if failed else 0
             },
             "per_run": {run: per_run_stats[run]["steps_distribution"] for run in sorted(per_run_stats.keys())}
         },
@@ -282,26 +275,17 @@ def generate_overall_summary(results, output_path):
         json.dump(overall_summary, f, indent=2, ensure_ascii=False)
     print(f"Saved: {output_path}")
 
-def main():
-    # Configure base paths to process
-    base_paths = [
-        Path("trajectories_without_run_code/glm-4.7-355b")
-    ]
-    
-    for base in base_paths:
-        if not base.exists():
-            print(f"Skipping {base} (does not exist)")
-            continue
-        
-        # Collect results directly from the base path
-        all_results = collect_results(base)
-        
-        if not all_results:
-            print(f"No results found in {base}")
-            continue
-        
-        output_path = base / "overall_summary.json"
-        generate_overall_summary(all_results, output_path)
+def main(base_dir: Path):
+    if not base_dir.exists():
+        print(f"Skipping {base_dir} (does not exist)")
+        return
 
-if __name__ == "__main__":
-    main()
+    # Collect results directly from the base path
+    all_results = collect_results(base_dir)
+    
+    if not all_results:
+        print(f"No results found in {base_dir}")
+        return
+    
+    output_path = base_dir / "overall_summary.json"
+    generate_overall_summary(all_results, output_path)

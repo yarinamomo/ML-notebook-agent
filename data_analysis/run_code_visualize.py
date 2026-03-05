@@ -11,8 +11,7 @@ import numpy as np
 from pathlib import Path
 from collections import Counter
 # Import the analyze module to run analysis first
-import run_code_analyze
-
+from data_analysis import run_code_analyze
 
 def plot_category_distribution(input_dir, output_dir):
     """Plot the distribution of run_code operation categories."""
@@ -302,13 +301,8 @@ def plot_pie_chart_distributions(input_dir, output_dir):
     plt.close()
 
 
-def main():
+def main(base_dir: Path):
     """Generate all visualizations."""
-    # Get the project root directory (parent of data_analysis)
-    script_dir = Path(__file__).parent
-    project_root = script_dir.parent
-    
-    base_dir = project_root / 'trajectories_monday' / 'glm-4.7-355b'
     input_dir = base_dir / 'analysis'
     output_dir = base_dir / 'plots'
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -331,7 +325,3 @@ def main():
     
     print("\nAll visualizations generated successfully!")
     print(f"Charts saved to: {output_dir.absolute()}")
-
-
-if __name__ == '__main__':
-    main()

@@ -276,12 +276,10 @@ class EditCellAnalyzer:
         return self.results
 
 
-def main() -> None:
-    target_dir = Path("trajectories_without_run_code/glm-4.7-355b")
-
+def main(target_dir: Path) -> None:
     if not target_dir.exists():
         print(f"Error: Directory not found: {target_dir}")
-        sys.exit(1)
+        return
 
     analyzer = EditCellAnalyzer(target_dir)
     results = analyzer.analyze()
@@ -300,7 +298,3 @@ def main() -> None:
     print(f"avg_cell_edits_with_added_prints: {results['summary']['avg_cell_edits_with_added_prints']}")
     print(f"avg_cell_edits_with_added_try_excepts: {results['summary']['avg_cell_edits_with_added_try_excepts']}")
     print(f"Saved: {output_file}")
-
-
-if __name__ == "__main__":
-    main()

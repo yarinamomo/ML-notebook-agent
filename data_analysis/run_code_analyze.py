@@ -485,7 +485,3 @@ def main(output_dir: Path):
     print(f"Report: {report_file.absolute()}")
     print(f"JSON data: {json_file.absolute()}")
     print("="*60)
-
-
-if __name__ == '__main__':
-    main(Path('trajectories_monday/glm-4.7-355b/analysis'))
