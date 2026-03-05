@@ -141,14 +141,6 @@ def format_eta(seconds: float | None) -> str:
 
 @contextmanager
 def progress_live(total: int, description: str, force_display: bool = False) -> Iterator[tuple[Progress, TaskID]]:
-    if not UI_ENABLED and not force_display:
-        # Return dummy progress and task_id when UI is disabled
-        class DummyProgress:
-            def update(self, *args, **kwargs):
-                pass
-        yield DummyProgress(), 0  # type: ignore
-        return
-    
     progress = Progress(
         SpinnerColumn(),
         TextColumn("[bold]{task.description}"),

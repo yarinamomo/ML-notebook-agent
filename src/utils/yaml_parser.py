@@ -190,3 +190,10 @@ def get_trajectories_dir(config: dict[str, Any]) -> Path:
     trajectories_dir = Path(misc_config.get("trajectory_log_path", "./trajectories"))
     trajectories_dir.mkdir(exist_ok=True)
     return trajectories_dir
+
+def apply_port_offset(config: dict[str, Any], port_offset: int) -> dict[str, Any]:
+    if port_offset > 0:
+        port = config.get("environment", {}).get("port", 8888) + port_offset
+        print("Applying port offset:", port_offset, "-> New port:", port)
+        config.get("environment",{})["port"] = port
+    return config

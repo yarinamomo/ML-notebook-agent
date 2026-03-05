@@ -24,7 +24,7 @@ def get_instance_summary_path(run_output_dir: Path, instance_name: str, config: 
 def run_single_instance(
     instance_name: str,
     config: dict,
-    run_output_dir: Path,
+    output_dir: Path,
     api_key: Optional[str] = None
 ) -> tuple[str, Optional[str]]:
     """Run a single instance with a specific model and run number.
@@ -45,7 +45,7 @@ def run_single_instance(
     # Create environment
     env = NotebookEnvironment(
         instance_name=instance_name,
-        output_dir=run_output_dir,
+        output_dir=output_dir,
         **config.get("environment", {})
     )
 
@@ -62,10 +62,10 @@ def run_single_instance(
         logger.error(f"Error running agent: {e}", exc_info=True)
     finally:
         # Save trajectory and summary
-        instance_traj_path = get_instance_trajectory_path(run_output_dir, instance_name)
+        instance_traj_path = get_instance_trajectory_path(output_dir, instance_name)
         agent.save(instance_traj_path)
         logger.info(f"Saved trajectory to: {instance_traj_path}")
-        summary_path = get_instance_summary_path(run_output_dir, instance_name, config)
+        summary_path = get_instance_summary_path(output_dir, instance_name, config)
         agent.save_summary(summary_path)
         logger.info(f"Saved summary to: {summary_path}")
         

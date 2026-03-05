@@ -57,7 +57,7 @@ class BaselineLitellmModel(CustomToolLitellmModel):
 def run_baseline_instance(
     instance_name: str,
     config: dict,
-    run_output_dir: Path,
+    output_dir: Path,
     api_key: Optional[str] = None,
 ) -> tuple[str, Optional[str]]:
     """Run the baseline (single-shot) approach on one instance.
@@ -75,12 +75,12 @@ def run_baseline_instance(
     model = BaselineLitellmModel(**model_config)
     system_template = config.get("agent", {}).get("system_template", "")
 
-    run_output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # --- set up environment ---
     env = NotebookEnvironment(
         instance_name=instance_name,
-        output_dir=run_output_dir,
+        output_dir=output_dir,
         **config.get("environment", {}),
     )
 
@@ -180,13 +180,13 @@ def run_baseline_instance(
             },
         })
         
-        trajectory_path = get_instance_trajectory_path(run_output_dir, instance_name)
+        trajectory_path = get_instance_trajectory_path(output_dir, instance_name)
         trajectory_path.parent.mkdir(parents=True, exist_ok=True)
         trajectory = {"messages": messages}
         trajectory_path.write_text(json.dumps(trajectory, indent=2))
 
         # Build summary using build_summary utility
-        summary_path = get_instance_summary_path(run_output_dir, instance_name, config)
+        summary_path = get_instance_summary_path(output_dir, instance_name, config)
         if summary_path:
             summary = build_summary(messages, response_cost, elapsed, initial_cells)
             

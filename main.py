@@ -1,12 +1,16 @@
 import json
 import os
+import copy
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any, Callable, Optional
+from queue import Empty, Queue
+from typing import Any, Callable, Optional, TypeAlias
 
 import typer
 from src.utils.log import logger
 from src.utils.ui import get_progress_advance_fn, progress_live, set_ui_enabled
 from src.utils.yaml_parser import (
+    apply_port_offset,
     load_config,
     load_api_keys,
     set_model_config,
@@ -19,6 +23,10 @@ from src.run_baseline import run_baseline_instance
 
 app = typer.Typer(rich_markup_mode="rich")
 DEFAULT_CONFIG = Path(os.getenv("NOTEBOOK_AGENT_CONFIG_PATH", "./config/default.yaml"))
+
+SingleInstance: TypeAlias = tuple[str, int, Path]
+ProgressAdvanceFn: TypeAlias = Callable[[str], None]
+RunNonThreadedFn: TypeAlias = Callable[[dict, SingleInstance, ProgressAdvanceFn, Optional[str]], None]
 
 
 def read_api_keys(api_keys_file: Path) -> list[str]:
@@ -62,45 +70,58 @@ def should_skip_instance(summary_path: Path) -> bool:
         return False
 
 
-def build_runs_to_execute(
-    instances: list[str],
-    total_run_count: int,
-    model_name: str,
-    trajectories_dir: Path,
-    config: dict
-) -> list[tuple[str, int]]:
-    """Build a filtered list of (instance_name, run_number) pairs to execute.
-    
-    Filters out already completed runs based on summary status if skip_existing is enabled.
-    
-    Args:
-        instances: List of instance names to process
-        total_run_count: Number of runs per instance
-        model_name: Name of the model being used
-        trajectories_dir: Base directory for trajectory outputs
-        config: Configuration dictionary
-        
-    Returns:
-        List of (instance_name, run_number) tuples to execute
-    """
+def build_instances(config: dict, model_name: str) -> list[SingleInstance]:
     misc_config = config.get("misc", {})
     skip_existing = misc_config.get("skip_existing", False)
     enable_summary_log = misc_config.get("enable_summary_log", False)
-    
+    trajectories_dir = get_trajectories_dir(config)
+    number_of_runs = get_run_count(config)
+
     runs_to_execute = []
-    for instance_name in instances:
-        for run_num in range(1, total_run_count + 1):
+    for instance_name in get_instances(config):
+        for run_num in range(1, number_of_runs + 1):
+            run_output_dir = trajectories_dir / model_name / f"run_{run_num}"
             if skip_existing and enable_summary_log:
-                run_output_dir = trajectories_dir / model_name / f"run_{run_num}"
                 summary_path = run_output_dir / f"{instance_name}_summary.json"
                 
                 if should_skip_instance(summary_path):
                     logger.info(f"Skipping (already completed): {instance_name} run {run_num}")
                     continue
-            
-            runs_to_execute.append((instance_name, run_num))
+            run_output_dir.mkdir(parents=True, exist_ok=True)
+            runs_to_execute.append((instance_name, run_num, run_output_dir))
     
     return runs_to_execute
+
+
+def get_run_threaded_fn(config: dict, api_keys: list[str], runs_to_execute: list[SingleInstance], run_non_threaded: RunNonThreadedFn) -> Callable[[ProgressAdvanceFn], None]:
+    def run_threaded(progress_advance_fn: ProgressAdvanceFn):
+        run_queue: Queue[SingleInstance] = Queue()
+
+        for run_item in runs_to_execute:
+            run_queue.put(run_item)
+
+        def worker(config: dict, worker_index: int, worker_api_key: str):
+            logger.info(f"Worker {worker_index} starting.")
+            while True:
+                try:
+                    run = run_queue.get_nowait()
+                except Empty:
+                    logger.info(f"Worker {worker_index} has no more runs to process and is exiting.")
+                    break
+                logger.info(f"Worker {worker_index} picked up run: {run[0]} run {run[1]}")
+                run_non_threaded(config, run, progress_advance_fn, worker_api_key)
+                logger.debug(f"Worker {worker_index} finished run.")
+                run_queue.task_done()
+
+        with ThreadPoolExecutor(max_workers=len(api_keys)) as executor:
+            futures = [
+                executor.submit(worker, apply_port_offset(copy.deepcopy(config), index), index, api_key)
+                for index, api_key in enumerate(api_keys)
+            ]
+            run_queue.join()
+            for future in futures:
+                future.result()
+    return run_threaded
 
 # fmt: off
 @app.command()
@@ -129,6 +150,9 @@ def main(
             return None
         
         api_keys = read_api_keys(api_keys_file)
+        if not api_keys:
+            logger.error(f"No API keys found in file: {api_keys_file}")
+            return None
         logger.info(f"Threading enabled with {len(api_keys)} worker threads")
         
         # Disable UI for agent execution (worker threads)
@@ -144,57 +168,44 @@ def main(
     if not model_name:
         logger.error("No valid model configuration found. Exiting.")
         return None
-    
-    total_run_count = get_run_count(config)
-    instances = get_instances(config)
-    trajectories_dir = get_trajectories_dir(config)
-    
-    # Validate instances
-    if not instances:
-        logger.error("No instances to run")
-        return None
-    
-    # Build list of (instance, run) pairs to execute
-    runs_to_execute = build_runs_to_execute(
-        instances=instances,
-        total_run_count=total_run_count,
-        model_name=model_name,
-        trajectories_dir=trajectories_dir,
-        config=config
-    )
+            
+    # Build list of SingleInstance to execute
+    instances_to_execute: list[SingleInstance] = build_instances(config, model_name)
     
     # Calculate total iterations for progress bar
-    total_iterations = len(runs_to_execute)
+    number_of_instances = len(instances_to_execute)
     
-    if total_iterations == 0:
+    if number_of_instances == 0:
         logger.info(f"No runs to execute for model {model_name} - all already completed")
         return None
 
     run_fn = run_baseline_instance if is_baseline else run_single_instance
 
-    with progress_live(total_iterations, f"{mode_label}: {model_name}") as (progress, task_id):
-        progress_advance_fn: Callable[[str], None] = get_progress_advance_fn(
-            progress=progress,
-            task_id=task_id,
-            total_iterations=total_iterations,
-        )
-
-        for instance_name, run_num in runs_to_execute:
+    def run_non_threaded(config: dict, instance: SingleInstance, progress_advance_fn: ProgressAdvanceFn, api_key: Optional[str] = None):
+            instance_name, run_num, output_dir = instance
             try:
-                run_output_dir = trajectories_dir / model_name / f"run_{run_num}"
-                run_output_dir.mkdir(parents=True, exist_ok=True)
-
-                run_fn(
-                    instance_name=instance_name,
-                    config=config,
-                    run_output_dir=run_output_dir,
-                )
-                
+                run_fn(instance_name, config, output_dir, api_key)
             except Exception as e:
                 logger.error(f"Failed to run model={model_name}, instance={instance_name}, run={run_num}: {e}")
                 logger.exception(e)
             finally:
                 progress_advance_fn(f"{mode_label}: {model_name} | {instance_name} | run {run_num}")
+    
+    run_threaded = get_run_threaded_fn(config, api_keys, instances_to_execute, run_non_threaded) 
+
+    with progress_live(number_of_instances, f"{mode_label}: {model_name}") as (progress, task_id):
+        progress_advance_fn: ProgressAdvanceFn = get_progress_advance_fn(
+            progress=progress,
+            task_id=task_id,
+            total_iterations=number_of_instances,
+        )
+        if enable_threading:
+            run_threaded(progress_advance_fn)
+        else:
+            for instance in instances_to_execute:
+                run_non_threaded(config, instance, progress_advance_fn=progress_advance_fn)
+
+
 
 if __name__ == "__main__":
     app()

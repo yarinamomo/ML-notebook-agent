@@ -57,7 +57,7 @@ def _remove_directory_with_retry(path: Path, max_retries: int = 3, delay: float 
 class BenchmarkProblem:
     def __init__(self, sandbox_settings: dict, source_path: Path, output_dir: Path, problem_mode: str = "JunoBench_Buggy", docker_source_path: str = "docker_source", timeout: int = 600):
         self.source_path = source_path
-        self.docker_source_path = Path(docker_source_path).resolve()
+        self.docker_source_path = Path(docker_source_path).resolve() / f"sandbox_{sandbox_settings['port']}"
         self.output_dir = output_dir
         setup_environment(self.source_path, self.docker_source_path)
         # Extract target_nb_instance from source_path
