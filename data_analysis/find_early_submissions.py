@@ -7,18 +7,17 @@ from pathlib import Path
 from collections import defaultdict
 
 
-def find_early_submissions(base_dir, max_step=5):
+def find_early_submissions(base_path: Path, max_step=5):
     """
     Find all instances where submission happens on early steps.
     
     Args:
-        base_dir: Base directory containing run folders
+        base_path: Base directory containing run folders
         max_step: Maximum step to consider as "early" (default: 5)
     
     Returns:
         Dictionary of findings
     """
-    base_path = Path(base_dir)
     findings = defaultdict(list)
     all_submissions = []
     
@@ -159,10 +158,9 @@ def save_to_file(findings, all_submissions, output_file):
     print(f"\nDetailed list saved to: {output_file}")
 
 
-def main():
-    base_dir = 'trajectories_without_run_code/glm-4.7-355b'
+def main(base_dir: Path, max_step=3):
     
-    findings, all_submissions = find_early_submissions(base_dir, max_step=3)
+    findings, all_submissions = find_early_submissions(base_dir, max_step=max_step)
     
     print_findings(findings, all_submissions)
     
@@ -172,7 +170,3 @@ def main():
     
     output_file = output_dir / 'early_submissions_report.txt'
     save_to_file(findings, all_submissions, output_file)
-
-
-if __name__ == '__main__':
-    main()

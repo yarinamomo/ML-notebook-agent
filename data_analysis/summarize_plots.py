@@ -184,9 +184,8 @@ def create_stacked_bar_chart(aggregated_data, title, output_path):
     plt.close()
 
 
-def main():
+def main(base_dir: Path):
     """Main function to generate all plots."""
-    base_dir = Path('trajectories_without_run_code/glm-4.7-355b')
     output_dir = base_dir / 'plots'
     output_dir.mkdir(exist_ok=True)
     
@@ -237,7 +236,3 @@ def main():
     print("Summary Complete!")
     print(f"Charts saved to: {output_dir.absolute()}")
     print("="*60)
-
-
-if __name__ == '__main__':
-    main()
