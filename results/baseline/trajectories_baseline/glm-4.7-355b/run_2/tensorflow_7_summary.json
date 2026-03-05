@@ -1,0 +1,61 @@
+{
+  "metadata": {
+    "generated_at": "2026-03-05T10:42:39.999434",
+    "execution_time_seconds": 36.5,
+    "success": false,
+    "status": "Failure",
+    "cost": null
+  },
+  "statistics": {
+    "total_steps": 1,
+    "total_operations": 2,
+    "successful_operations": 1,
+    "failed_operations": 1,
+    "cells_edited": 1,
+    "unique_cells_edited": 1,
+    "avg_tool_execution_time_seconds": 0.0
+  },
+  "original_notebook": [
+    "# --- [CELL 0]: ---\n\nimport tensorflow as tf\n\nimport matplotlib.pyplot as plt\nimport numpy as np\nfrom transformers import BertTokenizer, TFBertModel",
+    "# --- [CELL 1]: ---\n\ntry:\n    tpu=tf.distribute.cluster_resolver.TCPClusterResolver()\n\n\n    print(\"Device : \",tpu.master())\n    tf.config.experimental_connect_to_cluster(tpu)\n\n    tf.tpu.experimental.initialize_tpu_system(tpu)\n\n    strategy=tf.distribute.experimental.TPUStrategy(tpu)\n\nexcept:\n    strategy=tf.distribute.get_strategy()\n\n\nprint(\"Number of replicas : \",strategy.num_replicas_in_sync)\n\n\n\nprint(tf.__version__)\n\n\n\n\n\n",
+    "# --- [CELL 2]: ---\n\nimport pandas as pd\n\ntrain = pd.read_csv(\"data/train.csv\")\ntrain = train[:8]",
+    "# --- [CELL 3]: ---\n\nmodel_name = 'bert-base-multilingual-cased'\ntokenizer = BertTokenizer.from_pretrained(model_name)",
+    "# --- [CELL 4]: ---\n\ndef encode_sentence(s):\n   tokens = list(tokenizer.tokenize(s))\n   tokens.append('[SEP]')\n   return tokenizer.convert_tokens_to_ids(tokens)",
+    "# --- [CELL 5]: ---\n\ndef bert_encode(hypotheses, premises, tokenizer):\n\n  num_examples = len(hypotheses)\n\n  sentence1 = tf.ragged.constant([\n      encode_sentence(s)\n      for s in np.array(hypotheses)])\n  sentence2 = tf.ragged.constant([\n      encode_sentence(s)\n       for s in np.array(premises)])\n\n  cls = [tokenizer.convert_tokens_to_ids(['[CLS]'])]*sentence1.shape[0]\n  input_word_ids = tf.concat([cls, sentence1, sentence2], axis=-1)\n\n  input_mask = tf.ones_like(input_word_ids).to_tensor()\n\n  type_cls = tf.zeros_like(cls)\n  type_s1 = tf.zeros_like(sentence1)\n  type_s2 = tf.ones_like(sentence2)\n  input_type_ids = tf.concat(\n      [type_cls, type_s1, type_s2], axis=-1).to_tensor()\n\n  inputs = {\n      'input_word_ids': input_word_ids.to_tensor(),\n      'input_mask': input_mask,\n      'input_type_ids': input_type_ids}\n\n  return inputs",
+    "# --- [CELL 6]: ---\n\ntrain_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer)",
+    "# --- [CELL 7]: ---\n\nmax_len = 50\nfrom transformers import BertTokenizer, TFBertModel\n\n\ndef build_model():\n    bert_encoder = TFBertModel.from_pretrained(model_name)\n    input_word_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name=\"input_word_ids\")\n    input_mask = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name=\"input_mask\")\n    input_type_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name=\"input_type_ids\")\n\n    embedding = bert_encoder([input_word_ids, input_mask, input_type_ids])[0]\n    output = tf.keras.layers.Dense(3, activation='softmax')(embedding[:,0,:])\n\n    model = tf.keras.Model(inputs=[input_word_ids, input_mask, input_type_ids], outputs=output)\n    model.compile(tf.keras.optimizers.Adam(lr=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])\n\n    return model",
+    "# --- [CELL 8]: ---\n\nwith strategy.scope():\n    model = build_model()\n    model.summary()",
+    "# --- [CELL 9]: ---\n\nmodel.fit(train_input, train.label.values, epochs = 2, verbose = 1, batch_size = 64, validation_split = 0.2)"
+  ],
+  "llm_responses": [
+    {
+      "step": 1,
+      "content": "Looking at the error:\n\n```\n---ERROR---: AttributeError: 'DataFrame' object has no attribute 'premise'\n```\n\nThis occurs in Cell 6 where the code tries to access `train.premise` and `train.hypothesis`. The error indicates that these columns don't exist in the DataFrame, or the column names might be different (e.g., capitalized differently).\n\nLet me first modify Cell 2 to print the column names so we know what's in the dataset, and then fix Cell 6 to handle the correct column access.",
+      "reasoning": "Let me analyze the error:\n\n```\nCell 6:\nExecution Count: 7 | Status: error\n\n---ERROR---: AttributeError: 'DataFrame' object has no attribute 'premise'\n```\n\nThe error is in Cell 6 where the code is:\n```python\ntrain_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer)\n```\n\nThe error says that 'DataFrame' object has no attribute 'premise'. This suggests that the CSV file `data/train.csv` doesn't have columns named 'premise' and 'hypothesis', or they are capitalized differently, or similar.\n\nLooking at Cell 2:\n```python\ntrain = pd.read_csv(\"data/train.csv\")\ntrain = train[:8]\n```\n\nThe CSV file is being read but we don't know the actual column names. In NLI (Natural Language Inference) datasets, common column names might be:\n- 'premise' and 'hypothesis' (lowercase)\n- 'Premise' and 'Hypothesis' (capitalized)\n- Other variations\n\nThe error indicates that these columns don't exist. However, I don't have access to the actual CSV file to know what the column names are.\n\nWait, let me think about this more carefully. The error is `'DataFrame' object has no attribute 'premise'`. This could mean:\n1. The DataFrame doesn't have a column named 'premise'\n2. The column names might be different\n\nWithout access to the actual data, I should look at typical NLI dataset formats. Common column names include:\n- 'premise', 'hypothesis', 'label'\n- Or different capitalizations\n\nSince I can't see the actual column names, I need to make a reasonable assumption. The most common NLI datasets (like MNLI, SNLI, XNLI) use column names like 'premise' and 'hypothesis'.\n\nBut wait - the error says the DataFrame has no 'premise' attribute. When you do `train.premise` in pandas, it's accessing the column named 'premise'. \n\nI need to investigate potential column name variations. The '.values' attribute could be causing issues if it's not a pandas Series. I'll need to verify the DataFrame's structure and column names to diagnose the exact problem. Possible solutions include using different access methods or checking the file's contents directly.\n\nThe training data appears to be from an NLP dataset like XNLI, which typically contains premise, hypothesis, language, and label columns. Based on the TensorFlow code's Kaggle context, I'll assume standard column names and consider using alternative DataFrame access techniques like bracket notation.\n\nI'll verify the column names using a print statement in the data loading cell, which could help diagnose potential case sensitivity or formatting issues with the CSV file.\n\nThe most likely scenario is that the problem stems from specific column naming conventions in the training dataset. Given typical NLI (Natural Language Inference) dataset structures, I'll focus on checking the column names carefully.\n\nI'll use bracket notation to access the columns, which can help prevent potential named attribute conflicts. This approach ensures robust column access by directly referencing column names as string keys.\n\nBy printing the columns first, I'll get immediate visibility into the exact column naming, allowing precise troubleshooting of any potential mismatches in the dataset structure."
+    }
+  ],
+  "operations": [
+    {
+      "step": 1,
+      "action": "edit_cell(cell_index=2, code=<128 chars>)",
+      "output": "Cell 2 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0017
+    },
+    {
+      "step": 1,
+      "action": "Failure",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\nNumber of replicas :  1\n2.17.0\n\n\nCell 2:\nExecution Count: 3 | Status: ok\nAvailable columns: ['version https://git-lfs.github.com/spec/v1']\n\n\nCell 3:\nExecution Count: 4 | Status: ok\n/usr/local/lib/python3.10/dist-packages/transformers/tokenization_utils_base.py:1601: FutureWarning: `clean_up_tokenization_spaces` was not set. It will be set to `True` by default. This behavior will be depracted in transformers v4.45, and will be then set to `False` by default. For more details check this issue: https://github.com/huggingface/transformers/issues/31884\n  warnings.warn(\n\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: error\n\n---ERROR---: AttributeError: 'DataFrame' object has no attribute 'premise'\n",
+      "return_code": 1,
+      "success": false
+    }
+  ],
+  "code_changes": [
+    {
+      "cell_index": 2,
+      "step": 1,
+      "code": "import pandas as pd\n\ntrain = pd.read_csv(\"data/train.csv\")\ntrain = train[:8]\nprint(\"Available columns:\", train.columns.tolist())"
+    }
+  ]
+}
