@@ -25,22 +25,14 @@ def run_single_instance(
     instance_name: str,
     config: dict,
     output_dir: Path,
-    api_key: Optional[str] = None
 ) -> tuple[str, Optional[str]]:
     """Run a single instance with a specific model and run number.
     
     Returns:
         tuple: (exit_status, submission)
     """
-    
-    # Override API key if provided (for threading)
-    model_config = config.get("model", {})
-    if api_key:
-        model_config = model_config.copy()
-        model_config["api_key"] = api_key
-    
     # Create model instance
-    model = CustomToolLitellmModel(**model_config)
+    model = CustomToolLitellmModel(**config.get("model", {}))
     
     # Create environment
     env = NotebookEnvironment(

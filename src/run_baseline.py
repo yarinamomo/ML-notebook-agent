@@ -58,7 +58,6 @@ def run_baseline_instance(
     instance_name: str,
     config: dict,
     output_dir: Path,
-    api_key: Optional[str] = None,
 ) -> tuple[str, Optional[str]]:
     """Run the baseline (single-shot) approach on one instance.
 
@@ -67,12 +66,7 @@ def run_baseline_instance(
     """
     start_time = time.monotonic()
 
-    model_config = config.get("model", {})
-    if api_key:
-        model_config = model_config.copy()
-        model_config["api_key"] = api_key
-
-    model = BaselineLitellmModel(**model_config)
+    model = BaselineLitellmModel(**config.get("model", {}))
     system_template = config.get("agent", {}).get("system_template", "")
 
     output_dir.mkdir(parents=True, exist_ok=True)

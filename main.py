@@ -1,6 +1,5 @@
 import json
 import os
-import copy
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from queue import Empty, Queue
@@ -10,13 +9,13 @@ import typer
 from src.utils.log import logger
 from src.utils.ui import get_progress_advance_fn, progress_live, set_ui_enabled
 from src.utils.yaml_parser import (
-    apply_port_offset,
     load_config,
     load_api_keys,
     set_model_config,
     get_run_count,
     get_instances,
-    get_trajectories_dir
+    get_trajectories_dir,
+    prepare_config_for_threading
 )
 from src.run_agent import run_single_instance
 from src.run_baseline import run_baseline_instance
@@ -26,7 +25,7 @@ DEFAULT_CONFIG = Path(os.getenv("NOTEBOOK_AGENT_CONFIG_PATH", "./config/default.
 
 SingleInstance: TypeAlias = tuple[str, int, Path]
 ProgressAdvanceFn: TypeAlias = Callable[[str], None]
-RunNonThreadedFn: TypeAlias = Callable[[dict, SingleInstance, ProgressAdvanceFn, Optional[str]], None]
+RunNonThreadedFn: TypeAlias = Callable[[dict, SingleInstance, ProgressAdvanceFn], None]
 
 
 def read_api_keys(api_keys_file: Path) -> list[str]:
@@ -100,7 +99,7 @@ def get_run_threaded_fn(config: dict, api_keys: list[str], runs_to_execute: list
         for run_item in runs_to_execute:
             run_queue.put(run_item)
 
-        def worker(config: dict, worker_index: int, worker_api_key: str):
+        def worker(config: dict, worker_index: int):
             logger.info(f"Worker {worker_index} starting.")
             while True:
                 try:
@@ -109,13 +108,13 @@ def get_run_threaded_fn(config: dict, api_keys: list[str], runs_to_execute: list
                     logger.info(f"Worker {worker_index} has no more runs to process and is exiting.")
                     break
                 logger.info(f"Worker {worker_index} picked up run: {run[0]} run {run[1]}")
-                run_non_threaded(config, run, progress_advance_fn, worker_api_key)
+                run_non_threaded(config, run, progress_advance_fn)
                 logger.debug(f"Worker {worker_index} finished run.")
                 run_queue.task_done()
 
         with ThreadPoolExecutor(max_workers=len(api_keys)) as executor:
             futures = [
-                executor.submit(worker, apply_port_offset(copy.deepcopy(config), index), index, api_key)
+                executor.submit(worker, prepare_config_for_threading(config, api_key, index), index)
                 for index, api_key in enumerate(api_keys)
             ]
             run_queue.join()
@@ -181,10 +180,10 @@ def main(
 
     run_fn = run_baseline_instance if is_baseline else run_single_instance
 
-    def run_non_threaded(config: dict, instance: SingleInstance, progress_advance_fn: ProgressAdvanceFn, api_key: Optional[str] = None):
+    def run_non_threaded(config: dict, instance: SingleInstance, progress_advance_fn: ProgressAdvanceFn):
             instance_name, run_num, output_dir = instance
             try:
-                run_fn(instance_name, config, output_dir, api_key)
+                run_fn(instance_name, config, output_dir)
             except Exception as e:
                 logger.error(f"Failed to run model={model_name}, instance={instance_name}, run={run_num}: {e}")
                 logger.exception(e)

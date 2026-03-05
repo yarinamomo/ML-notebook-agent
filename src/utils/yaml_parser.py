@@ -2,6 +2,7 @@
 YAML configuration parser for notebook agent.
 Handles configuration loading, parsing, and CLI overrides.
 """
+import copy
 import yaml
 from pathlib import Path
 from typing import Any
@@ -191,9 +192,11 @@ def get_trajectories_dir(config: dict[str, Any]) -> Path:
     trajectories_dir.mkdir(parents=True, exist_ok=True)
     return trajectories_dir
 
-def apply_port_offset(config: dict[str, Any], port_offset: int) -> dict[str, Any]:
+
+def prepare_config_for_threading(config: dict[str, Any], api_key: str, port_offset: int) -> dict[str, Any]:
+    config = copy.deepcopy(config)
+    config.setdefault("model", {}).setdefault("model_kwargs", {})["api_key"] = api_key
     if port_offset > 0:
-        port = config.get("environment", {}).get("port", 8888) + port_offset
-        print("Applying port offset:", port_offset, "-> New port:", port)
-        config.get("environment",{})["port"] = port
+        env = config.setdefault("environment", {})
+        env["port"] = env.get("port", 8888) + port_offset
     return config
