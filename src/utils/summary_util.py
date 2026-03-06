@@ -121,7 +121,7 @@ def build_summary(messages: list[dict], cost: float | None, execution_time_secon
         "metadata": {
             "generated_at": datetime.now().isoformat(),
             "execution_time_seconds": round(execution_time_seconds, 2),
-            "success": exit_status == "Submitted",
+            "success": exit_status in ["Submitted", "Success"],
             "status": exit_status or "INCOMPLETE",
             "cost": round(cost, 4) if cost is not None else None,
         },

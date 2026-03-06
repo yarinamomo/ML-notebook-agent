@@ -137,8 +137,11 @@ def run_baseline_instance(
             # Add assistant message
             messages.append(response)
 
+            # Extract cost from response
+            response_cost = response.get("extra", {}).get("cost")
+
             logger.info(
-                f"[{instance_name}] Model returned {len(actions)} edit_cell action(s), cost: {response.get("extra", {}).get("cost", 'unknown')}"
+                f"[{instance_name}] Model returned {len(actions)} edit_cell action(s), cost: {response_cost}"
             )
 
             # 4) Apply edits
