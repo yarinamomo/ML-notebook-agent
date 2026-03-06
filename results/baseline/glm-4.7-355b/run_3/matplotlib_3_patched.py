@@ -52,79 +52,11 @@ train_datagen = ImageDataGenerator(
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# test_datagen = ImageDataGenerator(rescale=1./255)
-# 
-# # Load and preprocess training and testing data
-# train_generator = train_datagen.flow_from_directory(
-#     train_dir,
-#     target_size=(224, 224),
-#     batch_size=32,
-#     class_mode='categorical',
-#     shuffle=False
-# )
-# 
-# test_generator = test_datagen.flow_from_directory(
-#     test_dir,
-#     target_size=(224, 224),
-#     batch_size=32,
-#     class_mode='categorical',
-#     shuffle=False
-# )
-
-# === AFTER (edited) ===
-import os
-from PIL import Image
-
-def get_valid_image_files(directory):
-    """Filter out corrupted image files."""
-    valid_files = []
-    for root, dirs, files in os.walk(directory):
-        for file in files:
-            if file.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
-                file_path = os.path.join(root, file)
-                try:
-                    with Image.open(file_path) as img:
-                        img.verify()  # Verify the image is valid
-                    valid_files.append(file_path)
-                except:
-                    # Skip corrupted files silently
-                    pass
-            else:
-                # Skip non-image files
-                pass
-    return valid_files
-
-# Filter directories to remove corrupted images
-def clean_directory(directory):
-    """Remove corrupted images from a directory."""
-    removed_count = 0
-    for root, dirs, files in os.walk(directory):
-        for file in files:
-            if file.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
-                file_path = os.path.join(root, file)
-                try:
-                    with Image.open(file_path) as img:
-                        img.verify()
-                except:
-                    try:
-                        os.remove(file_path)
-                        removed_count += 1
-                    except:
-                        pass
-    return removed_count
-
-print("Cleaning data directories...")
-train_removed = clean_directory(train_dir)
-test_removed = clean_directory(test_dir)
-print(f"Removed {train_removed} corrupted images from train data")
-print(f"Removed {test_removed} corrupted images from test data")
-
 test_datagen = ImageDataGenerator(rescale=1./255)
 
-
+# Load and preprocess training and testing data
 train_generator = train_datagen.flow_from_directory(
     train_dir,
     target_size=(224, 224),
@@ -164,10 +96,29 @@ inception_model = Model(inputs=base_model.input, outputs=x)
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 6}
-train_features = inception_model.predict(train_generator)
-test_features = inception_model.predict(test_generator)
+# cell_state: edited
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# === BEFORE (original) ===
+# train_features = inception_model.predict(train_generator)
+# test_features = inception_model.predict(test_generator)
+
+# === AFTER (edited) ===
+# Extract features with manual batch iteration for better error handling
+def extract_features(model, generator):
+    features = []
+    generator.reset()
+    steps = len(generator)
+    for i in range(steps):
+        batch_images, _ = next(generator)
+        batch_features = model.predict(batch_images, verbose=0)
+        features.append(batch_features)
+    return np.concatenate(features, axis=0)
+
+train_features = extract_features(inception_model, train_generator)
+test_features = extract_features(inception_model, test_generator)
+
+print(f"Train features shape: {train_features.shape}")
+print(f"Test features shape: {test_features.shape}")
 
 #%%
 # --- [CELL 6]: ---

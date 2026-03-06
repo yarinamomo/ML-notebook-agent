@@ -35,7 +35,7 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 # jsdf.head()
 
 # === AFTER (edited) ===
-jsdf = pd.read_json('data/train_annotations.json')
+jsdf = pd.read_json('data/train_annotations', lines=True)
 jsdf.head()
 
 #%%

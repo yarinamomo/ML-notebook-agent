@@ -7,9 +7,15 @@ import matplotlib.pyplot as plt
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# === BEFORE (original) ===
+# df=pd.read_csv('data/googleplaystore.csv')
+
+# === AFTER (edited) ===
 df=pd.read_csv('data/googleplaystore.csv')
+# Clean column names by stripping whitespace
+df.columns = df.columns.str.strip()
 
 #%%
 # --- [CELL 2]: ---
@@ -19,19 +25,8 @@ df.dropna(inplace=True)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# df['Reviews']=df['Reviews'].astype('int')
-
-# === AFTER (edited) ===
-# Strip whitespace from column names and convert to title case
-df.columns = df.columns.str.strip().str.title()
-
-# Check column names
-print("Available columns:", df.columns.tolist())
-
-# Now attempt the conversion
 df['Reviews']=df['Reviews'].astype('int')
 
 #%%

@@ -170,48 +170,82 @@ class Discriminator(nn.Module):
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# cell_state: edited
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
+# === BEFORE (original) ===
+# criterion = nn.BCEWithLogitsLoss()
+# z_dim = 64
+# display_step = 500
+# batch_size = 128
+# # A learning rate of 0.0002 works well on DCGAN
+# lr = 0.0002
+# 
+# beta_1 = 0.5 
+# beta_2 = 0.999
+# device = 'cpu' # 'cuda'
+# 
+# # You can tranform the image values to be between -1 and 1 (the range of the tanh activation)
+# train_transform = transforms.Compose([
+#     transforms.ToTensor(),
+#     transforms.Normalize((0.5,), (0.5,)),
+# ])
+# 
+# train_dataset = datasets.ImageFolder(root='data_small/eyes data', transform=train_transform)
+# dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+# # dataloader = DataLoader(
+# #     MNIST('.', download=False, transform=transform),
+# #     batch_size=batch_size,
+# #     shuffle=True)
+
+# === AFTER (edited) ===
 criterion = nn.BCEWithLogitsLoss()
 z_dim = 64
 display_step = 500
 batch_size = 128
-# A learning rate of 0.0002 works well on DCGAN
+
 lr = 0.0002
 
-beta_1 = 0.5 
+beta_1 = 0.5
 beta_2 = 0.999
-device = 'cpu' # 'cuda'
+device = 'cpu'
 
-# You can tranform the image values to be between -1 and 1 (the range of the tanh activation)
+
 train_transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.5,), (0.5,)),
 ])
 
-train_dataset = datasets.ImageFolder(root='data_small/eyes data', transform=train_transform)
-dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
-# dataloader = DataLoader(
-#     MNIST('.', download=False, transform=transform),
-#     batch_size=batch_size,
-#     shuffle=True)
+class SafeImageFolder(datasets.ImageFolder):
+    def __getitem__(self, index):
+        try:
+            return super().__getitem__(index)
+        except Exception as e:
+            print(f"Skipping corrupted image at index {index}. Error: {e}")
+            # Return a valid dummy image if the current one fails
+            # This is a last resort to avoid crashing
+            return self.__getitem__((index + 1) % len(self))
+
+train_dataset = SafeImageFolder(root='data_small/eyes data', transform=train_transform)
+
+# Filter out corrupted images by checking if we can load each image
+valid_samples = []
+for i in range(len(train_dataset)):
+    try:
+        _ = train_dataset[i]
+        valid_samples.append(i)
+    except:
+        pass
+
+# Create a subset with only valid images
+from torch.utils.data import Subset
+train_dataset = Subset(train_dataset, valid_samples)
+
+dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# def show_images(images):
-#     fig, ax = plt.subplots(figsize=(20, 20))
-#     ax.set_xticks([]); ax.set_yticks([])
-#     ax.imshow(make_grid(images.detach(), nrow=22).permute(1, 2, 0))
-# 
-# def show_batch(dl):
-#     for images, _ in dl:
-#         show_images(images)
-#         break
-
-# === AFTER (edited) ===
 def show_images(images):
     fig, ax = plt.subplots(figsize=(20, 20))
     ax.set_xticks([]); ax.set_yticks([])
@@ -219,11 +253,9 @@ def show_images(images):
 
 def show_batch(dl):
     for images, _ in dl:
-        try:
-            show_images(images)
-        except Exception as e:
-            print(f"Warning: Could not display batch - skipping: {e}")
+        show_images(images)
         break
+
 
 #%%
 # --- [CELL 5]: ---

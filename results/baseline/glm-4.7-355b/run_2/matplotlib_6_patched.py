@@ -46,5 +46,5 @@ fig, ax = plt.subplots(6, 1, figsize=(5, 20))
 
 for i, col in enumerate(list(df.columns.values)):
     axes_box  = ax[i]
-    sns.boxplot(data=df, y=col, ax=axes_box,color='#a5c687')
-    ax[i].set_title(col,fontsize=15,color='magenta')
+    sns.boxplot(data=df, y=col, ax=axes_box, color='#a5c687')
+    ax[i].set_title(col, fontsize=15, color='magenta')

@@ -35,37 +35,15 @@ transformer = transforms.Compose([
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# dataset = ImageFolder(root = "data_small/celeba_hq_256", 
-#                       transform = transformer) 
-
-# === AFTER (edited) ===
-from PIL import Image as PILImage
-
-class SafeImageFolder(ImageFolder):
-    def __init__(self, root, transform=None, target_transform=None):
-        super().__init__(root, transform, target_transform)
-        # Filter out corrupted images by checking each sample
-        valid_samples = []
-        for path, target in self.samples:
-            try:
-                with PILImage.open(path) as img:
-                    img.verify()  # Verify if it's a valid image
-                valid_samples.append((path, target))
-            except Exception as e:
-                print(f"Skipping corrupted image: {path}")
-        self.samples = valid_samples
-        self.imgs = self.samples  # Keep imgs attribute in sync
-
-dataset = SafeImageFolder(root = "data_small/celeba_hq_256",
-                          transform = transformer)
+dataset = ImageFolder(root = "data_small/celeba_hq_256", 
+                      transform = transformer) 
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 train_dataloader = DataLoader(dataset, batch_size = batch_size, shuffle = True)
 train_dataloader
 
@@ -148,19 +126,120 @@ disc = Dis(3).to(device)
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 8}
+# === BEFORE (original) ===
+# from torch.utils.tensorboard import SummaryWriter
+# import torch.optim as optim
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# LEARNING_RATE = 2e-4  # could also use two lrs, one for gen and one for disc
+# BATCH_SIZE = 128
+# IMAGE_SIZE = 64
+# CHANNELS_IMG = 1
+# NOISE_DIM = 100
+# NUM_EPOCHS = 2 #30
+# FEATURES_DISC = 64
+# FEATURES_GEN = 64
+# 
+# initialize_weights(gen)
+# initialize_weights(disc)
+# opt_gen = optim.Adam(gen.parameters(), lr=LEARNING_RATE, betas=(0.5, 0.999))
+# opt_disc = optim.Adam(disc.parameters(), lr=LEARNING_RATE, betas=(0.5, 0.999))
+# criterion = nn.BCELoss()
+# 
+# fixed_noise = torch.randn(32, NOISE_DIM, 1, 1).to(device)
+# writer_real = SummaryWriter(f"logs/real")
+# writer_fake = SummaryWriter(f"logs/fake")
+# step = 0
+# gen.train()
+# disc.train()
+# 
+# for epoch in range(NUM_EPOCHS):
+#     # Target labels not needed! <3 unsupervised
+#     for batch_idx, (real, _) in enumerate(train_dataloader):
+#         real = real.to(device)
+#         noise = torch.randn(BATCH_SIZE, NOISE_DIM, 1, 1).to(device)
+#         fake = gen(noise)
+# 
+#         ### Train Discriminator: max log(D(x)) + log(1 - D(G(z)))
+#         disc_real = disc(real).reshape(-1)
+#         loss_disc_real = criterion(disc_real, torch.ones_like(disc_real))
+#         disc_fake = disc(fake.detach()).reshape(-1)
+#         loss_disc_fake = criterion(disc_fake, torch.zeros_like(disc_fake))
+#         loss_disc = (loss_disc_real + loss_disc_fake) / 2
+#         disc.zero_grad()
+#         loss_disc.backward()
+#         opt_disc.step()
+# 
+#         ### Train Generator: min log(1 - D(G(z))) <-> max log(D(G(z))
+#         output = disc(fake).reshape(-1)
+#         loss_gen = criterion(output, torch.ones_like(output))
+#         gen.zero_grad()
+#         loss_gen.backward()
+#         opt_gen.step()
+# 
+#         # Print losses occasionally and print to tensorboard
+#         if batch_idx % 500 == 0:
+#             print(
+#                 f"Epoch [{epoch}/{NUM_EPOCHS}] Batch {batch_idx}/{len(train_dataloader)} \
+#                   Loss D: {loss_disc:.4f}, loss G: {loss_gen:.4f}"
+#             )
+# 
+#             with torch.no_grad():
+#                 fake = gen(fixed_noise)
+#                 # take out (up to) 32 examples
+#                 img_grid_real = torchvision.utils.make_grid(real[:32], normalize=True)
+#                 img_grid_fake = torchvision.utils.make_grid(fake[:32], normalize=True)
+# 
+#                 writer_real.add_image("Real", img_grid_real, global_step=step)
+#                 writer_fake.add_image("Fake", img_grid_fake, global_step=step)
+# 
+#             step += 1
+
+# === AFTER (edited) ===
 from torch.utils.tensorboard import SummaryWriter
 import torch.optim as optim
+from PIL import Image
+import torch.utils.data as data
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-LEARNING_RATE = 2e-4  # could also use two lrs, one for gen and one for disc
+LEARNING_RATE = 2e-4
 BATCH_SIZE = 128
 IMAGE_SIZE = 64
-CHANNELS_IMG = 1
+CHANNELS_IMG = 3
 NOISE_DIM = 100
-NUM_EPOCHS = 2 #30
+NUM_EPOCHS = 2
 FEATURES_DISC = 64
 FEATURES_GEN = 64
+
+# Custom dataset wrapper that filters out corrupted images
+class SafeImageFolder(data.Dataset):
+    def __init__(self, original_dataset):
+        self.original_dataset = original_dataset
+        self.valid_indices = []
+        
+        for idx in range(len(original_dataset)):
+            try:
+                path, _ = original_dataset.samples[idx]
+                with Image.open(path) as img:
+                    img.verify()
+                # Reload and convert to verify again
+                with Image.open(path) as img:
+                    img.load()
+                self.valid_indices.append(idx)
+            except (IOError, OSError, Image.DecompressionBombError):
+                print(f"Skipping corrupted image: {path}")
+                continue
+    
+    def __len__(self):
+        return len(self.valid_indices)
+    
+    def __getitem__(self, idx):
+        real_idx = self.valid_indices[idx]
+        return self.original_dataset[real_idx]
+
+safe_dataset = SafeImageFolder(dataset)
+safe_train_dataloader = DataLoader(safe_dataset, batch_size = BATCH_SIZE, shuffle = True)
 
 initialize_weights(gen)
 initialize_weights(disc)
@@ -176,13 +255,13 @@ gen.train()
 disc.train()
 
 for epoch in range(NUM_EPOCHS):
-    # Target labels not needed! <3 unsupervised
-    for batch_idx, (real, _) in enumerate(train_dataloader):
+
+    for batch_idx, (real, _) in enumerate(safe_train_dataloader):
         real = real.to(device)
         noise = torch.randn(BATCH_SIZE, NOISE_DIM, 1, 1).to(device)
         fake = gen(noise)
 
-        ### Train Discriminator: max log(D(x)) + log(1 - D(G(z)))
+
         disc_real = disc(real).reshape(-1)
         loss_disc_real = criterion(disc_real, torch.ones_like(disc_real))
         disc_fake = disc(fake.detach()).reshape(-1)
@@ -192,23 +271,23 @@ for epoch in range(NUM_EPOCHS):
         loss_disc.backward()
         opt_disc.step()
 
-        ### Train Generator: min log(1 - D(G(z))) <-> max log(D(G(z))
+
         output = disc(fake).reshape(-1)
         loss_gen = criterion(output, torch.ones_like(output))
         gen.zero_grad()
         loss_gen.backward()
         opt_gen.step()
 
-        # Print losses occasionally and print to tensorboard
+
         if batch_idx % 500 == 0:
             print(
-                f"Epoch [{epoch}/{NUM_EPOCHS}] Batch {batch_idx}/{len(train_dataloader)} \
+                f"Epoch [{epoch}/{NUM_EPOCHS}] Batch {batch_idx}/{len(safe_train_dataloader)} \
                   Loss D: {loss_disc:.4f}, loss G: {loss_gen:.4f}"
             )
 
             with torch.no_grad():
                 fake = gen(fixed_noise)
-                # take out (up to) 32 examples
+
                 img_grid_real = torchvision.utils.make_grid(real[:32], normalize=True)
                 img_grid_fake = torchvision.utils.make_grid(fake[:32], normalize=True)
 

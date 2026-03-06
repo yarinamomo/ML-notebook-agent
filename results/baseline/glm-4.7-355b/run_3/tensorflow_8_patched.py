@@ -127,7 +127,7 @@ train_image = []
 y = []
 
 for i in tqdm(range(up_sampled.shape[0])):
-    img = tf.keras.utils.load_img(up_sampled['image'].iloc[i], target_size=(size,size), color_mode="grayscale")
+    img = tf.keras.utils.load_img(up_sampled['image'].iloc[i], target_size=(size,size), color_mode="rgb")
     img = tf.keras.utils.img_to_array(img)
     img = img/255
     train_image.append(img)

@@ -69,7 +69,7 @@ ES_PATIENCE = 5
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # model_path = f'model_{HEIGHT}x{WIDTH}.h5'
 # 
@@ -106,14 +106,16 @@ ES_PATIENCE = 5
 #     'common tulip', 'wild rose']
 
 # === AFTER (edited) ===
+import glob
+
 model_path = f'model_{HEIGHT}x{WIDTH}.h5'
 
-# Get GCS path using KaggleDatasets
-GCS_PATH = KaggleDatasets().get_gcs_path() + "/tfrecords-jpeg-{}x{}".format(HEIGHT, WIDTH)
 
-TRAINING_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/train/*.tfrec')
-VALIDATION_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/val/*.tfrec')
-TEST_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/test/*.tfrec')
+GCS_PATH = "data/tfrecords-jpeg-{}x{}".format(HEIGHT, WIDTH)
+
+TRAINING_FILENAMES = glob.glob(GCS_PATH + '/train/*.tfrec')
+VALIDATION_FILENAMES = glob.glob(GCS_PATH + '/val/*.tfrec')
+TEST_FILENAMES = glob.glob(GCS_PATH + '/test/*.tfrec')
 
 CLASSES = [
     'pink primrose', 'hard-leaved pocket orchid', 'canterbury bells', 'sweet pea',

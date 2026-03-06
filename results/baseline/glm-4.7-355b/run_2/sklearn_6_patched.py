@@ -44,9 +44,7 @@ test_ds = pd.read_csv("data/test.csv")
 # train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 # === AFTER (edited) ===
-columns_to_drop = ['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2']
-existing_columns = [col for col in columns_to_drop if col in train_ds.columns]
-train_ds.drop(existing_columns, axis = 1, inplace = True)
+train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True, errors='ignore')
 
 #%%
 # --- [CELL 4]: ---
@@ -105,10 +103,15 @@ print(f'MSE: {mse}')
 
 #%%
 # --- [CELL 11]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
-test_ds_ids = test_ds['Id'] # fix for crash isolation purpose
-test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
+# === BEFORE (original) ===
+# test_ds_ids = test_ds['Id'] # fix for crash isolation purpose
+# test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
+
+# === AFTER (edited) ===
+test_ds_ids = test_ds['Id']
+test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True, errors='ignore')
 
 #%%
 # --- [CELL 12]: ---

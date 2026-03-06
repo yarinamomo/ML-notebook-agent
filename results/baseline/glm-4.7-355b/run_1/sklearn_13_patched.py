@@ -22,8 +22,12 @@ df = pd.read_csv("data/SalaryData_Test(1).csv")
 # y = df.Salary.values.reshape(-1,1)
 
 # === AFTER (edited) ===
-x = df['workclass'].values.reshape(-1,1)
-y = df['Salary'].values.reshape(-1,1)
+# Check what columns are available in the dataframe
+print("Available columns in df:")
+print(df.columns.tolist())
+
+x = df.workclass.values.reshape(-1,1)
+y = df.Salary.values.reshape(-1,1)
 
 #%%
 # --- [CELL 3]: ---

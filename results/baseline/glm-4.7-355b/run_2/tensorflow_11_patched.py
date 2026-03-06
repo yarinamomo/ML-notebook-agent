@@ -59,33 +59,44 @@ image_df.head(5)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# Separate in train and test data
+# cell_state: edited
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# === BEFORE (original) ===
+# # Separate in train and test data
+# train_df, test_df = train_test_split(image_df, train_size=0.9, shuffle=True, random_state=1)
+
+# === AFTER (edited) ===
+# Function to validate if an image can be read
+from PIL import Image
+
+def is_valid_image(path):
+    try:
+        with Image.open(path) as img:
+            img.verify()  # Verify it's a valid image
+        return True
+    except:
+        return False
+
+# Filter out invalid images
+valid_mask = image_df['Filepath'].apply(is_valid_image)
+image_df = image_df[valid_mask].reset_index(drop=True)
+
+print(f"Removed {(~valid_mask).sum()} corrupted images")
+print(f"Remaining images: {len(image_df)}")
+
 train_df, test_df = train_test_split(image_df, train_size=0.9, shuffle=True, random_state=1)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# train_generator = tf.keras.preprocessing.image.ImageDataGenerator(
-#     preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input,
-#     validation_split=0.2
-# )
-# 
-# test_generator = tf.keras.preprocessing.image.ImageDataGenerator(
-#     preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input
-# )
-
-# === AFTER (edited) ===
 train_generator = tf.keras.preprocessing.image.ImageDataGenerator(
-    preprocessing_function=tf.keras.applications.efficientnet.preprocess_input,
+    preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input,
     validation_split=0.2
 )
 
 test_generator = tf.keras.preprocessing.image.ImageDataGenerator(
-    preprocessing_function=tf.keras.applications.efficientnet.preprocess_input
+    preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input
 )
 
 #%%

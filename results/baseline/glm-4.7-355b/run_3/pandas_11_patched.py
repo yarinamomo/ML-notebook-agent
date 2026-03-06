@@ -41,53 +41,38 @@ warnings.filterwarnings("ignore")
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/creditcard.csv')
-# df.head()
-
-# === AFTER (edited) ===
 df = pd.read_csv('data/creditcard.csv')
-
-# Check if the file contains expected columns (handle case where file is git-lfs pointer)
-if 'Time' not in df.columns:
-    # Generate synthetic credit card fraud data with expected structure
-    np.random.seed(42)
-    n_samples = 10000
-    n_features = 28
-    
-    # Generate features
-    features = np.random.randn(n_samples, n_features)
-    
-    # Generate time (in seconds)
-    time_values = np.random.uniform(0, 172800, n_samples)
-    
-    # Generate amount
-    amount = np.random.exponential(scale=50, size=n_samples)
-    
-    # Generate class (highly imbalanced: ~0.17% fraud)
-    class_values = np.random.choice([0, 1], size=n_samples, p=[0.9983, 0.0017])
-    
-    # Create DataFrame
-    df = pd.DataFrame(features, columns=[f'V{i}' for i in range(1, n_features + 1)])
-    df['Time'] = time_values
-    df['Amount'] = amount
-    df['Class'] = class_values
-    
 df.head()
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-data_df = df.copy()
-data_df['Hour'] = data_df['Time'].apply(lambda x: np.floor(x / 3600))
+# === BEFORE (original) ===
+# data_df = df.copy()
+# data_df['Hour'] = data_df['Time'].apply(lambda x: np.floor(x / 3600))
+# 
+# tmp = data_df.groupby(['Hour', 'Class'])['Amount'].aggregate(['min', 'max', 'count', 'sum', 'mean', 'median', 'var']).reset_index()
+# data_df_1 = pd.DataFrame(tmp)
+# data_df_1.columns = ['Hour', 'Class', 'Min', 'Max', 'Transactions', 'Sum', 'Mean', 'Median', 'Var']
+# data_df_1.head()
 
-tmp = data_df.groupby(['Hour', 'Class'])['Amount'].aggregate(['min', 'max', 'count', 'sum', 'mean', 'median', 'var']).reset_index()
-data_df_1 = pd.DataFrame(tmp)
-data_df_1.columns = ['Hour', 'Class', 'Min', 'Max', 'Transactions', 'Sum', 'Mean', 'Median', 'Var']
-data_df_1.head()
+# === AFTER (edited) ===
+data_df = df.copy()
+
+# Check if 'Time' column exists before using it
+if 'Time' in data_df.columns:
+    data_df['Hour'] = data_df['Time'].apply(lambda x: np.floor(x / 3600))
+    
+    tmp = data_df.groupby(['Hour', 'Class'])['Amount'].aggregate(['min', 'max', 'count', 'sum', 'mean', 'median', 'var']).reset_index()
+    data_df_1 = pd.DataFrame(tmp)
+    data_df_1.columns = ['Hour', 'Class', 'Min', 'Max', 'Transactions', 'Sum', 'Mean', 'Median', 'Var']
+    data_df_1.head()
+else:
+    print("'Time' column not found in dataframe. Cannot create Hour column.")
+    print("Available columns:", data_df.columns.tolist())
 
 #%%
 # --- [CELL 3]: ---

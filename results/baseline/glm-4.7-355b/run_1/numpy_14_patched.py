@@ -24,7 +24,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 np.random.seed(123)
 
 #%%
@@ -43,34 +43,9 @@ num_classes = 2
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# train_datagen = ImageDataGenerator(rescale=1./255, shear_range=0.2, zoom_range=0.2, horizontal_flip=True)
-# test_datagen = ImageDataGenerator(rescale=1./255)
-# validation_datagen = ImageDataGenerator(rescale=1./255)
-# 
-# 
-# train_generator = train_datagen.flow_from_directory(
-#         os.path.join(data_dir, 'Train'),
-#         target_size=input_shape[:2],
-#         batch_size=batch_size,
-#         class_mode='categorical')
-# 
-# test_generator = test_datagen.flow_from_directory(
-#         os.path.join(data_dir, 'Test'),
-#         target_size=input_shape[:2],
-#         batch_size=batch_size,
-#         class_mode='categorical')
-# 
-# validation_generator = validation_datagen.flow_from_directory(
-#         os.path.join(data_dir, 'Validation'),
-#         target_size=input_shape[:2],
-#         batch_size=batch_size,
-#         class_mode='categorical')
-
-# === AFTER (edited) ===
-train_datagen = ImageDataGenerator(rescale=1./255)
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+train_datagen = ImageDataGenerator(rescale=1./255, shear_range=0.2, zoom_range=0.2, horizontal_flip=True)
 test_datagen = ImageDataGenerator(rescale=1./255)
 validation_datagen = ImageDataGenerator(rescale=1./255)
 
@@ -157,11 +132,25 @@ checkpoint_M2 = ModelCheckpoint(filepath_weights_M2, monitor='val_accuracy', mod
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 9}
-# Dont run again model is saved @ /kaggle/working/save_weights/best_weights_V19-47-0.9566.hdf5
+# === BEFORE (original) ===
+# # Dont run again model is saved @ /kaggle/working/save_weights/best_weights_V19-47-0.9566.hdf5
+# 
+# history_V19 = modelV19.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_V19])
 
-history_V19 = modelV19.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_V19])
+# === AFTER (edited) ===
+steps_per_epoch = len(train_generator)
+validation_steps = len(validation_generator)
+
+history_V19 = modelV19.fit(
+    train_generator, 
+    epochs=2, 
+    validation_data=validation_generator, 
+    steps_per_epoch=steps_per_epoch,
+    validation_steps=validation_steps,
+    callbacks=[early_stop, checkpoint_V19]
+)
 
 #%%
 # --- [CELL 9]: ---

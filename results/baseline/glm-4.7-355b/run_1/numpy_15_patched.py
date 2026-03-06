@@ -27,28 +27,20 @@ df = pd.read_csv('data/iris-data.csv')
 # df.info()
 
 # === AFTER (edited) ===
-# First, print the actual columns in the DataFrame to see what's available
-print("Columns in DataFrame:", df.columns.tolist())
+print("Columns in the dataset:")
+print(df.columns.tolist())
 
-# Check if petal_width_cm exists, if not try to find the petal width column
+# Check if 'petal_width_cm' exists, if not try to find similar column name
 if 'petal_width_cm' in df.columns:
     df = df.dropna(subset=['petal_width_cm'])
+elif 'petal width (cm)' in df.columns:
+    df = df.dropna(subset=['petal width (cm)'])
+elif 'petal_width' in df.columns:
+    df = df.dropna(subset=['petal_width'])
 else:
-    # Find any column containing 'petal' and 'width'
-    petal_width_col = None
-    for col in df.columns:
-        if 'petal' in str(col).lower() and 'width' in str(col).lower():
-            petal_width_col = col
-            break
+    # Drop rows with any missing values
+    df = df.dropna()
     
-    if petal_width_col:
-        print(f"Using column '{petal_width_col}' for petal_width_cm")
-        df = df.dropna(subset=[petal_width_col])
-    else:
-        # Drop NA from whatever column exists
-        print("petal_width column not found, dropping NA from all columns")
-        df = df.dropna()
-
 df.info()
 
 #%%

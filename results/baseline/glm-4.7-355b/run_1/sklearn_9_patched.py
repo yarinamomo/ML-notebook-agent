@@ -17,7 +17,7 @@ df = pd.read_csv('data/bank-additional-full.csv', sep=';')
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # df['y'] = df['y'].map({"no":0,"yes":1})
 # df['contact'] = df['contact'].map({"cellular":0,"telephone":1})
@@ -25,35 +25,25 @@ df = pd.read_csv('data/bank-additional-full.csv', sep=';')
 # df1.head(6).T
 
 # === AFTER (edited) ===
-# Check actual column names to handle any whitespace or naming issues
-print("Actual columns in df:")
-print(df.columns.tolist())
+# Check column names to understand the structure
+print("Columns in dataframe:", df.columns.tolist())
 
-# Clean column names by stripping whitespace
-df.columns = df.columns.str.strip()
+# Try to find the target column - it might be named differently or have whitespace
+if 'y' not in df.columns:
+    # Try common variations
+    for col in df.columns:
+        if 'y' in col.lower():
+            df.rename(columns={col: 'y'}, inplace=True)
+            break
 
-# Find the target column (it might be 'y' or 'Y')
-target_col = None
-for col in df.columns:
-    if col.lower() == 'y':
-        target_col = col
-        break
-
-if target_col:
-    # Rename to 'y' if needed and encode
-    if target_col != 'y':
-        df = df.rename(columns={target_col: 'y'})
-    df['y'] = df['y'].map({"no":0,"yes":1})
+# Check again and proceed if column exists
+if 'y' not in df.columns:
+    print("Warning: 'y' column not found. Available columns:", df.columns.tolist())
 else:
-    print("Warning: Could not find 'y' column in dataframe")
-    
-# Clean and encode contact column
-df['contact'] = df['contact'].astype(str).str.strip()
-df['contact'] = df['contact'].map({"cellular":0,"telephone":1})
-
-# Create one-hot encoded features
-df1 = pd.get_dummies(df, columns=['job','marital','education','default','housing','loan','month','day_of_week','poutcome'])
-df1.head(6).T
+    df['y'] = df['y'].map({"no":0,"yes":1})
+    df['contact'] = df['contact'].map({"cellular":0,"telephone":1})
+    df1 = pd.get_dummies(df, columns=['job','marital','education','default','housing','loan','month','day_of_week','poutcome'])
+    df1.head(6).T
 
 #%%
 # --- [CELL 3]: ---

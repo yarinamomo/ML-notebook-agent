@@ -61,17 +61,24 @@ test = pd.read_csv("data/test.csv")
 
 df = pd.concat([train, test], ignore_index=True)
 
-# Check available columns first
-print("Available columns:", df.columns.tolist())
+print("Available columns in the dataset:")
+print(df.columns.tolist())
 
-# Use columns that actually exist in the dataframe
-selected_list = [col for col in ["GarageArea", "LotArea", "LotFrontage", "OverallQual", "PoolArea", 
-                                  "MSSubClass", "YearBuilt", "GrLivArea", "BedroomAbvGr", "LowQualFinSF",
-                                  "TotRmsAbvGrd", "Id", "SalePrice"] if col in df.columns]
+selected_list = ["GarageArea", "LotArea", "LotFrontage", "OverallQual", "PoolArea", "MSSubClass", "YearBuilt", "GrLivArea",
+                 "BedroomAbvGr", "LowQualFinSF", "TotRmsAbvGrd", "Id", "SalePrice"]
 
+# Only select columns that actually exist in the dataframe
+available_cols = [col for col in selected_list if col in df.columns]
+missing_cols = set(selected_list) - set(available_cols)
 
-df = df[selected_list]
-
+if missing_cols:
+    print(f"\nWarning: The following expected columns are missing: {missing_cols}")
+    
+if available_cols:
+    df = df[available_cols]
+else:
+    print("\nError: None of the expected columns are found in the dataset using all available columns instead.")
+    df = df.copy()
 
 df.head()
 df.shape

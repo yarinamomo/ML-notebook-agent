@@ -28,22 +28,17 @@ greeks_df = pd.read_csv('data/greeks_synthetic.csv')
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # train_df = pd.merge(train_df, greeks_df, on="Id")
 
 # === AFTER (edited) ===
-# Try merging on index if 'Id' column doesn't exist
-if 'Id' in train_df.columns and 'Id' in greeks_df.columns:
-    train_df = pd.merge(train_df, greeks_df, on="Id")
-else:
-    # Merge on index as fallback
-    train_df = pd.merge(train_df, greeks_df, left_index=True, right_index=True, how='left')
+train_df = pd.merge(train_df, greeks_df, left_index=True, right_index=True)
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
 # Remove the first column
 train_df = train_df.drop("Id", axis=1)
 test_df = test_df.drop("Id", axis=1)

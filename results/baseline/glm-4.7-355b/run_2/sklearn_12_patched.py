@@ -43,19 +43,52 @@ from sklearn import svm
 # data.head()
 
 # === AFTER (edited) ===
-import os
-import glob
+# Search for train.csv in common locations
+train_csv_path = None
 
-# Find the train.csv file in the Kaggle input directory
-train_files = glob.glob('/kaggle/input/**/train.csv', recursive=True)
-if train_files:
-    data = pd.read_csv(train_files[0])
+# Check common directories
+search_paths = [
+    '/kaggle/input',
+    '/kaggle/input/train.csv',
+    'data/train.csv',
+    './data',
+    './'
+]
+
+# First try direct paths
+for path in search_paths:
+    if os.path.exists(path):
+        if os.path.isfile(path):
+            if path.endswith('train.csv'):
+                train_csv_path = path
+                break
+        else:
+            # Search in directory
+            for root, dirs, files in os.walk(path):
+                for file in files:
+                    if file == 'train.csv':
+                        train_csv_path = os.path.join(root, file)
+                        break
+                if train_csv_path:
+                    break
+    if train_csv_path:
+        break
+
+# If not found, try current directory and subdirectories
+if not train_csv_path:
+    for root, dirs, files in os.walk('.'):
+        for file in files:
+            if file == 'train.csv':
+                train_csv_path = os.path.join(root, file)
+                break
+        if train_csv_path:
+            break
+
+if train_csv_path:
+    print(f"Found train.csv at: {train_csv_path}")
+    data = pd.read_csv(train_csv_path)
 else:
-    # Fallback: check if data/train.csv exists
-    if os.path.exists('data/train.csv'):
-        data = pd.read_csv('data/train.csv')
-    else:
-        raise FileNotFoundError("train.csv not found in /kaggle/input or data/ directory")
+    raise ValueError("train.csv not found in any common location. Please ensure the dataset is available.")
 
 data.head()
 

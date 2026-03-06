@@ -6,8 +6,15 @@ from transformers import TFAutoModel
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# === BEFORE (original) ===
+# import pandas as pd
+# import json
+# df_psytar = pd.read_csv("data/PsyTAR.csv")
+# df_psytar.head(5)
+
+# === AFTER (edited) ===
 import pandas as pd
 import json
 df_psytar = pd.read_csv("data/PsyTAR.csv")
@@ -23,36 +30,10 @@ df=df_psytar
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# df_1 = df[df['ADR']==1]
-# df_0 = df[df['ADR']==0]
-
-# === AFTER (edited) ===
-# First, let's check what columns are available in the dataframe
-print("Columns in df:", df.columns.tolist())
-print("\nFirst few rows:")
-print(df.head())
-
-# Now try to filter - assuming the column might be lowercase or have a different name
-# Let's try to find a column that contains 'adr' (case insensitive)
-adr_col = [col for col in df.columns if 'adr' in col.lower()]
-print(f"\nFound ADR-related columns: {adr_col}")
-
-if adr_col:
-    df_1 = df[df[adr_col[0]]==1]
-    df_0 = df[df[adr_col[0]]==0]
-else:
-    # If no ADR column found, create one for demonstration
-    # This assumes there's some binary target column
-    print("No ADR column found. Checking for binary columns...")
-    for col in df.columns:
-        if df[col].nunique() == 2 and df[col].dtype in ['int64', 'float64', 'bool', 'object']:
-            print(f"Column '{col}' has unique values: {df[col].unique()}")
-    # For now, raise the original error to indicate the issue
-    df_1 = df[df['ADR']==1]
-    df_0 = df[df['ADR']==0]
+df_1 = df[df['ADR']==1]
+df_0 = df[df['ADR']==0]
 
 #%%
 # --- [CELL 4]: ---

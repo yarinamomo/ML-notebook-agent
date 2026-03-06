@@ -22,8 +22,8 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 # df.head()
 
 # === AFTER (edited) ===
-df = pd.read_csv(r'data/Retailsales.csv')
-df = df.drop(columns='Unnamed: 0', errors='ignore')
+df= pd.read_csv(r'data/Retailsales.csv')
+df=df.drop(columns='Unnamed: 0', errors='ignore')
 df.head()
 
 #%%
@@ -35,7 +35,11 @@ df
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-df=df['Order ID'].astype('int')
-#This Error is occuring due to some string values in Order ID Column
+# === BEFORE (original) ===
+# df=df['Order ID'].astype('int')
+# #This Error is occuring due to some string values in Order ID Column
+
+# === AFTER (edited) ===
+df['Order ID'] = df['Order ID'].astype('int')

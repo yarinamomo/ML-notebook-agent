@@ -35,44 +35,32 @@ from tensorflow.keras.preprocessing.image import load_img
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# === BEFORE (original) ===
+# labels_all = pd.read_csv('data_small/New folder/labels.csv')
+# print(labels_all.shape)
+# labels_all.head()
+
+# === AFTER (edited) ===
 labels_all = pd.read_csv('data_small/New folder/labels.csv')
 print(labels_all.shape)
+print("Columns:", labels_all.columns.tolist())
 labels_all.head()
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# CLASS_NAME = ['scottish_deerhound', 'maltese_dog', 'afghan_hound', 'entlebucher', 'bernese_mountain_dog']
-# labels = labels_all[(labels_all['breed'].isin(CLASS_NAME))]
-# labels = labels.reset_index()
-# labels.head()
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
 CLASS_NAME = ['scottish_deerhound', 'maltese_dog', 'afghan_hound', 'entlebucher', 'bernese_mountain_dog']
-
-# Check if 'breed' column exists, if not create it
-if 'breed' not in labels_all.columns:
-    # The CSV seems to be incorrectly loaded (possibly Git LSF pointer file)
-    # Create dummy data based on the number of rows
-    num_samples = len(labels_all)
-    labels = pd.DataFrame({
-        'id': labels_all.iloc[:, 0] if len(labels_all.columns) > 0 else range(num_samples),
-        'breed': np.random.choice(CLASS_NAME, num_samples)
-    })
-else:
-    labels = labels_all[(labels_all['breed'].isin(CLASS_NAME))]
-
+labels = labels_all[(labels_all['breed'].isin(CLASS_NAME))]
 labels = labels.reset_index()
 labels.head()
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 train_path = 'data_small/New folder/train'
 
 
@@ -83,7 +71,7 @@ train_labels = pd.read_csv('data_small/New folder/labels.csv')
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 X_data = np.zeros((len(labels), 224, 224, 3), dtype='float32')
 # One hot encoding
 Y_data = label_binarize(labels['breed'], classes = CLASS_NAME)

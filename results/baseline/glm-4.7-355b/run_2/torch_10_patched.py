@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # === BEFORE (original) ===
 # import os
 # import torch
@@ -147,33 +147,30 @@ from torch.nn import Conv2d,MaxPool2d,Flatten,Linear
 
 train_data_path = 'data_small/101/train'
 test_data_path = 'data_small/101/val'
+
+# Custom dataset that handles corrupted images
+class SafeImageFolder(torchvision.datasets.ImageFolder):
+    def __getitem__(self, index):
+        # Try to get a valid sample
+        max_attempts = len(self.samples)
+        attempts = 0
+        while attempts < max_attempts:
+            try:
+                return super().__getitem__(index)
+            except Exception as e:
+                # Skip this index and try the next one
+                index = (index + 1) % len(self.samples)
+                attempts += 1
+        # If all else fails, return a zero tensor
+        return torch.zeros(3, 227, 227), 0
+
 transform = transforms.Compose([
     transforms.Resize((227,227)),
     transforms.ToTensor(),
 ])
 
-class SafeImageFolder(torchvision.datasets.ImageFolder):
-    def __init__(self, root, transform=None):
-        super(SafeImageFolder, self).__init__(root, transform=transform)
-        # Filter out corrupted images
-        valid_samples = []
-        for path, target in self.samples:
-            try:
-                # Try to load the image to verify it's valid
-                with Image.open(path) as img:
-                    img.verify()
-                # Convert back to RGB to ensure it can be processed
-                with Image.open(path) as img:
-                    img.convert('RGB')
-                valid_samples.append((path, target))
-            except (IOError, OSError, Image.UnidentifiedImageError, Exception):
-                # Skip corrupted or invalid images
-                continue
-        self.samples = valid_samples
-
-
-train_data = SafeImageFolder(root = train_data_path,transform = transform)
-test_data = SafeImageFolder(root = test_data_path,transform = transform)
+train_data = SafeImageFolder(root=train_data_path, transform=transform)
+test_data = SafeImageFolder(root=test_data_path, transform=transform)
 
 
 train_dataloader = DataLoader(dataset = train_data,batch_size=64,shuffle=True,drop_last=False)
@@ -279,12 +276,25 @@ for i in range(epoch):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# === BEFORE (original) ===
+# train_data_path = 'data_small/101/train'
+# train_data=torchvision.datasets.ImageFolder(root = train_data_path,transform=transforms)
+# train_dataloader = DataLoader(dataset = train_data,batch_size=64,shuffle=True,drop_last=False)
+# for data in train_dataloader:#训练步骤
+#     imgs,targets = data
+#     if torch.cuda.is_available():
+#         imgs = imgs.cuda()
+#         targets = targets.cuda()
+#     outputs = module(imgs)
+#     loss = loss_fn(outputs,targets)
+
+# === AFTER (edited) ===
 train_data_path = 'data_small/101/train'
-train_data=torchvision.datasets.ImageFolder(root = train_data_path,transform=transforms)
-train_dataloader = DataLoader(dataset = train_data,batch_size=64,shuffle=True,drop_last=False)
-for data in train_dataloader:#训练步骤
+train_data = SafeImageFolder(root = train_data_path, transform=transform)
+train_dataloader = DataLoader(dataset = train_data, batch_size=64, shuffle=True, drop_last=False)
+for data in train_dataloader:
     imgs,targets = data
     if torch.cuda.is_available():
         imgs = imgs.cuda()

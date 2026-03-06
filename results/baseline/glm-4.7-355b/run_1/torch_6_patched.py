@@ -26,7 +26,7 @@ seed=42
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 # === BEFORE (original) ===
 # #use this block later to read cvs hopefully :)
 # train_df=pd.read_csv("data_small/train.csv",index_col=0)
@@ -60,25 +60,57 @@ seed=42
 
 # === AFTER (edited) ===
 train_df=pd.read_csv("data_small/train.csv",index_col=0)
-print("Train columns:", train_df.columns.tolist())
 
-train_labels=train_df['label'].to_numpy()
+# Try to handle different possible label column names
+if 'label' in train_df.columns:
+    train_labels=train_df['label'].to_numpy()
+    train_df=train_df.drop(columns=['label'], errors='ignore')
+elif 'labels' in train_df.columns:
+    train_labels=train_df['labels'].to_numpy()
+    train_df=train_df.drop(columns=['labels'], errors='ignore')
+else:
+    # Find the first non-feature column that could be labels
+    train_labels=train_df.iloc[:, 0].to_numpy()
+    train_df=train_df.drop(columns=[train_df.columns[0]], errors='ignore')
+    
+if 'label_type' in train_df.columns:
+    train_df=train_df.drop(columns=['label_type'], errors='ignore')
+
 train_labels=train_labels.reshape(train_labels.shape[0],1)
 
-
-train_df=train_df.drop(columns=['label', 'label_type'])
 test_df=pd.read_csv("data_small/test.csv",index_col=0)
 
-test_labels=test_df['label'].to_numpy()
+if 'label' in test_df.columns:
+    test_labels=test_df['label'].to_numpy()
+    test_df=test_df.drop(columns=['label'], errors='ignore')
+elif 'labels' in test_df.columns:
+    test_labels=test_df['labels'].to_numpy()
+    test_df=test_df.drop(columns=['labels'], errors='ignore')
+else:
+    test_labels=test_df.iloc[:, 0].to_numpy()
+    test_df=test_df.drop(columns=[test_df.columns[0]], errors='ignore')
+    
 test_labels=test_labels.reshape(test_labels.shape[0],1)
 
-test_df=test_df.drop(columns=('label'))
 val_df = pd.read_csv("data_small/val.csv",index_col=0)
 
-val_labels=val_df['label'].to_numpy()
+if 'label' in val_df.columns:
+    val_labels=val_df['label'].to_numpy()
+    val_df = val_df.drop(columns=['label'], errors='ignore')
+elif 'labels' in val_df.columns:
+    val_labels=val_df['labels'].to_numpy()
+    val_df = val_df.drop(columns=['labels'], errors='ignore')
+else:
+    col_to_use = list(set(val_df.columns) - set(train_df.columns))
+    if col_to_use:
+        val_labels = val_df[col_to_use[0]].to_numpy()
+        val_df = val_df.drop(columns=[col_to_use[0]], errors='ignore')
+    else:
+        val_labels = val_df.iloc[:, 0].to_numpy()
+        val_df = val_df.drop(columns=[val_df.columns[0]], errors='ignore')
+    
 val_labels=val_labels.reshape(val_labels.shape[0],1)
 
-val_df = val_df.drop(columns=('label'))
 vocab=np.append(train_labels,val_labels)
 
 vocab=np.unique(vocab)

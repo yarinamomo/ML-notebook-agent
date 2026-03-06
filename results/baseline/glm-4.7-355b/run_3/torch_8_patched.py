@@ -113,17 +113,15 @@ def createPixelArr(files):
     for image in files:
         try:
             img_arr = cv2.imread(image, cv2.IMREAD_COLOR)
-            if img_arr is None or img_arr.size == 0:
-                print(f"Warning: Could not read image: {image}")
-                continue
-            img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
-            resized_arr = cv2.resize(img_arr, (width, height))
-            data.append(resized_arr)
+            if img_arr is not None:
+                img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
+                resized_arr = cv2.resize(img_arr, (width, height))
+                data.append(resized_arr)
+            else:
+                print(f"Failed to load image: {image}")
         except Exception as e:
-            print(f"Error processing image {image}: {e}")
-    if len(data) == 0:
-        print("Warning: No valid images were loaded!")
-    return np.array(data, dtype=np.uint8)
+            print(e)
+    return np.array(data)
 
 #%%
 # --- [CELL 8]: ---

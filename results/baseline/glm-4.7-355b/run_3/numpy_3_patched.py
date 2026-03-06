@@ -16,24 +16,22 @@ warnings.filterwarnings('ignore')
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df=pd.read_csv('data/hmeq.csv')
-# df.head()
-
-# === AFTER (edited) ===
 df=pd.read_csv('data/hmeq.csv')
-print(df.columns.tolist())  # Check what columns are available
-print(df.shape)  # Check the shape
 df.head()
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
-df.loc[df.BAD == 1, 'STATUS'] = 'DEFAULT'
-df.loc[df.BAD == 0, 'STATUS'] = 'PAID'
+# === BEFORE (original) ===
+# df.loc[df.BAD == 1, 'STATUS'] = 'DEFAULT'
+# df.loc[df.BAD == 0, 'STATUS'] = 'PAID'
+
+# === AFTER (edited) ===
+df.loc[df['BAD'] == 1, 'STATUS'] = 'DEFAULT'
+df.loc[df['BAD'] == 0, 'STATUS'] = 'PAID'
 
 #%%
 # --- [CELL 3]: ---

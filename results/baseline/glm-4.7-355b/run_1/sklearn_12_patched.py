@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # === BEFORE (original) ===
 # # This Python 3 environment comes with many helpful analytics libraries installed
 # # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
@@ -24,19 +24,18 @@
 import numpy as np
 import pandas as pd
 
-csv_path = None
-import os
+# Find and store the path to the train.csv file
+train_path = None
 for dirname, _, filenames in os.walk('/kaggle/input'):
     for filename in filenames:
-        path = os.path.join(dirname, filename)
-        print(path)
-        if 'train.csv' in filename and csv_path is None:
-            csv_path = path
+        if 'train.csv' in filename:
+            train_path = os.path.join(dirname, filename)
+            print(train_path)
 
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay
 from sklearn.linear_model import LogisticRegression
@@ -50,20 +49,21 @@ from sklearn import svm
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # data =pd.read_csv("data/train.csv")
 # # print(data)
 # data.head()
 
 # === AFTER (edited) ===
-data = pd.read_csv(csv_path if csv_path else "data/train.csv")
+data = pd.read_csv(train_path)
+
 data.head()
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
 data['Embarked'].fillna('S', inplace=True)
 data.loc[data.Fare.isnull(),'Fare'] = data['Fare'].mean()
 data.loc[data.Age.isnull(),'Age'] = data['Age'].mean()
@@ -144,21 +144,9 @@ print(f'SVC (accuracy): {acc}%')
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# from pandas import Series
-# 
-# feature_importance = model.feature_importances_
-# Series_feat_imp = Series(feature_importance, index=data.columns)
-
-# === AFTER (edited) ===
 from pandas import Series
 
-# Use RandomForestClassifier which has feature_importances_ attribute
-rf_model = RandomForestClassifier(n_estimators=100)
-rf_model.fit(X_train, y_train)
-
-feature_importance = rf_model.feature_importances_
-Series_feat_imp = Series(feature_importance, index=features.columns)
-Series_feat_imp.sort_values(ascending=False)
+feature_importance = model.feature_importances_
+Series_feat_imp = Series(feature_importance, index=data.columns)

@@ -66,7 +66,7 @@ test_generator = test_datagen.flow_from_directory(
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # def prepare_model():
 #     model = Sequential()
@@ -84,12 +84,12 @@ test_generator = test_datagen.flow_from_directory(
 # model.evaluate(test_generator)
 
 # === AFTER (edited) ===
-from keras.layers import Input
+from tensorflow.keras.layers import Input
 
 def prepare_model():
     model = Sequential()
     model.add(Input(shape=(223, 223, 3)))
-    model.add(Conv2D(32,kernel_size=(3,3),activation='relu'))
+    model.add(Conv2D(32, kernel_size=(3,3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Flatten())
     model.add(Dense(16, activation='relu'))

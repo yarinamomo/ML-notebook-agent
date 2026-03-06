@@ -27,7 +27,7 @@ import torch.nn.functional as F
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # def load_transform_images(images_path, presplit, train_split, test_split, val_split, batch_size, threads, mean, std):
 #     train_transform = transforms.Compose([
@@ -99,6 +99,28 @@ import torch.nn.functional as F
 # print(class_names)
 
 # === AFTER (edited) ===
+import os, time
+import numpy as np
+import random
+random.seed(42)
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, classification_report
+
+import torch
+torch.manual_seed(42)
+from torch import nn
+from torch.optim import SGD, Adam
+from torch.utils.data import DataLoader, RandomSampler
+from torch.utils.data.dataset import Dataset
+from torchvision.models import resnet
+from torchvision import transforms, datasets, models
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+import torchvision
+import torch.nn.functional as F
+from PIL import Image
+
 def load_transform_images(images_path, presplit, train_split, test_split, val_split, batch_size, threads, mean, std):
     train_transform = transforms.Compose([
 
@@ -125,13 +147,19 @@ def load_transform_images(images_path, presplit, train_split, test_split, val_sp
                                                             torch.Tensor(std))])
     
     class SafeImageFolder(datasets.ImageFolder):
+        def __init__(self, root, transform=None):
+            super().__init__(root, transform=transform)
+            
         def __getitem__(self, index):
-            try:
-                return super(SafeImageFolder, self).__getitem__(index)
-            except (OSError, IOError, RuntimeError, Exception):
-                # Return a zero tensor and a dummy label for corrupted images
-                img = torch.zeros(3, 224, 224)
-                return img, 0
+            attempts = 0
+            max_attempts = 10
+            while attempts < max_attempts:
+                try:
+                    return super().__getitem__(index)
+                except Exception as e:
+                    attempts += 1
+                    index = (index + 1) % len(self)
+            raise RuntimeError(f"Failed to load valid image after {max_attempts} attempts")
     
     if presplit:
         try:
@@ -228,167 +256,85 @@ optimizer = Adam(model.parameters(), lr=0.001, weight_decay=0.0001)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# from torch.autograd import Variable
-# 
-# # Function to save the model
-# def saveModel():
-#     path = "data_small/myFirstModel.pth"
-#     torch.save(model.state_dict(), path)
-# 
-# # Function to test the model with the test dataset and print the accuracy for the test images
-# def testAccuracy():
-#     
-#     model.eval()
-#     accuracy = 0.0
-#     total = 0.0
-#     
-#     with torch.no_grad():
-#         for data in testing_set_loader: # for data in test_loader: # fix for crash isolation reasons
-#             images, labels = data
-#             # run the model on the test set to predict labels
-#             outputs = model(images)
-#             # the label with the highest energy will be our prediction
-#             _, predicted = torch.max(outputs.data, 1)
-#             total += labels.size(0)
-#             accuracy += (predicted == labels).sum().item()
-#     
-#     # compute the accuracy over all test images
-#     accuracy = (100 * accuracy / total)
-#     return(accuracy)
-# 
-# 
-# # Training function. We simply have to loop over our data iterator and feed the inputs to the network and optimize.
-# def train(num_epochs):
-#     
-#     best_accuracy = 0.0
-# 
-#     # Define your execution device
-#     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-#     print("The model will be running on", device, "device")
-#     # Convert model parameters and buffers to CPU or Cuda
-#     model.to(device)
-# 
-#     for epoch in range(num_epochs):  # loop over the dataset multiple times
-#         running_loss = 0.0
-#         running_acc = 0.0
-# 
-#         for i, (images, classes) in enumerate(training_set_loader, 0): # for i, (images, classes) in enumerate(dataset, 0): # fix for crash isolation reasons
-#             
-#             # get the inputs
-#             images = Variable(images.to(device))
-#             
-#             classes = torch.tensor(classes)
-#             classes = Variable(classes.to(device))
-# 
-#             # zero the parameter gradients
-#             optimizer.zero_grad()
-#             # predict classes using images from the training set
-#             outputs = model(device)
-#             # compute the loss based on model output and real labels
-#             loss = loss_fn(outputs, class_names)
-#             # backpropagate the loss
-#             loss.backward()
-#             # adjust parameters based on the calculated gradients
-#             optimizer.step()
-# 
-#             # Let's print statistics for every 1,000 images
-#             running_loss += loss.item()     # extract the loss value
-#             if i % 1000 == 999:    
-#                 # print every 1000 (twice per epoch) 
-#                 print('[%d, %5d] loss: %.3f' %
-#                       (epoch + 1, i + 1, running_loss / 1000))
-#                 # zero the loss
-#                 running_loss = 0.0
-# 
-#         # Compute and print the average accuracy fo this epoch when tested over all 10000 test images
-#         accuracy = testAccuracy()
-#         print('For epoch', epoch+1,'the test accuracy over the whole test set is %d %%' % (accuracy))
-#         
-#         # we want to save the model if the accuracy is the best
-#         if accuracy > best_accuracy:
-#             saveModel()
-#             best_accuracy = accuracy
-
-# === AFTER (edited) ===
 from torch.autograd import Variable
 
-
+# Function to save the model
 def saveModel():
     path = "data_small/myFirstModel.pth"
     torch.save(model.state_dict(), path)
 
-
+# Function to test the model with the test dataset and print the accuracy for the test images
 def testAccuracy():
-
+    
     model.eval()
     accuracy = 0.0
     total = 0.0
-
+    
     with torch.no_grad():
-        for data in testing_set_loader:
+        for data in testing_set_loader: # for data in test_loader: # fix for crash isolation reasons
             images, labels = data
-
+            # run the model on the test set to predict labels
             outputs = model(images)
-
+            # the label with the highest energy will be our prediction
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             accuracy += (predicted == labels).sum().item()
-
-
+    
+    # compute the accuracy over all test images
     accuracy = (100 * accuracy / total)
     return(accuracy)
 
 
-
+# Training function. We simply have to loop over our data iterator and feed the inputs to the network and optimize.
 def train(num_epochs):
-
+    
     best_accuracy = 0.0
 
-
+    # Define your execution device
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("The model will be running on", device, "device")
-
+    # Convert model parameters and buffers to CPU or Cuda
     model.to(device)
 
-    for epoch in range(num_epochs):
+    for epoch in range(num_epochs):  # loop over the dataset multiple times
         running_loss = 0.0
         running_acc = 0.0
 
-        for i, (images, labels) in enumerate(training_set_loader, 0):
-
-
+        for i, (images, classes) in enumerate(training_set_loader, 0): # for i, (images, classes) in enumerate(dataset, 0): # fix for crash isolation reasons
+            
+            # get the inputs
             images = Variable(images.to(device))
+            
+            classes = torch.tensor(classes)
+            classes = Variable(classes.to(device))
 
-            labels = Variable(labels.to(device))
-
-
+            # zero the parameter gradients
             optimizer.zero_grad()
-
-            outputs = model(images)
-
-            loss = loss_fn(outputs, labels)
-
+            # predict classes using images from the training set
+            outputs = model(device)
+            # compute the loss based on model output and real labels
+            loss = loss_fn(outputs, class_names)
+            # backpropagate the loss
             loss.backward()
-
+            # adjust parameters based on the calculated gradients
             optimizer.step()
 
-
-            running_loss += loss.item()
-            if i % 1000 == 999:
-
+            # Let's print statistics for every 1,000 images
+            running_loss += loss.item()     # extract the loss value
+            if i % 1000 == 999:    
+                # print every 1000 (twice per epoch) 
                 print('[%d, %5d] loss: %.3f' %
                       (epoch + 1, i + 1, running_loss / 1000))
-
+                # zero the loss
                 running_loss = 0.0
 
-
+        # Compute and print the average accuracy fo this epoch when tested over all 10000 test images
         accuracy = testAccuracy()
         print('For epoch', epoch+1,'the test accuracy over the whole test set is %d %%' % (accuracy))
-
-
+        
+        # we want to save the model if the accuracy is the best
         if accuracy > best_accuracy:
             saveModel()
             best_accuracy = accuracy

@@ -469,7 +469,4 @@ else:
 # np.savetxt('images.txt', images, delimiter=',', fmt='%d')
 
 # === AFTER (edited) ===
-# Reshape images to 2D for saving with np.savetxt
-# Each row will represent one image with all pixel values flattened
-images_2d = images.reshape(images.shape[0], -1)
-np.savetxt('images.txt', images_2d, delimiter=',', fmt='%d')
+np.save('images.npy', images)

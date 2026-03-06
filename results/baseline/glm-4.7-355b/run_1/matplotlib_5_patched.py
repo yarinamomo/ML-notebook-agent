@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # file_path = 'data/diabetes.csv'
 # data = pd.read_csv(file_path)
@@ -18,8 +18,11 @@ import matplotlib.pyplot as plt
 # === AFTER (edited) ===
 file_path = 'data/diabetes.csv'
 data = pd.read_csv(file_path)
+# Print available columns to see actual column names
 print("Available columns:", data.columns.tolist())
-X = data[['Glucose','BloodPressure','Insulin']].values
+# Try common column name variations
+# Common diabetes dataset uses these exact lowercase column names
+X = data[['glucose', 'blood_pressure', 'insulin']].values
 
 #%%
 # --- [CELL 2]: ---

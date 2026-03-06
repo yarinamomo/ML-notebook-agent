@@ -20,20 +20,24 @@ df = pd.read_csv('data/iris-data.csv')
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # #Removing all null values row
 # df = df.dropna(subset=['petal_width_cm'])
 # df.info()
 
 # === AFTER (edited) ===
-df = df.dropna(subset=['petal_width'])
+# Check the actual column names in the dataset
+print("Columns in the dataset:", df.columns.tolist())
+
+# Use the correct column name based on what's available
+df = df.dropna(subset=['petal_width_cm']) if 'petal_width_cm' in df.columns else df.dropna()
 df.info()
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
 df['class'].replace(["Iris-setossa","versicolor"], ["Iris-setosa","Iris-versicolor"], inplace=True)
 df['class'].value_counts()
 

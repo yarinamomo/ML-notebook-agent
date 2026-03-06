@@ -31,13 +31,9 @@ print(os.listdir("data"))
 # data.shape
 
 # === AFTER (edited) ===
-data = pd.read_csv('data/fer2013.csv', delimiter=',')  # Try comma first
+data = pd.read_csv('data/fer2013.csv', delimiter=';')
 
-# Check if the data was read correctly
-print("DataFrame shape:", data.shape)
-print("Columns:", data.columns.tolist())
-print("First few rows:")
-print(data.head())
+data.shape
 
 #%%
 # --- [CELL 2]: ---

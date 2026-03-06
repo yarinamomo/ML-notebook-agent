@@ -30,7 +30,7 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # # read data
 # df = pd.read_csv('data/measures_v2.csv', 
@@ -44,7 +44,7 @@ df.head(10)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 X=df.drop("motor_speed", axis=1)
 y=df["motor_speed"]
 

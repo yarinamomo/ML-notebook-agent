@@ -35,17 +35,10 @@ print(test_data.head())
 # dev_test=test_data.drop("Unnamed: 0",axis=1)
 
 # === AFTER (edited) ===
-# Only drop 'Unnamed: 0' if it exists
-if 'Unnamed: 0' in train_data.columns:
-    dev_train = train_data.drop("Unnamed: 0", axis=1)
-else:
-    dev_train = train_data.copy()
+dev_train=train_data.drop("Unnamed: 0",axis=1, errors='ignore')
 
 print(test_data.info())
-if 'Unnamed: 0' in test_data.columns:
-    dev_test = test_data.drop("Unnamed: 0", axis=1)
-else:
-    dev_test = test_data.copy()
+dev_test=test_data.drop("Unnamed: 0",axis=1, errors='ignore')
 
 #%%
 # --- [CELL 2]: ---

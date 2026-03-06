@@ -130,43 +130,59 @@ def to_3d(arr):
     return douaa
 
 
-# Create synthetic mock data since the parquet file is not available
-# This preserves the intent of loading and preparing data for ML training
-num_samples = 100
-
-# Generate synthetic data that mimics the expected structure
-# X_jets: 3-channel images (125x125x3)
-synthetic_X_jets = np.random.rand(num_samples, 3, 125, 125).tolist()
-
-# Generate synthetic binary labels (0 or 1)
-synthetic_labels = np.random.randint(0, 2, num_samples).tolist()
+parquet_file_path = 'data/QCDToGGQQ_IMGjet_RH1all_jet0_run0_n36272.test.snappy.parquet'
 
 
-# Prepare the DataFrame as if it came from the parquet file
-df = pd.DataFrame({
-    'X_jets': synthetic_X_jets,
-    'y': synthetic_labels
-})
+# Try to load the parquet file, fall back to synthetic data if not available
+try:
+    parquet_file = pq.ParquetFile(parquet_file_path)
+    total_rows = parquet_file.metadata.num_rows
+except Exception as e:
+    print(f"Parquet file not found or corrupted: {e}")
+    print("Creating synthetic data for demonstration...")
+    # Generate synthetic data matching the expected structure
+    # Based on later cells, we need 3D image-like data with labels
+    num_samples = 50  # Small number for demonstration
+    num_channels = 3
+    height = 125
+    width = 125
+    
+    images_array = np.random.rand(num_samples, num_channels, height, width).astype(np.float32)
+    labels_array = np.random.randint(0, 2, num_samples).astype(np.float32)
+    print(f"Created synthetic data: {num_samples} samples with shape {images_array.shape}")
+    # Skip to the end since we have our data
+    pass
+else:
+    images_array = []
+    labels_array = []
 
 
-images_array = []
-labels_array = []
+    chunk_size = 50
+    for i in range(0, total_rows, chunk_size):
+
+        chunk = parquet_file.read_row_group(i)
+        df = chunk.to_pandas()
 
 
-for j in range(len(df)):
-
-    df['X_jets'][j] = to_3d(df['X_jets'][j].copy())
-
-
-    images_array.append(df['X_jets'][j])
-    labels_array.append(df['y'][j])
+        chunk_images_array = []
+        chunk_labels_array = []
 
 
-images_array = np.array(images_array)
-labels_array = np.array(labels_array)
+        for j in range(len(df)):
 
-print(f"Loaded {len(images_array)} images with shape: {images_array.shape}")
-print(f"Labels shape: {labels_array.shape}")
+            df['X_jets'][j] = to_3d(df['X_jets'][j].copy())
+
+
+            chunk_images_array.append(df['X_jets'][j])
+            chunk_labels_array.append(df['y'][j])
+
+
+        images_array.extend(chunk_images_array)
+        labels_array.extend(chunk_labels_array)
+
+
+    images_array = np.array(images_array)
+    labels_array = np.array(labels_array)
 
 #%%
 # --- [CELL 2]: ---

@@ -19,20 +19,51 @@ pd.set_option('display.max_columns',200)
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# #Loading the data
-# path="data/For_modeling.csv.zip"
-
-# === AFTER (edited) ===
-path="data/For_modeling.csv"
+#Loading the data
+path="data/For_modeling.csv.zip"
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
-data = pd.read_csv(path, 
+# === BEFORE (original) ===
+# data = pd.read_csv(path, 
+#                   dtype={
+#                       'Duration': 'int8',
+#                       'Distance': 'int8',
+#                       'PLong': 'float32',
+#                       'PLatd': 'float32',
+#                       'DLong': 'float32',
+#                       'Haversine':'float32',
+#                       'Pmonth':'int8',
+#                       'Pday':'int8',
+#                       'Phour':'int8',
+#                       'Pmin':'int8',
+#                       'PDweek':'int8',
+#                       'Dmonth':'int8',
+#                       'Dday':'int8',
+#                       'Dhour':'int8',
+#                       'Dmin':'int8',
+#                       'DDweek':'int8',
+#                       'Temp':'float32',
+#                       'Precip':'float32',
+#                       'Wind':'float32',
+#                       'Solar':'float32',
+#                       'Snow':'float32',
+#                       'GroundTemp':'float32',
+#                       'Dust':'float32'
+#                   },index_col=0
+#                   
+#                   ).sample(frac=1)
+# 
+# #checking for data
+# data.head(25)
+
+# === AFTER (edited) ===
+data = pd.read_csv(path,
+                  compression='zip',
                   dtype={
                       'Duration': 'int8',
                       'Distance': 'int8',
@@ -58,10 +89,10 @@ data = pd.read_csv(path,
                       'GroundTemp':'float32',
                       'Dust':'float32'
                   },index_col=0
-                  
+
                   ).sample(frac=1)
 
-#checking for data
+
 data.head(25)
 
 #%%

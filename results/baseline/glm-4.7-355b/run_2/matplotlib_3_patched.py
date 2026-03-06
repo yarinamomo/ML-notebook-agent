@@ -52,63 +52,11 @@ train_datagen = ImageDataGenerator(
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# test_datagen = ImageDataGenerator(rescale=1./255)
-# 
-# # Load and preprocess training and testing data
-# train_generator = train_datagen.flow_from_directory(
-#     train_dir,
-#     target_size=(224, 224),
-#     batch_size=32,
-#     class_mode='categorical',
-#     shuffle=False
-# )
-# 
-# test_generator = test_datagen.flow_from_directory(
-#     test_dir,
-#     target_size=(224, 224),
-#     batch_size=32,
-#     class_mode='categorical',
-#     shuffle=False
-# )
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+test_datagen = ImageDataGenerator(rescale=1./255)
 
-# === AFTER (edited) ===
-# Function to validate images
-def validate_images(directory):
-    valid_images = []
-    class_names = sorted(os.listdir(directory))
-    for class_name in class_names:
-        class_path = os.path.join(directory, class_name)
-        if os.path.isdir(class_path):
-            img_files = sorted([f for f in os.listdir(class_path) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif'))])
-            for img_file in img_files:
-                img_path = os.path.join(class_path, img_file)
-                try:
-                    # Try to open and verify the image
-                    with Image.open(img_path) as img:
-                        img.verify()
-                    # Re-open to actually check (verify closes the file)
-                    with Image.open(img_path) as img:
-                        img.load()
-                    valid_images.append(img_path)
-                except Exception as e:
-                    print(f"Skipping corrupted image: {img_path}")
-                    continue
-    return valid_images
-
-
-# Validate and get list of valid images
-print("Validating training images...")
-valid_train_images = validate_images(train_dir)
-print(f"Found {len(valid_train_images)} valid training images")
-
-print("\nValidating test images...")
-valid_test_images = validate_images(test_dir)
-print(f"Found {len(valid_test_images)} valid test images")
-
-
+# Load and preprocess training and testing data
 train_generator = train_datagen.flow_from_directory(
     train_dir,
     target_size=(224, 224),
@@ -148,10 +96,66 @@ inception_model = Model(inputs=base_model.input, outputs=x)
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 6}
-train_features = inception_model.predict(train_generator)
-test_features = inception_model.predict(test_generator)
+# === BEFORE (original) ===
+# train_features = inception_model.predict(train_generator)
+# test_features = inception_model.predict(test_generator)
+
+# === AFTER (edited) ===
+# Collect features from all batches, handling any corrupted images
+train_features_list = []
+train_labels_list = []
+
+for batch_images, batch_labels in train_generator:
+    try:
+        features = inception_model.predict(batch_images, verbose=0)
+        train_features_list.append(features)
+        train_labels_list.append(batch_labels)
+    except Exception as e:
+        print(f"Skipping a batch due to error: {e}")
+        continue
+    
+    # Stop after all batches are processed
+    if len(train_features_list) * train_generator.batch_size >= len(train_generator.labels):
+        break
+
+# Concatenate all batches
+if train_features_list:
+    train_features = np.concatenate(train_features_list, axis=0)
+    train_labels_one_hot = np.concatenate(train_labels_list, axis=0)[:len(train_features)]
+else:
+    train_features = np.array([])
+    train_labels_one_hot = np.array([])
+
+
+# Same process for test set
+test_features_list = []
+test_labels_list = []
+
+for batch_images, batch_labels in test_generator:
+    try:
+        features = inception_model.predict(batch_images, verbose=0)
+        test_features_list.append(features)
+        test_labels_list.append(batch_labels)
+    except Exception as e:
+        print(f"Skipping a batch due to error: {e}")
+        continue
+    
+    # Stop after all batches are processed
+    if len(test_features_list) * test_generator.batch_size >= len(test_generator.labels):
+        break
+
+# Concatenate all batches
+if test_features_list:
+    test_features = np.concatenate(test_features_list, axis=0)
+    test_labels_one_hot = np.concatenate(test_labels_list, axis=0)[:len(test_features)]
+else:
+    test_features = np.array([])
+    test_labels_one_hot = np.array([])
+
+print(f"Train features shape: {train_features.shape}")
+print(f"Test features shape: {test_features.shape}")
 
 #%%
 # --- [CELL 6]: ---

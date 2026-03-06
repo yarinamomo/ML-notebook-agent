@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -25,7 +25,7 @@ from sklearn.metrics import confusion_matrix, classification_report
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 # Count number of training images for both classes to calculate a
 # data-driven training batch size.
 num_samples = (len(os.listdir('data_small/Chic')) +
@@ -37,55 +37,21 @@ batch_size = num_samples // 200
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train_ds = tf.keras.utils.image_dataset_from_directory(
-#   'data_small',
-#   validation_split=0.2,
-#   subset="training",
-#   label_mode='binary',
-#   seed=123, #number to randomize outcome
-#   image_size=(img_height, img_width),
-#   batch_size=batch_size)
-
-# === AFTER (edited) ===
-def decode_and_resize(image, label):
-    # Robust image decoding that handles edge cases
-    image = tf.io.read_file(image)
-    # Decode with 3 channels, ignoring alpha channel
-    image = tf.image.decode_image(image, channels=3, expand_animations=False)
-    # Set static shape which decode_image doesn't always do
-    image.set_shape([None, None, 3])
-    # Ensure we have a valid image
-    image = tf.image.convert_image_dtype(image, tf.float32)
-    # Resize to target dimensions
-    image = tf.image.resize(image, [img_height, img_width])
-    # Scale to [0, 1] range
-    image = image / 255.0
-    return image, label
-
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
 train_ds = tf.keras.utils.image_dataset_from_directory(
   'data_small',
   validation_split=0.2,
   subset="training",
   label_mode='binary',
-  seed=123,
+  seed=123, #number to randomize outcome
   image_size=(img_height, img_width),
-  batch_size=batch_size,
-  interpolation='bilinear')
-
-# Add preprocessing and caching
-train_ds = train_ds.map(
-    lambda x, y: (x / 255.0, y),
-    num_parallel_calls=tf.data.AUTOTUNE
-)
-train_ds = train_ds.prefetch(tf.data.AUTOTUNE)
+  batch_size=batch_size)
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 val_ds = tf.keras.utils.image_dataset_from_directory(
  'data_small',
   validation_split=0.2,
@@ -98,7 +64,7 @@ val_ds = tf.keras.utils.image_dataset_from_directory(
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 test_ds = tf.keras.utils.image_dataset_from_directory(
  'data_small_test',
   image_size=(img_height, img_width),
@@ -108,13 +74,13 @@ test_ds = tf.keras.utils.image_dataset_from_directory(
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 base_model = tf.keras.applications.ResNet50(weights = 'imagenet', include_top = False, input_shape = (224,224,3))
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 x = base_model.output
 x = keras.layers.GlobalAveragePooling2D()(x)
 
@@ -132,14 +98,14 @@ model = keras.models.Model(inputs=base_model.input,
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'not run'}
 for layer in model.layers[:175]:
     layer.trainable = False
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'not run'}
 model.compile(
     optimizer='adam',
     loss='binary_crossentropy',
@@ -149,7 +115,7 @@ model.compile(
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'not run'}
 history = model.fit(
     train_ds,
     validation_data=val_ds,
@@ -183,12 +149,23 @@ predictions = (model.predict(test_ds) >= 0.5)
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# predictions = np.array([])
+# labels =  np.array([])
+# for x, y in test_ds:
+#   predictions = np.concatenate([predictions, model.predict_classes(x)])
+#   labels = np.concatenate([labels, np.argmax(y.numpy(), axis=-1)])
+# 
+# tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()
+
+# === AFTER (edited) ===
 predictions = np.array([])
 labels =  np.array([])
 for x, y in test_ds:
-  predictions = np.concatenate([predictions, model.predict_classes(x)])
-  labels = np.concatenate([labels, np.argmax(y.numpy(), axis=-1)])
+  batch_pred = (model.predict(x) >= 0.5).astype('int32')
+  predictions = np.concatenate([predictions, np.squeeze(batch_pred)])
+  labels = np.concatenate([labels, np.squeeze(y.numpy())])
 
 tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()

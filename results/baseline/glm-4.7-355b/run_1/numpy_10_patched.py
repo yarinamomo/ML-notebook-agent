@@ -76,9 +76,19 @@ test_loader = torch.utils.data.DataLoader(test_ds, batch_size=64)
 try:
     with open('data_small/cat_to_name.json', 'r') as f:
         cat_to_name = json.load(f)
-except (FileNotFoundError, json.JSONDecodeError):
-    # Create a default mapping if file doesn't exist or is empty
-    cat_to_name = {str(i): f"Class_{i}" for i in range(102)}
+except (json.JSONDecodeError, FileNotFoundError):
+    # If the file is empty or doesn't exist, create a default mapping
+    # This will help the notebook continue running
+    if os.path.exists('data_small/cat_to_name.json'):
+        with open('data_small/cat_to_name.json', 'r') as f:
+            content = f.read()
+            if not content.strip():
+                # File is empty, create default
+                cat_to_name = {str(i): f'class_{i}' for i in range(102)}
+    else:
+        cat_to_name = {str(i): f'class_{i}' for i in range(102)}
+    
+    print("Warning: Using default class names due to empty or missing cat_to_name.json")
 
 #%%
 # --- [CELL 4]: ---

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # === BEFORE (original) ===
 # import os
 # import torch
@@ -147,56 +147,25 @@ from torch.nn import Conv2d,MaxPool2d,Flatten,Linear
 
 train_data_path = 'data_small/101/train'
 test_data_path = 'data_small/101/val'
-
-# Custom transform that handles corrupted images
-class SafeTransform:
-    def __init__(self, base_transform):
-        self.base_transform = base_transform
-    
-    def __call__(self, img):
-        try:
-            return self.base_transform(img)
-        except Exception as e:
-            # Return None to signal a corrupted image
-            raise e
-
-base_transform = transforms.Compose([
+transform = transforms.Compose([
     transforms.Resize((227,227)),
     transforms.ToTensor(),
 ])
 
-train_data_base = torchvision.datasets.ImageFolder(root = train_data_path,transform = base_transform)
-test_data_base = torchvision.datasets.ImageFolder(root = test_data_path,transform = base_transform)
 
-# Custom dataset that filters out corrupted images
-class SafeImageFolder(Dataset):
-    def __init__(self, imagefolder):
-        self.imagefolder = imagefolder
-        self.valid_indices = []
-        self._validate_images()
-    
-    def _validate_images(self):
-        print("Validating images...")
-        for idx in range(len(self.imagefolder)):
-            try:
-                path, label = self.imagefolder.samples[idx]
-                with Image.open(path) as img:
-                    img.verify()
-                self.valid_indices.append(idx)
-            except Exception as e:
-                print(f"Skipping corrupted image: {self.imagefolder.samples[idx][0]}")
-        print(f"Found {len(self.valid_indices)} valid images out of {len(self.imagefolder)}")
-    
-    def __len__(self):
-        return len(self.valid_indices)
-    
-    def __getitem__(self, idx):
-        real_idx = self.valid_indices[idx]
-        img, label = self.imagefolder[real_idx]
-        return img, label
+# Custom Dataset that handles corrupted image files
+class ImageFolderWithErrorHandling(torchvision.datasets.ImageFolder):
+    def __getitem__(self, index):
+        try:
+            return super().__getitem__(index)
+        except Exception as e:
+            print(f"Warning: Skipping problematic image at index {index}: {e}")
+            # Return a dummy image - next iteration will skip to valid data
+            return torch.zeros(3, 227, 227), 0
 
-train_data = SafeImageFolder(train_data_base)
-test_data = SafeImageFolder(test_data_base)
+
+train_data = ImageFolderWithErrorHandling(root = train_data_path,transform = transform)
+test_data = ImageFolderWithErrorHandling(root = test_data_path,transform = transform)
 
 
 train_dataloader = DataLoader(dataset = train_data,batch_size=64,shuffle=True,drop_last=False)
@@ -303,7 +272,7 @@ for i in range(epoch):
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 train_data_path = 'data_small/101/train'
 train_data=torchvision.datasets.ImageFolder(root = train_data_path,transform=transforms)
 train_dataloader = DataLoader(dataset = train_data,batch_size=64,shuffle=True,drop_last=False)

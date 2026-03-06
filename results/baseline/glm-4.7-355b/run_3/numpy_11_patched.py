@@ -100,7 +100,7 @@ if not os.path.isfile(training_binary_path):
                 GENERATE_SQUARE),Image.LANCZOS)
           training_data.append(np.asarray(image))
       except Exception as e:
-          print(f"Skipping {filename}: {e}")
+          print(f"Skipping file {filename}: {e}")
           continue
   training_data = np.reshape(training_data,(-1,GENERATE_SQUARE,
             GENERATE_SQUARE,3))

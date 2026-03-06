@@ -1,13 +1,13 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 class conf:
     index = 'Id'
     target = 'quality'
@@ -28,27 +28,43 @@ np.random.seed(conf.random)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pandas.plotting import scatter_matrix
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# === BEFORE (original) ===
+# train_full = pd.read_csv("data/train.csv", index_col=conf.index)
+# test_full = pd.read_csv("data/test.csv", index_col=conf.index)
+# train = train_full.copy()
+# test = test_full.copy()
+# if conf.load_original:
+#     print("Load external data...")
+#     original = pd.read_csv('data/WineQT.csv', index_col=conf.index)
+#     if conf.only_positive:
+#         train = pd.concat([original[original[conf.target] == 1], train_full], ignore_index=True)
+#     else:
+#         train = pd.concat([original, train_full])
+#         #train = train.drop(columns=['Id']).reset_index()
+# train.info()
+
+# === AFTER (edited) ===
 train_full = pd.read_csv("data/train.csv", index_col=conf.index)
 test_full = pd.read_csv("data/test.csv", index_col=conf.index)
 train = train_full.copy()
 test = test_full.copy()
 if conf.load_original:
     print("Load external data...")
-    original = pd.read_csv('data/WineQT.csv', index_col=conf.index)
+    original = pd.read_csv('data/WineQT.csv')
     if conf.only_positive:
         train = pd.concat([original[original[conf.target] == 1], train_full], ignore_index=True)
     else:
         train = pd.concat([original, train_full])
-        #train = train.drop(columns=['Id']).reset_index()
+
 train.info()
 
 #%%
@@ -140,89 +156,52 @@ df_TSNE_te = df_TSNE_te.set_index('Id')
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
-# df_TSNE = pd.concat([df_tmp,train[conf.target]], axis=1)
-# 
-# df_TSNE = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
-# 
-# groups = df_TSNE.groupby(conf.target)
-# 
-# #https://stackoverflow.com/questions/21654635/scatter-plots-in-pandas-pyplot-how-to-plot-by-category
-# fig, ax = plt.subplots(figsize=(12, 12))
-# ax.margins(0.05) # Optional, just adds 5% padding to the autoscaling
-# for name, group in groups:
-#     ax.plot(group.tsne1, group.tsne2, marker='o', linestyle='', ms=12, label=name)
-# ax.legend()
-# #plt.xlim(-75, -80)
-# #plt.ylim(-5, 5)
-# 
-# plt.show()
-
-# === AFTER (edited) ===
-tsne_model = TSNE(perplexity=25, n_components=2, init='pca', n_iter=250, random_state=23)
-df_tsne = tsne_model.fit_transform(train2[features])
-
-df_tsne_te = tsne_model.fit_transform(test2[features])
-df_TSNE_te = pd.DataFrame(df_tsne_te, columns=['tsne1', 'tsne2'])
-df_TSNE_te['Id'] = test.index
-df_TSNE_te = df_TSNE_te.set_index('Id')
-df_TSNE_te = df_TSNE_te.reset_index(drop=True)
-
-#%%
-# --- [CELL 16]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# df_tmp = train2.drop(columns=['quality'])
-# train3 = pd.concat([df_tmp, df_TSNE], axis=1)
-# test3 = pd.concat([test2, df_TSNE_te], axis=1)
-
-# === AFTER (edited) ===
 df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
-df_tmp = df_tmp.reset_index(drop=True)
-df_TSNE = pd.concat([df_tmp, train[conf.target].reset_index(drop=True)], axis=1)
+df_TSNE = pd.concat([df_tmp,train[conf.target]], axis=1)
 
 df_TSNE = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
 
 groups = df_TSNE.groupby(conf.target)
 
-
+#https://stackoverflow.com/questions/21654635/scatter-plots-in-pandas-pyplot-how-to-plot-by-category
 fig, ax = plt.subplots(figsize=(12, 12))
-ax.margins(0.05)
+ax.margins(0.05) # Optional, just adds 5% padding to the autoscaling
 for name, group in groups:
     ax.plot(group.tsne1, group.tsne2, marker='o', linestyle='', ms=12, label=name)
 ax.legend()
-
-
+#plt.xlim(-75, -80)
+#plt.ylim(-5, 5)
 
 plt.show()
 
 #%%
-# --- [CELL 17]: ---
-# cell_state: edited
+# --- [CELL 16]: ---
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# from sklearn.metrics import cohen_kappa_score
-# from sklearn.model_selection import StratifiedKFold
-# 
-# from lightgbm.sklearn import LGBMClassifier
-# from catboost import CatBoostClassifier
-# 
-# from lightgbm import LGBMRegressor
-# import scipy as sp
-# from functools import partial
-# 
-# import optuna
-# import warnings
-# warnings.filterwarnings('ignore')
-
-# === AFTER (edited) ===
-df_tmp = train2.drop(columns=['quality']).reset_index(drop=True)
+df_tmp = train2.drop(columns=['quality'])
 train3 = pd.concat([df_tmp, df_TSNE], axis=1)
-test3 = pd.concat([test2.reset_index(drop=True), df_TSNE_te], axis=1)
+test3 = pd.concat([test2, df_TSNE_te], axis=1)
+
+
+#%%
+# --- [CELL 17]: ---
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+from sklearn.metrics import cohen_kappa_score
+from sklearn.model_selection import StratifiedKFold
+
+from lightgbm.sklearn import LGBMClassifier
+from catboost import CatBoostClassifier
+
+from lightgbm import LGBMRegressor
+import scipy as sp
+from functools import partial
+
+import optuna
+import warnings
+warnings.filterwarnings('ignore')
 
 #%%
 # --- [CELL 18]: ---

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 from IPython.display import Image, display
 import os
 import random
@@ -43,7 +43,7 @@ for category_name in selected_categories:
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 from torchvision.datasets import ImageFolder
 import torchvision.transforms as transforms
 
@@ -53,41 +53,82 @@ dataset = ImageFolder(directory_path, transform = transformations)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-import matplotlib.pyplot as plt # for reporducing and fixing purposes
+# cell_state: edited
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# === BEFORE (original) ===
+# import matplotlib.pyplot as plt # for reporducing and fixing purposes
+# import torch
+# 
+# def show_images(dataset, num_images=6):
+# 
+#     # Get random indices from the dataset
+#     random_indices = torch.randperm(len(dataset))[:num_images]
+# 
+#     # Create a subplot with the specified number of rows and columns
+#     rows = 1
+#     cols = num_images
+#     fig, axes = plt.subplots(rows, cols, figsize=(15, 3))
+# 
+#     for i, idx in enumerate(random_indices):
+#         # Get the image and label from the dataset
+#         image, label = dataset[idx]
+# 
+#         # Convert the PyTorch tensor to a NumPy array for visualization
+#         image_np = image.permute(1, 2, 0).numpy()
+# 
+#         # Display the image
+#         axes[i].imshow(image_np)
+#         axes[i].set_title(f"Label: {label}")
+# 
+#         # Remove x and y axis ticks
+#         axes[i].axis("off")
+# 
+#     plt.show()
+# 
+# # Call the helper function to display images from the transformed dataset
+# transformed = dataset # fix for reporducing and fixing purposes, undefined variable
+# show_images(transformed)
+
+# === AFTER (edited) ===
+import matplotlib.pyplot as plt
 import torch
+from PIL import UnidentifiedImageError
 
 def show_images(dataset, num_images=6):
 
-    # Get random indices from the dataset
     random_indices = torch.randperm(len(dataset))[:num_images]
 
-    # Create a subplot with the specified number of rows and columns
     rows = 1
     cols = num_images
     fig, axes = plt.subplots(rows, cols, figsize=(15, 3))
 
-    for i, idx in enumerate(random_indices):
-        # Get the image and label from the dataset
-        image, label = dataset[idx]
+    valid_count = 0
+    idx = 0
+    while valid_count < num_images and idx < len(random_indices):
+        try:
+            index = random_indices[idx].item()
+            image, label = dataset[index]
 
-        # Convert the PyTorch tensor to a NumPy array for visualization
-        image_np = image.permute(1, 2, 0).numpy()
+            image_np = image.permute(1, 2, 0).numpy()
 
-        # Display the image
-        axes[i].imshow(image_np)
-        axes[i].set_title(f"Label: {label}")
+            axes[valid_count].imshow(image_np)
+            axes[valid_count].set_title(f"Label: {label}")
 
-        # Remove x and y axis ticks
+            axes[valid_count].axis("off")
+            valid_count += 1
+        except (UnidentifiedImageError, Exception) as e:
+            pass
+        idx += 1
+
+    # Hide any unused subplots
+    for i in range(valid_count, num_images):
         axes[i].axis("off")
 
     plt.show()
 
-# Call the helper function to display images from the transformed dataset
-transformed = dataset # fix for reporducing and fixing purposes, undefined variable
-show_images(transformed)
 
+transformed = dataset
+show_images(transformed)
 
 #%%
 # --- [CELL 3]: ---
@@ -131,44 +172,9 @@ val_dl = DataLoader(val_ds, batch_size*2, num_workers = 0, pin_memory = False)
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# import torch.nn as nn
-# def accuracy(outputs, labels):
-#     _, preds = torch.max(outputs, dim=1)
-#     return torch.tensor(torch.sum(preds == labels).item() / len(preds))
-# 
-# class ImageClassificationBase(nn.Module):
-#     def training_step(self, batch):
-#         images, labels = batch
-#         out = self(images)                  # Generate predictions
-#         loss = F.cross_entropy(out, labels) # Calculate loss
-#         return loss
-# 
-#     def validation_step(self, batch):
-#         images, labels = batch
-#         out = self(images)                    # Generate predictions
-#         loss = F.cross_entropy(out, labels)   # Calculate loss
-#         acc = accuracy(out, labels)           # Calculate accuracy
-#         return {'val_loss': loss.detach(), 'val_acc': acc}
-# 
-#     def validation_epoch_end(self, outputs):
-#         batch_losses = [x['val_loss'] for x in outputs]
-#         epoch_loss = torch.stack(batch_losses).mean()   # Combine losses
-#         batch_accs = [x['val_acc'] for x in outputs]
-#         epoch_acc = torch.stack(batch_accs).mean()      # Combine accuracies
-#         return {'val_loss': epoch_loss.item(), 'val_acc': epoch_acc.item()}
-# 
-#     def epoch_end(self, epoch, result):
-#         print("Epoch {}: train_loss: {:.4f}, val_loss: {:.4f}, val_acc: {:.4f}".format(
-#             epoch+1, result['train_loss'], result['val_loss'], result['val_acc']))
-
-# === AFTER (edited) ===
-import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
 def accuracy(outputs, labels):
     _, preds = torch.max(outputs, dim=1)
     return torch.tensor(torch.sum(preds == labels).item() / len(preds))
@@ -176,22 +182,22 @@ def accuracy(outputs, labels):
 class ImageClassificationBase(nn.Module):
     def training_step(self, batch):
         images, labels = batch
-        out = self(images)
-        loss = F.cross_entropy(out, labels)
+        out = self(images)                  # Generate predictions
+        loss = F.cross_entropy(out, labels) # Calculate loss
         return loss
 
     def validation_step(self, batch):
         images, labels = batch
-        out = self(images)
-        loss = F.cross_entropy(out, labels)
-        acc = accuracy(out, labels)
+        out = self(images)                    # Generate predictions
+        loss = F.cross_entropy(out, labels)   # Calculate loss
+        acc = accuracy(out, labels)           # Calculate accuracy
         return {'val_loss': loss.detach(), 'val_acc': acc}
 
     def validation_epoch_end(self, outputs):
         batch_losses = [x['val_loss'] for x in outputs]
-        epoch_loss = torch.stack(batch_losses).mean()
+        epoch_loss = torch.stack(batch_losses).mean()   # Combine losses
         batch_accs = [x['val_acc'] for x in outputs]
-        epoch_acc = torch.stack(batch_accs).mean()
+        epoch_acc = torch.stack(batch_accs).mean()      # Combine accuracies
         return {'val_loss': epoch_loss.item(), 'val_acc': epoch_acc.item()}
 
     def epoch_end(self, epoch, result):

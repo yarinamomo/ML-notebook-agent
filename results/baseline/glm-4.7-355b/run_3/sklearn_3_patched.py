@@ -33,25 +33,9 @@ greeks_df = pd.read_csv('data/greeks_synthetic.csv')
 # train_df = pd.merge(train_df, greeks_df, on="Id")
 
 # === AFTER (edited) ===
-# Check what columns exist in greeks_df
-print("Greeks df columns:", greeks_df.columns.tolist())
-print("\nTrain df columns:", train_df.columns.tolist())
-
-# Try different column name options
-if 'Id' in train_df.columns and 'Id' in greeks_df.columns:
-    train_df = pd.merge(train_df, greeks_df, on="Id")
-elif 'Id' in train_df.columns and 'id' in greeks_df.columns:
-    train_df = pd.merge(train_df, greeks_df, left_on="Id", right_on="id")
-elif 'id' in train_df.columns and 'id' in greeks_df.columns:
-    train_df = pd.merge(train_df, greeks_df, on="id")
-elif 'Id' in train_df.columns:
-    # If greeks_df doesn't have Id, merge by index
-    train_df = train_df.reset_index(drop=True)
-    greeks_df = greeks_df.reset_index(drop=True)
-    train_df = pd.concat([train_df, greeks_df], axis=1)
-else:
-    # If train_df doesn't have Id column, try lowercase
-    train_df = pd.merge(train_df, greeks_df, on="id")
+# Merge train and greeks dataframes on index
+greeks_df = greeks_df.drop("Id", axis=1)
+train_df = pd.concat([train_df, greeks_df], axis=1)
 
 #%%
 # --- [CELL 3]: ---

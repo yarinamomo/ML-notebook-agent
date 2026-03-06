@@ -22,13 +22,8 @@ INPUT_DIR = 'data'
 import numpy as np
 import pandas as pd
 
-# First, let's check what columns are in the CSV file
-sample_df = pd.read_csv(INPUT_DIR + '/rating_complete.csv', nrows=5)
-print("Columns in CSV:", sample_df.columns.tolist())
-
-rating_df = pd.read_csv(INPUT_DIR + '/rating_complete.csv',
-                        low_memory=False,
-                        )
+rating_df = pd.read_csv(INPUT_DIR + '/rating_complete.csv', low_memory=False)
+print("Columns in CSV:", rating_df.columns.tolist())
 rating_df.head(4)
 
 #%%

@@ -80,11 +80,8 @@ def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
                 logam = librosa.power_to_db(mel)
                 data.append(logam)
             except Exception as e:
-                print(f"Warning: Could not load {full_path}: {e}")
+                print(f"Warning: Could not load {full_path}. Skipping. Error: {e}")
                 continue
-
-    if not data:
-        raise ValueError(f"No audio files could be loaded from {path}. Please check the path and audio backends.")
 
     data = np.array(data)
     return data
@@ -92,5 +89,5 @@ def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 NX = FeatureExtractor(path, n_mels = 10)

@@ -17,7 +17,7 @@ from scipy.stats import chi2_contingency
 
 # === AFTER (edited) ===
 app_train = pd.read_csv('data/application_train.csv')
-app_test = pd.read_csv('data/application_test.csv')
+app_test=pd.read_csv('data/application_test.csv')
 
 #%%
 # --- [CELL 2]: ---

@@ -60,8 +60,7 @@ from torch.utils.data import DataLoader
 
 
 transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    transforms.ToTensor()
 ])
 
 
@@ -90,7 +89,7 @@ for epoch in range(num_epochs):
         inputs, labels = data
         optimizer.zero_grad()
         outputs = model(inputs)
-        loss = sum(loss for loss in outputs.values())
+        loss = sum(v for v in outputs.values() if isinstance(v, torch.Tensor))
         loss.backward()
         optimizer.step()
 

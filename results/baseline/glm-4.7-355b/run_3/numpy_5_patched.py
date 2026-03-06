@@ -469,4 +469,4 @@ else:
 # np.savetxt('images.txt', images, delimiter=',', fmt='%d')
 
 # === AFTER (edited) ===
-np.savetxt('images.txt', images.reshape(-1, images.shape[-1] * images.shape[-2] * images.shape[-3])[:images.shape[1]], delimiter=',', fmt='%d')
+np.save('images.npy', images)

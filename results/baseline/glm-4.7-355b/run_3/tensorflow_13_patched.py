@@ -24,22 +24,20 @@ import numpy as np
 
 def load_glove_embeddings(embeddings_file):
     embeddings_index = dict()
-    with open(embeddings_file, 'r', encoding='utf-8') as f:
-        for line in f:
-            values = line.split()
-            word = values[0]
-            # Skip Git LFS metadata lines (version, oid, size)
-            if word in ['version', 'oid', 'size']:
-                continue
-            # Skip lines that don't have enough data (should be word + vector values)
-            if len(values) < 2:
-                continue
-            try:
-                coefs = np.asarray(values[1:], dtype='float32')
-                embeddings_index[word] = coefs
-            except ValueError:
-                # Skip lines that can't be converted to floats
-                continue
+    try:
+        with open(embeddings_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                values = line.split()
+                word = values[0]
+                try:
+                    coefs = np.asarray(values[1:], dtype='float32')
+                    embeddings_index[word] = coefs
+                except ValueError:
+                    # Skip lines that can't be converted to floats (e.g., Git LFS pointers)
+                    continue
+    except FileNotFoundError:
+        # Handle missing file gracefully
+        pass
     return embeddings_index
 
 glove_embeddings_file = 'data/glove.6B.50d.txt'

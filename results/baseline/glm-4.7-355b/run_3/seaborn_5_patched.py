@@ -46,6 +46,6 @@ df_test=pd.read_csv(test_df_path)
 
 # === AFTER (edited) ===
 plt.figure(figsize=(15,12))
-labels = sns.barplot(x=df_train['labels'].value_counts().index, y=df_train['labels'].value_counts())
+labels = sns.barplot(df_train['labels'].value_counts().index, df_train['labels'].value_counts())
 for item in labels.get_xticklabels():
     item.set_rotation(45)

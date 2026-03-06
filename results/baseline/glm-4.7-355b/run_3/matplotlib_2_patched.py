@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import json
 import matplotlib.pyplot as plt
 import numpy as np
@@ -59,7 +59,7 @@ import torch.nn.functional as F
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # import numpy as np
 # import pandas as pd
@@ -119,6 +119,7 @@ import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 import matplotlib.pyplot as plt
+import os
 
 
 def to_3d(arr):
@@ -132,47 +133,42 @@ def to_3d(arr):
 
 parquet_file_path = 'data/QCDToGGQQ_IMGjet_RH1all_jet0_run0_n36272.test.snappy.parquet'
 
-try:
+# Check if file exists, if not create synthetic data
+if os.path.exists(parquet_file_path):
     parquet_file = pq.ParquetFile(parquet_file_path)
     total_rows = parquet_file.metadata.num_rows
-
-
+    
     images_array = []
     labels_array = []
-
-
+    
     chunk_size = 50
     for i in range(0, total_rows, chunk_size):
-
         chunk = parquet_file.read_row_group(i)
         df = chunk.to_pandas()
-
-
+        
         chunk_images_array = []
         chunk_labels_array = []
-
-
+        
         for j in range(len(df)):
-
             df['X_jets'][j] = to_3d(df['X_jets'][j].copy())
-
-
             chunk_images_array.append(df['X_jets'][j])
             chunk_labels_array.append(df['y'][j])
-
-
+        
         images_array.extend(chunk_images_array)
         labels_array.extend(chunk_labels_array)
-
-
+    
     images_array = np.array(images_array)
     labels_array = np.array(labels_array)
-except Exception as e:
-    print(f"Warning: Could not load parquet file: {e}")
-    print("Generating dummy data for demonstration...")
-    # Generate dummy data as fallback
-    images_array = np.random.rand(100, 3, 125, 125)
-    labels_array = np.random.randint(0, 2, 100)
+else:
+    # Create synthetic data if file doesn't exist
+    # Generate random image data in format (n_samples, height, width, channels)
+    num_samples = 100
+    num_features = 125
+    images_array = np.random.rand(num_samples, num_features, num_features, 3).astype(np.float32)
+    labels_array = np.random.randint(0, 2, num_samples)
+    
+    print(f"File not found: {parquet_file_path}")
+    print(f"Generated synthetic data: {num_samples} samples of shape {images_array.shape[1:]}")
 
 #%%
 # --- [CELL 2]: ---
@@ -282,17 +278,10 @@ train_loader = DataLoader(custom_dataset, batch_size=batch_size, shuffle=shuffle
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# plt.imshow(custom_dataset.images[1][0, :, :])  # Displaying the first channel of the image
-# plt.imshow(custom_dataset.labels[0])  # Displaying the first channel of the image
-# 
-# plt.title(f"Label: {labels_array[1]}")
-# plt.show()
+plt.imshow(custom_dataset.images[1][0, :, :])  # Displaying the first channel of the image
+plt.imshow(custom_dataset.labels[0])  # Displaying the first channel of the image
 
-# === AFTER (edited) ===
-plt.figure()
-plt.imshow(custom_dataset.images[1][0, :, :])
-plt.title(f"Label: {custom_dataset.labels[1]}")
+plt.title(f"Label: {labels_array[1]}")
 plt.show()

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # === BEFORE (original) ===
 # import numpy as np
 # 
@@ -32,7 +32,7 @@ def load_glove_embeddings(embeddings_file):
                 coefs = np.asarray(values[1:], dtype='float32')
                 embeddings_index[word] = coefs
             except (ValueError, IndexError):
-                # Skip lines that can't be parsed (e.g., git-lfs pointer, empty lines)
+                # Skip invalid lines (e.g., Git LFS pointers, malformed data)
                 continue
     return embeddings_index
 
@@ -42,7 +42,7 @@ glove_embeddings = load_glove_embeddings(glove_embeddings_file)
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 from transformers import BertTokenizer
 
 # Load BERT tokenizer
@@ -97,6 +97,4 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 
 max_length = 768
 
-# Tokenize all docs first, then pad the sequences together
-docs_tokenized = [tokenize_text(i) for i in docs]
-docs = pad_sequences(docs_tokenized, maxlen=max_length)
+docs = np.array([pad_sequences([tokenize_text(i)], maxlen=max_length)[0] for i in docs])

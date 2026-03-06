@@ -41,26 +41,31 @@ from torchvision.transforms import transforms
 # print(f"{category_name}: {100 * score:.1f}%")
 
 # === AFTER (edited) ===
-from PIL import Image
+# Try using the ImageFolder dataset which we know works
+from torchvision.datasets import ImageFolder
+import torch
 
-# Use PIL for more robust image reading
-img_pil = Image.open("data_small/10/ILSVRC2012_val_00037698.jpeg")
-# Convert PIL image to tensor
-img = transforms.ToTensor()(img_pil) * 255
-img = img.to(torch.uint8)
+# Get the first image from the dataset
+imagenet_val_dir = 'data_small'
+dataset = ImageFolder(root=imagenet_val_dir)
+img_tensor, label = dataset[0]
 
-print(img.shape[0])
-if img.shape[0] == 1:
-    img = img.expand(3, -1, -1)
-print(img.size())
+print(img_tensor.shape)
+if img_tensor.shape[0] == 1:
+    img_tensor = img_tensor.expand(3, -1, -1)
+print(img_tensor.size())
 
-weights =ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
+
+weights = ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
 model = vit_b_16(weights=weights)
 model.eval()
 
+
 preprocess = weights.transforms()
 
-batch = preprocess(img).unsqueeze(0)
+
+batch = preprocess(img_tensor).unsqueeze(0)
+
 
 prediction = model(batch).squeeze(0).softmax(0)
 class_id = prediction.argmax().item()
@@ -97,8 +102,75 @@ dataloader = DataLoader(dataset, batch_size=8, shuffle=False)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# def check_label_name(predictions, weights):
+#     for prediction in predictions:
+#         class_id = prediction.argmax().item()
+#         print(class_id)
+#         score = prediction[class_id].item()
+#         category_name = weights.meta["categories"][class_id]
+#         print(f"{category_name}: {100 * score:.1f}%")
+#         print("\n")
+#         
+#         
+# def model_quantization(model, backend='x86', save=False):
+#     # Use 'x86' for server inference (the old 'fbgemm' is still available but 'x86' is the recommended default) and ``qnnpack`` for mobile inference.
+#     model.qconfig = torch.quantization.get_default_qconfig(backend)
+#     torch.backends.quantized.engine = backend
+# 
+#     quantized_model = torch.quantization.quantize_dynamic(model, qconfig_spec={torch.nn.Linear}, dtype=torch.qint8)
+#     scripted_quantized_model = torch.jit.script(quantized_model)
+#     if save:
+#         scripted_quantized_model.save("vit_scripted_quantized.pt")
+#         
+#         
+# def labels_process(labels, class_dict):
+#     # Change labels because of dataset idx
+#     labels = [class_dict[int(label)] for label in labels]
+#     labels = [int(num) for num in labels]
+#     labels = torch.tensor(labels)
+#     return labels
+#     
+# def inference(model, dataloader, class_dict, device, image_num_stop=40000):
+#     index_stop = image_num_stop // 8
+#     total_correct = 0
+#     total_samples = 0
+#     start_time = time.time()
+#     model.to(device)
+#     model.eval()
+#     
+#     with torch.no_grad():
+#         for index, (images, labels) in enumerate(dataloader):
+#             images = images.to(device)
+#         
+#             # Change labels because of dataset idx
+#             labels = labels_process(labels, class_dict)
+#             labels = labels.to(device)
+#         
+#             predictions = model(images)
+#             predicted_labels = torch.argmax(predictions, dim=1) + 1  # Add 1 to predicted labels
+#             
+#             total_correct += (predicted_labels == labels).sum().item()
+#             total_samples += labels.size(0)
+#         
+#             if index % 50 == 0:
+#                 print("{} images were processed out of 50,000".format(8 * index))
+#             
+#             if index == index_stop:
+#                 print("Number of images processed: {} stopping now".format(index_stop*8))
+#                 print("stopped checking because of errors for the entire dataset \n ")
+#                 break
+#             
+#     accuracy = total_correct / total_samples
+#     end_time = time.time()
+#     duration = (end_time - start_time) / 60
+#     
+#     return accuracy, duration
+#     
+
+# === AFTER (edited) ===
 def check_label_name(predictions, weights):
     for prediction in predictions:
         class_id = prediction.argmax().item()
@@ -107,10 +179,10 @@ def check_label_name(predictions, weights):
         category_name = weights.meta["categories"][class_id]
         print(f"{category_name}: {100 * score:.1f}%")
         print("\n")
-        
-        
+
+
 def model_quantization(model, backend='x86', save=False):
-    # Use 'x86' for server inference (the old 'fbgemm' is still available but 'x86' is the recommended default) and ``qnnpack`` for mobile inference.
+
     model.qconfig = torch.quantization.get_default_qconfig(backend)
     torch.backends.quantized.engine = backend
 
@@ -118,15 +190,16 @@ def model_quantization(model, backend='x86', save=False):
     scripted_quantized_model = torch.jit.script(quantized_model)
     if save:
         scripted_quantized_model.save("vit_scripted_quantized.pt")
-        
-        
+    return scripted_quantized_model
+
+
 def labels_process(labels, class_dict):
-    # Change labels because of dataset idx
+
     labels = [class_dict[int(label)] for label in labels]
     labels = [int(num) for num in labels]
     labels = torch.tensor(labels)
     return labels
-    
+
 def inference(model, dataloader, class_dict, device, image_num_stop=40000):
     index_stop = image_num_stop // 8
     total_correct = 0
@@ -134,35 +207,34 @@ def inference(model, dataloader, class_dict, device, image_num_stop=40000):
     start_time = time.time()
     model.to(device)
     model.eval()
-    
+
     with torch.no_grad():
         for index, (images, labels) in enumerate(dataloader):
             images = images.to(device)
-        
-            # Change labels because of dataset idx
+
+
             labels = labels_process(labels, class_dict)
             labels = labels.to(device)
-        
+
             predictions = model(images)
-            predicted_labels = torch.argmax(predictions, dim=1) + 1  # Add 1 to predicted labels
-            
+            predicted_labels = torch.argmax(predictions, dim=1)
+
             total_correct += (predicted_labels == labels).sum().item()
             total_samples += labels.size(0)
-        
+
             if index % 50 == 0:
                 print("{} images were processed out of 50,000".format(8 * index))
-            
+
             if index == index_stop:
                 print("Number of images processed: {} stopping now".format(index_stop*8))
                 print("stopped checking because of errors for the entire dataset \n ")
                 break
-            
+
     accuracy = total_correct / total_samples
     end_time = time.time()
     duration = (end_time - start_time) / 60
-    
+
     return accuracy, duration
-    
 
 #%%
 # --- [CELL 4]: ---

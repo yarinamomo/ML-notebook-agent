@@ -33,20 +33,15 @@ greeks_df = pd.read_csv('data/greeks_synthetic.csv')
 # train_df = pd.merge(train_df, greeks_df, on="Id")
 
 # === AFTER (edited) ===
-# Check if 'Id' column exists in both dataframes
+# Check if 'Id' column exists in both dataframes before merging
 if 'Id' in train_df.columns and 'Id' in greeks_df.columns:
     train_df = pd.merge(train_df, greeks_df, on="Id")
+elif 'id' in train_df.columns and 'id' in greeks_df.columns:
+    # Try lowercase 'id' as fallback
+    train_df = pd.merge(train_df, greeks_df, on="id")
 else:
-    # Find common columns to merge on
-    common_cols = set(train_df.columns) & set(greeks_df.columns)
-    if common_cols:
-        # Use the first common column for merging
-        merge_col = list(common_cols)[0]
-        train_df = pd.merge(train_df, greeks_df, on=merge_col)
-    else:
-        # If no common columns, just concatenate (no merge needed)
-        # This keeps all columns from both dataframes side by side
-        train_df = pd.concat([train_df, greeks_df], axis=0, ignore_index=True)
+    # Merge on index if no common Id column found
+    train_df = pd.merge(train_df, greeks_df, left_index=True, right_index=True)
 
 #%%
 # --- [CELL 3]: ---

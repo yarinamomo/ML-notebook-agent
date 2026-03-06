@@ -17,7 +17,7 @@ from tensorflow.keras.layers import Dense, Input, Dropout, Flatten, Conv2D
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 train_datagen = ImageDataGenerator(#rotation_range = 180,
                                          width_shift_range = 0.1,
                                          height_shift_range = 0.1,
@@ -271,7 +271,7 @@ METRICS=[
 #%%
 # --- [CELL 9]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # from sklearn.utils.class_weight import compute_class_weight
 # class_weights = compute_class_weight('balanced', np.unique(train_dataset.labels), train_dataset.labels)

@@ -21,13 +21,13 @@ from torch.utils.data import Dataset
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 train_images_path = "data_small/archive/images_labeled/"
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 IMAGE_WIDTH = 60
 IMAGE_HEIGHT = 160
 size = (IMAGE_HEIGHT, IMAGE_WIDTH)
@@ -35,7 +35,7 @@ size = (IMAGE_HEIGHT, IMAGE_WIDTH)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
 class CustomDataset(Dataset):
     def __init__(self, data, path, transform=None):
         self.data = data
@@ -77,7 +77,7 @@ train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # #preprocessing and loading the data set
 # class SiameseDataset(Dataset):
@@ -108,13 +108,13 @@ train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size
 
 # === AFTER (edited) ===
 import os
-import torch as th
 
 class SiameseDataset(Dataset):
     def __init__(self,training_csv,training_dir,transform=None):
 
         self.train_df=pd.read_csv(training_csv)
-        self.train_df = self.train_df.drop(columns=['Unnamed: 0'], errors='ignore')
+        if 'Unnamed: 0' in self.train_df.columns:
+            self.train_df = self.train_df.drop(columns=['Unnamed: 0'])
         self.train_df.columns =["image1","image2","label"]
         self.train_dir = training_dir
         self.transform = transform
@@ -132,7 +132,7 @@ class SiameseDataset(Dataset):
         if self.transform is not None:
             img0 = self.transform(img0)
             img1 = self.transform(img1)
-        return img0, img1 , th.from_numpy(np.array([int(self.train_df.iat[index,2])],dtype=np.float32))
+        return img0, img1 , torch.from_numpy(np.array([int(self.train_df.iat[index,2])],dtype=np.float32))
     def __len__(self):
         return len(self.train_df)
 

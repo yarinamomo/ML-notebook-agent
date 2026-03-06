@@ -35,17 +35,15 @@ image_count
 # === AFTER (edited) ===
 import PIL
 princess = list(data_dir.glob('princess/*'))
-# Find a valid image by trying each one
-valid_image = None
+# Try to find a valid image
 for img_path in princess:
     try:
-        img = PIL.Image.open(str(img_path))
-        img.verify()  # Verify it's a valid image
-        valid_image = str(img_path)
+        PIL.Image.open(str(img_path))
+        princess = [img_path]
         break
     except:
         continue
-PIL.Image.open(valid_image)
+PIL.Image.open(str(princess[0]))
 
 #%%
 # --- [CELL 4]: ---

@@ -34,30 +34,43 @@ df = pd.read_csv("data/IMDb_All_Genres_etf_clean1.csv")
 # clean_df = clean_df[clean_df['Censor']!="(Banned)"]
 
 # === AFTER (edited) ===
-# Strip whitespace from column names to ensure proper matching
-clean_df = df.copy()
-clean_df.columns = clean_df.columns.str.strip()
+# First, let's see what columns actually exist in the dataframe
+print("Available columns:")
+print(df.columns.tolist())
 
-# Print available columns to identify the correct names
-print("Available columns:", clean_df.columns.tolist())
+# Check for the specific column we're looking for
+# It might have a different name or extra whitespace
+print("\nColumns containing 'Gross':")
+for col in df.columns:
+    if 'Gross' in str(col):
+        print(f"'{col}'")
 
-# Try to find the correct column for "Total Gross (millions)"
+# Now let's filter using the actual column names (assuming there might be whitespace or similar)
+# Using a more flexible approach to find and use the correct column name
 gross_col = None
-censor_col = None
-
-for col in clean_df.columns:
-    if "gross" in col.lower() or "total" in col.lower():
+for col in df.columns:
+    if 'Total Gross' in str(col):
         gross_col = col
-    if "censor" in col.lower():
-        censor_col = col
+        break
 
-print(f"Gross column: {gross_col}")
-print(f"Censor column: {censor_col}")
-
-# Apply filters if columns are found
 if gross_col:
-    clean_df = clean_df[(clean_df[gross_col]!="$0.00M") & (clean_df[gross_col]!="Gross Unkown")].copy()
-if censor_col:
-    clean_df = clean_df[clean_df[censor_col]!="(Banned)"]
+    print(f"\nUsing column: '{gross_col}'")
+    clean_df = df[(df[gross_col] != "$0.00M") & (df[gross_col] != "Gross Unkown")].copy()
+    
+    # Check for Censor column
+    censor_col = None
+    for col in df.columns:
+        if 'Censor' in str(col):
+            censor_col = col
+            break
+    
+    if censor_col:
+        print(f"Using censor column: '{censor_col}'")
+        clean_df = clean_df[clean_df[censor_col] != "(Banned)"]
+    else:
+        print("Warning: Censor column not found")
+else:
+    print("Error: Could not find a column containing 'Total Gross'")
+    clean_df = df.copy()
 
-print(f"Filtered dataframe shape: {clean_df.shape}")
+print(f"\nFiltered dataframe shape: {clean_df.shape}")

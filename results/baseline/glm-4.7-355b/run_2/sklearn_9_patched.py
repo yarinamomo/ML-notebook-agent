@@ -17,7 +17,7 @@ df = pd.read_csv('data/bank-additional-full.csv', sep=';')
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # df['y'] = df['y'].map({"no":0,"yes":1})
 # df['contact'] = df['contact'].map({"cellular":0,"telephone":1})
@@ -25,20 +25,10 @@ df = pd.read_csv('data/bank-additional-full.csv', sep=';')
 # df1.head(6).T
 
 # === AFTER (edited) ===
-# Check if 'y' or 'Y' exists and use the correct one
-if 'y' in df.columns:
-    target_col = 'y'
-elif 'Y' in df.columns:
-    target_col = 'Y'
-else:
-    # Print available columns to debug
-    print("Available columns:", df.columns.tolist())
-    raise KeyError("Column 'y' or 'Y' not found in dataframe")
-
-df[target_col] = df[target_col].map({"no":0,"yes":1})
+df['y'] = df['y'].map({"no":0,"yes":1})
 df['contact'] = df['contact'].map({"cellular":0,"telephone":1})
-df1 = pd.get_dummies(df, columns=['job','marital','education','default','housing','loan','month','day_of_week','poutcome'])
-df1.head(6).T
+df1 = pd.get_dummies(df, columns=['job','marital','education','default','housing','loan','month','day_of_week','poutcome'], sparse=True)
+df1.head(6)
 
 #%%
 # --- [CELL 3]: ---

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # file_path = 'data/diabetes.csv'
 # data = pd.read_csv(file_path)
@@ -19,31 +19,18 @@ import matplotlib.pyplot as plt
 file_path = 'data/diabetes.csv'
 data = pd.read_csv(file_path)
 print("Available columns:", data.columns.tolist())
-# Try to find the correct columns (case-insensitive matching)
-available_cols = data.columns.tolist()
-X_cols = []
-for col in ['Glucose', 'BloodPressure', 'Insulin']:
-    # Find column with matching name (case-insensitive)
-    match = [c for c in available_cols if c.lower() == col.lower()]
-    if match:
-        X_cols.append(match[0])
-    else:
-        print(f"Warning: {col} not found in columns")
-if len(X_cols) < 3:
-    print(f"Could not find all required columns. Using available columns: {available_cols[:3]}")
-    X_cols = available_cols[:3]
-X = data[X_cols].values
+X = data[['Glucose','BloodPressure','Insulin']].values
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 K = 3
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 kmeans = KMeans(n_clusters = K)
 kmeans.fit(X)
 

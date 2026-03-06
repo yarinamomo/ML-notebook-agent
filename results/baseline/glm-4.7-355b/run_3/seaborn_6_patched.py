@@ -31,18 +31,17 @@ df=df.dropna()
 # df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
 
 # === AFTER (edited) ===
-# Check actual column names in the dataset
-print("Columns in dataset:", df.columns.tolist())
+# Find the sex column (case-insensitive check)
+sex_col = None
+for col in df.columns:
+    if col.lower().strip() == 'sex':
+        sex_col = col
+        break
 
-# Check if 'sex' column exists
-if 'sex' in df.columns:
-    df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
+if sex_col:
+    df[sex_col] = df[sex_col].map({"male" : 0,"female" : 1})
 else:
-    # Try common variations
-    for col in df.columns:
-        if 'sex' in col.lower():
-            print(f"Found similar column: '{col}'")
-            df[col] = df[col].map({"male" : 0,"female" : 1})
+    print("Warning: 'sex' column not found in dataframe")
 
 #%%
 # --- [CELL 4]: ---

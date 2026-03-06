@@ -35,7 +35,7 @@ pd.set_option('display.float_format', lambda x: '%.3f' % x)
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 # === BEFORE (original) ===
 # train = pd.read_csv("data/train.csv")
 # test = pd.read_csv("data/test.csv")
@@ -61,20 +61,11 @@ test = pd.read_csv("data/test.csv")
 
 df = pd.concat([train, test], ignore_index=True)
 
-# Display available columns to debug
-print("Available columns in dataframe:")
-print(df.columns.tolist())
-print("\n")
-
-
 selected_list = ["GarageArea", "LotArea", "LotFrontage", "OverallQual", "PoolArea", "MSSubClass", "YearBuilt", "GrLivArea",
                  "BedroomAbvGr", "LowQualFinSF", "TotRmsAbvGrd", "Id", "SalePrice"]
 
-# Only select columns that actually exist in the dataframe
-available_cols = [col for col in selected_list if col in df.columns]
-print(f"Columns from selected_list that exist in dataframe: {available_cols}")
-
-df = df[available_cols]
+# Only select columns that actually exist in the DataFrame
+df = df[[col for col in selected_list if col in df.columns]]
 
 
 df.head()
@@ -84,7 +75,7 @@ df.isnull().sum()
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 def grab_col_names(dataframe, cat_th=10, car_th=25):
     """
     grab_col_names for given dataframe
@@ -129,7 +120,7 @@ cat_cols, cat_but_car, num_cols = grab_col_names(df)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 def num_summary(dataframe, numerical_col, plot=False):
     quantiles = [0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99]
     print(dataframe[numerical_col].describe(quantiles).T)

@@ -211,12 +211,30 @@ device = 'cpu'
 
 
 train_transform = transforms.Compose([
-    transforms.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
     transforms.ToTensor(),
     transforms.Normalize((0.5,), (0.5,)),
 ])
 
-train_dataset = datasets.ImageFolder(root='data_small/eyes data', transform=train_transform)
+# Custom loader that skips corrupted images
+def safe_image_loader(path):
+    from PIL import Image
+    try:
+        with open(path, 'rb') as f:
+            img = Image.open(f)
+            return img.convert('L')  # Convert to grayscale
+    except Exception as e:
+        print(f"Skipping corrupted image: {path}")
+        return None
+
+# Custom ImageFolder that filters out corrupted images
+class SafeImageFolder(datasets.ImageFolder):
+    def __init__(self, root, transform=None):
+        super().__init__(root, transform=transform, loader=safe_image_loader)
+        # Filter out samples that failed to load
+        self.samples = [s for s in self.samples if s is not None]
+        self.imgs = self.samples
+
+train_dataset = SafeImageFolder(root='data_small/eyes data', transform=train_transform)
 dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
 
 #%%

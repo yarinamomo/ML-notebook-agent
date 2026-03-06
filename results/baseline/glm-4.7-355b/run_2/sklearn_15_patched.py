@@ -25,9 +25,10 @@ data = pd.read_csv('data/data.csv')
 # data = data.drop(['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm'], axis=1)
 
 # === AFTER (edited) ===
+# Only drop columns that exist in the dataframe
 columns_to_drop = ['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm']
-columns_to_drop = [col for col in columns_to_drop if col in data.columns]
-data = data.drop(columns_to_drop, axis=1)
+existing_columns = [col for col in columns_to_drop if col in data.columns]
+data = data.drop(existing_columns, axis=1)
 
 #%%
 # --- [CELL 3]: ---

@@ -21,7 +21,8 @@ houseprice=pd.read_csv('data/data.csv')
 # Y=houseprice['price']
 
 # === AFTER (edited) ===
-columns_to_drop = ['price', 'date', 'city', 'street', 'statezip', 'condition']
+# Only drop columns that actually exist in the DataFrame
+columns_to_drop = ['price','date','city','street','statezip','condition']
 X = houseprice.drop([col for col in columns_to_drop if col in houseprice.columns], axis=1)
 Y = houseprice['price']
 

@@ -1,48 +1,68 @@
 # --- [CELL 0]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-import numpy as np # linear algebra
-import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# import numpy as np # linear algebra
+# import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+# 
+# from keras.utils import to_categorical
+# from keras.callbacks import EarlyStopping
+# from keras.models import Sequential
+# from keras.layers import Dense, Dropout, Activation, Flatten
+# from keras.layers import Conv2D, MaxPooling2D, BatchNormalization
+# from keras.losses import categorical_crossentropy
+# from sklearn.metrics import accuracy_score
+# from keras.optimizers import Adam
+# from keras.regularizers import l2
+# from tensorflow.keras.preprocessing.image import ImageDataGenerator
+# from sklearn.metrics import classification_report, confusion_matrix
+# import matplotlib.pyplot as plt
+# import seaborn as sns
+# 
+# import os
+# print(os.listdir("data"))
 
-from keras.utils import to_categorical
-from keras.callbacks import EarlyStopping
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.layers import Conv2D, MaxPooling2D, BatchNormalization
-from keras.losses import categorical_crossentropy
-from sklearn.metrics import accuracy_score
-from keras.optimizers import Adam
-from keras.regularizers import l2
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from sklearn.metrics import classification_report, confusion_matrix
+# === AFTER (edited) ===
+import numpy as np
+import pandas as pd
+import os
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
-import os
-print(os.listdir("data"))
+# Use tensorflow.keras consistently
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, Activation, Flatten
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, BatchNormalization
+from tensorflow.keras.losses import categorical_crossentropy
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+# List data directory with error handling
+try:
+    if os.path.exists("data"):
+        files = os.listdir("data")
+        print(files)
+    else:
+        print("data directory not found")
+except Exception as e:
+    print(f"Error accessing data directory: {e}")
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# data = pd.read_csv('data/fer2013.csv')
-# #check data shape
-# data.shape
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
 data = pd.read_csv('data/fer2013.csv')
-
-# Check the columns to ensure proper loading
-print("Columns:", data.columns.tolist())
-print("Shape:", data.shape)
-print("\nFirst few rows:")
-print(data.head())
+#check data shape
+data.shape
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 import pandas as pd
 
 # créer une nouvelle colonne nommée "disgust_images"
@@ -72,51 +92,26 @@ emotion_counts
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# def row2image(row):
-#     pixels, emotion = row['pixels'], emotion_map[row['emotion']]#extrait les pixels et l'émotion de la ligne de données. Les pixels sont stockés en tant que chaîne de caractères contenant tous les pixels séparés par des espaces.
-#     img = np.array(pixels.split(), dtype=np.uint8)
-#     img = img.reshape((48, 48))
-#     image = np.zeros((48, 48, 3), dtype=np.uint8)
-#     image[:, :, 0] = img
-#     image[:, :, 1] = img
-#     image[:, :, 2] = img
-#     # fix to reproduce the crash: tensor shape mismatch (this line would also crash)
-#     return image, emotion  # return np.array([image, emotion])
-# 
-# plt.figure(0, figsize=(16,10))
-# for i in range(1,8):
-#     face = data[data['emotion'] == i-1].iloc[0]
-#     # fix 1 (corresponding fixes)
-#     img, label = row2image(face) # img = row2image(face)
-#     plt.subplot(2,4,i)
-#     plt.imshow(img[0])
-#     plt.title(label) # plt.title(img[1])
-# 
-# plt.show()  
-
-# === AFTER (edited) ===
 def row2image(row):
-    pixels, emotion = row['pixels'], emotion_map[row['emotion']]
+    pixels, emotion = row['pixels'], emotion_map[row['emotion']]#extrait les pixels et l'émotion de la ligne de données. Les pixels sont stockés en tant que chaîne de caractères contenant tous les pixels séparés par des espaces.
     img = np.array(pixels.split(), dtype=np.uint8)
     img = img.reshape((48, 48))
     image = np.zeros((48, 48, 3), dtype=np.uint8)
     image[:, :, 0] = img
     image[:, :, 1] = img
     image[:, :, 2] = img
-
-    return image, emotion
+    # fix to reproduce the crash: tensor shape mismatch (this line would also crash)
+    return image, emotion  # return np.array([image, emotion])
 
 plt.figure(0, figsize=(16,10))
-# emotions are 0-6, so iterate through 0-6
-for i in range(7):
-    face = data[data['emotion'] == i].iloc[0]
+for i in range(1,8):
+    face = data[data['emotion'] == i-1].iloc[0]
+    # fix 1 (corresponding fixes)
+    img, label = row2image(face) # img = row2image(face)
+    plt.subplot(2,4,i)
+    plt.imshow(img[0])
+    plt.title(label) # plt.title(img[1])
 
-    img, label = row2image(face)
-    plt.subplot(2,4,i+1)
-    plt.imshow(img)
-    plt.title(label)
-
-plt.show()
+plt.show()  

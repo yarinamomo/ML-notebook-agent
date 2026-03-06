@@ -49,36 +49,10 @@ IMG_WIDTH = 150
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# # 3
-# 
-# train_image_generator = ImageDataGenerator(rescale = 1./255)
-# validation_image_generator = ImageDataGenerator(rescale = 1./255)
-# test_image_generator = ImageDataGenerator(rescale = 1./255)
-# 
-# train_data_gen = train_image_generator.flow_from_directory(
-#     directory =train_dir,
-#     batch_size = batch_size,
-#     class_mode = "binary",
-#     target_size=(IMG_HEIGHT,IMG_WIDTH)
-# )
-# val_data_gen = validation_image_generator.flow_from_directory(
-#     directory = validation_dir,
-#     batch_size = batch_size,
-#     class_mode = "binary",
-#     target_size=(IMG_HEIGHT,IMG_WIDTH)
-# )
-# test_data_gen  = test_image_generator.flow_from_directory(
-#                     PATH,
-#                     target_size=(IMG_HEIGHT, IMG_WIDTH),
-#                     batch_size=batch_size,
-#                     classes=['test'],
-#                     shuffle=False)
-# #We took The path and chose the name of the test as a class, so that we can extract them
+# 3
 
-# === AFTER (edited) ===
 train_image_generator = ImageDataGenerator(rescale = 1./255)
 validation_image_generator = ImageDataGenerator(rescale = 1./255)
 test_image_generator = ImageDataGenerator(rescale = 1./255)
@@ -101,12 +75,34 @@ test_data_gen  = test_image_generator.flow_from_directory(
                     batch_size=batch_size,
                     classes=['test'],
                     shuffle=False)
+#We took The path and chose the name of the test as a class, so that we can extract them
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-# 4
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# # 4
+# def plotImages(images_arr, probabilities = False):
+#     fig, axes = plt.subplots(len(images_arr), 1, figsize=(5,len(images_arr) * 3))
+#     if probabilities is False:
+#       for img, ax in zip( images_arr, axes):
+#           ax.imshow(img)
+#           ax.axis('off')
+#     else:
+#       for img, probability, ax in zip( images_arr, probabilities, axes):
+#           ax.imshow(img)
+#           ax.axis('off')
+#           if probability > 0.5:
+#               ax.set_title("%.2f" % (probability*100) + "% dog")
+#           else:
+#               ax.set_title("%.2f" % ((1-probability)*100) + "% cat")
+#     plt.show()
+# 
+# sample_training_images, _ = next(train_data_gen)
+# plotImages(sample_training_images[:5])
+
+# === AFTER (edited) ===
 def plotImages(images_arr, probabilities = False):
     fig, axes = plt.subplots(len(images_arr), 1, figsize=(5,len(images_arr) * 3))
     if probabilities is False:
@@ -125,7 +121,6 @@ def plotImages(images_arr, probabilities = False):
 
 sample_training_images, _ = next(train_data_gen)
 plotImages(sample_training_images[:5])
-
 
 #%%
 # --- [CELL 4]: ---
@@ -147,15 +142,26 @@ train_image_generator = ImageDataGenerator(
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
-# 6
+# === BEFORE (original) ===
+# # 6
+# train_data_gen = train_image_generator.flow_from_directory(batch_size=batch_size,
+#                                                      directory=train_dir,
+#                                                      target_size=(IMG_HEIGHT, IMG_WIDTH),
+#                                                      class_mode='binary')
+# 
+# augmented_images = [train_data_gen[0][0][0] for i in range(5)]
+# 
+# plotImages(augmented_images)
+
+# === AFTER (edited) ===
 train_data_gen = train_image_generator.flow_from_directory(batch_size=batch_size,
                                                      directory=train_dir,
                                                      target_size=(IMG_HEIGHT, IMG_WIDTH),
                                                      class_mode='binary')
 
-augmented_images = [train_data_gen[0][0][0] for i in range(5)]
+augmented_images = [train_data_gen[0][0][i] for i in range(5)]
 
 plotImages(augmented_images)
 

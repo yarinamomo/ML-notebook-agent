@@ -19,19 +19,22 @@ print("El tamaño del dataset: {}".format(df.shape))
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # df = df.drop(['PassengerId', 'Name'], axis=1)
 # df.head(5)
 
 # === AFTER (edited) ===
-df = df.drop(['PassengerId', 'Name'], axis=1, errors='ignore')
+# Only drop columns that exist in the dataframe
+columns_to_drop = ['PassengerId', 'Name']
+existing_columns = [col for col in columns_to_drop if col in df.columns]
+df = df.drop(existing_columns, axis=1)
 df.head(5)
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 df[['Age', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck','RoomService']] = df[['Age', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck','RoomService']].fillna(value=0)
 df.isnull().sum().sort_values(ascending=False)
 

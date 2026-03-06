@@ -107,16 +107,11 @@ train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size
 #         return len(self.train_df)
 
 # === AFTER (edited) ===
-import os
-import torch as th
-
-
 class SiameseDataset(Dataset):
     def __init__(self,training_csv,training_dir,transform=None):
 
         self.train_df=pd.read_csv(training_csv)
-        if 'Unnamed: 0' in self.train_df.columns:
-            self.train_df = self.train_df.drop(columns=['Unnamed: 0'])
+        self.train_df = self.train_df.drop(columns=['Unnamed: 0'], errors='ignore')
         self.train_df.columns =["image1","image2","label"]
         self.train_dir = training_dir
         self.transform = transform
@@ -134,7 +129,7 @@ class SiameseDataset(Dataset):
         if self.transform is not None:
             img0 = self.transform(img0)
             img1 = self.transform(img1)
-        return img0, img1 , th.from_numpy(np.array([int(self.train_df.iat[index,2])],dtype=np.float32))
+        return img0, img1 , torch.from_numpy(np.array([int(self.train_df.iat[index,2])],dtype=np.float32))
     def __len__(self):
         return len(self.train_df)
 

@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 
 # === AFTER (edited) ===
 df=pd.read_csv('data/googleplaystore.csv')
-# Strip whitespace from column names to ensure they match expected names
 df.columns = df.columns.str.strip()
 
 #%%

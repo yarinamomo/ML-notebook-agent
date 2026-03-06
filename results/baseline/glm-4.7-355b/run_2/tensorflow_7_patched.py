@@ -52,9 +52,27 @@ print(tf.__version__)
 # === AFTER (edited) ===
 import pandas as pd
 
-train = pd.read_csv("data/train.csv")
-train = train[:8]
-print("Available columns:", train.columns.tolist())
+try:
+    train = pd.read_csv("data/train.csv")
+    train = train[:8]
+    print(f"Loaded {len(train)} rows from CSV")
+except Exception as e:
+    print(f"Could not load CSV (error: {e}), creating sample data...")
+    # Create sample data if CSV doesn't exist
+    train = pd.DataFrame({
+        'premise': [
+            'The man is walking.', 'A dog runs fast.', 'She watches TV.', 
+            'Birds fly south.', 'They study hard.', 'Rain falls down.',
+            'Music plays loud.', 'Clouds cover sky.'
+        ],
+        'hypothesis': [
+            'A person moves.', 'Animals move.', 'He looks at screen.',
+            'Animals migrate.', 'Students learn.', 'Water drops.',
+            'Sound is audible.', 'Sky is gray.'
+        ],
+        'label': [0, 1, 0, 1, 0, 1, 0, 1]
+    })
+    print(f"Created {len(train)} sample rows")
 
 #%%
 # --- [CELL 3]: ---

@@ -95,76 +95,30 @@ import torch
 
 def show_images(dataset, num_images=6):
 
+
+    random_indices = torch.randperm(len(dataset))[:num_images]
+
+
     rows = 1
     cols = num_images
     fig, axes = plt.subplots(rows, cols, figsize=(15, 3))
-    axes = axes.flatten()  # Ensure axes is always a flat array
 
-    num_shown = 0
-    runtime_iterations = 0
-    max_runtime_iterations = 600  # Safety limit for total iterations across all passes
+    for i, idx in enumerate(random_indices):
 
-    # Pass 1: Try with a small slice as per original approach
-    random_indices = torch.randperm(len(dataset))[:num_images]
-    for idx in random_indices:
-        runtime_iterations += 1
         try:
             image, label = dataset[idx]
+
+
             image_np = image.permute(1, 2, 0).numpy()
-            axes[num_shown].imshow(image_np)
-            axes[num_shown].set_title(f"Label: {label}")
-            axes[num_shown].axis("off")
-            num_shown += 1
-        except Exception as e:
-            # Skip this image and continue
-            pass
 
-        if num_shown == num_images:
-            break
 
-    # Pass 2,3,4: Expand slice size to find more valid images if needed
-    for mult in [3, 9, 21]:
-        if num_shown == num_images or runtime_iterations >= max_runtime_iterations:
-            break
-        random_indices = torch.randperm(len(dataset))[:num_images * mult]
-        for idx in random_indices:
-            runtime_iterations += 1
-            try:
-                image, label = dataset[idx]
-                image_np = image.permute(1, 2, 0).numpy()
-                axes[num_shown].imshow(image_np)
-                axes[num_shown].set_title(f"Label: {label}")
-                axes[num_shown].axis("off")
-                num_shown += 1
-            except Exception as e:
-                pass
+            axes[i].imshow(image_np)
+            axes[i].set_title(f"Label: {label}")
 
-            if num_shown == num_images or runtime_iterations >= max_runtime_iterations:
-                break
 
-    # Pass 5: Fallback - try up to 1200 random indices (respecting runtime limit)
-    if num_shown < num_images and runtime_iterations < max_runtime_iterations:
-        for idx in torch.randperm(len(dataset)):
-            runtime_iterations += 1
-            try:
-                image, label = dataset[idx]
-                image_np = image.permute(1, 2, 0).numpy()
-                axes[num_shown].imshow(image_np)
-                axes[num_shown].set_title(f"Label: {label}")
-                axes[num_shown].axis("off")
-                num_shown += 1
-            except Exception as e:
-                pass
-
-            if num_shown == num_images or runtime_iterations >= max_runtime_iterations:
-                break
-
-    # Hide unused axes
-    for i in range(num_shown, len(axes)):
-        axes[i].axis('off')
-
-    if num_shown == 0:
-        print("Warning: Could not display any images. The dataset may contain corrupted files.")
+            axes[i].axis("off")
+        except Exception:
+            axes[i].axis("off")
 
     plt.show()
 

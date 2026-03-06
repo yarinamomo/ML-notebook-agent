@@ -19,7 +19,7 @@ else:
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # from sklearn.model_selection import train_test_split
 # from sklearn.ensemble import RandomForestRegressor
@@ -44,37 +44,34 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
-# Strip whitespace from column names to handle potential formatting issues
-df.columns = df.columns.str.strip()
 
-# Check available columns
-print("Available columns:", df.columns.tolist())
-
-# Try to find the spending score column
-spending_col = None
+# Find the correct column name for the target variable
+target_col = None
 for col in df.columns:
-    if 'Spending Score' in col:
-        spending_col = col
+    if 'spending' in col.lower() and 'score' in col.lower():
+        target_col = col
         break
 
-if spending_col is None:
-    print("Error: Could not find 'Spending Score' column in dataset")
-else:
-    print(f"Using column: '{spending_col}'")
-    
-    X = df.drop([spending_col], axis=1)
-    
-    # Drop non-numeric columns that can't be used in the model
-    X = X.select_dtypes(include=['number'])
-    
-    y = df[spending_col]
-    
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-    rf = RandomForestRegressor(n_estimators=100, random_state=42)
-    rf.fit(X_train, y_train)
-    
-    y_pred = rf.predict(X_test)
-    
-    mse = mean_squared_error(y_test, y_pred)
-    print(f"Mean Squared Error: {mse}")
+if target_col is None:
+    # Try another pattern if the above doesn't match
+    for col in df.columns:
+        if 'score' in col.lower():
+            target_col = col
+            break
+
+if target_col is None:
+    # Fall back to taking the last column if not found
+    target_col = df.columns[-1]
+
+X = df.drop([target_col], axis=1)
+y = df[target_col]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+
+
+rf = RandomForestRegressor(n_estimators=100, random_state=42)
+rf.fit(X_train, y_train)
+
+
+
+y_pred = rf.predict(X_test)

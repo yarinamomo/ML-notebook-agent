@@ -38,21 +38,21 @@ sns.set(style='white', context='notebook', palette='deep')#画图设置
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import tensorflow as tf
 # tf.config.experimental.set_memory_growth(tf.config.list_physical_devices('GPU')[0], True)
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # train = pd.read_csv("data/train.csv")
 # test = pd.read_csv("data/test.csv")
 
 # === AFTER (edited) ===
-train = pd.read_csv("data/train.csv", header=None, names=["label"] + [f"pixel{i}" for i in range(784)])
-test = pd.read_csv("data/test.csv", header=None, names=[f"pixel{i}" for i in range(784)])
+train = pd.read_csv("data/train.csv", header=None)
+test = pd.read_csv("data/test.csv", header=None)
 
 #%%
 # --- [CELL 3]: ---

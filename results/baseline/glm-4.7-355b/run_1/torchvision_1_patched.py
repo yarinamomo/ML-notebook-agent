@@ -117,10 +117,9 @@ def show_images(dataset, num_images=6):
 
             axes[i].axis("off")
         except Exception as e:
-            print(f"Error loading image at index {idx}: {e}")
+            print(f"Error displaying image at index {idx}: {e}")
             axes[i].axis("off")
 
-    plt.close(fig)
     plt.show()
 
 

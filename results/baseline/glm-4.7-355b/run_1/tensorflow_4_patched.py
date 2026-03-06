@@ -187,14 +187,14 @@ for per in os.listdir(train_dir):
             if img is not None:
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 img = cv2.resize(img, (SIZE,SIZE))
-                forged_images.append(img)
+                forged_images.append([img])
 
         else:
             img = cv2.imread(data)
             if img is not None:
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 img = cv2.resize(img, (SIZE,SIZE))
-                real_images.append(img)
+                real_images.append([img])
 
 
 
@@ -214,14 +214,18 @@ for per in os.listdir(test_dir):
             if img is not None:
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 img = cv2.resize(img, (SIZE,SIZE))
-                forged_images.append(img)
+                forged_images.append([img])
 
         else:
             img = cv2.imread(data)
             if img is not None:
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 img = cv2.resize(img, (SIZE,SIZE))
-                real_images.append(img)
+                real_images.append([img])
+
+
+
+
 
 real_images = np.array(real_images)
 forged_images = np.array(forged_images)

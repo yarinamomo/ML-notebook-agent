@@ -184,14 +184,14 @@ for per in os.listdir(train_dir):
 
         if per[-1]=='g':
             img = cv2.imread(data)
-            if img is not None:
+            if img is not None:  # Check if image was successfully read
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 img = cv2.resize(img, (SIZE,SIZE))
                 forged_images.append([img])
 
         else:
             img = cv2.imread(data)
-            if img is not None:
+            if img is not None:  # Check if image was successfully read
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 img = cv2.resize(img, (SIZE,SIZE))
                 real_images.append([img])
@@ -211,14 +211,14 @@ for per in os.listdir(test_dir):
 
         if per[-1]=='g':
             img = cv2.imread(data)
-            if img is not None:
+            if img is not None:  # Check if image was successfully read
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 img = cv2.resize(img, (SIZE,SIZE))
                 forged_images.append([img])
 
         else:
             img = cv2.imread(data)
-            if img is not None:
+            if img is not None:  # Check if image was successfully read
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 img = cv2.resize(img, (SIZE,SIZE))
                 real_images.append([img])
@@ -305,23 +305,78 @@ print(train_labels.shape)
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# import tensorflow as tf
+# from tensorflow import keras
+# from tensorflow.keras import layers
+# from sklearn.model_selection import train_test_split
+# 
+# # load the data
+# #(train_data, train_labels), (test_data, test_labels) = keras.datasets.mnist.load_data()
+# 
+# 
+# train_data = train_data.astype('float32') / 255
+# test_data = test_data.astype('float32') / 255
+# 
+# # define the model
+# model = keras.Sequential([
+#     layers.LSTM(256, input_shape=(train_data.shape[1], train_data.shape[2])),
+#     layers.Dense(2, activation='softmax')
+# ])
+# 
+# model.compile(optimizer='rmsprop',
+#               loss='sparse_categorical_crossentropy',
+#               metrics=['accuracy'])
+# 
+# model.summary()
+# 
+# # define callbacks
+# early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
+# 
+# # train the model
+# history = model.fit(train_data, train_labels, batch_size=32, epochs=10, validation_split=.2, callbacks=[early_stop])
+# 
+# # plot accuracy and loss
+# import matplotlib.pyplot as plt
+# 
+# acc = history.history['accuracy']
+# val_acc = history.history['val_accuracy']
+# loss = history.history['loss']
+# val_loss = history.history['val_loss']
+# epochs = range(1, len(acc) + 1)
+# 
+# plt.plot(epochs, acc, 'bo', label='Training acc')
+# plt.plot(epochs, val_acc, 'b', label='Validation acc')
+# plt.title('Training and validation accuracy')
+# plt.legend()
+# 
+# plt.figure()
+# 
+# plt.plot(epochs, loss, 'bo', label='Training loss')
+# plt.plot(epochs, val_loss, 'b', label='Validation loss')
+# plt.title('Training and validation loss')
+# plt.legend()
+# 
+# plt.show()
+
+# === AFTER (edited) ===
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from sklearn.model_selection import train_test_split
 
-# load the data
-#(train_data, train_labels), (test_data, test_labels) = keras.datasets.mnist.load_data()
+
+
 
 
 train_data = train_data.astype('float32') / 255
 test_data = test_data.astype('float32') / 255
 
-# define the model
+
 model = keras.Sequential([
-    layers.LSTM(256, input_shape=(train_data.shape[1], train_data.shape[2])),
+    layers.LSTM(256, input_shape=(train_data.shape[1], train_data.shape[2], 1)),
     layers.Dense(2, activation='softmax')
 ])
 
@@ -331,13 +386,13 @@ model.compile(optimizer='rmsprop',
 
 model.summary()
 
-# define callbacks
+
 early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
 
-# train the model
+
 history = model.fit(train_data, train_labels, batch_size=32, epochs=10, validation_split=.2, callbacks=[early_stop])
 
-# plot accuracy and loss
+
 import matplotlib.pyplot as plt
 
 acc = history.history['accuracy']

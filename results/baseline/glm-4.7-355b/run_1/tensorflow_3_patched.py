@@ -80,7 +80,7 @@ test_data_gen  = test_image_generator.flow_from_directory(
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # # 4
 # def plotImages(images_arr, probabilities = False):
@@ -107,11 +107,21 @@ def plotImages(images_arr, probabilities = False):
     fig, axes = plt.subplots(len(images_arr), 1, figsize=(5,len(images_arr) * 3))
     if probabilities is False:
       for img, ax in zip( images_arr, axes):
-          ax.imshow(img)
+          # Convert float images (0-1) to uint8 (0-255) for display
+          if img.dtype == np.float32 or img.dtype == np.float64:
+              img_display = (img * 255).astype(np.uint8)
+          else:
+              img_display = img
+          ax.imshow(img_display)
           ax.axis('off')
     else:
       for img, probability, ax in zip( images_arr, probabilities, axes):
-          ax.imshow(img)
+          # Convert float images (0-1) to uint8 (0-255) for display
+          if img.dtype == np.float32 or img.dtype == np.float64:
+              img_display = (img * 255).astype(np.uint8)
+          else:
+              img_display = img
+          ax.imshow(img_display)
           ax.axis('off')
           if probability > 0.5:
               ax.set_title("%.2f" % (probability*100) + "% dog")
@@ -119,32 +129,13 @@ def plotImages(images_arr, probabilities = False):
               ax.set_title("%.2f" % ((1-probability)*100) + "% cat")
     plt.show()
 
-max_attempts = 10
-sample_training_images = None
-for attempt in range(max_attempts):
-    try:
-        sample_training_images, _ = next(train_data_gen)
-        # Filter out any potentially corrupted images
-        valid_images = []
-        for img in sample_training_images[:5]:
-            if img.max() <= 1.0 and img.min() >= 0.0:  # Basic validation
-                valid_images.append(img)
-        if len(valid_images) > 0:
-            sample_training_images = valid_images
-            break
-    except Exception as e:
-        # Try next batch if there's an error loading
-        continue
-
-if sample_training_images is not None:
-    plotImages(sample_training_images[:5])
-else:
-    print("Could not load valid training images for display")
+sample_training_images, _ = next(train_data_gen)
+plotImages(sample_training_images[:5])
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # 5
 train_image_generator = ImageDataGenerator(
     rescale=1./255,
@@ -162,7 +153,7 @@ train_image_generator = ImageDataGenerator(
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 # 6
 train_data_gen = train_image_generator.flow_from_directory(batch_size=batch_size,
                                                      directory=train_dir,

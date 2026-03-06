@@ -469,7 +469,4 @@ else:
 # np.savetxt('images.txt', images, delimiter=',', fmt='%d')
 
 # === AFTER (edited) ===
-# Reshape 5D array to 2D for txt file saving
-num_samples = images.shape[0] * images.shape[1]
-images_2d = images.reshape(num_samples, -1)
-np.savetxt('images.txt', images_2d, delimiter=',', fmt='%d')
+np.save('images.npy', images)

@@ -29,72 +29,19 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # jsdf = pd.read_json('data/train_annotations')
 # jsdf.head()
 
 # === AFTER (edited) ===
-# Try to find and read the annotations file
-annotations_path = None
-
-# First, let's search for common annotation file names in the data directory
-for root, dirs, files in os.walk('data'):
-    for file in files:
-        if file in ['train_annotations', 'train_annotations.json', 'annotations.json', 'labels.json', 'train.json', 'labels.csv', 'train.csv']:
-            annotations_path = os.path.join(root, file)
-            print(f"Found annotations file: {annotations_path}")
-            break
-    if annotations_path:
-        break
-
-# Also check /kaggle/input if this is a Kaggle environment
-if not annotations_path and os.path.exists('/kaggle/input'):
-    for root, dirs, files in os.walk('/kaggle/input'):
-        for file in files:
-            if file in ['train_annotations', 'train_annotations.json', 'annotations.json', 'labels.json', 'train.json', 'labels.csv', 'train.csv']:
-                annotations_path = os.path.join(root, file)
-                print(f"Found annotations file: {annotations_path}")
-                break
-        if annotations_path:
-            break
-
-def load_annotations(path):
-    """Try to load annotations with different methods."""
-    # Try pd.read_json with different options
-    try:
-        return pd.read_json(path)
-    except:
-        pass
-    
-    # Try reading as JSON lines (common format)
-    try:
-        return pd.read_json(path, lines=True)
-    except:
-        pass
-    
-    # Try reading as CSV
-    try:
-        return pd.read_csv(path)
-    except:
-        pass
-    
-    return None
-
-if annotations_path:
-    jsdf = load_annotations(annotations_path)
-    print(f"Loaded annotations with {len(jsdf)} rows")
-    jsdf.head()
-else:
-    print("Warning: No annotations file found. Creating dummy annotations for demonstration.")
-    # Create a minimal dummy dataframe to allow the notebook to run
-    # This assumes labels exist in the data directory
-    print("Note: In a real scenario, you need to provide the correct path to your annotations file.")
+jsdf = pd.read_json('data/train_annotations.json')
+jsdf.head()
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 Id = []
 
 import os
@@ -106,7 +53,7 @@ Id[:5]
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 train = pd.DataFrame()
 train = train.assign(filename = Id)
 train['image_id'] = train['filename'].str.replace('data/train/train/image_id_','')
@@ -117,7 +64,7 @@ train.head()
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 train_data = pd.merge(train,jsdf,on='image_id',how='outer')
 train_data = train_data[['filename','category_id']]
 train_data.columns = ['filename','label']

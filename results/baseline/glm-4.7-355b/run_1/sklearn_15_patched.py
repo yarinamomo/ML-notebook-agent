@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,20 +13,27 @@ from sklearn.preprocessing import StandardScaler
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # data = pd.read_csv('https://raw.githubusercontent.com/gchoi/Dataset/master/weatherAUS.csv') # downloaded
 data = pd.read_csv('data/data.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-data = data.drop(['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm'], axis=1)
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# === BEFORE (original) ===
+# data = data.drop(['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm'], axis=1)
+
+# === AFTER (edited) ===
+columns_to_drop = ['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm']
+# Only drop columns that exist in the dataframe
+columns_to_drop = [col for col in columns_to_drop if col in data.columns]
+data = data.drop(columns_to_drop, axis=1)
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 for column in data.columns:
     if np.issubdtype(data[column].dtype, np.number):
         data[column].fillna(data[column].median(), inplace=True)
@@ -36,7 +43,7 @@ for column in data.columns:
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
 categorical_columns = ['WindGustDir', 'WindDir9am', 'WindDir3pm', 'RainToday']
 data = pd.get_dummies(data, columns=categorical_columns, drop_first=True)
 
@@ -55,29 +62,15 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# logreg = LogisticRegression(max_iter=1000)
-# 
-# scaler = StandardScaler()
-# X_train = scaler.fit_transform(X_train)
-# X_test = scaler.transform(X_test)
-# 
-# y_train = scaler.fit_transform(y_train)
-# y_test = scaler.transform(y_test)
-# 
-# logreg.fit(X_train, y_train)
-
-# === AFTER (edited) ===
 logreg = LogisticRegression(max_iter=1000)
-
-# Convert target to binary (Yes=1, No=0)
-y_train = y_train.map({'Yes': 1, 'No': 0})
-y_test = y_test.map({'Yes': 1, 'No': 0})
 
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
+
+y_train = scaler.fit_transform(y_train)
+y_test = scaler.transform(y_test)
 
 logreg.fit(X_train, y_train)

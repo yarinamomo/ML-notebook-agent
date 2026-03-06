@@ -18,15 +18,42 @@ df=pd.read_csv("data/2. Cars Data1.csv")
 # df["DriveTrain"]=df["DriveTrain"].astype("category")
 
 # === AFTER (edited) ===
-# Strip whitespace from column names and handle potential naming variations
-df.columns = df.columns.str.strip()
-# Find DriveTrain column (case-insensitive) and convert to category
-drivetrain_col = next((col for col in df.columns if col.lower() == 'drivetrain'), None)
+# First check what columns are available and find the DriveTrain/Drivetrain column
+print("Available columns:", df.columns.tolist())
+
+# Try to find the DriveTrain column (handle case variations)
+drivetrain_col = None
+for col in df.columns:
+    # Remove spaces and check both cases
+    col_name = col.replace(' ', '')
+    if col_name.lower() == 'drivetrain':
+        drivetrain_col = col
+        break
+
 if drivetrain_col:
-    df[drivetrain_col] = df[drivetrain_col].astype("category")
+    print(f"Found 'DriveTrain' column as: '{drivetrain_col}'")
+    df[drivetrain_col] = df[drivetrain_col].astype('category')
+else:
+    print("Warning: DriveTrain column not found in dataframe")
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-df["MSRP"]=pd.to_numeric(df["MSRP"]) 
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# === BEFORE (original) ===
+# df["MSRP"]=pd.to_numeric(df["MSRP"]) 
+
+# === AFTER (edited) ===
+# Convert MSRP to numeric, handling any potential column name variations
+# Try to find the MSRP column
+msrp_col = None
+for col in df.columns:
+    if col.replace(' ', '').upper() == 'MSRP':
+        msrp_col = col
+        break
+
+if msrp_col:
+    print(f"Found 'MSRP' column as: '{msrp_col}'")
+    df[msrp_col] = pd.to_numeric(df[msrp_col], errors='coerce')
+else:
+    print("Warning: MSRP column not found in dataframe")

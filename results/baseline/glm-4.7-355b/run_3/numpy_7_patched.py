@@ -787,7 +787,7 @@ def train(model, train_images, train_labels, validation_images, validation_label
         plot_accuracy_curve(history.accuracy, history.val_accuracy)
 
 
-def evaluate(model, test_images, test_labels):
+def evaluate(model):
     scores = model.evaluate(test_images, test_labels, verbose=1)
     print('Test loss:', scores[0])
     print('Test accuracy:', scores[1])
@@ -804,19 +804,6 @@ def predict(model, image_idx):
     pred = np.argmax(model.predict(image))
 
     plot_sample(dataset['test_images'][image_idx], classes[dataset['test_labels'][image_idx]], classes[pred])
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -855,9 +842,9 @@ if __name__ == '__main__':
     print('\n--- Processing the dataset ---')
     dataset = preprocess(dataset)
 
-    train_images = np.moveaxis(dataset['train_images'], 1, 3)
-    validation_images = np.moveaxis(dataset['validation_images'], 1, 3)
-    test_images = np.moveaxis(dataset['test_images'], 1, 3)
+    train_images = dataset['train_images']
+    validation_images = dataset['validation_images']
+    test_images = dataset['test_images']
     train_labels = to_categorical(dataset['train_labels'])
     validation_labels = to_categorical(dataset['validation_labels'])
     test_labels = to_categorical(dataset['test_labels'])
@@ -878,6 +865,7 @@ if __name__ == '__main__':
         model.add(Dense(256, name='fullyconnected', activation='relu', kernel_initializer='he_normal', kernel_regularizer=l2(lam)))
         model.add(Dense(10, name='dense', activation='softmax'))
 
+
     train(
         model,
         train_images,
@@ -891,7 +879,7 @@ if __name__ == '__main__':
     )
 
     print('\n--- Testing the model ---')
-    evaluate(model, test_images, test_labels)
+    evaluate(model)
 
     print('\n--- Predicting image from test set ---')
     image_idx = 40
@@ -901,3 +889,4 @@ if __name__ == '__main__':
     plot_weights(model)
 
     print('\n--- Saving the model ---')
+    model.save('model.h5')

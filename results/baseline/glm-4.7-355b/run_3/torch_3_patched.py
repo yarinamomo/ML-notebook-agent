@@ -51,7 +51,7 @@ class CustomModelMultichoice(nn.Module):
     def __init__(self,config,num_choice):
         super(CustomModelMultichoice,self).__init__()
         model = AutoModelForMultipleChoice.from_config(config)
-        # Don't modify the classifier - let it keep the correct output size for num_choices
+        model.classifier = nn.Linear(768,num_choice)
         self.model = model
 
         self.sigmoid = nn.Sigmoid()
@@ -61,9 +61,9 @@ class CustomModelMultichoice(nn.Module):
         logits = self.sigmoid(outputs.logits)
         loss = None
         if labels is not None:
-            loss_func = nn.NLLLoss()
-            loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))
-        return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states =None,attentions =None)
+            loss_func = nn.BCELoss()
+            loss = loss_func(logits, labels.float())
+        return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states = None,attentions =None)
 
 #%%
 # --- [CELL 5]: ---

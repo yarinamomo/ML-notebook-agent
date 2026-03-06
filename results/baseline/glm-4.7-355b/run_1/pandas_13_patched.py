@@ -30,9 +30,16 @@ import matplotlib.pyplot as plt
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# === BEFORE (original) ===
+# df = pd.read_csv('data/car data.csv')
+# df.head()
+
+# === AFTER (edited) ===
 df = pd.read_csv('data/car data.csv')
+print("Column names in DataFrame:")
+print(df.columns.tolist())
 df.head()
 
 #%%
@@ -45,62 +52,9 @@ df.duplicated().sum()  # 检查是否已删除
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# # 一种转换方法
-# dfm = DataFrameMapper([(['Year'],StandardScaler()),
-#                        (['Selling_Price'],None),
-#                        (['Driven_kms'],MinMaxScaler()),
-#                        ('Owner',None),
-#                        (['Car_Name'],OneHotEncoder()),
-#                        (['Fuel_Type'],OneHotEncoder()),
-#                        (['Selling_type'],OneHotEncoder()),
-#                        (['Transmission'],OneHotEncoder()),
-#                        (['Present_Price'],MinMaxScaler())
-#                       ],df_out=True)
-# transformed = dfm.fit_transform(df)
-
-# === AFTER (edited) ===
-# Print actual column names to debug
-print("Actual columns:", df.columns.tolist())
-
-# Rename columns to match expected names if they differ
-# Common variations in car datasets
-column_mapping = {}
-for col in df.columns:
-    col_lower = col.lower().strip()
-    if 'year' in col_lower and 'Year' not in df.columns:
-        column_mapping[col] = 'Year'
-    elif 'selling' in col_lower and 'price' in col_lower and 'Selling_Price' not in df.columns:
-        column_mapping[col] = 'Selling_Price'
-    elif 'driven' in col_lower or 'kms' in col_lower:
-        if 'Driven_kms' not in df.columns:
-            column_mapping[col] = 'Driven_kms'
-    elif 'present' in col_lower and 'price' in col_lower:
-        if 'Present_Price' not in df.columns:
-            column_mapping[col] = 'Present_Price'
-    elif 'owner' in col_lower:
-        if 'Owner' not in df.columns:
-            column_mapping[col] = 'Owner'
-    elif 'car' in col_lower and 'name' in col_lower:
-        if 'Car_Name' not in df.columns:
-            column_mapping[col] = 'Car_Name'
-    elif 'fuel' in col_lower:
-        if 'Fuel_Type' not in df.columns:
-            column_mapping[col] = 'Fuel_Type'
-    elif 'selling' in col_lower and 'type' in col_lower:
-        if 'Selling_type' not in df.columns:
-            column_mapping[col] = 'Selling_type'
-    elif 'transmission' in col_lower:
-        if 'Transmission' not in df.columns:
-            column_mapping[col] = 'Transmission'
-
-if column_mapping:
-    df.rename(columns=column_mapping, inplace=True)
-    print("Renamed columns:", column_mapping)
-
-print("Columns after renaming:", df.columns.tolist())
+# 一种转换方法
 dfm = DataFrameMapper([(['Year'],StandardScaler()),
                        (['Selling_Price'],None),
                        (['Driven_kms'],MinMaxScaler()),

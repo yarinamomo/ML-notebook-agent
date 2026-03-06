@@ -53,17 +53,17 @@ from pandas.plotting import scatter_matrix
 # train.info()
 
 # === AFTER (edited) ===
-train_full = pd.read_csv("data/train.csv", index_col=None)
-test_full = pd.read_csv("data/test.csv", index_col=None)
+train_full = pd.read_csv("data/train.csv")
+test_full = pd.read_csv("data/test.csv")
 train = train_full.copy()
 test = test_full.copy()
 if conf.load_original:
     print("Load external data...")
-    original = pd.read_csv('data/WineQT.csv', index_col=None)
+    original = pd.read_csv('data/WineQT.csv')
     if conf.only_positive:
         train = pd.concat([original[original[conf.target] == 1], train_full], ignore_index=True)
     else:
-        train = pd.concat([original, train_full], ignore_index=True)
+        train = pd.concat([original, train_full])
 
 train.info()
 

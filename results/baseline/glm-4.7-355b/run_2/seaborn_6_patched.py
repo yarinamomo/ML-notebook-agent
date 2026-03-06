@@ -26,28 +26,16 @@ df=df.dropna()
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
 
 # === AFTER (edited) ===
-# Check available columns and handle the sex column mapping
-print("Available columns:", df.columns.tolist())
-
-# Try to find the sex column with common variations
-sex_column = None
-for col in df.columns:
-    if col.lower().strip() == 'sex':
-        sex_column = col
-        break
-
-if sex_column:
-    df["sex"] = df[sex_column].map({"male" : 0, "female" : 1})
-else:
-    print("Warning: 'sex' column not found. Skipping sex column mapping.")
+if 'sex' in df.columns:
+    df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
 sns.violinplot(df, x='species')

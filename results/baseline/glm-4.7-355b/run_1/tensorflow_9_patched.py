@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,17 +17,11 @@ import string
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/train.csv')
-# test_df = pd.read_csv('data/test.csv')
-# df.sample(5)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
 df = pd.read_csv('data/train.csv')
 test_df = pd.read_csv('data/test.csv')
-df.head(5)
+df.sample(5)
 
 #%%
 # --- [CELL 2]: ---
@@ -174,7 +168,15 @@ print(bert_model.config.hidden_size)
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
-import tensorflow as tf
-tf.keras.utils.plot_model(bert_model)
+# === BEFORE (original) ===
+# import tensorflow as tf
+# tf.keras.utils.plot_model(bert_model)
+
+# === AFTER (edited) ===
+# Print the BERT model architecture (PyTorch equivalent of plot_model)
+print("BERT Model Architecture:")
+print(bert_model)
+print("\nModel Configuration:")
+print(bert_model.config)

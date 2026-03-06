@@ -70,43 +70,31 @@ num_classes = 2
 #         class_mode='categorical')
 
 # === AFTER (edited) ===
-# Define image size and other parameters
-img_size = (224, 224)
-batch_size = 32
-num_classes = 2
+train_datagen = ImageDataGenerator(rescale=1./255, shear_range=0.2, zoom_range=0.2, horizontal_flip=True)
+test_datagen = ImageDataGenerator(rescale=1./255)
+validation_datagen = ImageDataGenerator(rescale=1./255)
 
-# Create TensorFlow datasets directly - more robust handling of image file issues
-train_ds = tf.keras.preprocessing.image_dataset_from_directory(
-    os.path.join(data_dir, 'Train'),
-    validation_split=None,
-    seed=123,
-    image_size=img_size,
-    batch_size=batch_size,
-    label_mode='categorical')
 
-test_ds = tf.keras.preprocessing.image_dataset_from_directory(
-    os.path.join(data_dir, 'Test'),
-    validation_split=None,
-    seed=123,
-    image_size=img_size,
-    batch_size=batch_size,
-    label_mode='categorical')
+train_generator = train_datagen.flow_from_directory(
+        os.path.join(data_dir, 'Train'),
+        target_size=input_shape[:2],
+        batch_size=batch_size,
+        class_mode='categorical',
+        color_mode='rgb')
 
-validation_ds = tf.keras.preprocessing.image_dataset_from_directory(
-    os.path.join(data_dir, 'Validation'),
-    validation_split=None,
-    seed=123,
-    image_size=img_size,
-    batch_size=batch_size,
-    label_mode='categorical')
+test_generator = test_datagen.flow_from_directory(
+        os.path.join(data_dir, 'Test'),
+        target_size=input_shape[:2],
+        batch_size=batch_size,
+        class_mode='categorical',
+        color_mode='rgb')
 
-# Normalize pixel values
-def normalize(image, label):
-    return image / 255.0, label
-
-train_generator = train_ds.map(normalize)
-test_generator = test_ds.map(normalize)
-validation_generator = validation_ds.map(normalize)
+validation_generator = validation_datagen.flow_from_directory(
+        os.path.join(data_dir, 'Validation'),
+        target_size=input_shape[:2],
+        batch_size=batch_size,
+        class_mode='categorical',
+        color_mode='rgb')
 
 #%%
 # --- [CELL 5]: ---
@@ -172,25 +160,17 @@ checkpoint_M2 = ModelCheckpoint(filepath_weights_M2, monitor='val_accuracy', mod
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 9}
-# === BEFORE (original) ===
-# # Dont run again model is saved @ /kaggle/working/save_weights/best_weights_V19-47-0.9566.hdf5
-# 
-# history_V19 = modelV19.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_V19])
+# Dont run again model is saved @ /kaggle/working/save_weights/best_weights_V19-47-0.9566.hdf5
 
-# === AFTER (edited) ===
 history_V19 = modelV19.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_V19])
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# # Dont run again model is saved @ /kaggle/working/save_weights/best_weights_M2-49-0.9681.hdf5
-# history_M2 = modelM2.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_M2])
-
-# === AFTER (edited) ===
+# Dont run again model is saved @ /kaggle/working/save_weights/best_weights_M2-49-0.9681.hdf5
 history_M2 = modelM2.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_M2])
 
 #%%
@@ -258,40 +238,24 @@ checkpoint_ensemble = ModelCheckpoint(filepath_weights_ensemble, monitor='val_ac
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# # only fit when there are trainable parameters
-# history_ensemble = ensemble_model.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_ensemble])
-
-# === AFTER (edited) ===
+# only fit when there are trainable parameters
 history_ensemble = ensemble_model.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_ensemble])
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# # ensemble_model.load_weights('/kaggle/working/save_weights/best_weights_ensemble-01-0.9752.tf')
-# # test_loss, test_acc = ensemble_model.evaluate(test_generator)
-# # print('Test accuracy:', test_acc)
-# ensemble_model.evaluate(test_generator)
-
-# === AFTER (edited) ===
+# ensemble_model.load_weights('/kaggle/working/save_weights/best_weights_ensemble-01-0.9752.tf')
+# test_loss, test_acc = ensemble_model.evaluate(test_generator)
+# print('Test accuracy:', test_acc)
 ensemble_model.evaluate(test_generator)
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# y_pred = ensemble_model.predict(test_generator)
-# print("One-hot encoded predicted labels:")
-# print(y_pred)
-# y_pred_classes = np.argmax(y_pred, axis=1)
-# print(y_pred_classes)
-
-# === AFTER (edited) ===
 y_pred = ensemble_model.predict(test_generator)
 print("One-hot encoded predicted labels:")
 print(y_pred)
@@ -300,33 +264,18 @@ print(y_pred_classes)
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# #ensemble_model.load_weights('/kaggle/working/save_weights/best_weights_ensemble-31-0.9690.tf')
-# #y_pred = ensemble_model.predict(test_generator)
-# #y_pred_classes = np.argmax(y_pred, axis=1)
-# #y_true_classes = test_generator.classes
-# 
-# #try this 
-# # Make predictions on test data
-# y_pred = ensemble_model.predict(test_generator)
-# y_pred_classes = np.argmax(y_pred, axis=1)
-# 
-# # Convert one-hot encoded labels to integer labels
-# y_true_onehot = test_generator.classes
-# y_true_classes = np.argmax(y_true_onehot, axis=1)
+#ensemble_model.load_weights('/kaggle/working/save_weights/best_weights_ensemble-31-0.9690.tf')
+#y_pred = ensemble_model.predict(test_generator)
+#y_pred_classes = np.argmax(y_pred, axis=1)
+#y_true_classes = test_generator.classes
 
-# === AFTER (edited) ===
+#try this 
+# Make predictions on test data
 y_pred = ensemble_model.predict(test_generator)
 y_pred_classes = np.argmax(y_pred, axis=1)
 
-# Get true labels from the dataset
-y_true = []
-for images, labels in test_ds:
-    y_true.extend(np.argmax(labels.numpy(), axis=1))
-
-y_true_classes = np.array(y_true)
-
-print("True classes:", y_true_classes)
-print("Predicted classes:", y_pred_classes)
+# Convert one-hot encoded labels to integer labels
+y_true_onehot = test_generator.classes
+y_true_classes = np.argmax(y_true_onehot, axis=1)

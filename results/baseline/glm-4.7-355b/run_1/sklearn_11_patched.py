@@ -14,14 +14,14 @@ from sklearn.metrics import r2_score
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 df = pd.read_csv("data/data.csv")
 
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # 
 # abnormaldata1 = df[df['month'] =='8']
@@ -29,9 +29,9 @@ df = pd.read_csv("data/data.csv")
 # y = np.array(abnormaldata1.loc[:,"temperature"]).reshape(-1,1)
 
 # === AFTER (edited) ===
-# Using all data since month column not available
-x = np.array(df.loc[:,"number_people"]).reshape(-1,1)
-y = np.array(df.loc[:,"temperature"]).reshape(-1,1)
+abnormaldata1 = df
+x = np.array(abnormaldata1.loc[:,"number_people"]).reshape(-1,1)
+y = np.array(abnormaldata1.loc[:,"temperature"]).reshape(-1,1)
 
 #%%
 # --- [CELL 3]: ---

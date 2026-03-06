@@ -22,26 +22,48 @@ import matplotlib.pyplot as plt
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# 
+# PATH = 'data_small/cats_and_dogs'
+# 
+# # Get number of files in each directory. The train and validation directories
+# # each have the subdirecories "dogs" and "cats".
+# train_dir      = os.path.join(PATH, 'train')
+# validation_dir = os.path.join(PATH, 'validation')
+# test_dir       = os.path.join(PATH, 'test')
+# 
+# # -1 because of DS_Store
+# total_train = sum([len(files) for r, d, files in os.walk(train_dir)])#-1
+# total_val   = sum([len(files) for r, d, files in os.walk(validation_dir)])#-1
+# total_test  = len(os.listdir(test_dir))#-1
+# 
+# print('Train:', total_train) 
+# print('Validation:', total_val)
+# print('Test:', total_test)
+# # Variables for pre-processing and training.
+# batch_size = 128
+# epochs = 30
+# IMG_HEIGHT = 150
+# IMG_WIDTH = 150
 
+# === AFTER (edited) ===
 PATH = 'data_small/cats_and_dogs'
 
-# Get number of files in each directory. The train and validation directories
-# each have the subdirecories "dogs" and "cats".
 train_dir      = os.path.join(PATH, 'train')
 validation_dir = os.path.join(PATH, 'validation')
 test_dir       = os.path.join(PATH, 'test')
 
-# -1 because of DS_Store
-total_train = sum([len(files) for r, d, files in os.walk(train_dir)])#-1
-total_val   = sum([len(files) for r, d, files in os.walk(validation_dir)])#-1
-total_test  = len(os.listdir(test_dir))#-1
 
-print('Train:', total_train) 
+total_train = sum([len(files) for r, d, files in os.walk(train_dir)]) if os.path.exists(train_dir) else 0
+total_val   = sum([len(files) for r, d, files in os.walk(validation_dir)]) if os.path.exists(validation_dir) else 0
+total_test  = len(os.listdir(test_dir)) if os.path.exists(test_dir) else 0
+
+print('Train:', total_train)
 print('Validation:', total_val)
 print('Test:', total_test)
-# Variables for pre-processing and training.
+
 batch_size = 128
 epochs = 30
 IMG_HEIGHT = 150
@@ -50,7 +72,7 @@ IMG_WIDTH = 150
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # 3
 
 train_image_generator = ImageDataGenerator(rescale = 1./255)
@@ -79,47 +101,18 @@ test_data_gen  = test_image_generator.flow_from_directory(
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# # 4
-# def plotImages(images_arr, probabilities = False):
-#     fig, axes = plt.subplots(len(images_arr), 1, figsize=(5,len(images_arr) * 3))
-#     if probabilities is False:
-#       for img, ax in zip( images_arr, axes):
-#           ax.imshow(img)
-#           ax.axis('off')
-#     else:
-#       for img, probability, ax in zip( images_arr, probabilities, axes):
-#           ax.imshow(img)
-#           ax.axis('off')
-#           if probability > 0.5:
-#               ax.set_title("%.2f" % (probability*100) + "% dog")
-#           else:
-#               ax.set_title("%.2f" % ((1-probability)*100) + "% cat")
-#     plt.show()
-# 
-# sample_training_images, _ = next(train_data_gen)
-# plotImages(sample_training_images[:5])
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+# 4
 def plotImages(images_arr, probabilities = False):
     fig, axes = plt.subplots(len(images_arr), 1, figsize=(5,len(images_arr) * 3))
     if probabilities is False:
       for img, ax in zip( images_arr, axes):
-          try:
-              ax.imshow(img)
-          except:
-              # Skip problematic images
-              pass
+          ax.imshow(img)
           ax.axis('off')
     else:
       for img, probability, ax in zip( images_arr, probabilities, axes):
-          try:
-              ax.imshow(img)
-          except:
-              # Skip problematic images
-              pass
+          ax.imshow(img)
           ax.axis('off')
           if probability > 0.5:
               ax.set_title("%.2f" % (probability*100) + "% dog")
@@ -129,6 +122,7 @@ def plotImages(images_arr, probabilities = False):
 
 sample_training_images, _ = next(train_data_gen)
 plotImages(sample_training_images[:5])
+
 
 #%%
 # --- [CELL 4]: ---
@@ -205,10 +199,6 @@ model.save("train.h5")
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# model.load ("train.h5")
-
-# === AFTER (edited) ===
-model = tf.keras.models.load_model("train.h5")
+model.load ("train.h5")

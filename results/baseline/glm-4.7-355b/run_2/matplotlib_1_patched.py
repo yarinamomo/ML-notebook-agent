@@ -16,7 +16,7 @@ train_images.shape, train_labels.shape, test_images.shape, test_labels.shape
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 # === BEFORE (original) ===
 # import matplotlib.pyplot as plt
 # 

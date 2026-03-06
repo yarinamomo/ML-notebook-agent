@@ -75,20 +75,9 @@ model = LinearRegression()
 # 'Beaux Arts Village' :     43},inplace=True)
 
 # === AFTER (edited) ===
-# Check what columns are available and print them
-print("Columns in df:", df.columns.tolist())
-
-# The city column might have extra whitespace or different capitalization
-# Let's find the actual column name
-city_col = None
-for col in df.columns:
-    if col.strip().lower() == 'city':
-        city_col = col
-        break
-
-if city_col:
-    # Use the found column name (it might have whitespace)
-    df[city_col].replace({
+# Check if 'city' column exists, try common alternatives
+if 'city' in df.columns:
+    df['city'].replace({
     'Seattle'            :      0,
     'Renton'             :      1,
     'Bellevue'           :      2,
@@ -132,14 +121,57 @@ if city_col:
     'Milton'             :     40,
     'Inglewood-Finn Hill':     41,
     'Snoqualmie Pass'    :     42,
-    'Beaux Arts Village' :     43}, inplace=True)
-    
-    # Rename the column to 'city' without whitespace to match Cell 4
-    df.rename(columns={city_col: 'city'}, inplace=True)
-    print(f"Successfully renamed column '{city_col}' to 'city'")
+    'Beaux Arts Village' :     43},inplace=True)
+elif 'City' in df.columns:
+    df['City'].replace({
+    'Seattle'            :      0,
+    'Renton'             :      1,
+    'Bellevue'           :      2,
+    'Redmond'            :      3,
+    'Issaquah'           :      4,
+    'Kirkland'           :      5,
+    'Kent'               :      6,
+    'Auburn'             :      7,
+    'Sammamish'          :      8,
+    'Federal Way'        :      9,
+    'Shoreline'          :     10,
+    'Woodinville'        :     11,
+    'Maple Valley'       :     12,
+    'Mercer Island'      :     13,
+    'Burien'             :     14,
+    'Snoqualmie'         :     15,
+    'Kenmore'            :     16,
+    'Des Moines'         :     17,
+    'North Bend'         :     18,
+    'Covington'          :     19,
+    'Duvall'             :     20,
+    'Lake Forest Park'   :     21,
+    'Bothell'            :     22,
+    'Newcastle'          :     23,
+    'SeaTac'             :     24,
+    'Tukwila'            :     25,
+    'Vashon'             :     26,
+    'Enumclaw'           :     27,
+    'Carnation'          :     28,
+    'Normandy Park'      :     29,
+    'Clyde Hill'         :     30,
+    'Medina'             :     31,
+    'Fall City'          :     32,
+    'Black Diamond'      :     33,
+    'Ravensdale'         :     34,
+    'Pacific'            :     35,
+    'Algona'             :     36,
+    'Yarrow Point'       :     37,
+    'Skykomish'          :     38,
+    'Preston'            :     39,
+    'Milton'             :     40,
+    'Inglewood-Finn Hill':     41,
+    'Snoqualmie Pass'    :     42,
+    'Beaux Arts Village' :     43},inplace=True)
+    # Rename to lowercase for consistency
+    df.rename(columns={'City': 'city'}, inplace=True)
 else:
-    print("Warning: 'city' column not found. Available columns:", df.columns.tolist())
-    # Create city column with default value if it doesn't exist
+    print("Column 'city' or 'City' not found in dataframe. Creating 'city' column with default value 0.")
     df['city'] = 0
 
 #%%

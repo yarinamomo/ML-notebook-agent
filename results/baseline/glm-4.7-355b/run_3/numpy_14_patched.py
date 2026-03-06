@@ -43,34 +43,9 @@ num_classes = 2
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# train_datagen = ImageDataGenerator(rescale=1./255, shear_range=0.2, zoom_range=0.2, horizontal_flip=True)
-# test_datagen = ImageDataGenerator(rescale=1./255)
-# validation_datagen = ImageDataGenerator(rescale=1./255)
-# 
-# 
-# train_generator = train_datagen.flow_from_directory(
-#         os.path.join(data_dir, 'Train'),
-#         target_size=input_shape[:2],
-#         batch_size=batch_size,
-#         class_mode='categorical')
-# 
-# test_generator = test_datagen.flow_from_directory(
-#         os.path.join(data_dir, 'Test'),
-#         target_size=input_shape[:2],
-#         batch_size=batch_size,
-#         class_mode='categorical')
-# 
-# validation_generator = validation_datagen.flow_from_directory(
-#         os.path.join(data_dir, 'Validation'),
-#         target_size=input_shape[:2],
-#         batch_size=batch_size,
-#         class_mode='categorical')
-
-# === AFTER (edited) ===
-train_datagen = ImageDataGenerator(rescale=1./255, horizontal_flip=True)
+train_datagen = ImageDataGenerator(rescale=1./255, shear_range=0.2, zoom_range=0.2, horizontal_flip=True)
 test_datagen = ImageDataGenerator(rescale=1./255)
 validation_datagen = ImageDataGenerator(rescale=1./255)
 
@@ -95,9 +70,26 @@ validation_generator = validation_datagen.flow_from_directory(
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-vgg19 = VGG19(weights='imagenet', include_top=False, input_shape=input_shape)
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# vgg19 = VGG19(weights='imagenet', include_top=False, input_shape=input_shape)
+# 
+# modelV19 = Sequential()
+# modelV19.add(vgg19)
+# modelV19.add(Flatten())
+# modelV19.add(Dense(500, activation='relu'))
+# modelV19.add(Dropout(0.5))
+# modelV19.add(Dense(300, activation='relu'))
+# modelV19.add(Dropout(0.5))
+# modelV19.add(Dense(num_classes, activation='softmax'))
+# 
+# for layer in vgg19.layers:
+#     layer.trainable = False
+# # modelV19.summary()
+
+# === AFTER (edited) ===
+vgg19 = VGG19(weights=None, include_top=False, input_shape=input_shape)
 
 modelV19 = Sequential()
 modelV19.add(vgg19)
@@ -110,12 +102,11 @@ modelV19.add(Dense(num_classes, activation='softmax'))
 
 for layer in vgg19.layers:
     layer.trainable = False
-# modelV19.summary()
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 mobilenetv2 = MobileNetV2(weights='imagenet', include_top=False, input_shape=input_shape)
 
 modelM2 = Sequential()
@@ -135,7 +126,7 @@ for layer in mobilenetv2.layers:
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'not run'}
 opt = Adam(learning_rate=0.0001, beta_1=0.9)
 opt2 = Adam(learning_rate=0.0001, beta_1=0.9) # fix for reproducing and fixing purposes, need a new optimizer instance
 modelV19.compile(
@@ -158,7 +149,7 @@ checkpoint_M2 = ModelCheckpoint(filepath_weights_M2, monitor='val_accuracy', mod
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'not run'}
 # Dont run again model is saved @ /kaggle/working/save_weights/best_weights_V19-47-0.9566.hdf5
 
 history_V19 = modelV19.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_V19])

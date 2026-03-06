@@ -66,15 +66,26 @@ train_df, test_df = train_test_split(image_df, train_size=0.9, shuffle=True, ran
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# === BEFORE (original) ===
+# train_generator = tf.keras.preprocessing.image.ImageDataGenerator(
+#     preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input,
+#     validation_split=0.2
+# )
+# 
+# test_generator = tf.keras.preprocessing.image.ImageDataGenerator(
+#     preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input
+# )
+
+# === AFTER (edited) ===
 train_generator = tf.keras.preprocessing.image.ImageDataGenerator(
-    preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input,
+    preprocessing_function=tf.keras.applications.efficientnet.preprocess_input,
     validation_split=0.2
 )
 
 test_generator = tf.keras.preprocessing.image.ImageDataGenerator(
-    preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input
+    preprocessing_function=tf.keras.applications.efficientnet.preprocess_input
 )
 
 #%%
@@ -143,41 +154,22 @@ def create_model(input_shape=(224, 224, 3)):
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# === BEFORE (original) ===
-# K.clear_session()
-# 
-# model = create_model((224, 224, 3))
-# # model = load_model('models/checkpoint/EfficientNetB0.h5')
-# 
-# metrics = [
-#     'accuracy',
-#     'AUC'
-# ]
-
-# === AFTER (edited) ===
 K.clear_session()
 
-# Create the model with explicit error handling
-try:
-    model = create_model((224, 224, 3))
-    print(f"Model created successfully: {type(model)}")
-except Exception as e:
-    print(f"Error creating model: {e}")
-    raise
+model = create_model((224, 224, 3))
+# model = load_model('models/checkpoint/EfficientNetB0.h5')
 
 metrics = [
     'accuracy',
     'AUC'
 ]
 
-print(f"Ready for compilation with metrics: {metrics}")
-
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 model.compile(optimizer=Adam(), loss='categorical_crossentropy', metrics=metrics)
 
 #%%

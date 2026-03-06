@@ -35,26 +35,25 @@ image_count
 # === AFTER (edited) ===
 import PIL
 princess = list(data_dir.glob('princess/*'))
-# Find a valid image that can be opened
-img = None
-for p in princess:
+
+# Find the first valid image
+valid_image = None
+for img_path in princess:
     try:
-        img = PIL.Image.open(str(p))
+        valid_image = PIL.Image.open(str(img_path))
+        valid_image.load()  # Verify the image can be loaded
         break
-    except:
+    except Exception:
         continue
-img
+
+if valid_image:
+    valid_image
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# image_height, image_width = PIL.Image.open(str(princess[1])).size
-# batch_size,epochs = 64,10
-
-# === AFTER (edited) ===
-image_height, image_width = img.size
+image_height, image_width = PIL.Image.open(str(princess[1])).size
 batch_size,epochs = 64,10
 
 #%%

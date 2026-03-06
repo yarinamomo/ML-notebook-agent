@@ -46,7 +46,7 @@ df.duplicated().sum()  # 检查是否已删除
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # # 一种转换方法
 # dfm = DataFrameMapper([(['Year'],StandardScaler()),

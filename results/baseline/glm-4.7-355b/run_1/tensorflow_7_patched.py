@@ -54,7 +54,8 @@ import pandas as pd
 
 train = pd.read_csv("data/train.csv")
 train = train[:8]
-print("Column names:", train.columns.tolist())
+print("Columns in dataset:", train.columns.tolist())
+print("First few rows:")
 print(train.head())
 
 #%%
