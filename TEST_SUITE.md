@@ -73,7 +73,7 @@ pytest tests/test_sandbox_integration.py -v
 
 **Requirements:**
 - Docker installed and running
-- Docker image: `ml-notebook-agent` (or as specified in config/default.yaml)
+- Docker image: `ml-notebook-agent` (or as specified in config/agent.yaml plus layered defaults)
 - Port 8888 available
 - ~5-10 minutes test time
 
@@ -164,7 +164,7 @@ test start
 ### Typical Integration Test Flow
 ```
 test start
-  ├─ Load config from default.yaml
+    ├─ Load config from agent.yaml with layered defaults
   ├─ Create DockerSandbox
   ├─ Start Docker container (30s)
   ├─ Wait for Jupyter server ready
@@ -186,7 +186,7 @@ test start
 ```python
 @pytest.fixture
 def config():
-    """Load configuration from default.yaml"""
+    """Load configuration from agent.yaml with layered defaults"""
     
 @pytest.fixture
 def docker_image(config):

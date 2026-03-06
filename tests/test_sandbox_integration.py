@@ -2,18 +2,22 @@
 Integration tests for DockerSandbox class.
 
 Tests real Docker container and Jupyter kernel interactions.
-Requires the Docker image specified in config/default.yaml to be available.
+Requires the Docker image specified by the layered agent config to be available.
 """
+
+import os
 
 import pytest
 import time
-import yaml
 import logging
 from pathlib import Path
 from src.sandbox import DockerSandbox
 from src.ui_agent import EnvironmentUnavailable
 from src.utils.log import logger
+from src.utils.yaml_parser import load_config
 
+DEFAULTS_CONFIG = Path(os.getenv("NOTEBOOK_AGENT_DEFAULTS_PATH", "./config/defaults.yaml"))
+print(f"Using defaults config: {DEFAULTS_CONFIG}")
 
 @pytest.fixture(scope="session", autouse=True)
 def configure_test_logging():
@@ -23,10 +27,9 @@ def configure_test_logging():
 
 @pytest.fixture
 def config():
-    """Load configuration from default.yaml."""
-    config_path = Path(__file__).parent.parent / "config" / "default.yaml"
-    with open(config_path, "r") as f:
-        return yaml.safe_load(f)
+    """Load configuration from agent.yaml with layered defaults."""
+    config_path = Path(__file__).parent.parent / "config" / "agent.yaml"
+    return load_config(config_path, DEFAULTS_CONFIG)
 
 
 @pytest.fixture
@@ -440,8 +443,8 @@ for i in range(100):
         assert len(result['outputs']) > 0
 
 
-class TestDefaultConfig:
-    """Test with settings from default.yaml."""
+class TestAgentConfig:
+    """Test with settings from agent.yaml and layered defaults."""
     
     def test_timeout_from_config(self, config, sandbox):
         """Test that timeout from config is reasonable."""

@@ -21,7 +21,10 @@ from src.run_agent import run_single_instance
 from src.run_baseline import run_baseline_instance
 
 app = typer.Typer(rich_markup_mode="rich")
-DEFAULT_CONFIG = Path(os.getenv("NOTEBOOK_AGENT_CONFIG_PATH", "./config/default.yaml"))
+# --config points to the run-specific overlay. load_config() merges exactly two layers:
+# defaults from NOTEBOOK_AGENT_DEFAULTS_PATH (or config/defaults.yaml) and this overlay.
+CONFIG_PATH = Path(os.getenv("NOTEBOOK_AGENT_CONFIG_PATH", "./config/agent.yaml"))
+DEFAULTS_PATH = Path(os.getenv("NOTEBOOK_AGENT_DEFAULTS_PATH", "./config/defaults.yaml"))
 
 SingleInstance: TypeAlias = tuple[str, int, Path]
 ProgressAdvanceFn: TypeAlias = Callable[[str], None]
@@ -125,14 +128,14 @@ def get_run_threaded_fn(config: dict, api_keys: list[str], runs_to_execute: list
 # fmt: off
 @app.command()
 def main(
-    config_spec: Path = typer.Option(DEFAULT_CONFIG, "-c", "--config", help="Path to config file"),
+    config_spec: Path = typer.Option(CONFIG_PATH, "-c", "--config", help="Path to run-specific config file"),
     model_name: Optional[str] = typer.Option(None, "-m", "--model", help="Model name to use (defaults to first model in config)"),
     enable_threading: bool = typer.Option(False, "--threads/--no-threads", help="Enable multi-threaded execution"),
     api_keys_file: Optional[Path] = typer.Option(None, "--api-keys", help="Path to file with API keys (one per line, required for threading)"),
 ) -> Any:
 
-    # Load and parse configuration
-    config = load_config(config_spec)
+    # Load and parse layered configuration: defaults layer + run-specific overlay.
+    config = load_config(config_spec, DEFAULTS_PATH)
     
     is_baseline = config.get("misc", {}).get("mode", "agent") == "baseline"
     mode_label = "Baseline" if is_baseline else "Agent"

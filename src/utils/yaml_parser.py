@@ -3,28 +3,54 @@ YAML configuration parser for notebook agent.
 Handles configuration loading, parsing, and CLI overrides.
 """
 import copy
-import yaml
+import os
 from pathlib import Path
 from typing import Any
+
+import yaml
+from dotenv import load_dotenv
 from minisweagent.config import get_config_path
 from src.utils.log import logger
 
 
-def load_config(config_spec: Path) -> dict[str, Any]:
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    """Recursively merge dictionaries where override values win."""
+    merged = copy.deepcopy(base)
+    for key, value in override.items():
+        if (
+            key in merged
+            and isinstance(merged[key], dict)
+            and isinstance(value, dict)
+        ):
+            merged[key] = _deep_merge(merged[key], value)
+        else:
+            merged[key] = copy.deepcopy(value)
+    return merged
+
+
+def load_config(config_spec: Path, defaults_spec: Path) -> dict[str, Any]:
     """
     Load configuration from YAML file.
     
     Args:
         config_spec: Path to config file
+        defaults_spec: Path to defaults file
         
     Returns:
         Parsed configuration dictionary
     """
+    load_dotenv(".env", override=False)
+
     config_path = get_config_path(config_spec)
+    defaults_path = get_config_path(defaults_spec)
     with open(config_path, encoding='utf-8') as f:
-        config = yaml.safe_load(f)
-    logger.debug(f"Configuration loaded from {config_path}: {config}")
-    return config
+        config = yaml.safe_load(f) 
+    with open(defaults_path, encoding='utf-8') as f:
+        defaults = yaml.safe_load(f)
+    merged_config = _deep_merge(defaults or {}, config or {})
+    logger.info(f"Loaded configuration from {config_path} with defaults from {defaults_path}")
+    logger.debug(f"Merged configuration: {merged_config}")
+    return merged_config
 
 
 def load_api_keys(config: dict[str, Any]) -> None:

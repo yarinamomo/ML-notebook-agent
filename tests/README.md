@@ -18,7 +18,7 @@ Tests for individual components with mocked dependencies. These tests are fast a
 - `TestExceptionHandling` - Exception handling and recovery
 
 ### Integration Tests (`test_sandbox_integration.py`)
-Tests for real Docker container and Jupyter kernel interactions. Requires the Docker image specified in `config/default.yaml`.
+Tests for real Docker container and Jupyter kernel interactions. Requires the Docker image specified by `config/agent.yaml` together with layered defaults.
 
 **Test Classes:**
 - `TestSandboxStartup` - Container and kernel initialization
@@ -31,7 +31,7 @@ Tests for real Docker container and Jupyter kernel interactions. Requires the Do
 - `TestOutputFormats` - stdout/stderr capture and multiple outputs
 - `TestComplexScenarios` - NumPy, Pandas, and real-world operations
 - `TestEdgeCases` - Empty code, whitespace, comments, long output
-- `TestDefaultConfig` - Configuration from default.yaml
+- `TestAgentConfig` - Configuration from agent.yaml and layered defaults
 
 ## Installation
 
@@ -100,7 +100,7 @@ Options:
 ## Integration Test Prerequisites
 
 ### Docker Image
-The integration tests require the Docker image specified in `config/default.yaml`:
+The integration tests require the Docker image specified by `config/agent.yaml` together with layered defaults:
 ```yaml
 environment:
   docker_image_name: ml-notebook-agent
@@ -112,7 +112,7 @@ docker build -f Dockerfile -t ml-notebook-agent .
 ```
 
 ### Config File
-Integration tests load configuration from `config/default.yaml`. Key settings:
+Integration tests load configuration from `config/agent.yaml` via layered defaults. Key settings:
 - `docker_image_name` - The Docker image to use
 - `timeout` - Default timeout for executions
 - `docker_start_command` - Jupyter server startup command
