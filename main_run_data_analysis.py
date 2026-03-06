@@ -24,5 +24,24 @@ def main():
                 run_code_visualize.main(target_result_dir)
             edit_cell_analyze.main(target_result_dir)
 
+    # Create tool comparison chart per step across two settings
+    summarize_plots.create_comparison_chart(
+        "results/without_run_code/glm-4.7-355b",
+        "results/agent/glm-4.7-355b",
+        "Tool Count Comparison - Without \"run_code\" Tool vs. Default Agent (glm-4.7-355b)",
+        Path("results/data_analysis/tool_comparison_agents_without_run_code.png"),
+        label1="Agent without \"run_code\" tool",
+        label2="Agent default",
+        mode="diff"
+    )
+    summarize_plots.create_comparison_chart(
+        "results/without_run_code/glm-4.7-355b",
+        "results/agent/glm-4.7-355b",
+        "Tool Count Comparison - Without \"run_code\" Tool vs. Default Agent (glm-4.7-355b)",
+        Path("results/data_analysis/tool_comparison_agents_without_run_code.png"),
+        label1="Agent without \"run_code\" tool",
+        label2="Agent default",
+        mode="full"
+    )
 if __name__ == "__main__":
     main()
