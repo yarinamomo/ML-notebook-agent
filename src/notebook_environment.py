@@ -11,7 +11,8 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from minisweagent.exceptions import Submitted
-from src.utils.nb_types import CellExecutionResult, ErrorOutput, format_for_llm
+from src.utils.nb_types import CellExecutionResult, ErrorOutput
+from src.utils.format_nb_cells import format_exec_result_for_llm, format_cell_source_for_llm, format_initial_notebook
 
 from .benchmark import BenchmarkProblem
 from src.utils.log import logger
@@ -105,11 +106,13 @@ class NotebookEnvironment:
 
             case "get_cells":
                 cells = self.problem.get_cells()
-                return self._wrap_success("\n\n".join(cells))
+                cell_sources = [format_cell_source_for_llm(i, cell) for i, cell in enumerate(cells)]
+                return self._wrap_success("\n\n".join(cell_sources))
 
             case "get_cell":
                 index = int(args["cell_index"])
-                return self._wrap_success(self.problem.get_cell(index))
+                cell_source = format_cell_source_for_llm(index, self.problem.get_cell(index))
+                return self._wrap_success(cell_source)
 
             case "edit_cell":
                 index = int(args["cell_index"])
@@ -128,7 +131,7 @@ class NotebookEnvironment:
                 result = self._wrap_execution_result(last_exec_result)
                 output_parts = []
                 for i, exec_result in enumerate(exec_results):
-                    cell_output = self._format_exec_result(exec_result)
+                    cell_output = format_exec_result_for_llm(exec_result, if_truncate=True)
                     output_parts.append(f"Cell {i}:\n{cell_output}")
 
                 result["output"] = "\n\n".join(output_parts)
@@ -156,6 +159,10 @@ class NotebookEnvironment:
                     "edit_cell, run_cell, run_all, run_code, submit."
                 )
 
+
+    def get_initial_notebook(self) -> str:
+        """Get the original notebook content."""
+        return format_initial_notebook(self.problem.get_initial_notebook())
 
     def get_template_vars(self, **kwargs) -> dict[str, Any]:
         """
@@ -205,7 +212,7 @@ class NotebookEnvironment:
 
     def _wrap_execution_result(self, exec_result: CellExecutionResult | None) -> EnvironmentResult:
         """Wrap a cell execution result into the standard tool output format."""
-        formatted_output = self._format_exec_result(exec_result)
+        formatted_output = format_exec_result_for_llm(exec_result, if_truncate=True)
         error = self._get_execution_error(exec_result)
         if error is not None:
             self.is_submittable = False  # Mark as not submittable if there's an execution error
@@ -224,13 +231,6 @@ class NotebookEnvironment:
             if msg_type == 'error':
                 return cast(ErrorOutput, out)
         return None
-
-    def _format_exec_result(self, exec_result: CellExecutionResult | None) -> str:
-        if exec_result is None:
-            return "(No output)"
-        if isinstance(exec_result, dict) and 'outputs' in exec_result:
-            return format_for_llm(exec_result, if_truncate=True, max_words=500)
-        return str(exec_result)
     
     def close(self):
         """Cleanup the Docker container and resources."""

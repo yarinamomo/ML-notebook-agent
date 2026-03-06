@@ -3,9 +3,11 @@ from pathlib import Path
 import os
 import shutil
 import time
-import src.utils.preprocess_notebook as preprocess_notebook
-import src.utils.nbformat_helper as nbformat_helper
-from src.utils.nb_types import CellExecutionResult
+import copy
+
+from nbformat import NotebookNode
+from src.utils.nbformat_helper import get_cell_source, load_and_parse_notebook, save_cells
+from src.utils.nb_types import CellExecutionResult, NotebookCell
 from src.sandbox import DockerSandbox
 import logging
 
@@ -72,32 +74,33 @@ class BenchmarkProblem:
         # self.sandbox.run("print(\"Hello World\")")
         self.sandbox.run(f"import sys\nsys.modules['__main__'].__file__ = '/app/container/{target_nb_instance}_reproduced.ipynb'")
 
-        self._cells = nbformat_helper.select_code_cells(nbformat_helper.load_notebook(self.problem_file), problem_mode)
+        self._initial_notebook = load_and_parse_notebook(self.problem_file, problem_mode)
+        self._cells: List[NotebookCell] = copy.deepcopy(self._initial_notebook.cells)
         # for cell_info in self._cells:
         #     print(cell_info)
         self._cell_states: dict[int, str] = dict()  # cell_id -> state (edited/unchanged)
         self._exec_states: dict[int, CellExecutionResult] = dict()  # cell_id -> execution result
         # Store original cell contents for tracking true original state
-        self._original_cells: dict[int, str] = {i: self._get_cell_source(i) for i in range(len(self._cells))}
         self.timeout = timeout # TODO Move into sandbox settings.
 
-    def get_cells(self):
-        return [self.get_cell(i) for i in range(len(self._cells))]
+    def get_initial_notebook(self) -> NotebookNode:
+        return self._initial_notebook
 
-    def get_cell_count(self):
+    def get_cells(self) -> List[NotebookCell]:
+        return self._cells
+
+    def get_cell_count(self) -> int:
         return len(self._cells)
 
-    def get_cell(self, index: int):
-        return f"# --- [CELL {index}]: ---\n{self._get_cleaned_cell_source(index)}"
-
+    def get_cell(self, index: int) -> NotebookCell:
+        return self._safe_get_cell(index)
+    
     def edit_cell(self, index: int, new_content: str):
-        cell = self._safe_get_cell(index)
-        original_content = self._original_cells.get(index, "")
-        
+        cell = self._safe_get_cell(index)        
         cell["source"] = new_content
         self._cell_states[index] = "edited"
         self._exec_states.pop(index, None) # reset execution state since content changed
-        nbformat_helper.save_cells(self._cells, self._original_cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
+        save_cells(self._cells, self._initial_notebook, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
 
     def run_cell(self, index: int) -> CellExecutionResult:
         code = self._get_cell_source(index)
@@ -105,7 +108,7 @@ class BenchmarkProblem:
         code = f"import os\nos.chdir('/app/container')\n{code}" # TODO this should be moved into sandbox.
         result = self.sandbox.run(code, timeout=self.timeout)
         self._exec_states[index] = result
-        nbformat_helper.save_cells(self._cells, self._original_cells, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
+        save_cells(self._cells, self._initial_notebook, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
         return result
 
     def run_all(self) -> List[CellExecutionResult]:
@@ -146,17 +149,10 @@ class BenchmarkProblem:
             except Exception as e:
                 logging.warning(f"⚠️ Warning: Could not clean up mount path {self.docker_source_path}: {e}")
 
-    def _safe_get_cell(self, index: int):
+    def _safe_get_cell(self, index: int) -> NotebookCell:
         if 0 <= index < len(self._cells):
             return self._cells[index]
         raise IndexError("Cell index out of range")
 
     def _get_cell_source(self, index: int) -> str:
-        cell = self._safe_get_cell(index)
-        source = cell.get("source", "")
-        if isinstance(source, list):
-            source = "".join(source)
-        return source
-    
-    def _get_cleaned_cell_source(self, index: int) -> str:
-        return preprocess_notebook.remove_comments(self._get_cell_source(index))
+        return get_cell_source(self._safe_get_cell(index))

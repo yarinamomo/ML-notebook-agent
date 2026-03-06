@@ -19,10 +19,11 @@ class EnvironmentUnavailable(InterruptAgentFlow):
 class UiAgent(DefaultAgent):
     env: "NotebookEnvironment"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, initial_notebook: str = "", **kwargs):
         self.total_timeout: int = kwargs.pop("total_timeout", 0)
         super().__init__(*args, **kwargs)
         self._start_time: float | None = None
+        self.extra_template_vars["initial_notebook"] = initial_notebook
 
     @override
     def run(self, task: str = "", **kwargs) -> dict:

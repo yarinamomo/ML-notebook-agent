@@ -14,14 +14,12 @@ from pathlib import Path
 from typing import Optional, cast
 
 import litellm
+from jinja2 import StrictUndefined, Template
 
 from src.notebook_environment import NotebookEnvironment
 from src.CustomToolLitellmModel import CustomToolLitellmModel
-from src.notebook_tools import (
-    EDIT_CELL_TOOL,
-    parse_notebook_tool_actions,
-    parse_tool_calls_from_content,
-)
+from src.notebook_tools import EDIT_CELL_TOOL
+from src.utils.format_nb_cells import format_cell_source_for_llm
 from src.utils.log import logger
 from src.utils.summary_util import build_summary
 from src.run_agent import get_instance_summary_path, get_instance_trajectory_path
@@ -67,7 +65,9 @@ def run_baseline_instance(
     start_time = time.monotonic()
 
     model = BaselineLitellmModel(**config.get("model", {}))
-    system_template = config.get("agent", {}).get("system_template", "")
+    agent_config = config.get("agent", {})
+    system_template = agent_config.get("system_template", "")
+    instance_template = agent_config.get("instance_template", "")
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -88,82 +88,49 @@ def run_baseline_instance(
     response_cost = None
     try:
         # 1) Read all cells
-        initial_cells = env.problem.get_cells()
-        cells_text = [env.problem.get_cell(i) for i in range(env.problem.get_cell_count())]
-
+        initial_notebook = env.get_initial_notebook()
+        initial_cells =[format_cell_source_for_llm(i, cell) for i, cell in enumerate(env.problem.get_cells())]
         # Add system and user messages
         messages.append(model.format_message(role="system", content=system_template))
 
-        user_prompt = (
-            "Here is the full notebook:\n\n"
-            f"{chr(10).join(cells_text)}\n\n"
-            "---\n\n"
-        )
+        
+        user_prompt = Template(instance_template, undefined=StrictUndefined).render(initial_notebook=initial_notebook)
+        messages.append(model.format_message(role="user", content=user_prompt))
 
-        # 2) Run all to get error output
-        run_all_result = env.execute({
-            "tool_name": "run_all",
-            "arguments": {},
-            "tool_call_id": "baseline_run_all_0",
-            "command": "run_all()",
-        })
-        initial_run_output = run_all_result["output"]
-        initial_returncode = run_all_result["returncode"]
+        # 3) Query the model once
+        response = model.query(messages)
+        actions = response.get("extra", {}).get("actions", [])
+        # Add assistant message
+        messages.append(response)
+
+        # Extract cost from response
+        response_cost = response.get("extra", {}).get("cost")
 
         logger.info(
-            f"[{instance_name}] Initial run_all returncode={initial_returncode}, "
-            f"output length={len(initial_run_output)}"
+            f"[{instance_name}] Model returned {len(actions)} edit_cell action(s), cost: {response_cost}"
         )
 
-        # If no errors at all, nothing to fix
-        if initial_returncode == 0:
-            exit_status = "Submitted"
-            summary_text = "No errors found in initial run — nothing to fix."
-        else:
-            # Complete the user message with error output
-            user_prompt += (
-                "Here is the output from running all cells:\n\n"
-                f"{initial_run_output}\n\n"
-                "---\n\n"
-                "Analyze the errors above and fix ALL crashed cells using the edit_cell tool. "
-                "You may call edit_cell multiple times (once per cell). "
-                "Do NOT comment out code to avoid errors — keep the original intent."
-            )
-            messages.append(model.format_message(role="user", content=user_prompt))
+        # 4) Apply edits
 
-            # 3) Query the model once
-            response = model.query(messages)
-            actions = response.get("extra", {}).get("actions", [])
-            # Add assistant message
-            messages.append(response)
+        outputs = [cast(dict, env.execute(action)) for action in response.get("extra", {}).get("actions", [])]
+        messages.extend(model.format_observation_messages(response, outputs))
 
-            # Extract cost from response
-            response_cost = response.get("extra", {}).get("cost")
-
-            logger.info(
-                f"[{instance_name}] Model returned {len(actions)} edit_cell action(s), cost: {response_cost}"
-            )
-
-            # 4) Apply edits
-
-            outputs = [cast(dict, env.execute(action)) for action in response.get("extra", {}).get("actions", [])]
-            messages.extend(model.format_observation_messages(response, outputs))
-
-            # 5) Run all again to verify
-            verify_result = env.execute({
-                "tool_name": "run_all",
-                "arguments": {},
-                "tool_call_id": "baseline_run_all_verify",
-                "command": "run_all()",
-            })
-            exit_status = "Success" if verify_result["returncode"] == 0 else "Failure"
-            submission = verify_result.get("output")
-            summary_text = f"Applied {len(actions)} edit(s)"
+        # 5) Run all again to verify
+        verify_result = env.execute({
+            "tool_name": "run_all",
+            "arguments": {},
+            "tool_call_id": "baseline_run_all_verify",
+            "command": "run_all()",
+        })
+        exit_status = "Success" if verify_result["returncode"] == 0 else "Failure"
+        submission = verify_result.get("output")
+        summary_text = f"Applied {len(actions)} edit(s)"
 
     except Exception as e:
         exit_status = "INCOMPLETE"
         summary_text = str(e)
         logger.error(f"Error in baseline run: {e}", exc_info=True)
+        raise e
     finally:
         elapsed = time.monotonic() - start_time
 
