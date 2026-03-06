@@ -8,9 +8,26 @@ warnings.filterwarnings('ignore')
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-import logging  # 日志相关的包
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# import logging  # 日志相关的包
+# import random
+# 
+# import torch
+# 
+# logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(levelname)s: %(message)s')
+# 
+# seed = 2023
+# random.seed(seed)
+# np.random.seed(seed)
+# torch.cuda.manual_seed(seed)
+# torch.manual_seed(seed)
+# 
+# device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+# === AFTER (edited) ===
+import logging
 import random
 
 import torch
@@ -20,37 +37,23 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(levelname)s: %(
 seed = 2023
 random.seed(seed)
 np.random.seed(seed)
-torch.cuda.manual_seed(seed)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(seed)
 torch.manual_seed(seed)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# from gensim.models.word2vec import Word2Vec
-# 
-# num_features = 10 #100  # 词向量维度
-# num_workers = 8
-# 
-# # train_df = pd.read_csv('data/train_set.csv.zip', sep='\t')
-# train_df = pd.read_csv('data/train_set.csv.zip', sep='\t', nrows=5000)
-# train_text = list(map(lambda x:list(x.split()), train_df.iloc[:, 1]))
-# model = Word2Vec(train_text, workers=num_workers, vector_size=num_features)
-# model.init_sims(replace=True)
-# 
-# model.wv.save_word2vec_format('data/word2vec.txt', binary=False)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
 from gensim.models.word2vec import Word2Vec
 
-num_features = 10
+num_features = 10 #100  # 词向量维度
 num_workers = 8
 
-
-train_df = pd.read_csv('data/train_set.csv', sep='\t', nrows=5000)
+# train_df = pd.read_csv('data/train_set.csv.zip', sep='\t')
+train_df = pd.read_csv('data/train_set.csv.zip', sep='\t', nrows=5000)
 train_text = list(map(lambda x:list(x.split()), train_df.iloc[:, 1]))
 model = Word2Vec(train_text, workers=num_workers, vector_size=num_features)
 model.init_sims(replace=True)

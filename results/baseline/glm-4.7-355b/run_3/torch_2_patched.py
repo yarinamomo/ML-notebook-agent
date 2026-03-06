@@ -13,7 +13,7 @@ from torchvision.transforms import transforms
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # img = read_image("data_small/10/ILSVRC2012_val_00037698.jpeg")
 # print(img.shape[0])
@@ -41,53 +41,65 @@ from torchvision.transforms import transforms
 # print(f"{category_name}: {100 * score:.1f}%")
 
 # === AFTER (edited) ===
-from torchvision.io import read_image
-from torchvision.models import vit_b_16, ViT_B_16_Weights, list_models
-from torchvision.datasets import ImageNet, ImageFolder
-from torch.utils.data import DataLoader
-from torchmetrics.classification import MulticlassAccuracy
-import torch
-import time
-from torchvision.transforms import transforms
-from torchvision.io import ImageReadMode, read_image
+# Find a valid image file from the dataset
+import os
+from pathlib import Path
 
-img_path = "data_small/10/ILSVRC2012_val_00037698.jpeg"
-try:
-    img = read_image(img_path, mode=ImageReadMode.RGB)
-except RuntimeError as e:
-    print(f"Error reading image: {e}")
-    print("Skipping to next steps...")
-    img = None
+# Look in the data_small directory for a valid image
+data_root = Path('data_small')
+img_path = None
 
-if img is not None:
-    print(img.shape[0])
-    if img.shape[0] == 1:
-        img = img.expand(3, -1, -1)
-    print(img.size())
+# Try to find any image file
+for ext in ['.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG']:
+    potential_path = data_root / '10' / f'ILSVRC2012_val_00037698{ext}'
+    if potential_path.exists():
+        img_path = str(potential_path)
+        break
+
+# If specific file not found, find any valid image in the dataset
+if img_path is None:
+    for class_dir in data_root.iterdir():
+        if class_dir.is_dir():
+            for file in class_dir.iterdir():
+                if file.suffix.lower() in ['.jpg', '.jpeg', '.png', '.gif']:
+                    img_path = str(file)
+                    break
+        if img_path:
+            break
+
+if img_path is None:
+    raise FileNotFoundError("No valid image files found in data_small directory")
+
+print(f"Reading image from: {img_path}")
+img = read_image(img_path)
+print(img.shape[0])
+if img.shape[0] == 1:
+     img = img.expand(3, -1, -1)
+print(img.size())
 
 
-    weights =ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
-    model = vit_b_16(weights=weights)
-    model.eval()
+weights = ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
+model = vit_b_16(weights=weights)
+model.eval()
 
 
-    preprocess = weights.transforms()
+preprocess = weights.transforms()
 
 
-    batch = preprocess(img).unsqueeze(0)
+batch = preprocess(img).unsqueeze(0)
 
 
-    prediction = model(batch).squeeze(0).softmax(0)
-    class_id = prediction.argmax().item()
-    print(class_id)
-    score = prediction[class_id].item()
-    category_name = weights.meta["categories"][class_id]
-    print(f"{category_name}: {100 * score:.1f}%")
+prediction = model(batch).squeeze(0).softmax(0)
+class_id = prediction.argmax().item()
+print(class_id)
+score = prediction[class_id].item()
+category_name = weights.meta["categories"][class_id]
+print(f"{category_name}: {100 * score:.1f}%")
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # Move model and data to GPU if available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device used is: " + str(device))

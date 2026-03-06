@@ -75,8 +75,15 @@ model = LinearRegression()
 # 'Beaux Arts Village' :     43},inplace=True)
 
 # === AFTER (edited) ===
-if 'city' in df.columns:
-    df['city'].replace({
+# Find the city column (handle case-insensitive match)
+city_col = None
+for col in df.columns:
+    if col.lower() == 'city':
+        city_col = col
+        break
+
+if city_col:
+    df[city_col].replace({
     'Seattle'            :      0,
     'Renton'             :      1,
     'Bellevue'           :      2,
@@ -122,7 +129,7 @@ if 'city' in df.columns:
     'Snoqualmie Pass'    :     42,
     'Beaux Arts Village' :     43},inplace=True)
 else:
-    df['city'] = 0
+    print(f"City column not found. Available columns: {df.columns.tolist()}")
 
 #%%
 # --- [CELL 4]: ---

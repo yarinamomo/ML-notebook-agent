@@ -69,7 +69,7 @@ ES_PATIENCE = 5
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # model_path = f'model_{HEIGHT}x{WIDTH}.h5'
 # 
@@ -109,45 +109,11 @@ ES_PATIENCE = 5
 model_path = f'model_{HEIGHT}x{WIDTH}.h5'
 
 
-# Try to find TFRecord files in multiple potential locations
-def get_tfrecord_files(resolution):
-    """Find TFRecord files in various potential locations"""
-    candidates = []
-    
-    # Try standard GCS path pattern
-    gcs_path = f"tfrecords-jpeg-{resolution}"
-    candidates.append(f"gs://kds-{gcs_path}")
-    
-    # Try local directories
-    candidates.append("data")
-    candidates.append("/kaggle/input/tpu-getting-started")
-    candidates.append("/kaggle/input")
-    
-    for base_path in candidates:
-        path = f"{base_path}/tfrecords-jpeg-{resolution}"
-        try:
-            files = tf.io.gfile.glob(f"{path}/train/*.tfrec")
-            if files:
-                return path
-        except:
-            try:
-                # Try as local path with os
-                import os
-                if os.path.exists(path):
-                    files = [os.path.join(path, f) for f in os.listdir(f"{path}/train") if f.endswith('.tfrec')]
-                    if files:
-                        return path
-            except:
-                continue
-    
-    # Fallback to original format
-    return f"data/tfrecords-jpeg-{resolution}"
+GCS_PATH = KaggleDatasets().get_gcs_path()
 
-GCS_PATH = get_tfrecord_files(f"{HEIGHT}x{WIDTH}")
-
-TRAINING_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/train/*.tfrec')
-VALIDATION_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/val/*.tfrec')
-TEST_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/test/*.tfrec')
+TRAINING_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/tfrecords-jpeg-{}x{}/train/*.tfrec'.format(HEIGHT, WIDTH))
+VALIDATION_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/tfrecords-jpeg-{}x{}/val/*.tfrec'.format(HEIGHT, WIDTH))
+TEST_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/tfrecords-jpeg-{}x{}/test/*.tfrec'.format(HEIGHT, WIDTH))
 
 CLASSES = [
     'pink primrose', 'hard-leaved pocket orchid', 'canterbury bells', 'sweet pea',

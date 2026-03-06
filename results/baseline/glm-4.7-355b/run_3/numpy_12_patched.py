@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 # === BEFORE (original) ===
 # import pandas
 # import matplotlib.pyplot as plt
@@ -11,15 +11,14 @@
 # === AFTER (edited) ===
 import pandas
 import matplotlib.pyplot as plt
-dataset = pandas.read_csv('data/international-airline-passengers.csv', engine='python')
-dataset = dataset.iloc[:, 1:2]
+dataset = pandas.read_csv('data/international-airline-passengers.csv', usecols=[0], engine='python')
 plt.plot(dataset)
 plt.show()
 
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -33,7 +32,7 @@ from sklearn.metrics import mean_squared_error
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # normalize the dataset
 scaler = MinMaxScaler(feature_range=(0, 1))
 dataset = scaler.fit_transform(dataset)

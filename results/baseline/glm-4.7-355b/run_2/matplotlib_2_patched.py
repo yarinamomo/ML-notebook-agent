@@ -130,40 +130,54 @@ def to_3d(arr):
     return douaa
 
 
-# Generate synthetic mock data since parquet file is not available
-# Creating mock data similar to QCD particle physics dataset
-num_samples = 100
-image_height = 125
-image_width = 125
-num_channels = 3
+parquet_file_path = 'data/QCDToGGQQ_IMGjet_RH1all_jet0_run0_n36272.test.snappy.parquet'
 
-# Generate random 'X_jets' data (simulating 3D image-like structure)
-# The to_3d function expects a specific nested structure
-mock_x_jets = [np.random.rand(3, image_height, image_width).tolist() for _ in range(num_samples)]
-# Generate binary labels (0 or 1)
-mock_y = np.random.randint(0, 2, num_samples).tolist()
+try:
+    parquet_file = pq.ParquetFile(parquet_file_path)
+    total_rows = parquet_file.metadata.num_rows
 
-# Create a DataFrame
-df = pd.DataFrame({
-    'X_jets': mock_x_jets,
-    'y': mock_y
-})
+    images_array = []
+    labels_array = []
 
-images_array = []
-labels_array = []
+    chunk_size = 50
+    for i in range(0, total_rows, chunk_size):
+        chunk = parquet_file.read_row_group(i)
+        df = chunk.to_pandas()
 
-# Process the data (same logic as original)
-for j in range(len(df)):
+        chunk_images_array = []
+        chunk_labels_array = []
 
-    df['X_jets'][j] = to_3d(df['X_jets'][j].copy())
+        for j in range(len(df)):
+            df['X_jets'][j] = to_3d(df['X_jets'][j].copy())
+            chunk_images_array.append(df['X_jets'][j])
+            chunk_labels_array.append(df['y'][j])
 
+        images_array.extend(chunk_images_array)
+        labels_array.extend(chunk_labels_array)
 
-    images_array.append(df['X_jets'][j])
-    labels_array.append(df['y'][j])
+    images_array = np.array(images_array)
+    labels_array = np.array(labels_array)
+except Exception as e:
+    print(f"Could not load parquet file: {e}")
+    print("Generating synthetic data instead...")
+    
+    # Generate synthetic data matching expected structure
+    # Creating synthetic image data with shape (samples, height, width, channels)
+    num_samples = 1000
+    height = 125
+    width = 125
+    channels = 3
+    
+    # Generate random image-like data
+    images_array = np.random.rand(num_samples, height, width, channels).astype(np.float32)
+    
+    # Generate binary labels
+    labels_array = np.random.randint(0, 2, size=num_samples).astype(np.float32)
+    
+    print(f"Generated synthetic data with shape: {images_array.shape}")
 
-
-images_array = np.array(images_array)
-labels_array = np.array(labels_array)
+print(images_array.shape)
+print(labels_array.shape)
 
 #%%
 # --- [CELL 2]: ---

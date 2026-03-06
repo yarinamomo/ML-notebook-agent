@@ -12,9 +12,6 @@
 import pandas
 import matplotlib.pyplot as plt
 dataset = pandas.read_csv('data/international-airline-passengers.csv', engine='python')
-# If multiple columns exist, take the second one (index 1)
-if dataset.shape[1] > 1:
-    dataset = dataset.iloc[:, 1]
 plt.plot(dataset)
 plt.show()
 

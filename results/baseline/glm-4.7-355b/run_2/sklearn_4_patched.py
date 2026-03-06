@@ -224,7 +224,22 @@ class DataframeFunctionTransformer():
 # === AFTER (edited) ===
 class ml_support():
     def __init__(self):
-        self.df = pd.read_csv("/kaggle/input/credit-risk-dataset/credit_risk_dataset.csv", encoding='latin')
+        # Find the CSV file in /kaggle/input directory
+        csv_path = None
+        for dirname, _, filenames in os.walk('/kaggle/input'):
+            for filename in filenames:
+                if filename.endswith('.csv'):
+                    csv_path = os.path.join(dirname, filename)
+                    break
+            if csv_path:
+                break
+        
+        # Use the found path or fall back to the default
+        if csv_path:
+            self.df = pd.read_csv(csv_path, encoding='latin')
+        else:
+            self.df = pd.read_csv("data/credit_risk_dataset.csv", encoding='latin')
+        
         self.output_var = 'loan_status'
         self.num_cols = ['person_age','person_income','loan_amnt','loan_percent_income','cb_person_cred_hist_length']
         self.cat_cols = ['person_home_ownership','loan_intent','loan_grade','cb_person_default_on_file','higher_salary','home_owner','long_working','lower_loan_requirement','higher_loan_requirement']

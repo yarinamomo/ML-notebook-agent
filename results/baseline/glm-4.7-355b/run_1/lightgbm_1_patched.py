@@ -63,7 +63,7 @@ if conf.load_original:
     if conf.only_positive:
         train = pd.concat([original[original[conf.target] == 1], train_full], ignore_index=True)
     else:
-        train = pd.concat([original, train_full])
+        train = pd.concat([original, train_full], ignore_index=True)
 
 train.info()
 

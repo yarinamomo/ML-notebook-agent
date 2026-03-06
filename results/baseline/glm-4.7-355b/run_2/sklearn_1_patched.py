@@ -271,7 +271,7 @@ METRICS=[
 #%%
 # --- [CELL 9]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 # === BEFORE (original) ===
 # from sklearn.utils.class_weight import compute_class_weight
 # class_weights = compute_class_weight('balanced', np.unique(train_dataset.labels), train_dataset.labels)
@@ -286,4 +286,4 @@ class_weights = compute_class_weight(class_weight='balanced', classes=np.unique(
 class_weight_dict = {i: class_weights[i] for i in range(len(class_weights))}
 
 
-model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=METRICS, class_weight=class_weight_dict)
+model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=METRICS)

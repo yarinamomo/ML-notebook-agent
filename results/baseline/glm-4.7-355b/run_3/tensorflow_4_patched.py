@@ -150,6 +150,8 @@ SIZE = 224
 # print("number of forged_images",len(forged_images))
 
 # === AFTER (edited) ===
+SIZE = 224
+
 def find_files_in_folder(path, folder_name):
     folder_path = None
     for root, dirs, files in os.walk(path):

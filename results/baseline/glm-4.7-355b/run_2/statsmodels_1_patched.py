@@ -34,7 +34,8 @@ test  = pd.read_csv('data/test.csv')
 # train=train.drop(columns=['id'])
 
 # === AFTER (edited) ===
-train=train.drop(columns=['id'], errors='ignore')
+if 'id' in train.columns:
+    train = train.drop(columns=['id'])
 
 #%%
 # --- [CELL 4]: ---

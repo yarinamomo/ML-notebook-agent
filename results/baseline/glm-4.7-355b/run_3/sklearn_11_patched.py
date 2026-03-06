@@ -21,7 +21,7 @@ df = pd.read_csv("data/data.csv")
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # 
 # abnormaldata1 = df[df['month'] =='8']
@@ -29,8 +29,9 @@ df = pd.read_csv("data/data.csv")
 # y = np.array(abnormaldata1.loc[:,"temperature"]).reshape(-1,1)
 
 # === AFTER (edited) ===
-x = np.array(df.loc[:,"number_people"]).reshape(-1,1)
-y = np.array(df.loc[:,"temperature"]).reshape(-1,1)
+abnormaldata1 = df.copy()
+x = np.array(abnormaldata1.loc[:,"number_people"]).reshape(-1,1)
+y = np.array(abnormaldata1.loc[:,"temperature"]).reshape(-1,1)
 
 #%%
 # --- [CELL 3]: ---

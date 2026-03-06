@@ -35,62 +35,26 @@ centerinfo = pd.read_csv('data/fulfilment_center_info.csv')
 # df.head()
 
 # === AFTER (edited) ===
-# Check column names to identify the correct merge key
+# Check column names to ensure correct merge
 print("train_raw columns:", train_raw.columns.tolist())
 print("meal columns:", meal.columns.tolist())
+print("centerinfo columns:", centerinfo.columns.tolist())
 
-# Find the matching column (case-insensitive)
-train_cols_lower = [c.lower() for c in train_raw.columns]
-meal_cols_lower = [c.lower() for c in meal.columns]
-
-# Try to find meal_id (case-insensitive)
-meal_col_in_train = None
-meal_col_in_meal = None
-
-for i, col in enumerate(train_raw.columns):
-    if col.lower() == 'meal_id':
-        meal_col_in_train = col
-        break
-
-for i, col in enumerate(meal.columns):
-    if col.lower() == 'meal_id':
-        meal_col_in_meal = col
-        break
-
-print(f"Found 'meal_id' in train_raw as: {meal_col_in_train}")
-print(f"Found 'meal_id' in meal as: {meal_col_in_meal}")
-
-if meal_col_in_train and meal_col_in_meal:
-    train = pd.merge(train_raw, meal, left_on=meal_col_in_train, right_on=meal_col_in_meal, how='left')
+# Merge on the correct column names
+# The column might have a different name or case
+if 'meal_id' in train_raw.columns and 'meal_id' in meal.columns:
+    train = pd.merge(train_raw, meal, on="meal_id", how="left")
 else:
-    # Fallback to original if found
-    if 'meal_id' in train_raw.columns and 'meal_id' in meal.columns:
-        train = pd.merge(train_raw, meal, on="meal_id", how="left")
+    # Try alternative column names or find the common column
+    train_cols = set(train_raw.columns)
+    meal_cols = set(meal.columns)
+    common_cols = train_cols.intersection(meal_cols)
+    print(f"Common columns: {common_cols}")
+    if common_cols:
+        merge_col = list(common_cols)[0]
+        train = pd.merge(train_raw, meal, on=merge_col, how="left")
 
-# Check center_id column names
-center_col_in_train = None
-center_col_in_center = None
-
-for i, col in enumerate(train.columns):
-    if col.lower() == 'center_id':
-        center_col_in_train = col
-        break
-
-for i, col in enumerate(centerinfo.columns):
-    if col.lower() == 'center_id':
-        center_col_in_center = col
-        break
-
-print(f"Found 'center_id' in train as: {center_col_in_train}")
-print(f"Found 'center_id' in centerinfo as: {center_col_in_center}")
-
-if center_col_in_train and center_col_in_center:
-    df = pd.merge(train, centerinfo, left_on=center_col_in_train, right_on=center_col_in_center, how='left')
-else:
-    # Fallback to original if found
-    if 'center_id' in train.columns and 'center_id' in centerinfo.columns:
-        df = pd.merge(train, centerinfo, on="center_id", how="left")
-
+df = pd.merge(train, centerinfo, on="center_id", how="left")
 print("Shape of train data : ", df.shape)
 df.head()
 

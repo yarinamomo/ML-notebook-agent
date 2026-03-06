@@ -21,19 +21,19 @@ import time
 import pickle
 
 dataset = load_dataset("sst", "default", trust_remote_code=True)
-dataset2 = load_dataset("multi_nli")
+dataset2 = load_dataset("multi_nli", trust_remote_code=True)
 
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 torch.manual_seed = 555
 # torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # !wget http://nlp.stanford.edu/data/glove.6B.zip
 # !unzip glove*.zip
 

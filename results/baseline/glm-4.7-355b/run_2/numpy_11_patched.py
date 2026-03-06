@@ -103,7 +103,7 @@ if not os.path.isfile(training_binary_path):
           print(f"Skipping {filename}: {e}")
           continue
   training_data = np.reshape(training_data,(-1,GENERATE_SQUARE,
-            GENERATE_SQUARE,3))
+        GENERATE_SQUARE,3))
   training_data = training_data.astype(np.float32)
   training_data = training_data / 127.5 - 1.
 

@@ -10,14 +10,14 @@ from scipy.stats import chi2_contingency
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # app_train = pd.read_csv('data/application_train.csv.zip')
 # app_test=pd.read_csv('data/application_test.csv.zip')
 
 # === AFTER (edited) ===
 app_train = pd.read_csv('data/application_train.csv')
-app_test=pd.read_csv('data/application_test.csv')
+app_test = pd.read_csv('data/application_test.csv')
 
 #%%
 # --- [CELL 2]: ---

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 from torchvision.io import read_image
 from torchvision.models import vit_b_16, ViT_B_16_Weights, list_models
 from torchvision.datasets import ImageNet, ImageFolder
@@ -12,71 +12,26 @@ from torchvision.transforms import transforms
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# img = read_image("data_small/10/ILSVRC2012_val_00037698.jpeg")
-# print(img.shape[0])
-# if img.shape[0] == 1:
-#      img = img.expand(3, -1, -1)
-# print(img.size())
-# 
-# # Step 1: Initialize model with the best available weights
-# weights =ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
-# model = vit_b_16(weights=weights)
-# model.eval()
-# 
-# # Step 2: Initialize the inference transforms
-# preprocess = weights.transforms()
-# 
-# # Step 3: Apply inference preprocessing transforms
-# batch = preprocess(img).unsqueeze(0)
-# 
-# # Step 4: Use the model and print the predicted category
-# prediction = model(batch).squeeze(0).softmax(0)
-# class_id = prediction.argmax().item()
-# print(class_id)
-# score = prediction[class_id].item()
-# category_name = weights.meta["categories"][class_id]
-# print(f"{category_name}: {100 * score:.1f}%")
-
-# === AFTER (edited) ===
-from torchvision.io import read_image
-from torchvision.models import vit_b_16, ViT_B_16_Weights, list_models
-from torchvision.datasets import ImageNet, ImageFolder
-from torch.utils.data import DataLoader
-from torchmetrics.classification import MulticlassAccuracy
-import torch
-import time
-from torchvision.transforms import transforms
-
-# Try to load the image, handle potential path issues
-image_path = "data_small/10/ILSVRC2012_val_00037698.jpeg"
-try:
-    img = read_image(image_path)
-except RuntimeError as e:
-    print(f"Error loading image from {image_path}: {e}")
-    # Create a dummy tensor for demonstration purposes
-    img = torch.randn(3, 224, 224)
-    print("Using a dummy tensor instead for demonstration")
-
+img = read_image("data_small/10/ILSVRC2012_val_00037698.jpeg")
 print(img.shape[0])
 if img.shape[0] == 1:
      img = img.expand(3, -1, -1)
 print(img.size())
 
-
-weights = ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
+# Step 1: Initialize model with the best available weights
+weights =ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
 model = vit_b_16(weights=weights)
 model.eval()
 
-
+# Step 2: Initialize the inference transforms
 preprocess = weights.transforms()
 
-
+# Step 3: Apply inference preprocessing transforms
 batch = preprocess(img).unsqueeze(0)
 
-
+# Step 4: Use the model and print the predicted category
 prediction = model(batch).squeeze(0).softmax(0)
 class_id = prediction.argmax().item()
 print(class_id)
@@ -192,7 +147,6 @@ def check_label_name(predictions, weights):
 
 
 def model_quantization(model, backend='x86', save=False):
-
     model.qconfig = torch.quantization.get_default_qconfig(backend)
     torch.backends.quantized.engine = backend
 
@@ -200,7 +154,7 @@ def model_quantization(model, backend='x86', save=False):
     scripted_quantized_model = torch.jit.script(quantized_model)
     if save:
         scripted_quantized_model.save("vit_scripted_quantized.pt")
-    return scripted_quantized_model
+    return quantized_model
 
 
 def labels_process(labels, class_dict):

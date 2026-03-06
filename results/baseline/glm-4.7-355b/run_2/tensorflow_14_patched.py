@@ -14,7 +14,7 @@ import tensorflow.keras.backend as K
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # # Define VGG_FACE_MODEL architecture
 # model = Sequential()
@@ -102,13 +102,16 @@ model.add(Flatten())
 model.add(Activation('softmax'))
 
 
-# Note: VGG-Face weights file not found. Model initialized with random weights.
-# model.load_weights('data/vgg_face_weights.h5')
+import os
+if os.path.exists('data/vgg_face_weights.h5'):
+    model.load_weights('data/vgg_face_weights.h5')
+else:
+    print('Warning: vgg_face_weights.h5 not found. Using randomly initialized weights.')
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.applications import VGG16
@@ -117,7 +120,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 # Set the main data directory where subdirectories represent classes/labels
 main_data_directory = 'data/train-data-imgs'
 

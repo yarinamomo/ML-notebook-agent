@@ -25,12 +25,11 @@ df= pd.read_csv("data/iris.csv")
 # x_train, x_test , y_train, y_test=train_test_split (X ,Y , test_size=0.25, random_state=42)
 
 # === AFTER (edited) ===
-# Check what columns exist in the dataframe
-print("Columns in dataframe:", df.columns.tolist())
+# Select all columns except the last one as features (X)
+# Select the last column as the target variable (y)
+X = df.iloc[:, :-1]
+Y = df.iloc[:, -1]
 
-# Use the last column as the target (species)
-X = df.iloc[:, :-1]  # All columns except the last one
-Y = df.iloc[:, -1]   # Last column as target
 x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.25, random_state=42)
 
 #%%

@@ -32,7 +32,7 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # #By Ranamalla Nithin Reddy https://www.kaggle.com/code/nithinreddy90/chatpgpt-prompts
 # 
@@ -60,37 +60,51 @@ df = pd.read_csv('data/train.csv')
 
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
-print("Columns in DataFrame:", df.columns.tolist())
 
 df.drop_duplicates(inplace=True)
 
-# Check if required columns exist, otherwise handle gracefully
-required_columns = ['output', 'instruction']
-existing_columns = [col for col in required_columns if col in df.columns]
-if existing_columns == required_columns:
-    df.dropna(subset=['output', 'instruction'], inplace=True)
-    df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(x)))
-    df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(x)))
+# Check what columns are available
+print("Available columns:", df.columns.tolist())
+
+# Try to find the instruction and output columns
+# Common column names in instruction datasets
+instruction_candidates = ['instruction', 'input', 'prompt', 'question']
+output_candidates = ['output', 'response', 'answer', 'completion']
+
+# Find matching columns
+instruction_col = None
+output_col = None
+
+for col in df.columns:
+    if col.lower() in [c.lower() for c in instruction_candidates]:
+        instruction_col = col
+    if col.lower() in [c.lower() for c in output_candidates]:
+        output_col = col
+
+if instruction_col and output_col:
+    print(f"Using columns: instruction='{instruction_col}', output='{output_col}'")
+    df.dropna(subset=[output_col, instruction_col], inplace=True)
+
+    df['instruction_tokens'] = df[instruction_col].apply(lambda x: len(tokenizer.tokenize(x)))
+    df['output_tokens'] = df[output_col].apply(lambda x: len(tokenizer.tokenize(x)))
+
+    print(df.head())
 else:
-    print(f"Warning: Required columns not found. Missing: {set(required_columns) - set(existing_columns)}")
-    # If columns don't exist, create empty DataFrame with expected structure
-    # to allow the rest of the code to run
-    if df.empty:
-        df = pd.DataFrame(columns=['output', 'instruction', 'instruction_tokens', 'output_tokens'])
-    else:
-        # Map existing columns if they have different names
-        if len(df.columns) >= 2:
-            df.columns = ['output', 'instruction'] + list(df.columns[2:])
-            df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(str(x))))
-            df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(str(x))))
-
-
-print(df.head())
+    print(f"Could not find instruction/output columns. Available columns: {df.columns.tolist()}")
+    print("Available columns:", df.columns.tolist())
+    if len(df.columns) >= 2:
+        print("Using first two columns as instruction and output")
+        instruction_col = df.columns[0]
+        output_col = df.columns[1]
+        df.dropna(subset=[output_col, instruction_col], inplace=True)
+        df['instruction_tokens'] = df[instruction_col].apply(lambda x: len(tokenizer.tokenize(str(x))))
+        df['output_tokens'] = df[output_col].apply(lambda x: len(tokenizer.tokenize(str(x))))
+        print(df.head())
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import pandas as pd
 import torch
 from transformers import GPT2LMHeadModel, GPT2Tokenizer

@@ -64,7 +64,7 @@ import tensorflow.keras.backend as K
 from tensorflow.keras.layers import Input
 
 model = Sequential()
-model.add(Input(shape=(224,224, 3)))
+model.add(Input(shape=(224, 224, 3)))
 model.add(ZeroPadding2D((1,1)))
 model.add(Convolution2D(64, (3, 3), activation='relu'))
 model.add(ZeroPadding2D((1,1)))
@@ -96,21 +96,16 @@ model.add(Convolution2D(512, (3, 3), activation='relu'))
 model.add(ZeroPadding2D((1,1)))
 model.add(Convolution2D(512, (3, 3), activation='relu'))
 model.add(MaxPooling2D((2,2), strides=(2,2)))
+model.add(Convolution2D(4096, (7, 7), activation='relu'))
+model.add(Dropout(0.5))
+model.add(Convolution2D(4096, (1, 1), activation='relu'))
+model.add(Dropout(0.5))
+model.add(Convolution2D(2622, (1, 1)))
 model.add(Flatten())
-model.add(Dense(4096, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(4096, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(2622))
 model.add(Activation('softmax'))
 
-# Try to load weights if the file exists, otherwise initialize randomly
-try:
-    model.load_weights('data/vgg_face_weights.h5')
-    print("Weights loaded successfully")
-except (OSError, IOError) as e:
-    print(f"Could not load weights from 'data/vgg_face_weights.h5': {e}")
-    print("Model initialized with random weights")
+
+# Note: vgg_face_weights.h5 file not available - model initialized with random weights
 
 #%%
 # --- [CELL 2]: ---
@@ -123,15 +118,71 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-# Set the main data directory where subdirectories represent classes/labels
+# === BEFORE (original) ===
+# # Set the main data directory where subdirectories represent classes/labels
+# main_data_directory = 'data/train-data-imgs'
+# 
+# # Define the input size for the VGG16 model
+# input_size = (224, 224)
+# 
+# # Create a data generator for training data
+# train_datagen = ImageDataGenerator(
+#     rescale=1.0/255,
+#     rotation_range=20,
+#     width_shift_range=0.2,
+#     height_shift_range=0.2,
+#     horizontal_flip=True,
+#     zoom_range=0.2
+# )
+# 
+# train_generator = train_datagen.flow_from_directory(
+#     main_data_directory,
+#     target_size=input_size,
+#     batch_size=32,
+#     class_mode='categorical',
+#     shuffle=True
+# )
+# 
+# # Load the VGG16 model without the top classification layer
+# base_model = VGG16(weights='imagenet', include_top=False,classes=7)
+# 
+# # Make the layers in the base model non-trainable
+# for layer in base_model.layers:
+#     layer.trainable = False
+# 
+# # Compile the model with an appropriate optimizer, loss function, and metrics
+# base_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+# 
+# # Load the previously saved model weights
+# base_model.load_weights('data/vgg_face_weights.h5')
+# 
+# # Continue training the model
+# base_model.fit(
+#     train_generator,
+#     steps_per_epoch=len(train_generator),
+#     epochs=10,  # You can adjust the number of epochs
+# )
+# 
+# # Save the model after additional training
+# base_model.save('data/updated_vgg_face_weights.h5')
+
+# === AFTER (edited) ===
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.applications import VGG16
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Flatten, Dense, Dropout
+
+
 main_data_directory = 'data/train-data-imgs'
 
-# Define the input size for the VGG16 model
+
 input_size = (224, 224)
 
-# Create a data generator for training data
+
 train_datagen = ImageDataGenerator(
     rescale=1.0/255,
     rotation_range=20,
@@ -149,25 +200,31 @@ train_generator = train_datagen.flow_from_directory(
     shuffle=True
 )
 
-# Load the VGG16 model without the top classification layer
-base_model = VGG16(weights='imagenet', include_top=False,classes=7)
 
-# Make the layers in the base model non-trainable
+base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+
+
 for layer in base_model.layers:
     layer.trainable = False
 
-# Compile the model with an appropriate optimizer, loss function, and metrics
-base_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-# Load the previously saved model weights
-base_model.load_weights('data/vgg_face_weights.h5')
+model = Sequential([
+    base_model,
+    Flatten(),
+    Dense(256, activation='relu'),
+    Dropout(0.5),
+    Dense(7, activation='softmax')
+])
 
-# Continue training the model
-base_model.fit(
+
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+
+model.fit(
     train_generator,
     steps_per_epoch=len(train_generator),
-    epochs=10,  # You can adjust the number of epochs
+    epochs=10,
 )
 
-# Save the model after additional training
-base_model.save('data/updated_vgg_face_weights.h5')
+
+model.save('data/updated_vgg_face_weights.h5')

@@ -67,7 +67,7 @@ train_df, test_df = train_test_split(image_df, train_size=0.9, shuffle=True, ran
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # train_generator = tf.keras.preprocessing.image.ImageDataGenerator(
 #     preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input,

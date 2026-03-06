@@ -27,19 +27,8 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# train_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
-#                                    zoom_range = 0.4,
-#                                    validation_split = 0.2)
-# 
-# valid_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
-#                                    validation_split = 0.2)
-# 
-# test_datagen  = ImageDataGenerator(rescale = 1.0 / 255.0)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 train_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
                                    zoom_range = 0.4,
                                    validation_split = 0.2)
@@ -51,23 +40,45 @@ test_datagen  = ImageDataGenerator(rescale = 1.0 / 255.0)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# train_dataset = train_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
+#                                                   target_size = (224,224),
+#                                                   class_mode = 'binary',
+#                                                   subset = 'training',
+#                                                   batch_size = 64)
+
+# === AFTER (edited) ===
 train_dataset = train_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
                                                   target_size = (224,224),
                                                   class_mode = 'binary',
                                                   subset = 'training',
-                                                  batch_size = 64)
+                                                  batch_size = 64,
+                                                  color_mode='rgb',
+                                                  interpolation='bilinear',
+                                                  shuffle=True)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# valid_dataset = valid_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
+#                                                   target_size = (224,224),
+#                                                   class_mode = 'binary',
+#                                                   subset = 'validation',
+#                                                   batch_size = 64)
+
+# === AFTER (edited) ===
 valid_dataset = valid_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
                                                   target_size = (224,224),
                                                   class_mode = 'binary',
                                                   subset = 'validation',
-                                                  batch_size = 64)
+                                                  batch_size = 64,
+                                                  color_mode='rgb',
+                                                  interpolation='bilinear',
+                                                  shuffle=False)
 
 #%%
 # --- [CELL 4]: ---

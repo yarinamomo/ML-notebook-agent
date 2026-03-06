@@ -77,7 +77,7 @@ class DataframeFunctionTransformer():
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # class ml_support():
 #     def __init__(self):
@@ -224,26 +224,24 @@ class DataframeFunctionTransformer():
 # === AFTER (edited) ===
 class ml_support():
     def __init__(self):
-        # Find the CSV file in the Kaggle input directory
-        csv_path = None
+        # Find the credit risk dataset file
+        data_path = None
         for dirname, _, filenames in os.walk('/kaggle/input'):
             for filename in filenames:
-                if filename.endswith('.csv'):
-                    csv_path = os.path.join(dirname, filename)
+                if 'credit_risk' in filename.lower() and filename.endswith('.csv'):
+                    data_path = os.path.join(dirname, filename)
                     break
-            if csv_path:
+            if data_path:
                 break
         
-        if csv_path is None:
-            raise FileNotFoundError("No CSV file found in /kaggle/input directory")
+        # Fallback to default path if not found in Kaggle input
+        if data_path is None:
+            data_path = "data/credit_risk_dataset.csv"
         
-        self.df = pd.read_csv(csv_path, encoding='latin')
+        self.df = pd.read_csv(data_path, encoding='latin')
         self.output_var = 'loan_status'
         self.num_cols = ['person_age','person_income','loan_amnt','loan_percent_income','cb_person_cred_hist_length']
         self.cat_cols = ['person_home_ownership','loan_intent','loan_grade','cb_person_default_on_file','higher_salary','home_owner','long_working','lower_loan_requirement','higher_loan_requirement']
-
-        # Drop duplicates after loading
-        self.df = self.drop_duplicate()
 
         self.cols_wofeature = [col for col in self.df.columns if col != self.output_var ]
 

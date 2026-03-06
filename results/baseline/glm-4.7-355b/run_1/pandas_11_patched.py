@@ -41,43 +41,32 @@ warnings.filterwarnings("ignore")
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-df = pd.read_csv('data/creditcard.csv')
+# cell_state: edited
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# === BEFORE (original) ===
+# df = pd.read_csv('data/creditcard.csv')
+# df.head()
+
+# === AFTER (edited) ===
+df = pd.read_csv('creditcard.csv')
 df.head()
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# data_df = df.copy()
-# data_df['Hour'] = data_df['Time'].apply(lambda x: np.floor(x / 3600))
-# 
-# tmp = data_df.groupby(['Hour', 'Class'])['Amount'].aggregate(['min', 'max', 'count', 'sum', 'mean', 'median', 'var']).reset_index()
-# data_df_1 = pd.DataFrame(tmp)
-# data_df_1.columns = ['Hour', 'Class', 'Min', 'Max', 'Transactions', 'Sum', 'Mean', 'Median', 'Var']
-# data_df_1.head()
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
 data_df = df.copy()
+data_df['Hour'] = data_df['Time'].apply(lambda x: np.floor(x / 3600))
 
-# Only create Hour column if Time exists in the dataframe
-if 'Time' in data_df.columns:
-    data_df['Hour'] = data_df['Time'].apply(lambda x: np.floor(x / 3600))
-    
-    # Only proceed with grouping if 'Time' existed
-    tmp = data_df.groupby(['Hour', 'Class'])['Amount'].aggregate(['min', 'max', 'count', 'sum', 'mean', 'median', 'var']).reset_index()
-    data_df_1 = pd.DataFrame(tmp)
-    data_df_1.columns = ['Hour', 'Class', 'Min', 'Max', 'Transactions', 'Sum', 'Mean', 'Median', 'Var']
-    data_df_1.head()
-else:
-    print("Warning: 'Time' column not found in dataframe. Skipping time-based analysis.")
+tmp = data_df.groupby(['Hour', 'Class'])['Amount'].aggregate(['min', 'max', 'count', 'sum', 'mean', 'median', 'var']).reset_index()
+data_df_1 = pd.DataFrame(tmp)
+data_df_1.columns = ['Hour', 'Class', 'Min', 'Max', 'Transactions', 'Sum', 'Mean', 'Median', 'Var']
+data_df_1.head()
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 var = data_df.columns.values
 
 i = 0

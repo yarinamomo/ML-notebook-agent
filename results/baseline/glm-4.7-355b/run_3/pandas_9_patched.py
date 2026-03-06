@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
@@ -22,7 +22,7 @@ for dirname, _, filenames in os.walk('data'):
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 df = pd.read_csv("data/IMDb_All_Genres_etf_clean1.csv")
 
 #%%
@@ -34,13 +34,5 @@ df = pd.read_csv("data/IMDb_All_Genres_etf_clean1.csv")
 # clean_df = clean_df[clean_df['Censor']!="(Banned)"]
 
 # === AFTER (edited) ===
-# First, let's see what columns actually exist
-print("Actual columns in the dataframe:")
-print(df.columns.tolist())
-
-# Clean column names by stripping whitespace
-df.columns = df.columns.str.strip()
-
-# Try filtering with the cleaned column names
-clean_df = df[(df["Total Gross (millions)"]!="$0.00M") & (df["Total Gross (millions)"]!="Gross Unkown")].copy()
-clean_df = clean_df[clean_df['Censor']!="(Banned)"]
+clean_df = df[(df["Total Gross (millions)"].str!="$0.00M") & (df["Total Gross (millions)"].str!="Gross Unkown")]
+clean_df = clean_df[clean_df['Censor'].str!="(Banned)"]

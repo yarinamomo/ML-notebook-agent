@@ -11,7 +11,7 @@
 # === AFTER (edited) ===
 import pandas
 import matplotlib.pyplot as plt
-dataset = pandas.read_csv('data/international-airline-passengers.csv', engine='python')
+dataset = pandas.read_csv('data/international-airline-passengers.csv', usecols=[1], header=None, engine='python')
 plt.plot(dataset)
 plt.show()
 

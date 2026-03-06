@@ -1,31 +1,6 @@
 # --- [CELL 0]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# import torch
-# from torch import nn
-# from tqdm.auto import tqdm
-# from torchvision import transforms
-# from torchvision.datasets import MNIST
-# from torchvision.utils import make_grid
-# from torch.utils.data import DataLoader
-# import matplotlib.pyplot as plt
-# from torchvision import datasets, transforms
-# torch.manual_seed(0) 
-# 
-# 
-# def show_tensor_images(image_tensor, num_images=25, size=(1, 28, 28)):
-#     '''
-#     Function for visualizing images: Given a tensor of images, number of images, and
-#     size per image, plots and prints the images in an uniform grid.
-#     '''
-#     image_tensor = (image_tensor + 1) / 2
-#     image_unflat = image_tensor.detach().cpu()
-#     image_grid = make_grid(image_unflat[:num_images], nrow=5)
-#     plt.imshow(image_grid.permute(1, 2, 0).squeeze())
-#     plt.show()
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import torch
 from torch import nn
 from tqdm.auto import tqdm
@@ -35,7 +10,7 @@ from torchvision.utils import make_grid
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from torchvision import datasets, transforms
-torch.manual_seed(0)
+torch.manual_seed(0) 
 
 
 def show_tensor_images(image_tensor, num_images=25, size=(1, 28, 28)):
@@ -46,13 +21,13 @@ def show_tensor_images(image_tensor, num_images=25, size=(1, 28, 28)):
     image_tensor = (image_tensor + 1) / 2
     image_unflat = image_tensor.detach().cpu()
     image_grid = make_grid(image_unflat[:num_images], nrow=5)
-    plt.imshow(image_grid.permute(1, 2, 0).squeeze().clamp(0, 1))
+    plt.imshow(image_grid.permute(1, 2, 0).squeeze())
     plt.show()
 
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 
 class Generator(nn.Module):
     '''
@@ -137,7 +112,7 @@ def get_noise(n_samples, z_dim, device='cpu'):
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 class Discriminator(nn.Module):
     '''
     Discriminator Class
@@ -195,36 +170,71 @@ class Discriminator(nn.Module):
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# === BEFORE (original) ===
+# criterion = nn.BCEWithLogitsLoss()
+# z_dim = 64
+# display_step = 500
+# batch_size = 128
+# # A learning rate of 0.0002 works well on DCGAN
+# lr = 0.0002
+# 
+# beta_1 = 0.5 
+# beta_2 = 0.999
+# device = 'cpu' # 'cuda'
+# 
+# # You can tranform the image values to be between -1 and 1 (the range of the tanh activation)
+# train_transform = transforms.Compose([
+#     transforms.ToTensor(),
+#     transforms.Normalize((0.5,), (0.5,)),
+# ])
+# 
+# train_dataset = datasets.ImageFolder(root='data_small/eyes data', transform=train_transform)
+# dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+# # dataloader = DataLoader(
+# #     MNIST('.', download=False, transform=transform),
+# #     batch_size=batch_size,
+# #     shuffle=True)
+
+# === AFTER (edited) ===
 criterion = nn.BCEWithLogitsLoss()
 z_dim = 64
 display_step = 500
 batch_size = 128
-# A learning rate of 0.0002 works well on DCGAN
+
 lr = 0.0002
 
-beta_1 = 0.5 
+beta_1 = 0.5
 beta_2 = 0.999
-device = 'cpu' # 'cuda'
+device = 'cpu'
 
-# You can tranform the image values to be between -1 and 1 (the range of the tanh activation)
+
 train_transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.5,), (0.5,)),
 ])
 
-train_dataset = datasets.ImageFolder(root='data_small/eyes data', transform=train_transform)
+def pil_loader(path):
+    from PIL import Image, UnidentifiedImageError
+    try:
+        with open(path, 'rb') as f:
+            img = Image.open(f)
+            return img.convert('RGB')
+    except (UnidentifiedImageError, OSError, IOError):
+        return None
+
+train_dataset = datasets.ImageFolder(root='data_small/eyes data', transform=train_transform, loader=lambda x: None if (img := pil_loader(x)) is None else img)
+# Filter out None entries from corrupted images
+train_dataset.samples = [(path, class_idx) for path, class_idx in train_dataset.samples if pil_loader(path) is not None]
+train_dataset.imgs = train_dataset.samples
+
 dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
-# dataloader = DataLoader(
-#     MNIST('.', download=False, transform=transform),
-#     batch_size=batch_size,
-#     shuffle=True)
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 def show_images(images):
     fig, ax = plt.subplots(figsize=(20, 20))
     ax.set_xticks([]); ax.set_yticks([])
@@ -239,7 +249,7 @@ def show_batch(dl):
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 6}
 show_batch(dataloader)
 
 #%%

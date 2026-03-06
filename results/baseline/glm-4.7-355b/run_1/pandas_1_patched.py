@@ -20,7 +20,7 @@ pd.set_option('display.max_columns',200)
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # #Loading the data
 # path="data/For_modeling.csv.zip"

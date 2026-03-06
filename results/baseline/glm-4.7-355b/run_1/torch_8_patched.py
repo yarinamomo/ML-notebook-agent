@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
@@ -25,14 +25,14 @@ import cv2
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 import os 
 os.listdir('data_small/dataset/train')
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 def takeFileName(filedir): # remove just file name from directory and return
     # filename = np.array(filedir.split('/'))[-1].split('.')[0] # take out the name, isolate the jpeg, then return the name
     filename = np.array(filedir.split('/'))[-1] # take out the name, then return the name
@@ -42,14 +42,14 @@ def takeFileName(filedir): # remove just file name from directory and return
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 train_path_watermarked_images = 'data_small/dataset/train/watermark/'
 train_path_nonwatermarked_images = 'data_small/dataset/train/no_watermark/'
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 tp_watermarked = np.array([]) # array with watermarked image names
 tp_nonwatermarked = np.array([]) # array with nonwatermarked image names
 
@@ -64,7 +64,7 @@ for root, dirs, files in os.walk(train_path_nonwatermarked_images, topdown=True)
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 output_array_wm = []
 
 for i in tp_watermarked:
@@ -75,7 +75,7 @@ for i in tp_watermarked:
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 output_array_nwm = []
 
 for i in tp_nonwatermarked:
@@ -85,43 +85,61 @@ for i in tp_nonwatermarked:
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-# dimension to resize to 
-width = 196 # only certain dimensions work due to UpSampling (196x196 works, 148x148 works)
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# === BEFORE (original) ===
+# # dimension to resize to 
+# width = 196 # only certain dimensions work due to UpSampling (196x196 works, 148x148 works)
+# height = 196
+# dim = (width, height) # set the dimensions
+# def createPixelArr(files):
+#     data = []
+#     for image in files:
+#         try: # take each image and use imread to get the pixel values in a matrix 
+#             img_arr = cv2.imread(image, cv2.IMREAD_COLOR)
+#             img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
+#             resized_arr = cv2.resize(img_arr, (width, height)) # rescale the image so every image is of the same dimension
+#             data.append(resized_arr) # add the matrix of pixel values 
+#         except Exception as e:
+#             print(e) # some error thrown in imread or resize
+#     return np.array(data)
+
+# === AFTER (edited) ===
+width = 196
 height = 196
-dim = (width, height) # set the dimensions
+dim = (width, height)
 def createPixelArr(files):
     data = []
     for image in files:
-        try: # take each image and use imread to get the pixel values in a matrix 
+        try:
             img_arr = cv2.imread(image, cv2.IMREAD_COLOR)
+            # Check if image was loaded successfully
+            if img_arr is None:
+                print(f"Warning: Failed to load image {image}")
+                continue
+                
             img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
-            resized_arr = cv2.resize(img_arr, (width, height)) # rescale the image so every image is of the same dimension
-            data.append(resized_arr) # add the matrix of pixel values 
+            resized_arr = cv2.resize(img_arr, (width, height))
+            data.append(resized_arr)
         except Exception as e:
-            print(e) # some error thrown in imread or resize
-    return np.array(data)
+            print(f"Error processing {image}: {e}")
+    
+    result = np.array(data)
+    print(f"Successfully loaded {len(result)} out of {len(files)} images")
+    return result
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 train_wms_pixVals = createPixelArr(out_array_wm[:90]) # 1000
 train_nwms_pixVals = createPixelArr(out_array_nwm[:90]) # 1000
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1) 
-
-# === AFTER (edited) ===
-X = np.concatenate([train_wms_pixVals, train_nwms_pixVals], axis=0)
-y = np.concatenate([np.ones(len(train_wms_pixVals)), np.zeros(len(train_nwms_pixVals))])
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
+# cell_state: unchanged
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
+X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1) 
 
 #%%
 # --- [CELL 10]: ---
@@ -166,94 +184,9 @@ model_ft.classifier = nn.Sequential(
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# device = torch.device('cpu') # 'cuda:0'
-# 
-# def train_model(model, train_loader, test_loader, criterion, optimizer, num_epochs=80):
-#     since = time.time()
-# 
-#     val_acc_history = []
-#     train_acc_history = []
-# 
-#     best_model_wts = copy.deepcopy(model.state_dict())
-#     best_acc = 0.0
-# 
-#     for epoch in range(num_epochs):
-#         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
-#         print('-' * 10)
-# 
-#         model.train()
-# 
-#         running_loss = 0.0
-#         running_corrects = 0
-# 
-#         for inputs, labels in tqdm(train_loader):
-#             inputs = inputs.to(device)
-#             labels = labels.to(device)
-# 
-#             optimizer.zero_grad()
-# 
-#             with torch.set_grad_enabled(True):
-#                 with torch.cuda.amp.autocast():
-#                     outputs = model(inputs)
-#                     loss = criterion(outputs, labels)
-# 
-#                 _, preds = torch.max(outputs, 1)
-# 
-#                 loss.backward()
-#                 optimizer.step()
-# 
-#             running_loss += loss.item() * inputs.size(0)
-#             running_corrects += torch.sum(preds == labels.data)
-# 
-#         epoch_loss = running_loss / len(train_loader.dataset)
-#         epoch_acc = running_corrects.double() / len(train_loader.dataset)
-# 
-#         print('Train Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
-#         train_acc_history.append(epoch_acc)
-# 
-#         model.eval()
-# 
-#         running_loss = 0.0
-#         running_corrects = 0
-# 
-#         for inputs, labels in tqdm(test_loader):
-#             inputs = inputs.to(device)
-#             labels = labels.to(device)
-# 
-#             with torch.set_grad_enabled(False):
-#                 with torch.cuda.amp.autocast():
-#                     outputs = model(inputs)
-#                     loss = criterion(outputs, labels)
-# 
-#                 _, preds = torch.max(outputs, 1)
-# 
-#             running_loss += loss.item() * inputs.size(0)
-#             running_corrects += torch.sum(preds == labels.data)
-# 
-#         epoch_loss = running_loss / len(test_loader.dataset)
-#         epoch_acc = running_corrects.double() / len(test_loader.dataset)
-# 
-#         print('Test Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
-#         val_acc_history.append(epoch_acc)
-# 
-#         if epoch_acc > best_acc:
-#             best_acc = epoch_acc
-#             best_model_wts = copy.deepcopy(model.state_dict())
-# 
-#         print()
-# 
-#     time_elapsed = time.time() - since
-#     print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
-#     print('Best val Acc: {:4f}'.format(best_acc))
-# 
-#     model.load_state_dict(best_model_wts)
-#     return model, train_acc_history, val_acc_history
-
-# === AFTER (edited) ===
-device = torch.device('cpu')
+device = torch.device('cpu') # 'cuda:0'
 
 def train_model(model, train_loader, test_loader, criterion, optimizer, num_epochs=80):
     since = time.time()
@@ -280,8 +213,9 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
             optimizer.zero_grad()
 
             with torch.set_grad_enabled(True):
-                outputs = model(inputs)
-                loss = criterion(outputs, labels)
+                with torch.cuda.amp.autocast():
+                    outputs = model(inputs)
+                    loss = criterion(outputs, labels)
 
                 _, preds = torch.max(outputs, 1)
 
@@ -307,8 +241,9 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
             labels = labels.to(device)
 
             with torch.set_grad_enabled(False):
-                outputs = model(inputs)
-                loss = criterion(outputs, labels)
+                with torch.cuda.amp.autocast():
+                    outputs = model(inputs)
+                    loss = criterion(outputs, labels)
 
                 _, preds = torch.max(outputs, 1)
 
@@ -333,6 +268,7 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
 
     model.load_state_dict(best_model_wts)
     return model, train_acc_history, val_acc_history
+
 
 #%%
 # --- [CELL 13]: ---

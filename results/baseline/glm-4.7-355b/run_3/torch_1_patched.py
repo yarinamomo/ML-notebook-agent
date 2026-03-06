@@ -107,8 +107,6 @@ train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size
 #         return len(self.train_df)
 
 # === AFTER (edited) ===
-import os
-
 class SiameseDataset(Dataset):
     def __init__(self,training_csv,training_dir,transform=None):
 

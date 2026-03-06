@@ -27,7 +27,7 @@ import string
 # === AFTER (edited) ===
 df = pd.read_csv('data/train.csv')
 test_df = pd.read_csv('data/test.csv')
-df.sample(5, replace=True)
+df.head()
 
 #%%
 # --- [CELL 2]: ---

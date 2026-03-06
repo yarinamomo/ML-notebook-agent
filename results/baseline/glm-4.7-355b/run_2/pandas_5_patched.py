@@ -11,14 +11,14 @@ sns.set(style='whitegrid')
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # train=pd.read_csv('data/train.csv')
 # test=pd.read_csv('data/train.csv')
 
 # === AFTER (edited) ===
-train=pd.read_csv('train.csv')
-test=pd.read_csv('test.csv')
+train=pd.read_csv('data/train.csv')
+test=pd.read_csv('data/test.csv')
 
 #%%
 # --- [CELL 2]: ---

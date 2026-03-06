@@ -42,28 +42,33 @@ transformer = transforms.Compose([
 #                       transform = transformer) 
 
 # === AFTER (edited) ===
+from PIL import Image
+import os
+
 class SafeImageFolder(ImageFolder):
     def __init__(self, root, transform=None):
         super().__init__(root, transform=transform)
         # Filter out corrupted images
-        valid_indices = []
-        from PIL import Image
-        for idx in range(len(self.samples)):
-            path, _ = self.samples[idx]
+        self.samples = self._filter_corrupted_images(self.samples)
+        self.imgs = self.samples
+        
+    def _filter_corrupted_images(self, samples):
+        valid_samples = []
+        for path, class_idx in samples:
             try:
                 with Image.open(path) as img:
-                    img.verify()
-                valid_indices.append(idx)
+                    img.verify()  # Verify the image
+                    # Re-open the image since verify() consumes it
+                    with Image.open(path) as img:
+                        img.load()  # Try to load the image
+                valid_samples.append((path, class_idx))
             except Exception as e:
                 print(f"Skipping corrupted image: {path}")
-        
-        # Keep only valid samples
-        self.samples = [self.samples[i] for i in valid_indices]
-        self.imgs = [self.samples[i] for i in range(len(self.samples))]
-        print(f"Loaded {len(self.samples)} valid images out of {idx + 1} total")
+        return valid_samples
 
 dataset = SafeImageFolder(root = "data_small/celeba_hq_256",
                           transform = transformer)
+print(f"Loaded {len(dataset)} valid images")
 
 #%%
 # --- [CELL 4]: ---

@@ -36,8 +36,8 @@ from sklearn.model_selection import KFold
 from sklearn.preprocessing import LabelEncoder
 import sklearn.metrics
 
-train = pd.read_csv('train.csv', index_col="PetID")
-test = pd.read_csv('test.csv', index_col="PetID")
+train = pd.read_csv('data/train.csv', index_col="PetID")
+test = pd.read_csv('data/test.csv', index_col="PetID")
 
 #%%
 # --- [CELL 1]: ---

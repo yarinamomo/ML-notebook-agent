@@ -10,15 +10,10 @@ sns.set(style='whitegrid')
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train=pd.read_csv('data/train.csv')
-# test=pd.read_csv('data/train.csv')
-
-# === AFTER (edited) ===
 train=pd.read_csv('data/train.csv')
-test=pd.read_csv('data/test.csv')
+test=pd.read_csv('data/train.csv')
 
 #%%
 # --- [CELL 2]: ---
@@ -29,20 +24,27 @@ cat_feat = ['Gender', 'Driving_License', 'Previously_Insured', 'Vehicle_Age_lt_1
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-train['Gender'] = train['Gender'].map( {'Female': 0, 'Male': 1} ).astype(int)
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# === BEFORE (original) ===
+# train['Gender'] = train['Gender'].map( {'Female': 0, 'Male': 1} ).astype(int)
+
+# === AFTER (edited) ===
+if 'Gender' in train.columns:
+    train['Gender'] = train['Gender'].map( {'Female': 0, 'Male': 1} ).astype(int)
+elif 'gender' in train.columns:
+    train['gender'] = train['gender'].map( {'Female': 0, 'Male': 1} ).astype(int)
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 train=pd.get_dummies(train,drop_first=True)
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 6}
 train=train.rename(columns={"Vehicle_Age_< 1 Year": "Vehicle_Age_lt_1_Year", "Vehicle_Age_> 2 Years": "Vehicle_Age_gt_2_Years"})
 train['Vehicle_Age_lt_1_Year']=train['Vehicle_Age_lt_1_Year'].astype('int')
 train['Vehicle_Age_gt_2_Years']=train['Vehicle_Age_gt_2_Years'].astype('int')

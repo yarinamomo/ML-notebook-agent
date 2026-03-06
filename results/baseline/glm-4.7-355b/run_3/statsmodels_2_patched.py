@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -26,50 +26,8 @@ test = pd.read_csv(test_csv_path)
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train['date'] = pd.to_datetime(train['date'])
-# train['day'] = train['date'].dt.day
-# train['month'] = train['date'].dt.month
-# train['year'] = train['date'].dt.year
-# train['date'] = pd.to_datetime(train['date'])
-# train['day_of_week'] = train['date'].dt.weekday
-# train['week_of_year'] = train['date'].dt.isocalendar().week.astype(int)
-# train['quarter'] = train['date'].dt.quarter
-# train['day_of_year'] = train['date'].dt.dayofyear
-# 
-# # Cycle need to check the seasonality decompose
-# train['month_sin'] = np.sin(2 * np.pi * train['month'] / 12)
-# train['month_cos'] = np.cos(2 * np.pi * train['month'] / 12)
-# 
-# # Adding 2-day seasonality columns
-# # train['day_cycle'] = (train['date'].dt.day % 2)  # This will give a repeating pattern of [0, 1, 0, 1, ...]
-# # train['two_day_sin'] = np.sin(2 * np.pi * train['day_cycle'] / 2)
-# # train['two_day_cos'] = np.cos(2 * np.pi * train['day_cycle'] / 2)
-# 
-# # Drop 'day_cycle' as it's no longer needed
-# # train.drop('day_cycle', axis=1, inplace=True)
-# 
-# # Adding 7-day seasonality columns
-# train['week_sin'] = np.sin(2 * np.pi * train['day_of_week'] / 7)
-# train['week_cos'] = np.cos(2 * np.pi * train['day_of_week'] / 7)
-# 
-# # Lag need to check the autocorrelation
-# # Adding lags because I think SARIMA might neglected some lags (residuals having seasons, patterns)
-# train['sales_lag_7'] = train['sales'].shift(7)
-# train['sales_lag_365'] = train['sales'].shift(365)
-
-# === AFTER (edited) ===
-# Check for date column and standardize the name
-if 'date' not in train.columns:
-    if 'Date' in train.columns:
-        train.rename(columns={'Date': 'date'}, inplace=True)
-    else:
-        # Print columns to help identify the date column
-        print("Available columns:", train.columns.tolist())
-        raise KeyError("Could not find 'date' or 'Date' column in the dataframe")
-
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
 train['date'] = pd.to_datetime(train['date'])
 train['day'] = train['date'].dt.day
 train['month'] = train['date'].dt.month
@@ -80,24 +38,24 @@ train['week_of_year'] = train['date'].dt.isocalendar().week.astype(int)
 train['quarter'] = train['date'].dt.quarter
 train['day_of_year'] = train['date'].dt.dayofyear
 
-
+# Cycle need to check the seasonality decompose
 train['month_sin'] = np.sin(2 * np.pi * train['month'] / 12)
 train['month_cos'] = np.cos(2 * np.pi * train['month'] / 12)
 
+# Adding 2-day seasonality columns
+# train['day_cycle'] = (train['date'].dt.day % 2)  # This will give a repeating pattern of [0, 1, 0, 1, ...]
+# train['two_day_sin'] = np.sin(2 * np.pi * train['day_cycle'] / 2)
+# train['two_day_cos'] = np.cos(2 * np.pi * train['day_cycle'] / 2)
 
+# Drop 'day_cycle' as it's no longer needed
+# train.drop('day_cycle', axis=1, inplace=True)
 
-
-
-
-
-
-
-
+# Adding 7-day seasonality columns
 train['week_sin'] = np.sin(2 * np.pi * train['day_of_week'] / 7)
 train['week_cos'] = np.cos(2 * np.pi * train['day_of_week'] / 7)
 
-
-
+# Lag need to check the autocorrelation
+# Adding lags because I think SARIMA might neglected some lags (residuals having seasons, patterns)
 train['sales_lag_7'] = train['sales'].shift(7)
 train['sales_lag_365'] = train['sales'].shift(365)
 
@@ -124,9 +82,41 @@ sarima_data.head()
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
-# Data Splitting
+# === BEFORE (original) ===
+# # Data Splitting
+# train_end_date = '2017-09-30'
+# pred_start_date = '2017-10-01'
+# pred_end_date = '2017-12-31'
+# 
+# y_train = sarima_data.loc[:train_end_date, 'sales']
+# y_val = sarima_data.loc[pred_start_date:pred_end_date, 'sales']
+# 
+# exog_columns = ['year','day_of_week', 'month_cos']
+# # So far 3 of these has highest corr with sales
+# 
+# exog_train = train_subset.loc[:train_end_date, exog_columns]
+# exog_val = train_subset.loc[pred_start_date:pred_end_date, exog_columns]
+# 
+# # Model Parameters
+# p, d, q = 1, 1, 1
+# P, D, Q, s = 1, 1, 1, 7
+# # d - number of times to difference it to become stationary
+# # Model Training with exogenous variables
+# # For instance, if the PACF shuts off (i.e., values become very close to zero) after 2 lags, then p=2
+# # For example, if the ACF cuts off after 1 lag, then q=1
+# model = SARIMAX(y_train, exog=exog_train, order=(p, d, q), seasonal_order=(P, D, Q, s))
+# results = model.fit(maxiter=150, disp=-1) # Iterations of the optimizer
+# 
+# # Forecasting with exogenous variables
+# y_pred = results.predict(start=pd.Timestamp(pred_start_date), end=pd.Timestamp(pred_end_date), exog=exog_val, dynamic=False)
+# 
+# # Model Evaluation
+# rmse = mean_squared_error(y_val, y_pred, squared=False)
+# print(f'RMSE: {rmse}')
+
+# === AFTER (edited) ===
 train_end_date = '2017-09-30'
 pred_start_date = '2017-10-01'
 pred_end_date = '2017-12-31'
@@ -135,27 +125,32 @@ y_train = sarima_data.loc[:train_end_date, 'sales']
 y_val = sarima_data.loc[pred_start_date:pred_end_date, 'sales']
 
 exog_columns = ['year','day_of_week', 'month_cos']
-# So far 3 of these has highest corr with sales
+
 
 exog_train = train_subset.loc[:train_end_date, exog_columns]
 exog_val = train_subset.loc[pred_start_date:pred_end_date, exog_columns]
 
-# Model Parameters
+
 p, d, q = 1, 1, 1
 P, D, Q, s = 1, 1, 1, 7
-# d - number of times to difference it to become stationary
-# Model Training with exogenous variables
-# For instance, if the PACF shuts off (i.e., values become very close to zero) after 2 lags, then p=2
-# For example, if the ACF cuts off after 1 lag, then q=1
-model = SARIMAX(y_train, exog=exog_train, order=(p, d, q), seasonal_order=(P, D, Q, s))
-results = model.fit(maxiter=150, disp=-1) # Iterations of the optimizer
 
-# Forecasting with exogenous variables
-y_pred = results.predict(start=pd.Timestamp(pred_start_date), end=pd.Timestamp(pred_end_date), exog=exog_val, dynamic=False)
 
-# Model Evaluation
-rmse = mean_squared_error(y_val, y_pred, squared=False)
-print(f'RMSE: {rmse}')
+# Simplified SARIMAX specification with more robust parameters
+model = SARIMAX(y_train, exog=exog_train, order=(p, d, q), seasonal_order=(P, D, Q, s),
+                enforce_stationarity=True, enforce_invertibility=True)
+
+try:
+    results = model.fit(maxiter=250, disp=False, method='lbfgs')
+    
+    y_pred = results.predict(start=pd.Timestamp(pred_start_date), end=pd.Timestamp(pred_end_date), 
+                            exog=exog_val, dynamic=False)
+    
+    rmse = mean_squared_error(y_val, y_pred, squared=False)
+    print(f'RMSE: {rmse}')
+except Exception as e:
+    print(f"Error in SARIMAX estimation or prediction: {e}")
+    print("y_val shape:", y_val.shape if hasattr(y_val, 'shape') else len(y_val))
+    y_pred = pd.Series([np.nan] * len(y_val), index=y_val.index)
 
 #%%
 # --- [CELL 5]: ---

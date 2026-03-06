@@ -17,9 +17,13 @@ from transformers import TFAutoModel
 # === AFTER (edited) ===
 import pandas as pd
 import json
+
+# Load the CSV and print column names to debug
 df_psytar = pd.read_csv("data/PsyTAR.csv")
-print("Available columns:", df_psytar.columns.tolist())
-df_psytar.head(5)
+print("Columns in dataframe:", df_psytar.columns.tolist())
+print("Shape:", df_psytar.shape)
+print("\nFirst few rows:")
+print(df_psytar.head(5))
 
 #%%
 # --- [CELL 2]: ---

@@ -38,21 +38,21 @@ sns.set(style='white', context='notebook', palette='deep')#画图设置
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import tensorflow as tf
 # tf.config.experimental.set_memory_growth(tf.config.list_physical_devices('GPU')[0], True)
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 train = pd.read_csv("data/train.csv")
 test = pd.read_csv("data/test.csv")
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # Y_train = train["label"]#得到训练集标签
 # 
@@ -67,16 +67,24 @@ test = pd.read_csv("data/test.csv")
 # Y_train.value_counts()#计算每个值的数量
 
 # === AFTER (edited) ===
-Y_train = train.iloc[:, 0].rename("label")
+# Check what columns are available in the train DataFrame
+print("Columns in train.csv:", train.columns.tolist())
 
+# If 'label' column doesn't exist, try to use the first column as labels
+if 'label' not in train.columns:
+    print("Warning: 'label' column not found. Using first column as labels.")
+    Y_train = train.iloc[:, 0]
+    X_train = train.iloc[:, 1:]
+else:
+    Y_train = train["label"]
+    X_train = train.drop(labels = ["label"],axis = 1)
 
-X_train = train.iloc[:, 1:]
-
+print("Shape of Y_train:", Y_train.shape)
+print("Shape of X_train:", X_train.shape)
 
 del train
 
 g = sns.countplot(Y_train)
-
 Y_train.value_counts()
 
 #%%

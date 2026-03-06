@@ -18,7 +18,7 @@ import string
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 # === BEFORE (original) ===
 # df = pd.read_csv('data/train.csv')
 # test_df = pd.read_csv('data/test.csv')
@@ -32,13 +32,13 @@ df.head(5)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 class_names =['Not a disaster', 'Disaster']
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 # word_count
 df['word_count'] = df['text'].apply(lambda x: len(str(x).split()))
 

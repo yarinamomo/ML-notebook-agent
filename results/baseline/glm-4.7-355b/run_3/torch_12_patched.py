@@ -58,39 +58,42 @@ from transformers import AutoTokenizer
 
 df = pd.read_csv('data/train.csv')
 
+# Print available columns to debug
+print("Available columns:", df.columns.tolist())
+print("DataFrame shape:", df.shape)
+print("\nFirst few rows:")
+print(df.head())
+
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
-# Print available columns to diagnose
-print("Available columns:", df.columns.tolist())
 
 df.drop_duplicates(inplace=True)
 
-# Check if columns exist, use case-insensitive matching as fallback
-if 'output' in df.columns and 'instruction' in df.columns:
+# Only drop NaN for columns that actually exist
+existing_columns = df.columns.tolist()
+if 'output' in existing_columns and 'instruction' in existing_columns:
     df.dropna(subset=['output', 'instruction'], inplace=True)
-    instruction_col = 'instruction'
-    output_col = 'output'
+elif 'output' in existing_columns:
+    df.dropna(subset=['output'], inplace=True)
+elif 'instruction' in existing_columns:
+    df.dropna(subset=['instruction'], inplace=True)
+
+
+# Check columns exist before computing token counts
+if 'instruction' in df.columns and 'output' in df.columns:
+    df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(str(x))))
+    df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(str(x))))
+elif 'instruction' in df.columns:
+    df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(str(x))))
+    print("Warning: 'output' column not found")
+elif 'output' in df.columns:
+    df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(str(x))))
+    print("Warning: 'instruction' column not found")
 else:
-    # Try to find columns with different cases
-    df_cols_lower = [col.lower() for col in df.columns]
-    if 'instruction' in df_cols_lower and 'output' in df_cols_lower:
-        instruction_col = df.columns[df_cols_lower.index('instruction')]
-        output_col = df.columns[df_cols_lower.index('output')]
-        df.dropna(subset=[instruction_col, output_col], inplace=True)
-    else:
-        # If columns still not found, skip and use what we have
-        print(f"Warning: Expected 'instruction' and 'output' columns not found. Using first two text columns.")
-        text_cols = df.select_dtypes(include=['object']).columns.tolist()
-        if len(text_cols) >= 2:
-            instruction_col = text_cols[0]
-            output_col = text_cols[1]
-        else:
-            instruction_col = df.columns[0]
-            output_col = df.columns[1] if len(df.columns) > 1 else df.columns[0]
+    print("Warning: Neither 'instruction' nor 'output' columns found")
 
-df['instruction_tokens'] = df[instruction_col].apply(lambda x: len(tokenizer.tokenize(x)))
-df['output_tokens'] = df[output_col].apply(lambda x: len(tokenizer.tokenize(x)))
 
+print("\nFinal DataFrame:")
 print(df.head())
 
 #%%

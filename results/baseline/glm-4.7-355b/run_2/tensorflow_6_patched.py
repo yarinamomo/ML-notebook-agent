@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import pandas as pd#特征工程
 import numpy as np#矩阵运算
 import matplotlib.pyplot as plt#画图
@@ -38,31 +38,21 @@ sns.set(style='white', context='notebook', palette='deep')#画图设置
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 import tensorflow as tf
 # tf.config.experimental.set_memory_growth(tf.config.list_physical_devices('GPU')[0], True)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train = pd.read_csv("data/train.csv")
-# test = pd.read_csv("data/test.csv")
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
 train = pd.read_csv("data/train.csv")
 test = pd.read_csv("data/test.csv")
-
-# Debug: Show the shape and columns of loaded data
-print("Train shape:", train.shape)
-print("Train columns:", train.columns.tolist()[:10], "...")  # Show first 10 columns
-print("Test shape:", test.shape
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 Y_train = train["label"]#得到训练集标签
 
 # Drop 'label' column
@@ -171,20 +161,31 @@ model.add(Dense(10, activation = "softmax"))
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
-# Define the optimizer定义优化器
-optimizer = RMSprop(learning_rate=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
-'''
-“decay=0”是RMSprop优化算法的一个参数，它控制了学习率的衰减。
-具体来说，在RMSprop算法中，每个权重参数都有自己的学习率
-，而decay参数会使这个学习率随着时间的推移而逐渐变小。
-但是，由于decay=0，因此该算法不会在训练过程中降低学习率。
+# === BEFORE (original) ===
+# # Define the optimizer定义优化器
+# optimizer = RMSprop(learning_rate=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
+# '''
+# “decay=0”是RMSprop优化算法的一个参数，它控制了学习率的衰减。
+# 具体来说，在RMSprop算法中，每个权重参数都有自己的学习率
+# ，而decay参数会使这个学习率随着时间的推移而逐渐变小。
+# 但是，由于decay=0，因此该算法不会在训练过程中降低学习率。
+# 
+# “epsilon=1e-08”是RMSprop优化算法的一个参数，它是用来防止除零错误的一个小量，通常取极小的值（例如1e-8）。
+# 在RMSprop算法中，计算梯度平方平均值时需要对平方梯度加上一个极小的值，以避免出现除以零的错误。
+# 
+# “rho=0.9”是一种优化算法的参数，用于控制梯度的平滑度。具体来说，该参数决定了在计算平方梯度的指数移动平均值时，
+# 历史数据的重要性。较高的rho值可以使平均值对历史数据的依赖性更强，从而使整个优化过程更加稳定。
+# '''
 
-“epsilon=1e-08”是RMSprop优化算法的一个参数，它是用来防止除零错误的一个小量，通常取极小的值（例如1e-8）。
+# === AFTER (edited) ===
+optimizer = RMSprop(learning_rate=0.001, rho=0.9, epsilon=1e-08)
+'''
+"epsilon=1e-08"是RMSprop优化算法的一个参数，它是用来防止除零错误的一个小量，通常取极小的值（例如1e-8）。
 在RMSprop算法中，计算梯度平方平均值时需要对平方梯度加上一个极小的值，以避免出现除以零的错误。
 
-“rho=0.9”是一种优化算法的参数，用于控制梯度的平滑度。具体来说，该参数决定了在计算平方梯度的指数移动平均值时，
+"rho=0.9"是一种优化算法的参数，用于控制梯度的平滑度。具体来说，该参数决定了在计算平方梯度的指数移动平均值时，
 历史数据的重要性。较高的rho值可以使平均值对历史数据的依赖性更强，从而使整个优化过程更加稳定。
 '''
 

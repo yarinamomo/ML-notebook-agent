@@ -31,25 +31,11 @@ print(os.listdir("data"))
 # data.shape
 
 # === AFTER (edited) ===
-# First, let's check what's in the file
-print("Checking file content...")
-with open('data/fer2013.csv', 'r') as f:
-    content = f.read()
-    print(f"File size: {len(content)} bytes")
-    print("First 500 characters:", content[:500])
-    print("\nNumber of lines:", len(content.split('\n')))
+data = pd.read_csv('data/fer2013.csv', header=0)
 
-# Try reading with different options
-print("\n\nAttempting to read CSV...")
-data = pd.read_csv('data/fer2013.csv')
-print(f"Shape: {data.shape}")
-print(f"Columns: {list(data.columns)}")
-print(f"First few rows:\n{data.head()}")
-
-# If it's not the expected format, maybe the delimiter is different or it has a header issue
-data = pd.read_csv('data/fer2013.csv', sep=',', header=0)
-print(f"\nRe-read Shape: {data.shape}")
-print(f"Re-read Columns: {list(data.columns)}")
+print(data.shape)
+print(data.columns.tolist())
+print(data.head())
 
 #%%
 # --- [CELL 2]: ---

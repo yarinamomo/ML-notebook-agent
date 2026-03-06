@@ -26,7 +26,7 @@ image_count
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # import PIL
 # princess = list(data_dir.glob('princess/*'))
@@ -35,32 +35,38 @@ image_count
 # === AFTER (edited) ===
 import PIL
 princess = list(data_dir.glob('princess/*'))
-# Find a valid image file by iterating through the list
-valid_princess_image = None
-for img_path in princess:
+# Find a valid image by trying multiple images
+valid_image = None
+for img_file in princess:
     try:
-        PIL.Image.open(str(img_path))
-        valid_princess_image = str(img_path)
+        valid_image = PIL.Image.open(str(img_file))
+        valid_image.load()  # Verify it's a valid image
         break
     except:
         continue
 
-if valid_princess_image:
-    PIL.Image.open(valid_princess_image)
+if valid_image:
+    valid_image
 else:
-    raise ValueError("No valid image files found in princess directory")
+    print("No valid images found")
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-image_height, image_width = PIL.Image.open(str(princess[1])).size
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# === BEFORE (original) ===
+# image_height, image_width = PIL.Image.open(str(princess[1])).size
+# batch_size,epochs = 64,10
+
+# === AFTER (edited) ===
+if valid_image:
+    image_height, image_width = valid_image.size
 batch_size,epochs = 64,10
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 6}
 train_ds = tf.keras.utils.image_dataset_from_directory(
     data_dir,
     validation_split=0.2,

@@ -21,7 +21,7 @@ import time
 import pickle
 
 dataset = load_dataset("sst", "default", trust_remote_code=True)
-dataset2 = load_dataset("multi_nli", trust_remote_code=True)
+dataset2 = load_dataset("multi_nli")
 
 #%%
 # --- [CELL 1]: ---

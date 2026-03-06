@@ -36,14 +36,7 @@ fig, ax = plt.subplots(ncols=7, nrows=2, figsize=(20, 10))
 index = 0
 ax = ax.flatten()
 
-for col, value in df.items():
-    # Only plot numeric columns
-    if pd.api.types.is_numeric_dtype(df[col]):
-        sns.boxplot(y=col, data=df, ax=ax[index])
-        index += 1
-
-# Remove any unused subplots
-for i in range(index, len(ax)):
-    ax[i].remove()
-
+for col, value in df.select_dtypes(include=[np.number]).items():
+    sns.boxplot(y=col, data=df, ax=ax[index])
+    index += 1
 plt.tight_layout(pad=0.5, w_pad=0.7, h_pad=5.0)

@@ -78,39 +78,28 @@ import torch
 
 
 def load_loss_weights_from_directory(directory_path):
-    if not os.path.exists(directory_path):
-        raise FileNotFoundError(f"Directory not found: {directory_path}")
     weight_files = [filename for filename in os.listdir(directory_path) if filename.endswith(".npy")]
-    if not weight_files:
-        raise ValueError(f"No .npy files found in directory: {directory_path}")
-    weights = [np.load(os.path.join(directory_path, filename)) for filename in weight_files]
+    weights = [np.load(os.path.join(directory_path, filename), allow_pickle=True) for filename in weight_files]
     return np.concatenate(weights)
 
 
 def save_weights_to_directory(directory_path, weights):
-    # Save directly to the file without creating directory here
-    # Directory creation is handled before the loop
-    np.save(directory_path, weights)
+    os.makedirs(directory_path, exist_ok=True)
+    np.save(os.path.join(directory_path, "updated_regression_weights.npy"), weights)
 
 
-try:
-    regression_weights_directory = 'data/adjusted_survival_2019'
-    regression_weight = load_loss_weights_from_directory(regression_weights_directory)
-except (FileNotFoundError, ValueError) as e:
-    print(f"Warning: {e}")
-    print("Using default initial weights")
-    regression_weight = np.ones(10)  # default weights
+regression_weights_directory = 'data/adjusted_survival_2019'
+
+
+regression_weight = load_loss_weights_from_directory(regression_weights_directory)
+
 
 num_epochs_update_regression = 5
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 output_directory = 'data/updated_regression_weights'
-output_file = os.path.join(output_directory, "updated_regression_weights.npy")
-
-# Create output directory once before the loop
-if not os.path.exists(output_directory):
-    os.makedirs(output_directory)
+os.makedirs(output_directory, exist_ok=True)
 
 for epoch in range(num_epochs_update_regression):
 
@@ -127,19 +116,18 @@ for epoch in range(num_epochs_update_regression):
     update_factor_regression = max(0.0, min(1.0, update_factor_regression))
 
 
-    regression_weight_tensor = torch.tensor(regression_weight, dtype=torch.float32, device=device)
+    regression_weight = torch.tensor(regression_weight, dtype=torch.float32, device=device)
 
 
-    if update_factor_regression < 1e-6 and torch.all(regression_weight_tensor == 0):
+    if update_factor_regression < 1e-6 and torch.all(regression_weight == 0):
 
         update_factor_regression = 1e-3
 
 
-    regression_weight_tensor *= update_factor_regression
+    regression_weight *= update_factor_regression
 
 
-    regression_weight = regression_weight_tensor.cpu().numpy()
-    save_weights_to_directory(output_file, regression_weight)
+    save_weights_to_directory(output_directory, regression_weight.cpu().numpy())
 
 
 

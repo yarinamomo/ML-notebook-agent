@@ -26,13 +26,13 @@ def load_glove_embeddings(embeddings_file):
     embeddings_index = dict()
     with open(embeddings_file, 'r', encoding='utf-8') as f:
         for line in f:
+            values = line.split()
+            word = values[0]
             try:
-                values = line.split()
-                word = values[0]
                 coefs = np.asarray(values[1:], dtype='float32')
                 embeddings_index[word] = coefs
-            except (ValueError, IndexError):
-                # Skip lines that can't be parsed (e.g., Git LFS pointers or header lines)
+            except (ValueError, TypeError):
+                # Skip lines that can't be parsed (e.g., Git LFS headers)
                 continue
     return embeddings_index
 

@@ -39,13 +39,13 @@ from keras import backend as K
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 size=75
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 def getListOfFiles(dirName):
     listOfFile = os.listdir(dirName)
     allFiles = list()
@@ -61,14 +61,14 @@ def getListOfFiles(dirName):
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 benign_images = getListOfFiles('data/augmented/benign')
 malignent_images = getListOfFiles('data/augmented/malignant')
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
 data = pd.DataFrame(index=np.arange(0, len(benign_images)+len(malignent_images)), columns=["image", "target"])
 k=0
 
@@ -97,7 +97,7 @@ up_sampled['target'].value_counts()
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # train_image = []
 # y = []
@@ -125,22 +125,16 @@ up_sampled['target'].value_counts()
 # === AFTER (edited) ===
 train_image = []
 y = []
-valid_indices = []
 
 for i in tqdm(range(up_sampled.shape[0])):
-    try:
-        img = tf.keras.utils.load_img(up_sampled['image'].iloc[i], target_size=(size,size), color_mode="grayscale")
-        img = tf.keras.utils.img_to_array(img)
-        img = img/255
-        train_image.append(img)
-        valid_indices.append(i)
-    except Exception as e:
-        print(f"Error loading image at index {i}: {e}")
-        continue
+    img = tf.keras.utils.load_img(up_sampled['image'].iloc[i], target_size=(size,size), color_mode="rgb")
+    img = tf.keras.utils.img_to_array(img)
+    img = img/255
+    train_image.append(img)
 
 
 X = np.array(train_image)
-y = up_sampled.iloc[valid_indices, -1].values
+y = up_sampled.iloc[:,-1].values
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, test_size=0.2)
 X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, random_state=42, test_size=0.2 , shuffle=True)
 

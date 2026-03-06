@@ -73,7 +73,7 @@ trainloader = DataLoader(trainset, batch_size=4, shuffle=True, num_workers=2)
 testloader = DataLoader(testset, batch_size=4, shuffle=False, num_workers=2)
 
 
-model = fasterrcnn_resnet50_fpn(pretrained=True)
+model = fasterrcnn_resnet50_fpn(weights=torchvision.models.detection.FasterRCNN_ResNet50_FPN_Weights.DEFAULT)
 
 
 num_classes = 21

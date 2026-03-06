@@ -29,7 +29,27 @@ df = pd.read_csv("data/data.csv")
 # y = np.array(abnormaldata1.loc[:,"temperature"]).reshape(-1,1)
 
 # === AFTER (edited) ===
-abnormaldata1 = df  # Use all data instead of filtering by month
+# Check available columns in the dataframe
+print("Columns in dataframe:", df.columns.tolist())
+
+# Filter data (assuming the column might be named 'Month' or similar)
+# Common month column names could be 'Month', 'month', 'month_name', etc.
+# Let's try to find a month-related column
+month_col = None
+for col in df.columns:
+    if 'month' in col.lower():
+        month_col = col
+        break
+
+if month_col:
+    print(f"Using column: {month_col}")
+    abnormaldata1 = df[df[month_col] == '8']
+else:
+    print("No month column found, showing first few rows:")
+    print(df.head())
+    # If no month column, we'll proceed with all data
+    abnormaldata1 = df
+
 x = np.array(abnormaldata1.loc[:,"number_people"]).reshape(-1,1)
 y = np.array(abnormaldata1.loc[:,"temperature"]).reshape(-1,1)
 

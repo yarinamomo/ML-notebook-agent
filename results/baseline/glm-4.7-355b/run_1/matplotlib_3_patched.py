@@ -75,36 +75,55 @@ test_generator = test_datagen.flow_from_directory(
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# === BEFORE (original) ===
+# from tensorflow.keras.applications import InceptionV3
+# from tensorflow.keras.layers import GlobalAveragePooling2D
+# from tensorflow.keras.models import Model
+# 
+# base_model = InceptionV3(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+# 
+# # Freeze layers in the base model
+# for layer in base_model.layers:
+#     layer.trainable = False
+# 
+# # Add a global average pooling layer
+# x = base_model.output
+# x = GlobalAveragePooling2D()(x)
+# 
+# # Define the model with InceptionV3 features
+# inception_model = Model(inputs=base_model.input, outputs=x)
+
+# === AFTER (edited) ===
 from tensorflow.keras.applications import InceptionV3
 from tensorflow.keras.layers import GlobalAveragePooling2D
 from tensorflow.keras.models import Model
 
 base_model = InceptionV3(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
 
-# Freeze layers in the base model
+
 for layer in base_model.layers:
     layer.trainable = False
 
-# Add a global average pooling layer
+
 x = base_model.output
 x = GlobalAveragePooling2D()(x)
 
-# Define the model with InceptionV3 features
+
 inception_model = Model(inputs=base_model.input, outputs=x)
+
+# Verify the model was created successfully
+print(f"Inception model created successfully!")
+print(f"Model input shape: {inception_model.input_shape}")
+print(f"Model output shape: {inception_model.output_shape}")
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# train_features = inception_model.predict(train_generator)
-# test_features = inception_model.predict(test_generator)
-
-# === AFTER (edited) ===
-train_features = inception_model.predict(train_generator, steps=len(train_generator), verbose=1)
-test_features = inception_model.predict(test_generator, steps=len(test_generator), verbose=1)
+train_features = inception_model.predict(train_generator)
+test_features = inception_model.predict(test_generator)
 
 #%%
 # --- [CELL 6]: ---

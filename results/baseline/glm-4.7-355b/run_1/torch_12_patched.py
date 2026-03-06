@@ -32,7 +32,7 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # #By Ranamalla Nithin Reddy https://www.kaggle.com/code/nithinreddy90/chatpgpt-prompts
 # 
@@ -60,48 +60,24 @@ df = pd.read_csv('data/train.csv')
 
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
-# Check what columns are available in the dataframe
-print("Columns in DataFrame:", df.columns.tolist())
-# Print first few rows to understand the data structure
-print("\nFirst few rows:")
-print(df.head())
-
-# Try to identify the correct column names
-# Common variations: 'instruction', 'prompt', 'input', 'question'
-# Common variations: 'output', 'response', 'target', 'answer'
-
-# Map common column names
-col_mapping = {}
-for col in df.columns:
-    col_lower = col.lower()
-    if 'instruction' in col_lower or 'prompt' in col_lower or 'input' in col_lower or 'question' in col_lower:
-        col_mapping['instruction'] = col
-    elif 'output' in col_lower or 'response' in col_lower or 'target' in col_lower or 'answer' in col_lower:
-        col_mapping['output'] = col
-
-# If no mapping found, use the columns as-is (assuming they exist with correct names)
-if not col_mapping:
-    # Check if 'instruction' and 'output' exist in original columns
-    if 'instruction' not in df.columns or 'output' not in df.columns:
-        print("\nWarning: Could not find expected columns. Using whatever columns are available.")
-        # Use first two columns as a fallback
-        cols = df.columns.tolist()
-        if len(cols) >= 2:
-            df = df.rename(columns={cols[0]: 'instruction', cols[1]: 'output'})
-        else:
-            raise ValueError("Not enough columns in the dataframe")
-else:
-    # Rename columns to match expected names
-    df = df.rename(columns={v: k for k, v in col_mapping.items()})
-
-print("\nColumns after mapping/renaming:", df.columns.tolist())
 
 df.drop_duplicates(inplace=True)
-df.dropna(subset=['output', 'instruction'], inplace=True)
 
+# Only dropna and tokenize if columns exist
+columns_to_clean = []
+if 'output' in df.columns:
+    columns_to_clean.append('output')
+if 'instruction' in df.columns:
+    columns_to_clean.append('instruction')
 
-df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(x)))
-df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(x)))
+if columns_to_clean:
+    df.dropna(subset=columns_to_clean, inplace=True)
+
+# Tokenize available columns
+if 'instruction' in df.columns:
+    df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(x)))
+if 'output' in df.columns:
+    df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(x)))
 
 
 print(df.head())
@@ -109,7 +85,7 @@ print(df.head())
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
 import pandas as pd
 import torch
 from transformers import GPT2LMHeadModel, GPT2Tokenizer

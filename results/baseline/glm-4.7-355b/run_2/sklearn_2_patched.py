@@ -35,9 +35,41 @@ centerinfo = pd.read_csv('data/fulfilment_center_info.csv')
 # df.head()
 
 # === AFTER (edited) ===
-train = train_raw.rename(columns={'id': 'meal_id'})
-train = pd.merge(train, meal, on="meal_id", how="left")
-df = pd.merge(train, centerinfo, on="center_id", how="left")
+# Find meal_id and center_id columns (case-insensitive)
+def find_column(df, keywords):
+    for col in df.columns:
+        if any(keyword in col.lower() for keyword in keywords):
+            return col
+    return None
+
+# Rename columns to standard names
+meal_id_col_train = find_column(train_raw, ['meal_id', 'mealid', 'meal', 'id'])
+meal_id_col_meal = find_column(meal, ['meal_id', 'mealid', 'meal', 'id'])
+center_id_col_train = find_column(train_raw, ['center_id', 'centerid', 'center', 'id'])
+center_id_col_centerinfo = find_column(centerinfo, ['center_id', 'centerid', 'center', 'id'])
+
+# Rename to standard names if found
+if meal_id_col_meal and meal_id_col_meal != 'meal_id':
+    meal = meal.rename(columns={meal_id_col_meal: 'meal_id'})
+if center_id_col_centerinfo and center_id_col_centerinfo != 'center_id':
+    centerinfo = centerinfo.rename(columns={center_id_col_centerinfo: 'center_id'})
+
+def merge_with_key(df1, df2, key):
+    # Try different key variations for df1
+    for col in df1.columns:
+        if key in col.lower() or col.lower() in key.lower():
+            df1_renamed = df1.rename(columns={col: key})
+            return pd.merge(df1_renamed, df2, on=key, how='left')
+    # If no match found, try direct merge
+    return pd.merge(df1, df2, on=key, how='left')
+
+# First merge meal and centerinfo
+merged = pd.merge(meal, centerinfo, on='center_id', how='left')
+
+# Then merge with train (try different key names)
+merged = merge_with_key(train_raw, merged, 'meal_id')
+
+df = merged
 print("Shape of train data : ", df.shape)
 df.head()
 

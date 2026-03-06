@@ -19,7 +19,7 @@ else:
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # from sklearn.model_selection import train_test_split
 # from sklearn.ensemble import RandomForestRegressor
@@ -40,27 +40,27 @@ else:
 # y_pred = rf.predict(X_test)
 
 # === AFTER (edited) ===
-from sklearn.model_selection import train_test_split
+from sklearn.modelodel_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
-# Print available columns to see what's actually in the dataset
-print("Available columns:", list(df.columns))
+# Inspect and clean column names
+print("Columns in dataframe:", df.columns.tolist())
 
-# Try to find the target column by partial match (more robust)
-target_col = None
-for col in df.columns:
-    col_lower = col.lower()
-    if 'spending' in col_lower and 'score' in col_lower:
-        target_col = col
-        break
+# Clean column names by stripping whitespace
+df.columns = df.columns.str.strip()
 
-# If not found, use the last column as a fallback
-if target_col is None:
-    target_col = df.columns[-1]
-    print(f"Warning: Target column not found by partial match. Using '{target_col}'")
-else:
-    print(f"Using target column: '{target_col}'")
+# Try to find the target column
+target_col = 'Spending Score (1-100)'
+if target_col not in df.columns:
+    # Try to find a similar column name
+    possible_matches = [col for col in df.columns if 'spending' in col.lower() or 'score' in col.lower()]
+    if possible_matches:
+        target_col = possible_matches[0]
+        print(f"Using column '{target_col}' as target")
+    else:
+        print("Available columns:", df.columns.tolist())
+        raise ValueError(f"Could not find Spending Score column. Available columns: {df.columns.tolist()}")
 
 X = df.drop([target_col], axis=1)
 y = df[target_col]

@@ -25,6 +25,7 @@ print("El tamaño del dataset: {}".format(df.shape))
 # df.head(5)
 
 # === AFTER (edited) ===
+# Only drop columns that exist in the dataframe
 columns_to_drop = [col for col in ['PassengerId', 'Name'] if col in df.columns]
 df = df.drop(columns_to_drop, axis=1)
 df.head(5)

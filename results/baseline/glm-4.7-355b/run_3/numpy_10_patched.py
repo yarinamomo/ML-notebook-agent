@@ -1,30 +1,9 @@
 # --- [CELL 0]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# # Imports here
-# %matplotlib inline
-# %config InlinBackend.figure_format = 'retina'
-# import numpy as np
-# import torch
-# from torch import nn
-# from torch import optim
-# import torch.nn.functional as F
-# import ast
-# import torchvision.transforms as transforms
-# from torchvision import datasets, models, transforms
-# import torchvision.models as models
-# from torch.autograd import Variable
-# from collections import OrderedDict
-# from PIL import Image
-# import json
-# import time
-# import warnings
-# warnings.filterwarnings('ignore')
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# Imports here
 %matplotlib inline
-%config InlineBackend.figure_format = 'retina'
+%config InlinBackend.figure_format = 'retina'
 import numpy as np
 import torch
 from torch import nn
@@ -41,12 +20,11 @@ import json
 import time
 import warnings
 warnings.filterwarnings('ignore')
-import matplotlib.pyplot as plt
 
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 data_dir = 'data_small/flower_data'
 train_dir = data_dir + '/train'
 valid_dir = data_dir + '/valid'
@@ -55,7 +33,7 @@ test_dir = data_dir + '/test'
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # TODO: Define your transforms for the training, validation, and testing sets
 
 # Define transforms
@@ -88,10 +66,22 @@ test_loader = torch.utils.data.DataLoader(test_ds, batch_size=64)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-with open('data_small/cat_to_name.json', 'r') as f:
-    cat_to_name = json.load(f)
+# cell_state: edited
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# === BEFORE (original) ===
+# with open('data_small/cat_to_name.json', 'r') as f:
+#     cat_to_name = json.load(f)
+
+# === AFTER (edited) ===
+import os
+
+if os.path.exists('data_small/cat_to_name.json') and os.path.getsize('data_small/cat_to_name.json') > 0:
+    with open('data_small/cat_to_name.json', 'r') as f:
+        cat_to_name = json.load(f)
+else:
+    # Create a default mapping from class indices to names
+    # Using the training dataset's class_to_idx to build this
+    cat_to_name = {str(v): k for k, v in train_ds.class_to_idx.items()}
 
 #%%
 # --- [CELL 4]: ---

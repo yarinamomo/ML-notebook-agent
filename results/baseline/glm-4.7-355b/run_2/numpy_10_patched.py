@@ -24,7 +24,7 @@ warnings.filterwarnings('ignore')
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 data_dir = 'data_small/flower_data'
 train_dir = data_dir + '/train'
 valid_dir = data_dir + '/valid'
@@ -33,7 +33,7 @@ test_dir = data_dir + '/test'
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # TODO: Define your transforms for the training, validation, and testing sets
 
 # Define transforms
@@ -67,7 +67,7 @@ test_loader = torch.utils.data.DataLoader(test_ds, batch_size=64)
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # with open('data_small/cat_to_name.json', 'r') as f:
 #     cat_to_name = json.load(f)
@@ -76,14 +76,18 @@ test_loader = torch.utils.data.DataLoader(test_ds, batch_size=64)
 try:
     with open('data_small/cat_to_name.json', 'r') as f:
         cat_to_name = json.load(f)
-except (FileNotFoundError, json.JSONDecodeError):
-    # Create a default mapping for 102 flower classes
-    cat_to_name = {str(i): f'Class_{i}' for i in range(102)}
+        # Check if the loaded data is empty
+        if not cat_to_name:
+            raise ValueError("Empty JSON file")
+except (FileNotFoundError, json.JSONDecodeError, ValueError):
+    # Create a default mapping with 102 classes (as defined in the model)
+    cat_to_name = {str(i): f'Class_{i}' for i in range(1, 103)}
+    print("Warning: cat_to_name.json not found or empty, using default class names")
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # TODO: Build and train your network
 
 # VGG16 Model

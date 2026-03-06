@@ -96,27 +96,23 @@ if not os.path.isfile(training_binary_path):
   for filename in tqdm(os.listdir(faces_path)):
       path = os.path.join(faces_path,filename)
       try:
-          image = Image.open(path)
-          image = image.resize((GENERATE_SQUARE, GENERATE_SQUARE), Image.LANCZOS)
+          image = Image.open(path).resize((GENERATE_SQUARE,
+                GENERATE_SQUARE),Image.LANCZOS)
           training_data.append(np.asarray(image))
       except Exception as e:
-          print(f"Skipping {filename}: {e}")
+          print(f"Skipping file {filename}: {e}")
           continue
-  
-  if not training_data:
-      raise ValueError("No valid images were loaded!")
-  
+  if len(training_data) == 0:
+      raise ValueError("No valid images found in training directory!")
   training_data = np.reshape(training_data,(-1,GENERATE_SQUARE,
             GENERATE_SQUARE,3))
   training_data = training_data.astype(np.float32)
   training_data = training_data / 127.5 - 1.
 
+
   print("Saving training image binary...")
-  np.save(training_binary_path, training_data)
 
   elapsed = time.time()-start
-  print(f"Image processing took {elapsed:.2f} seconds")
-  print(f"Loaded {len(training_data)} images")
 
 else:
   print("Loading previous training pickle...")

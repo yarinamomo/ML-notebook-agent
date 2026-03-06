@@ -1,6 +1,30 @@
 # --- [CELL 0]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# === BEFORE (original) ===
+# import pandas as pd
+# import numpy as np
+# import matplotlib.pyplot as plt
+# import xgboost as xgb
+# import seaborn as sns
+# from statsmodels.tsa.arima.model import ARIMA
+# from statsmodels.tsa.statespace.sarimax import SARIMAX
+# from statsmodels.tsa.stattools import adfuller
+# from sklearn.model_selection import train_test_split
+# from sklearn.metrics import mean_squared_error
+# from sklearn.model_selection import GridSearchCV
+# from statsmodels.tsa.seasonal import seasonal_decompose
+# from matplotlib.ticker import MultipleLocator
+# # from fbprophet import Prophet
+# 
+# train_csv_path = "data/train.csv"
+# train = pd.read_csv(train_csv_path)
+# 
+# test_csv_path = "data/test.csv"
+# test = pd.read_csv(test_csv_path)
+# 
+
+# === AFTER (edited) ===
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,7 +38,7 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV
 from statsmodels.tsa.seasonal import seasonal_decompose
 from matplotlib.ticker import MultipleLocator
-# from fbprophet import Prophet
+
 
 train_csv_path = "data/train.csv"
 train = pd.read_csv(train_csv_path)
@@ -22,87 +46,42 @@ train = pd.read_csv(train_csv_path)
 test_csv_path = "data/test.csv"
 test = pd.read_csv(test_csv_path)
 
-
+print("Train columns:", train.columns.tolist())
+print("Train shape:", train.shape)
+print(train.head())
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train['date'] = pd.to_datetime(train['date'])
-# train['day'] = train['date'].dt.day
-# train['month'] = train['date'].dt.month
-# train['year'] = train['date'].dt.year
-# train['date'] = pd.to_datetime(train['date'])
-# train['day_of_week'] = train['date'].dt.weekday
-# train['week_of_year'] = train['date'].dt.isocalendar().week.astype(int)
-# train['quarter'] = train['date'].dt.quarter
-# train['day_of_year'] = train['date'].dt.dayofyear
-# 
-# # Cycle need to check the seasonality decompose
-# train['month_sin'] = np.sin(2 * np.pi * train['month'] / 12)
-# train['month_cos'] = np.cos(2 * np.pi * train['month'] / 12)
-# 
-# # Adding 2-day seasonality columns
-# # train['day_cycle'] = (train['date'].dt.day % 2)  # This will give a repeating pattern of [0, 1, 0, 1, ...]
-# # train['two_day_sin'] = np.sin(2 * np.pi * train['day_cycle'] / 2)
-# # train['two_day_cos'] = np.cos(2 * np.pi * train['day_cycle'] / 2)
-# 
-# # Drop 'day_cycle' as it's no longer needed
-# # train.drop('day_cycle', axis=1, inplace=True)
-# 
-# # Adding 7-day seasonality columns
-# train['week_sin'] = np.sin(2 * np.pi * train['day_of_week'] / 7)
-# train['week_cos'] = np.cos(2 * np.pi * train['day_of_week'] / 7)
-# 
-# # Lag need to check the autocorrelation
-# # Adding lags because I think SARIMA might neglected some lags (residuals having seasons, patterns)
-# train['sales_lag_7'] = train['sales'].shift(7)
-# train['sales_lag_365'] = train['sales'].shift(365)
-
-# === AFTER (edited) ===
-# Print available columns to identify the correct date column name
-print("Available columns:", train.columns.tolist())
-
-# Find the date column (case-insensitive search)
-date_col = None
-for col in train.columns:
-    if col.lower() == 'date':
-        date_col = col
-        break
-
-if date_col is None:
-    # Try other common date column names
-    for col in train.columns:
-        if 'date' in col.lower():
-            date_col = col
-            break
-
-if date_col is None:
-    raise ValueError("No date column found. Available columns: " + str(train.columns.tolist()))
-
-print(f"Using date column: '{date_col}'")
-train[date_col] = pd.to_datetime(train[date_col])
-
-# Check which columns already exist before overwriting
-if 'date' not in train.columns:
-    train['date'] = train[date_col]
-
+train['date'] = pd.to_datetime(train['date'])
 train['day'] = train['date'].dt.day
 train['month'] = train['date'].dt.month
 train['year'] = train['date'].dt.year
+train['date'] = pd.to_datetime(train['date'])
 train['day_of_week'] = train['date'].dt.weekday
 train['week_of_year'] = train['date'].dt.isocalendar().week.astype(int)
 train['quarter'] = train['date'].dt.quarter
 train['day_of_year'] = train['date'].dt.dayofyear
 
-
+# Cycle need to check the seasonality decompose
 train['month_sin'] = np.sin(2 * np.pi * train['month'] / 12)
 train['month_cos'] = np.cos(2 * np.pi * train['month'] / 12)
 
+# Adding 2-day seasonality columns
+# train['day_cycle'] = (train['date'].dt.day % 2)  # This will give a repeating pattern of [0, 1, 0, 1, ...]
+# train['two_day_sin'] = np.sin(2 * np.pi * train['day_cycle'] / 2)
+# train['two_day_cos'] = np.cos(2 * np.pi * train['day_cycle'] / 2)
+
+# Drop 'day_cycle' as it's no longer needed
+# train.drop('day_cycle', axis=1, inplace=True)
+
+# Adding 7-day seasonality columns
 train['week_sin'] = np.sin(2 * np.pi * train['day_of_week'] / 7)
 train['week_cos'] = np.cos(2 * np.pi * train['day_of_week'] / 7)
 
+# Lag need to check the autocorrelation
+# Adding lags because I think SARIMA might neglected some lags (residuals having seasons, patterns)
 train['sales_lag_7'] = train['sales'].shift(7)
 train['sales_lag_365'] = train['sales'].shift(365)
 

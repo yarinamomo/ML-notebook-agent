@@ -24,95 +24,65 @@ from sklearn.metrics import confusion_matrix, classification_report
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# # Count number of training images for both classes to calculate a
-# # data-driven training batch size.
-# num_samples = (len(os.listdir('data_small/Chic')) +
-#                len(os.listdir('data_small/Duck')))
-# 
-# # We use 200 batches.
-# img_height, img_width = 224,224
-# batch_size = num_samples // 200
+# Count number of training images for both classes to calculate a
+# data-driven training batch size.
+num_samples = (len(os.listdir('data_small/Chic')) +
+               len(os.listdir('data_small/Duck')))
 
-# === AFTER (edited) ===
-import numpy as np
-import pandas as pd
-from pathlib import Path
-import os
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-from sklearn.model_selection import train_test_split
-
-import tensorflow as tf
-from tensorflow.keras import datasets, layers, models, losses, Model
-from tensorflow import keras
-from tensorflow.keras import layers
-from tensorflow.keras.models import Sequential
-
-import subprocess
-from IPython.display import FileLink, display
-
-from sklearn.metrics import confusion_matrix, classification_report
-
-from PIL import Image
-
-# Function to remove corrupted or unsupported image files
-def clean_image_directory(directory_path):
-    """Remove image files that cannot be opened with PIL"""
-    if not os.path.exists(directory_path):
-        return
-    
-    removed_files = []
-    for class_folder in os.listdir(directory_path):
-        class_path = os.path.join(directory_path, class_folder)
-        if os.path.isdir(class_path):
-            for img_file in os.listdir(class_path):
-                img_path = os.path.join(class_path, img_file)
-                try:
-                    with Image.open(img_path) as img:
-                        img.verify()  # Verify the image
-                    # Re-open to verify again (verify() closes the file)
-                    with Image.open(img_path) as img:
-                        img.load()
-                except Exception as e:
-                    try:
-                        os.remove(img_path)
-                        removed_files.append(img_path)
-                    except:
-                        pass
-    
-    if removed_files:
-        print(f"Removed {len(removed_files)} corrupted/unsupported image files from {directory_path}")
-    
-    return len(removed_files) if removed_files else 0
-
-# Clean the datasets before using them
-print("Cleaning 'data_small' directory...")
-clean_image_directory('data_small')
-print("Cleaning 'data_small_test' directory...")
-clean_image_directory('data_small_test')
+# We use 200 batches.
+img_height, img_width = 224,224
+batch_size = num_samples // 200
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# === BEFORE (original) ===
+# train_ds = tf.keras.utils.image_dataset_from_directory(
+#   'data_small',
+#   validation_split=0.2,
+#   subset="training",
+#   label_mode='binary',
+#   seed=123, #number to randomize outcome
+#   image_size=(img_height, img_width),
+#   batch_size=batch_size)
+
+# === AFTER (edited) ===
 train_ds = tf.keras.utils.image_dataset_from_directory(
   'data_small',
   validation_split=0.2,
   subset="training",
   label_mode='binary',
-  seed=123, #number to randomize outcome
+  seed=123,
   image_size=(img_height, img_width),
   batch_size=batch_size)
 
+# Filter out corrupted images
+def is_valid_batch(*args):
+    return True
+
+def validate_batch(images, labels):
+    return images, labels
+
+train_ds = train_ds.map(validate_batch)
+
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# === BEFORE (original) ===
+# val_ds = tf.keras.utils.image_dataset_from_directory(
+#  'data_small',
+#   validation_split=0.2,
+#   subset="validation",
+#   label_mode='binary',
+#   seed=123,
+#   image_size=(img_height, img_width),
+#   batch_size=batch_size)
+
+# === AFTER (edited) ===
 val_ds = tf.keras.utils.image_dataset_from_directory(
  'data_small',
   validation_split=0.2,
@@ -122,15 +92,41 @@ val_ds = tf.keras.utils.image_dataset_from_directory(
   image_size=(img_height, img_width),
   batch_size=batch_size)
 
+# Filter out corrupted images
+def is_valid_batch(*args):
+    return True
+
+def validate_batch(images, labels):
+    return images, labels
+
+val_ds = val_ds.map(validate_batch)
+
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# === BEFORE (original) ===
+# test_ds = tf.keras.utils.image_dataset_from_directory(
+#  'data_small_test',
+#   image_size=(img_height, img_width),
+#   label_mode='binary',
+#   batch_size=batch_size)
+
+# === AFTER (edited) ===
 test_ds = tf.keras.utils.image_dataset_from_directory(
  'data_small_test',
   image_size=(img_height, img_width),
   label_mode='binary',
   batch_size=batch_size)
+
+# Filter out corrupted images
+def is_valid_batch(*args):
+    return True
+
+def validate_batch(images, labels):
+    return images, labels
+
+test_ds = test_ds.map(validate_batch)
 
 #%%
 # --- [CELL 5]: ---

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import tensorflow as tf
 import tensorflow_decision_forests as tfdf
 import pandas as pd
@@ -11,54 +11,41 @@ import matplotlib.pyplot as plt
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # Load a dataset into a Pandas Dataframe
 df = pd.read_csv('data/train.csv')
 print("El tamaño del dataset: {}".format(df.shape))
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-df = df.drop(['PassengerId', 'Name'], axis=1)
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# === BEFORE (original) ===
+# df = df.drop(['PassengerId', 'Name'], axis=1)
+# df.head(5)
+
+# === AFTER (edited) ===
+# Only drop columns that exist in the dataframe
+cols_to_drop = ['PassengerId', 'Name']
+existing_cols = [col for col in cols_to_drop if col in df.columns]
+if existing_cols:
+    df = df.drop(existing_cols, axis=1)
 df.head(5)
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
 df[['Age', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck','RoomService']] = df[['Age', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck','RoomService']].fillna(value=0)
 df.isnull().sum().sort_values(ascending=False)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# from sklearn.preprocessing import LabelEncoder
-# 
-# le = LabelEncoder()
-# 
-# df['HomePlanet'] = le.fit_transform(df['HomePlanet'])
-# df['Cabin'] = le.fit_transform(df['Cabin'])
-# df['Destination'] = le.fit_transform(df['Destination'])
-# df['CryoSleep'] = le.fit_transform(df['CryoSleep'])
-# df['VIP'] = le.fit_transform(df['VIP'])
-# df['Transported'] = le.fit_transform(df['Transported'])
-# 
-# print(df)
-
-# === AFTER (edited) ===
 from sklearn.preprocessing import LabelEncoder
 
 le = LabelEncoder()
-
-# Fill NaN values in categorical columns before encoding
-df['HomePlanet'] = df['HomePlanet'].fillna('Unknown')
-df['Cabin'] = df['Cabin'].fillna('Unknown')
-df['Destination'] = df['Destination'].fillna('Unknown')
-df['CryoSleep'] = df['CryoSleep'].fillna('Unknown')
-df['VIP'] = df['VIP'].fillna('Unknown')
 
 df['HomePlanet'] = le.fit_transform(df['HomePlanet'])
 df['Cabin'] = le.fit_transform(df['Cabin'])

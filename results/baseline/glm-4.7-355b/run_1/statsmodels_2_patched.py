@@ -61,21 +61,24 @@ test = pd.read_csv(test_csv_path)
 # train['sales_lag_365'] = train['sales'].shift(365)
 
 # === AFTER (edited) ===
-# Check the actual column names in the dataframe
-print("Available columns:", train.columns.tolist())
+# Debug: Check what columns are available
+print("Columns in train dataset:", train.columns.tolist())
 
-# Try to find the date column - common variations
-date_cols = [col for col in train.columns if 'date' in col.lower() or 'time' in col.lower() or col.lower() == 'd']
-print("Potential date columns:", date_cols)
+# Try to find the date column (could be named differently like 'Date', 'date', etc.)
+date_col = None
+for col in train.columns:
+    if col.lower() == 'date':
+        date_col = col
+        break
 
-# If no obvious date column, assume first column contains dates
-if len(date_cols) == 0:
-    date_col = train.columns[0]
-    train['date'] = pd.to_datetime(train[date_col])
-else:
-    train['date'] = pd.to_datetime(train[date_cols[0]])
+if date_col is None:
+    # If still not found, try to find it by checking if it's the first column
+    # or look for common variations
+    print("Date column not found. Available columns:", train.columns.tolist())
+    raise KeyError("Could not find a date column in the dataset")
 
-# Now proceed with the original feature engineering
+# Convert the date column using the actual column name
+train['date'] = pd.to_datetime(train[date_col])
 train['day'] = train['date'].dt.day
 train['month'] = train['date'].dt.month
 train['year'] = train['date'].dt.year

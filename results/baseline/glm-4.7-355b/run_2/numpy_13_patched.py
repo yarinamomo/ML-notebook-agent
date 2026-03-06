@@ -83,7 +83,13 @@ def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
                 print(f"Warning: Could not load {full_path}: {e}")
                 continue
 
-    data = np.array(data) if len(data) > 0 else np.array([])
+    if not data:
+        print("Warning: No audio files were successfully processed. Please check if:")
+        print("  1. The path '{0}' contains valid audio files".format(path))
+        print("  2. Audio backend libraries (soundfile or audioread) are available")
+        return np.array([])
+    
+    data = np.array(data)
     return data
 
 #%%

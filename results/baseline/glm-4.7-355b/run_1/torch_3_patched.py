@@ -51,14 +51,19 @@ class CustomModelMultichoice(nn.Module):
     def __init__(self,config,num_choice):
         super(CustomModelMultichoice,self).__init__()
         model = AutoModelForMultipleChoice.from_config(config)
-        # No need to replace the classifier - let the model handle it with num_labels from config
+        model.classifier = nn.Linear(768,num_choice)
         self.model = model
 
+        self.sigmoid = nn.Sigmoid()
         self.num_choice = num_choice
-        
     def forward(self,input_ids = None,token_type_ids = None ,attention_mask = None,labels = None):
-        outputs = self.model(input_ids=input_ids,token_type_ids=token_type_ids,attention_mask=attention_mask, labels=labels)
-        return outputs
+        outputs = self.model(input_ids=input_ids,token_type_ids=token_type_ids,attention_mask=attention_mask)
+        logits = self.sigmoid(outputs.logits)
+        loss = None
+        if labels is not None:
+            loss_func = nn.NLLLoss()
+            loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))
+        return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states = None,attentions =None)
 
 #%%
 # --- [CELL 5]: ---
@@ -119,5 +124,5 @@ target
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 out = CustomModel(**inputs,labels = target)

@@ -66,7 +66,7 @@ test_generator = test_datagen.flow_from_directory(
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # def prepare_model():
 #     model = Sequential()
@@ -85,16 +85,43 @@ test_generator = test_datagen.flow_from_directory(
 
 # === AFTER (edited) ===
 def prepare_model():
+    from tensorflow.keras.layers import Input
     model = Sequential()
-    model.add(Conv2D(32,kernel_size=(3,3),activation='relu',input_shape=(223, 223, 3)))
+    model.add(Input(shape=(223, 223, 3)))
+    model.add(Conv2D(32, kernel_size=(3,3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Flatten())
     model.add(Dense(16, activation='relu'))
     model.add(Dense(2, activation='softmax'))
-    model.compile(loss="categorical_crossentropy",optimizer="adam",metrics=['accuracy'])
+    model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=['accuracy'])
     return model
+
 model = prepare_model()
+
+batch_size = 8
+train_generator = train_datagen.flow_from_directory(
+    directory=src_path_train,
+    target_size=(223, 223),
+    color_mode="rgb",
+    batch_size=batch_size,
+    class_mode="categorical",
+    subset='training',
+    shuffle=True,
+    seed=40
+)
+
+valid_generator = train_datagen.flow_from_directory(
+    directory=src_path_train,
+    target_size=(223, 223),
+    color_mode="rgb",
+    batch_size=batch_size,
+    class_mode="categorical",
+    subset='validation',
+    shuffle=True,
+    seed=40
+)
+
 model.fit(train_generator,
-                    validation_data = valid_generator,
-                    epochs=5)
+          validation_data=valid_generator,
+          epochs=5)
 model.evaluate(test_generator)

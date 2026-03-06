@@ -61,39 +61,56 @@ seed=42
 # === AFTER (edited) ===
 train_df=pd.read_csv("data_small/train.csv",index_col=0)
 
-train_labels=train_df['label'].to_numpy()
+# Print column names to see what's available
+print("train_df columns:", train_df.columns.tolist())
+print("train_df shape:", train_df.shape)
+
+# Try to find the label column - could be named differently
+# Common alternatives: 'label', 'Label', 'target', 'Target', 'class', 'class_label'
+label_col = None
+for col in train_df.columns:
+    if col.lower() in ['label', 'target', 'class']:
+        label_col = col
+        break
+
+if label_col is None:
+    # If no obvious label column, use the last column
+    label_col = train_df.columns[-1]
+    print(f"Using '{label_col}' as label column (last column)")
+
+print(f"Label column: {label_col}")
+
+train_labels=train_df[label_col].to_numpy()
 train_labels=train_labels.reshape(train_labels.shape[0],1)
 
-
-train_df=train_df.drop(columns=['label', 'label_type'])
-test_df=pd.read_csv("data_small/test.csv",index_col=0)
-
-if 'label' in test_df.columns:
-    test_labels=test_df['label'].to_numpy()
-    test_labels=test_labels.reshape(test_labels.shape[0],1)
-    test_df=test_df.drop(columns=['label'])
+# Check if label_type exists
+if 'label_type' in train_df.columns:
+    train_df=train_df.drop(columns=[label_col, 'label_type'])
 else:
-    test_labels = np.array([[0]])
+    train_df=train_df.drop(columns=[label_col])
+    
+test_df=pd.read_csv("data_small/test.csv",index_col=0)
+print("test_df columns:", test_df.columns.tolist())
+
+test_labels=test_df[label_col].to_numpy()
+test_labels=test_labels.reshape(test_labels.shape[0],1)
+test_df=test_df.drop(columns=label_col)
 
 val_df = pd.read_csv("data_small/val.csv",index_col=0)
+print("val_df columns:", val_df.columns.tolist())
 
-if 'label' in val_df.columns:
-    val_labels=val_df['label'].to_numpy()
-    val_labels=val_labels.reshape(val_labels.shape[0],1)
-    val_df = val_df.drop(columns=['label'])
-else:
-    val_labels = np.array([[0]])
+val_labels=val_df[label_col].to_numpy()
+val_labels=val_labels.reshape(val_labels.shape[0],1)
+val_df = val_df.drop(columns=label_col)
 
 vocab=np.append(train_labels,val_labels)
-
 vocab=np.unique(vocab)
 vocab=vocab.reshape(vocab.shape[0],1)
 print(vocab.shape)
-num_classes = vocab.shape[0]
-oh = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
-hot_vocab=oh.fit(vocab)
+
+oh = OneHotEncoder(sparse_output=False)
+hot_vocab=oh.fit_transform(vocab)
 train_df.shape,val_df.shape,test_df.shape
-train_df
 
 #%%
 # --- [CELL 2]: ---

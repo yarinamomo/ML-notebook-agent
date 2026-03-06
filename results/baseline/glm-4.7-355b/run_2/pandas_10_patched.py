@@ -8,13 +8,13 @@ import matplotlib.pyplot as plt
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # df=pd.read_csv('data/googleplaystore.csv')
 
 # === AFTER (edited) ===
 df=pd.read_csv('data/googleplaystore.csv')
-# Clean column names by stripping whitespace
+# Strip whitespace from column names to avoid KeyError
 df.columns = df.columns.str.strip()
 
 #%%

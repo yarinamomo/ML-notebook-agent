@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -24,35 +24,21 @@ from sklearn.metrics import confusion_matrix, classification_report
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# # Count number of training images for both classes to calculate a
-# # data-driven training batch size.
-# num_samples = (len(os.listdir('data_small/Chic')) +
-#                len(os.listdir('data_small/Duck')))
-# 
-# # We use 200 batches.
-# img_height, img_width = 224,224
-# batch_size = num_samples // 200
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# Count number of training images for both classes to calculate a
+# data-driven training batch size.
+num_samples = (len(os.listdir('data_small/Chic')) +
+               len(os.listdir('data_small/Duck')))
 
-# === AFTER (edited) ===
-# Set a safe batch size (avoid division by zero if directories don't exist yet)
-# If directories exist, use the calculated value
-try:
-    num_samples = (len(os.listdir('data_small/Chic')) +
-                   len(os.listdir('data_small/Duck')))
-    batch_size = max(1, num_samples // 200)  # Ensure at least batch_size=1
-except:
-    # Fallback if directories don't exist yet
-    batch_size = 32
-
-img_height, img_width = 224, 224
+# We use 200 batches.
+img_height, img_width = 224,224
+batch_size = num_samples // 200
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 train_ds = tf.keras.utils.image_dataset_from_directory(
   'data_small',
   validation_split=0.2,
@@ -65,7 +51,7 @@ train_ds = tf.keras.utils.image_dataset_from_directory(
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 val_ds = tf.keras.utils.image_dataset_from_directory(
  'data_small',
   validation_split=0.2,
@@ -78,7 +64,7 @@ val_ds = tf.keras.utils.image_dataset_from_directory(
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 test_ds = tf.keras.utils.image_dataset_from_directory(
  'data_small_test',
   image_size=(img_height, img_width),
@@ -87,14 +73,22 @@ test_ds = tf.keras.utils.image_dataset_from_directory(
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-base_model = tf.keras.applications.ResNet50(weights = 'imagenet', include_top = False, input_shape = (224,224,3))
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# === BEFORE (original) ===
+# base_model = tf.keras.applications.ResNet50(weights = 'imagenet', include_top = False, input_shape = (224,224,3))
+
+# === AFTER (edited) ===
+base_model = tf.keras.applications.ResNet50(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+
+# Verify base_model was created successfully
+if 'base_model' not in locals():
+    raise RuntimeError("Failed to create base_model. Check TensorFlow installation and network connectivity.")
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 x = base_model.output
 x = keras.layers.GlobalAveragePooling2D()(x)
 
@@ -112,14 +106,14 @@ model = keras.models.Model(inputs=base_model.input,
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 for layer in model.layers[:175]:
     layer.trainable = False
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 model.compile(
     optimizer='adam',
     loss='binary_crossentropy',
@@ -129,7 +123,7 @@ model.compile(
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
 history = model.fit(
     train_ds,
     validation_data=val_ds,
@@ -157,39 +151,18 @@ print("Test Accuracy: {:.2f}%".format(results[1] * 100))
 
 #%%
 # --- [CELL 11]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# predictions = (model.predict(test_ds) >= 0.5)
-
-# === AFTER (edited) ===
-# Get predictions for all images in test dataset
-all_predictions = model.predict(test_ds)
-predictions = (all_predictions >= 0.5).astype(int)  # Convert to binary (0 or 1)
+predictions = (model.predict(test_ds) >= 0.5)
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# predictions = np.array([])
-# labels =  np.array([])
-# for x, y in test_ds:
-#   predictions = np.concatenate([predictions, model.predict_classes(x)])
-#   labels = np.concatenate([labels, np.argmax(y.numpy(), axis=-1)])
-# 
-# tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()
-
-# === AFTER (edited) ===
-# Get true labels from test dataset
+predictions = np.array([])
 labels =  np.array([])
 for x, y in test_ds:
-  labels = np.concatenate([labels, y.numpy().flatten().astype(int)])
+  predictions = np.concatenate([predictions, model.predict_classes(x)])
+  labels = np.concatenate([labels, np.argmax(y.numpy(), axis=-1)])
 
-# Use the predictions from cell 11 (already converted to 0/1)
-predictions = predictions.flatten()
-
-# Compute and display confusion matrix
-confusion_mat = tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()
-print("Confusion Matrix:")
-print(confusion_mat)
+tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()

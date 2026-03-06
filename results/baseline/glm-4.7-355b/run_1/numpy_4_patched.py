@@ -27,8 +27,62 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# === BEFORE (original) ===
+# train_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
+#                                    zoom_range = 0.4,
+#                                    validation_split = 0.2)
+# 
+# valid_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
+#                                    validation_split = 0.2)
+# 
+# test_datagen  = ImageDataGenerator(rescale = 1.0 / 255.0)
+
+# === AFTER (edited) ===
+import os
+import shutil
+from PIL import Image, UnidentifiedImageError
+
+# Function to check if an image file is valid
+def is_valid_image(file_path):
+    try:
+        with Image.open(file_path) as img:
+            img.verify()  # Verify it's a valid image
+            img.load()    # Try to load the image data
+        return True
+    except (UnidentifiedImageError, IOError, OSError):
+        return False
+
+# Function to copy only valid images to a new directory
+def create_clean_dataset(source_dir, target_dir):
+    if os.path.exists(target_dir):
+        shutil.rmtree(target_dir)
+    
+    for class_name in os.listdir(source_dir):
+        class_path = os.path.join(source_dir, class_name)
+        if not os.path.isdir(class_path):
+            continue
+        
+        target_class_path = os.path.join(target_dir, class_name)
+        os.makedirs(target_class_path, exist_ok=True)
+        
+        valid_count = 0
+        total_count = 0
+        
+        for filename in os.listdir(class_path):
+            total_count += 1
+            file_path = os.path.join(class_path, filename)
+            
+            if is_valid_image(file_path):
+                # Copy valid image to target directory
+                shutil.copy2(file_path, os.path.join(target_class_path, filename))
+                valid_count += 1
+            else:
+                print(f"Skipping corrupted file: {file_path}")
+        
+        print(f"Copied {valid_count}/{total_count} valid images for class {class_name}")
+
 train_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
                                    zoom_range = 0.4,
                                    validation_split = 0.2)
@@ -60,47 +114,25 @@ valid_dataset = valid_datagen.flow_from_directory(directory = 'data_small/chest-
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# # Defining Model
-# 
-# base_model = VGG16(input_shape=(224,224,3), 
-#                    include_top=False,
-#                    weights="imagenet")
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# Defining Model
 
-# === AFTER (edited) ===
-try:
-    base_model = VGG16(input_shape=(224,224,3),
-                       include_top=False,
-                       weights="imagenet")
-    print("VGG16 base_model created successfully")
-    print(f"Model type: {type(base_model)}")
-except Exception as e:
-    print(f"Error creating base_model: {e}")
-    raise
+base_model = VGG16(input_shape=(224,224,3), 
+                   include_top=False,
+                   weights="imagenet")
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# for layer in base_model.layers:
-#     layer.trainable=False
-
-# === AFTER (edited) ===
-# Check if base_model is defined before using it
-if 'base_model' not in locals() and 'base_model' not in globals():
-    raise NameError("base_model is not defined. Please ensure Cell 4 executed successfully.")
-
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 for layer in base_model.layers:
     layer.trainable=False
-print("All layers set to non-trainable")
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # Defining Layers
 
 model=Sequential()
@@ -122,7 +154,7 @@ model.add(Dense(1,activation='sigmoid'))
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # Model Compile 
 
 OPT    = tensorflow.keras.optimizers.Adam(learning_rate=0.001)
@@ -134,7 +166,7 @@ model.compile(loss='binary_crossentropy',
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 # Defining Callbacks
 
 filepath = 'data_small/best_weights.keras'
@@ -156,7 +188,7 @@ callback_list = [earlystopping, checkpoint]
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
 
 model_history=model.fit(train_dataset,
                         validation_data=valid_dataset,

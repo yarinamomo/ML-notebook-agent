@@ -555,7 +555,7 @@ print("Test labels shape:", y_test.shape)
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # from keras.regularizers import l2
 # from keras.optimizers import SGD
@@ -793,7 +793,7 @@ def evaluate(model):
     print('Test accuracy:', scores[1])
 
 
-def predict(model, image_idx, test_images, test_labels, classes):
+def predict(model, image_idx):
     layer_names = ['conv1', 'conv2', 'conv3', 'conv4']
     num_features = 4
 
@@ -803,7 +803,19 @@ def predict(model, image_idx, test_images, test_labels, classes):
     image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
     pred = np.argmax(model.predict(image))
 
-    plot_sample(dataset['test_images'][image_idx], classes[dataset['test_labels'][image_idx][0]], classes[pred])
+    plot_sample(dataset['test_images'][image_idx], classes[dataset['test_labels'][image_idx]], classes[pred])
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -843,11 +855,9 @@ if __name__ == '__main__':
     print('\n--- Processing the dataset ---')
     dataset = preprocess(dataset)
 
-    # Keras expects channel-last format: (batch, height, width, channels)
-    # No need to move axes since data from load_cifar is already in correct format
-    train_images = dataset['train_images']
-    validation_images = dataset['validation_images']
-    test_images = dataset['test_images']
+    train_images = np.moveaxis(dataset['train_images'], 1, 3)
+    validation_images = np.moveaxis(dataset['validation_images'], 1, 3)
+    test_images = np.moveaxis(dataset['test_images'], 1, 3)
     train_labels = to_categorical(dataset['train_labels'])
     validation_labels = to_categorical(dataset['validation_labels'])
     test_labels = to_categorical(dataset['test_labels'])
@@ -868,7 +878,6 @@ if __name__ == '__main__':
         model.add(Dense(256, name='fullyconnected', activation='relu', kernel_initializer='he_normal', kernel_regularizer=l2(lam)))
         model.add(Dense(10, name='dense', activation='softmax'))
 
-
     train(
         model,
         train_images,
@@ -886,10 +895,9 @@ if __name__ == '__main__':
 
     print('\n--- Predicting image from test set ---')
     image_idx = 40
-    predict(model, image_idx, test_images, test_labels, classes)
+    predict(model, image_idx)
 
     print('\n--- Plotting weight distributions ---')
     plot_weights(model)
 
     print('\n--- Saving the model ---')
-    model.save('model.h5')

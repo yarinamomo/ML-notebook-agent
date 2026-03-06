@@ -35,12 +35,6 @@ centerinfo = pd.read_csv('data/fulfilment_center_info.csv')
 # df.head()
 
 # === AFTER (edited) ===
-# Check column names to diagnose the issue
-print("train_raw columns:", train_raw.columns.tolist())
-print("meal columns:", meal.columns.tolist())
-print("centerinfo columns:", centerinfo.columns.tolist())
-
-# Try the merge - if meal_id doesn't exist, we need to find the correct column
 train = pd.merge(train_raw, meal, on="meal_id", how="left")
 df = pd.merge(train, centerinfo, on="center_id", how="left")
 print("Shape of train data : ", df.shape)

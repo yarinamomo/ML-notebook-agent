@@ -36,7 +36,10 @@ fig, ax = plt.subplots(ncols=7, nrows=2, figsize=(20, 10))
 index = 0
 ax = ax.flatten()
 
-for col, value in df.select_dtypes(include=[np.number]).items():
-    sns.boxplot(y=col, data=df, ax=ax[index])
-    index += 1
+for col, value in df.items():
+    if pd.api.types.is_numeric_dtype(value):
+        sns.boxplot(y=col, data=df, ax=ax[index])
+        index += 1
+    if index >= len(ax):
+        break
 plt.tight_layout(pad=0.5, w_pad=0.7, h_pad=5.0)

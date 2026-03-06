@@ -11,13 +11,13 @@ sns.set(rc={'figure.figsize':(10, 8)}); # you can change this if needed
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 df = pd.read_csv('data/bank-additional-full.csv', sep=';')
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # df['y'] = df['y'].map({"no":0,"yes":1})
 # df['contact'] = df['contact'].map({"cellular":0,"telephone":1})
@@ -25,10 +25,7 @@ df = pd.read_csv('data/bank-additional-full.csv', sep=';')
 # df1.head(6).T
 
 # === AFTER (edited) ===
-# Check available columns first to ensure correct column name
-print("Columns in dataframe:", df.columns.tolist())
-
-# Use the correct column name if it exists
+df.columns = df.columns.str.strip()
 df['y'] = df['y'].map({"no":0,"yes":1})
 df['contact'] = df['contact'].map({"cellular":0,"telephone":1})
 df1 = pd.get_dummies(df, columns=['job','marital','education','default','housing','loan','month','day_of_week','poutcome'])

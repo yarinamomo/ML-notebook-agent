@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,47 +8,16 @@ import seaborn as sns
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# train=pd.read_csv('data/train.csv')
-# test=pd.read_csv('data/test.csv')
-# submission=pd.read_csv('data/sample_submission.csv')
-
-# === AFTER (edited) ===
-import os
-
-# Check if data directory exists
-if not os.path.exists('data'):
-    print("Warning: 'data' directory not found. Creating it...")
-    os.makedirs('data', exist_ok=True)
-
-# Try to load CSV files with error handling
-try:
-    train = pd.read_csv('data/train.csv')
-    print(f"Train data loaded: {train.shape}")
-except FileNotFoundError:
-    print("Warning: 'data/train.csv' not found. Using sample data.")
-    train = pd.DataFrame()
-
-try:
-    test = pd.read_csv('data/test.csv')
-    print(f"Test data loaded: {test.shape}")
-except FileNotFoundError:
-    print("Warning: 'data/test.csv' not found. Using sample data.")
-    test = pd.DataFrame()
-
-try:
-    submission = pd.read_csv('data/sample_submission.csv')
-    print(f"Submission data loaded: {submission.shape}")
-except FileNotFoundError:
-    print("Warning: 'data/sample_submission.csv' not found. Using sample data.")
-    submission = pd.DataFrame()
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+train=pd.read_csv('data/train.csv')
+test=pd.read_csv('data/test.csv')
+submission=pd.read_csv('data/sample_submission.csv')
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 hmv_col=[]
 for col in train.columns:
     if train[col].isnull().sum()/train.shape[0] > 0.46:
@@ -65,6 +34,13 @@ print("No of columns after dropping high missing value column: ",len(train.colum
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-test=test.drop(['Alley','PoolQC','Fence','MiscFeature','Id'],axis=1)
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# === BEFORE (original) ===
+# test=test.drop(['Alley','PoolQC','Fence','MiscFeature','Id'],axis=1)
+
+# === AFTER (edited) ===
+cols_to_drop = ['Alley','PoolQC','Fence','MiscFeature','Id']
+# Only drop columns that exist in the dataframe
+cols_to_drop_existing = [col for col in cols_to_drop if col in test.columns]
+test = test.drop(cols_to_drop_existing, axis=1)

@@ -60,77 +60,27 @@ seed=42
 
 # === AFTER (edited) ===
 train_df=pd.read_csv("data_small/train.csv",index_col=0)
-
-# Check what columns are available
 print("Train columns:", train_df.columns.tolist())
 
-# Try to find the label column - it might be named differently
-label_col = None
-label_type_col = None
-for col in train_df.columns:
-    if ('label' in col.lower() and col != 'label_type'):
-        label_col = col
-    if col == 'label_type':
-        label_type_col = col
-
-print(f"Using '{label_col}' as label column")
-print(f"Using '{label_type_col}' as label_type column")
-
-if label_col is None:
-    # If no label column found, use the last column
-    label_col = train_df.columns[-1]
-    print(f"No label column found, using last column: '{label_col}'")
-
-train_labels=train_df[label_col].to_numpy()
+train_labels=train_df['label'].to_numpy()
 train_labels=train_labels.reshape(train_labels.shape[0],1)
 
 
-# Drop label and label_type columns
-cols_to_drop = []
-if label_col is not None and label_col in train_df.columns:
-    cols_to_drop.append(label_col)
-if label_type_col is not None and label_type_col in train_df.columns:
-    cols_to_drop.append(label_type_col)
-
-train_df=train_df.drop(columns=cols_to_drop)
-
+train_df=train_df.drop(columns=['label', 'label_type'])
 test_df=pd.read_csv("data_small/test.csv",index_col=0)
-# Check test columns
 print("Test columns:", test_df.columns.tolist())
 
-# Find label column in test
-test_label_col = None
-for col in test_df.columns:
-    if ('label' in col.lower() and col != 'label_type'):
-        test_label_col = col
-
-if test_label_col is None:
-    test_label_col = test_df.columns[-1]
-    print(f"No label column found in test, using last column: '{test_label_col}'")
-
-test_labels=test_df[test_label_col].to_numpy()
+test_labels=test_df['label'].to_numpy()
 test_labels=test_labels.reshape(test_labels.shape[0],1)
 
-test_df=test_df.drop(columns=test_label_col)
-
+test_df=test_df.drop(columns=('label'))
 val_df = pd.read_csv("data_small/val.csv",index_col=0)
 print("Val columns:", val_df.columns.tolist())
 
-# Find label column in val
-val_label_col = None
-for col in val_df.columns:
-    if ('label' in col.lower() and col != 'label_type'):
-        val_label_col = col
-
-if val_label_col is None:
-    val_label_col = val_df.columns[-1]
-    print(f"No label column found in val, using last column: '{val_label_col}'")
-
-val_labels=val_df[val_label_col].to_numpy()
+val_labels=val_df['label'].to_numpy()
 val_labels=val_labels.reshape(val_labels.shape[0],1)
 
-val_df = val_df.drop(columns=val_label_col)
-
+val_df = val_df.drop(columns=('label'))
 vocab=np.append(train_labels,val_labels)
 
 vocab=np.unique(vocab)
