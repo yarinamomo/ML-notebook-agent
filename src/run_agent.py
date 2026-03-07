@@ -42,7 +42,7 @@ def run_single_instance(
     )
 
     # Create and run agent
-    agent = UiAgent(model, env, initial_execution_output=env.get_initial_notebook(), **config.get("agent", {}))
+    agent = UiAgent(model, env, initial_notebook=env.get_initial_notebook(), **config.get("agent", {}))
     exit_status, submission = "", None
 
     try:
