@@ -89,7 +89,7 @@ RUN_CELL_TOOL = {
     "type": "function",
     "function": {
         "name": "run_cell",
-        "description": "Execute a specific cell by its 0-based index and return its output.",
+        "description": "Execute a specific cell by its 0-based index and return its output. Call this when you know the prior cells have been executed.",
         "parameters": {
             "type": "object",
             "properties": {
