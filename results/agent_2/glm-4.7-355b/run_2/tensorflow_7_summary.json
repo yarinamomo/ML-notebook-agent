@@ -1,0 +1,469 @@
+{
+  "metadata": {
+    "generated_at": "2026-03-07T21:14:03.300124",
+    "execution_time_seconds": 253.2,
+    "success": true,
+    "status": "Submitted",
+    "cost": 0.0682
+  },
+  "statistics": {
+    "total_steps": 17,
+    "total_operations": 17,
+    "successful_operations": 12,
+    "failed_operations": 5,
+    "cells_edited": 6,
+    "unique_cells_edited": 4,
+    "avg_tool_execution_time_seconds": 12.18
+  },
+  "original_notebook": [
+    {
+      "cell_type": "code",
+      "execution_count": 1,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-01-16T08:00:49.512512Z",
+          "iopub.status.busy": "2023-01-16T08:00:49.511994Z",
+          "iopub.status.idle": "2023-01-16T08:00:49.522620Z",
+          "shell.execute_reply": "2023-01-16T08:00:49.521359Z",
+          "shell.execute_reply.started": "2023-01-16T08:00:49.512466Z"
+        }
+      },
+      "outputs": [],
+      "source": "import tensorflow as tf\n#import tensorflow_addons as tfa\nimport matplotlib.pyplot as plt\nimport numpy as np\nfrom transformers import BertTokenizer, TFBertModel\n"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 2,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-01-16T08:00:49.524990Z",
+          "iopub.status.busy": "2023-01-16T08:00:49.524403Z",
+          "iopub.status.idle": "2023-01-16T08:00:49.541878Z",
+          "shell.execute_reply": "2023-01-16T08:00:49.540532Z",
+          "shell.execute_reply.started": "2023-01-16T08:00:49.524943Z"
+        }
+      },
+      "outputs": [
+        {
+          "name": "stdout",
+          "output_type": "stream",
+          "text": "Number of replicas :  1\n2.17.0\n"
+        }
+      ],
+      "source": "try:\n    tpu=tf.distribute.cluster_resolver.TCPClusterResolver()# this is a TensorFlow class\n    #used to create a TPUStrategy object for training on TPUs.\n    \n    print(\"Device : \",tpu.master())#returns name of TPU device designated as master (the master manages training and resources)\n    tf.config.experimental_connect_to_cluster(tpu)#connect TF class to cluster\n    \n    tf.tpu.experimental.initialize_tpu_system(tpu)# initializing TPU system\n    \n    strategy=tf.distribute.experimental.TPUStrategy(tpu)# distribute learning across multiple TPUs\n    \nexcept:\n    strategy=tf.distribute.get_strategy()#returns current strategy \n    # for CPU and single GPU see https://www.kaggle.com/code/anasofiauzsoy/tutorial-notebook/notebook\n\nprint(\"Number of replicas : \",strategy.num_replicas_in_sync)# shows copies of model undergoing training that are used to\n#synchronize gradient later\n\n\nprint(tf.__version__)\n\n# Number of replicas :  1\n# 2.6.4\n\n#NOTE: NUmber of replicas is 1. It means 1 copy of the model is going through the process and is going to have the gradient sync.\n#NOTE: The try block most proably did not work."
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 3,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-01-16T08:00:49.779830Z",
+          "iopub.status.busy": "2023-01-16T08:00:49.778810Z",
+          "iopub.status.idle": "2023-01-16T08:00:49.845976Z",
+          "shell.execute_reply": "2023-01-16T08:00:49.844965Z",
+          "shell.execute_reply.started": "2023-01-16T08:00:49.779784Z"
+        }
+      },
+      "outputs": [],
+      "source": "import pandas as pd\n\ntrain = pd.read_csv(\"data/train.csv\")\ntrain = train[:8] # for faster reproducing and fixing purposes --- make a smaller dataset"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 4,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-01-16T08:00:50.898473Z",
+          "iopub.status.busy": "2023-01-16T08:00:50.897631Z",
+          "iopub.status.idle": "2023-01-16T08:00:53.421976Z",
+          "shell.execute_reply": "2023-01-16T08:00:53.420628Z",
+          "shell.execute_reply.started": "2023-01-16T08:00:50.898409Z"
+        }
+      },
+      "outputs": [
+        {
+          "name": "stderr",
+          "output_type": "stream",
+          "text": "/usr/local/lib/python3.10/dist-packages/transformers/tokenization_utils_base.py:1601: FutureWarning: `clean_up_tokenization_spaces` was not set. It will be set to `True` by default. This behavior will be depracted in transformers v4.45, and will be then set to `False` by default. For more details check this issue: https://github.com/huggingface/transformers/issues/31884\n  warnings.warn(\n"
+        }
+      ],
+      "source": "model_name = 'bert-base-multilingual-cased'\ntokenizer = BertTokenizer.from_pretrained(model_name)"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 5,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-01-16T08:00:53.424542Z",
+          "iopub.status.busy": "2023-01-16T08:00:53.423627Z",
+          "iopub.status.idle": "2023-01-16T08:00:53.430587Z",
+          "shell.execute_reply": "2023-01-16T08:00:53.429374Z",
+          "shell.execute_reply.started": "2023-01-16T08:00:53.424490Z"
+        }
+      },
+      "outputs": [],
+      "source": "def encode_sentence(s):\n   tokens = list(tokenizer.tokenize(s))\n   tokens.append('[SEP]')\n   return tokenizer.convert_tokens_to_ids(tokens)"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 6,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-01-16T08:00:53.449365Z",
+          "iopub.status.busy": "2023-01-16T08:00:53.448864Z",
+          "iopub.status.idle": "2023-01-16T08:00:53.460538Z",
+          "shell.execute_reply": "2023-01-16T08:00:53.459096Z",
+          "shell.execute_reply.started": "2023-01-16T08:00:53.449320Z"
+        }
+      },
+      "outputs": [],
+      "source": "def bert_encode(hypotheses, premises, tokenizer, max_len=50):\n\n  num_examples = len(hypotheses)\n\n  sentence1 = tf.ragged.constant([\n      encode_sentence(s)\n      for s in np.array(hypotheses)])\n  sentence2 = tf.ragged.constant([\n      encode_sentence(s)\n       for s in np.array(premises)])\n\n  cls = tf.convert_to_tensor([[tokenizer.convert_tokens_to_ids(['[CLS]'])[0]]] * sentence1.shape[0], dtype=tf.int32)\n  input_word_ids = tf.concat([cls, sentence1, sentence2], axis=-1)\n\n  input_mask = tf.ones_like(input_word_ids)\n  input_mask = input_mask.to_tensor(default_value=0, shape=(num_examples, max_len))\n\n  type_cls = tf.zeros_like(cls)\n  type_s1 = tf.zeros_like(sentence1)\n  type_s2 = tf.ones_like(sentence2)\n  input_type_ids = tf.concat(\n      [type_cls, type_s1, type_s2], axis=-1)\n  input_type_ids = input_type_ids.to_tensor(default_value=0, shape=(num_examples, max_len))\n\n  input_word_ids = input_word_ids.to_tensor(default_value=0, shape=(num_examples, max_len))\n\n  inputs = {\n      'input_word_ids': input_word_ids,\n      'input_mask': input_mask,\n      'input_type_ids': input_type_ids}\n\n  return inputs"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 7,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-01-16T08:00:53.463417Z",
+          "iopub.status.busy": "2023-01-16T08:00:53.462168Z",
+          "iopub.status.idle": "2023-01-16T08:01:06.491497Z",
+          "shell.execute_reply": "2023-01-16T08:01:06.490335Z",
+          "shell.execute_reply.started": "2023-01-16T08:00:53.463378Z"
+        }
+      },
+      "outputs": [],
+      "source": "train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer, max_len=200)"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 8,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-01-16T08:01:06.505373Z",
+          "iopub.status.busy": "2023-01-16T08:01:06.504285Z",
+          "iopub.status.idle": "2023-01-16T08:01:06.515693Z",
+          "shell.execute_reply": "2023-01-16T08:01:06.514696Z",
+          "shell.execute_reply.started": "2023-01-16T08:01:06.505325Z"
+        }
+      },
+      "outputs": [],
+      "source": "max_len = 200\nfrom transformers import BertTokenizer, TFBertModel\n\n\ndef build_model():\n    bert_encoder = TFBertModel.from_pretrained(model_name)\n    input_word_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name=\"input_word_ids\")\n    input_mask = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name=\"input_mask\")\n    input_type_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name=\"input_type_ids\")\n\n    embedding = bert_encoder([input_word_ids, input_mask, input_type_ids])[0]\n    output = tf.keras.layers.Dense(3, activation='softmax')(embedding[:,0,:])\n\n    model = tf.keras.Model(inputs=[input_word_ids, input_mask, input_type_ids], outputs=output)\n    model.compile(tf.keras.optimizers.Adam(lr=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])\n\n    return model"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 9,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-01-16T08:01:06.518092Z",
+          "iopub.status.busy": "2023-01-16T08:01:06.516853Z",
+          "iopub.status.idle": "2023-01-16T08:01:42.705204Z",
+          "shell.execute_reply": "2023-01-16T08:01:42.704092Z",
+          "shell.execute_reply.started": "2023-01-16T08:01:06.518055Z"
+        }
+      },
+      "outputs": [
+        {
+          "name": "stderr",
+          "output_type": "stream",
+          "text": "Some weights of the PyTorch model were not used when initializing the TF 2.0 model TFBertModel: ['cls.seq_relationship.bias', 'cls.predictions.bias', 'cls.predictions.transform.LayerNorm.weight', 'cls.predictions.transform.dense.bias', 'cls.predictions.transform.dense.weight', 'cls.seq_relationship.weight', 'cls.predictions.transform.LayerNorm.bias']\n- This IS expected if you are initializing TFBertModel from a PyTorch model trained on another task or with another architecture (e.g. initializing a TFBertForSequenceClassification model from a BertForPreTraining model).\n- This IS NOT expected if you are initializing TFBertModel from a PyTorch model that you expect to be exactly identical (e.g. initializing a TFBertForSequenceClassification model from a BertForSequenceClassification model).\nAll the weights of TFBertModel were initialized from the PyTorch model.\nIf your task is similar to the task the model of the checkpoint was trained on, you can already use TFBertModel for predictions without further training.\n"
+        },
+        {
+          "name": "stdout",
+          "output_type": "stream",
+          "text": "Model: \"model\"\n__________________________________________________________________________________________________\n Layer (type)                Output Shape                 Param #   Connected to                  \n==================================================================================================\n input_word_ids (InputLayer  [(None, 50)]                 0         []                            \n )                                                                                                \n                                                                                                  \n input_mask (InputLayer)     [(None, 50)]                 0         []                            \n                                                                                                  \n input_type_ids (InputLayer  [(None, 50)]                 0         []                            \n )                                                                                                \n                                                                                                  \n tf_bert_model (TFBertModel  TFBaseModelOutputWithPooli   1778534   ['input_word_ids[0][0]',      \n )                           ngAndCrossAttentions(last_   40         'input_mask[0][0]',          \n                             hidden_state=(None, 50, 76              'input_type_ids[0][0]']      \n                             8),                                                                  \n                              pooler_output=(None, 768)                                           \n                             , past_key_values=None, hi                                           \n                             dden_states=None, attentio                                           \n                             ns=None, cross_attentions=                                           \n                             None)                                                                \n                                                                                                  \n tf.__operators__.getitem (  (None, 768)                  0         ['tf_bert_model[0][0]']       \n SlicingOpLambda)                                                                                 \n                                                                                                  \n dense (Dense)               (None, 3)                    2307      ['tf.__operators__.getitem[0][\n                                                                    0]']                          \n                                                                                                  \n==================================================================================================\nTotal params: 177855747 (678.47 MB)\nTrainable params: 177855747 (678.47 MB)\nNon-trainable params: 0 (0.00 Byte)\n__________________________________________________________________________________________________\n"
+        }
+      ],
+      "source": "with strategy.scope():\n    model = build_model()\n    model.summary()"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 10,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-01-16T08:01:42.707229Z",
+          "iopub.status.busy": "2023-01-16T08:01:42.706607Z",
+          "iopub.status.idle": "2023-01-16T08:01:42.995723Z",
+          "shell.execute_reply": "2023-01-16T08:01:42.993861Z",
+          "shell.execute_reply.started": "2023-01-16T08:01:42.707192Z"
+        },
+        "scrolled": false
+      },
+      "outputs": [
+        {
+          "name": "stdout",
+          "output_type": "stream",
+          "text": "Epoch 1/2\n"
+        },
+        {
+          "ename": "ValueError",
+          "evalue": "in user code:\n\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\", line 1398, in train_function  *\n        return step_function(self, iterator)\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\", line 1381, in step_function  **\n        outputs = model.distribute_strategy.run(run_step, args=(data,))\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\", line 1370, in run_step  **\n        outputs = model.train_step(data)\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\", line 1147, in train_step\n        y_pred = self(x, training=True)\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/utils/traceback_utils.py\", line 70, in error_handler\n        raise e.with_traceback(filtered_tb) from None\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/input_spec.py\", line 298, in assert_input_compatibility\n        raise ValueError(\n\n    ValueError: Input 0 of layer \"model\" is incompatible with the layer: expected shape=(None, 50), found shape=(None, 172)\n",
+          "output_type": "error",
+          "traceback": [
+            "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+            "\u001b[0;31mValueError\u001b[0m                                Traceback (most recent call last)",
+            "\u001b[0;32m<ipython-input-10-c8bc5cc527d1>\u001b[0m in \u001b[0;36m<cell line: 1>\u001b[0;34m()\u001b[0m\n\u001b[0;32m----> 1\u001b[0;31m \u001b[0mmodel\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mfit\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mtrain_input\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mtrain\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mlabel\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mvalues\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mepochs\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;36m2\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mverbose\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;36m1\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mbatch_size\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;36m64\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mvalidation_split\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;36m0.2\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m",
+            "\u001b[0;32m/usr/local/lib/python3.10/dist-packages/tf_keras/src/utils/traceback_utils.py\u001b[0m in \u001b[0;36merror_handler\u001b[0;34m(*args, **kwargs)\u001b[0m\n\u001b[1;32m     68\u001b[0m             \u001b[0;31m# To get the full stack trace, call:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m     69\u001b[0m             \u001b[0;31m# `tf.debugging.disable_traceback_filtering()`\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m---> 70\u001b[0;31m             \u001b[0;32mraise\u001b[0m \u001b[0me\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mwith_traceback\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mfiltered_tb\u001b[0m\u001b[0;34m)\u001b[0m \u001b[0;32mfrom\u001b[0m \u001b[0;32mNone\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m     71\u001b[0m         \u001b[0;32mfinally\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m     72\u001b[0m             \u001b[0;32mdel\u001b[0m \u001b[0mfiltered_tb\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;32m/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\u001b[0m in \u001b[0;36mtf__train_function\u001b[0;34m(iterator)\u001b[0m\n\u001b[1;32m     13\u001b[0m                 \u001b[0;32mtry\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m     14\u001b[0m                     \u001b[0mdo_return\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;32mTrue\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m---> 15\u001b[0;31m                     \u001b[0mretval_\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mag__\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mconverted_call\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mag__\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mld\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mstep_function\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m(\u001b[0m\u001b[0mag__\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mld\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mself\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mag__\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mld\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0miterator\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;32mNone\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mfscope\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m     16\u001b[0m                 \u001b[0;32mexcept\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m     17\u001b[0m                     \u001b[0mdo_return\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;32mFalse\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;31mValueError\u001b[0m: in user code:\n\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\", line 1398, in train_function  *\n        return step_function(self, iterator)\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\", line 1381, in step_function  **\n        outputs = model.distribute_strategy.run(run_step, args=(data,))\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\", line 1370, in run_step  **\n        outputs = model.train_step(data)\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\", line 1147, in train_step\n        y_pred = self(x, training=True)\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/utils/traceback_utils.py\", line 70, in error_handler\n        raise e.with_traceback(filtered_tb) from None\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/input_spec.py\", line 298, in assert_input_compatibility\n        raise ValueError(\n\n    ValueError: Input 0 of layer \"model\" is incompatible with the layer: expected shape=(None, 50), found shape=(None, 172)\n"
+          ]
+        }
+      ],
+      "source": "model.fit(train_input, train.label.values, epochs = 2, verbose = 1, batch_size = 64, validation_split = 0.2)"
+    }
+  ],
+  "llm_responses": [
+    {
+      "step": 1,
+      "content": "Let me first check the actual shape of the train_input to understand the mismatch:",
+      "reasoning": "Let me analyze the error:\n\nThe error is: `ValueError: Input 0 of layer \"model\" is incompatible with the layer: expected shape=(None, 50), found shape=(None, 172)`\n\nThis happens in cell 9 when calling `model.fit()`. The issue is a shape mismatch:\n- The model expects input shape `(None, 50)` (max_len = 50)\n- But the actual input has shape `(None, 172)`\n\nThis means the `train_input` from `bert_encode` is producing sequences of length 172, but the model is configured to only accept sequences of length 50.\n\nThere are two possible fixes:\n1. Increase `max_len` to accommodate the actual input shape (172 or more)\n2. Truncate the input in `bert_encode` to only keep the first 50 tokens\n\nLet me first check what's in `train_input` to understand the issue better. I'll check the shapes."
+    },
+    {
+      "step": 2,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "I need to run all cells first to get the session state, then inspect the train_input shape."
+    },
+    {
+      "step": 3,
+      "content": "",
+      "reasoning": "Good, now the cells have been executed. The error shows that the model expects shape (None, 50) but found shape (None, 172). This means the train_input has a sequence length of 172, but the model expects max_len=50.\n\nNow I can check the shapes of train_input to confirm this."
+    },
+    {
+      "step": 4,
+      "content": "Now I can see the issue clearly:\n- train_input has shape (8, 172) - the encoded sequences from the data\n- max_len is set to 50 in cell 7\n- The model expects inputs with shape (None, 50), but the actual input has shape (None, 172)\n\nThe fix is to truncate the train_input to max_len before training. I'll modify cell 9 to include code that truncates the input tensors:",
+      "reasoning": "Now I've confirmed the issue. The problem is clear:\n- train_input has shapes of (8, 172) - the actual encoded tokens from the data\n- max_len is set to 50 in cell 7\n- The model's input layers expect shape (None, 50), but the actual input has shape (None, 172)\n\nThe fix is to truncate/pad the train_input to max_len (50) before training. I need to add code to do this in cell 9 before calling model.fit().\n\nThe easiest way is to slice the inputs to max_len. I'll modify cell 9 to include code that truncates the input tensors to max_len before training."
+    },
+    {
+      "step": 5,
+      "content": "",
+      "reasoning": "Now let me run the cell to verify that the fix works."
+    },
+    {
+      "step": 6,
+      "content": "I see there's a TensorFlow tracing issue with tf.function. Let me try a different approach - instead of truncating the inputs, I'll increase `max_len` to accommodate the actual sequence length. The inputs have 172 tokens, so I'll update `max_len` to 200 in cell 7:",
+      "reasoning": "This is a different error - it's a TensorFlow version issue with tf.function. The error is happening when the model is called for the second time with a different input size. The model was first created inside strategy.scope() and this can cause issues with tf.function tracing.\n\nThe issue is that when we call model.summary() inside the training cell (cell 8), it initializes the model with the strategy scope. Then when we try to train it, there's an issue with tf.function.\n\nLet me check if the model needs to be rebuilt or if we need to avoid calling the model before training. Actually, looking at the previous output, model.summary() was called in cell 8 and it worked fine. The issue appears to be when training starts.\n\nLooking more carefully, this error often happens in distributed strategies when variables are created incorrectly. Let me try a different approach - instead of truncating the inputs, maybe we should increase max_len to match the actual input length. This would be simpler and avoid the truncation issue.\n\nLet me check what a more suitable max_len would be. The input is 172, so maybe we should set max_len to 200 or something like that.\n\nActually, let me try running the cells again from scratch to see if the state is causing issues. Let me run all cells first to see if it's a reproducible issue.\n\nActually, I think the issue might be that the model was created inside strategy.scope() but then we're trying to fit it with new inputs. The tf.function error suggests there's an issue with how variables are being created during training.\n\nOne common fix is to add `run_eagerly=True` to the compile step, or to rebuild the model before training.\n\nLet me try a simpler approach: just update max_len in cell 7 to be larger than the actual sequence length. The input has 172 tokens, so let's set max_len to 200."
+    },
+    {
+      "step": 7,
+      "content": "",
+      "reasoning": "Now I need to restore cell 9 to the original code (without my truncation fix):"
+    },
+    {
+      "step": 8,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Now let me run all cells again to rebuild the model with the correct max_len and train it:"
+    },
+    {
+      "step": 9,
+      "content": "I see the issue. The `bert_encode` function needs to be modified to truncate/pad to a specific max_len. Currently it just pads to the actual data length. Let me update the `bert_encode` function in cell 5 to use a max_len parameter:",
+      "reasoning": "The error is \"expected shape=(None, 200), found shape=(None, 172)\". The model expects 200 (max_len), but the inputs have 172 tokens.\n\nI think the issue is that when we create train_input, the tokenizer doesn't know about max_len, so it just encodes all tokens fully. Then the bert_encode function creates tensors using to_tensor(), which pads to the actual maximum length of the data (172).\n\nI need to modify the bert_encode function to accept a max_len parameter and pad/truncate to that length. Let me modify cell 5 to add max_len parameter."
+    },
+    {
+      "step": 10,
+      "content": "",
+      "reasoning": "Now I need to update cell 6 to use max_len when calling bert_encode. I'll pass max_len=200 to match the model input size."
+    },
+    {
+      "step": 11,
+      "content": "",
+      "reasoning": "Now I need to check the shape again to make sure it matches:"
+    },
+    {
+      "step": 12,
+      "content": "",
+      "reasoning": "The shape is still 172, not 200. The tf.ragged.constant must be interfering. Let me modify the approach again. I'll convert the ragged tensors properly:"
+    },
+    {
+      "step": 13,
+      "content": "I see the issue - the `cls` variable needs to be shaped properly for concatenation. Let me fix the `bert_encode` function:",
+      "reasoning": "Ah, I see the issue now. The `cls` variable needs to be a 2-D tensor too. Let me fix the bert_encode function again."
+    },
+    {
+      "step": 14,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Now let me verify the fix by running the notebook cells again from cell 5 onwards."
+    },
+    {
+      "step": 15,
+      "content": "Let me run cell 9 alone to get the full training output:",
+      "reasoning": "Hmm, it seems like the print output was cut off. The warning message suggests that training may have completed but the output was truncated. Let me run just cell 9 to get the complete output:"
+    },
+    {
+      "step": 16,
+      "content": "All cells run successfully now! The warning about gradients not existing for `pooler` variables is expected since we're using the last hidden state (the sequence output), not the pooled output from the pooler layer. This is just informational and doesn't affect training.\n\nLet me do a final verification by checking that the model actually created and trained:",
+      "reasoning": "The cell executed successfully (status: ok). It seems like the training ran but the output is truncated or not showing the progress bars. This is likely due to the small dataset size (8 rows with 80% validation split = 6 training samples, which is very small). The training may have completed without showing detailed progress.\n\nThe important thing is that there's no error anymore - the status is \"ok\". Let me verify the notebook runs completely without errors."
+    },
+    {
+      "step": 17,
+      "content": "All cells now run successfully. Let me submit the fix.",
+      "reasoning": "All cells run successfully. The notebook is fixed. \n\nSummary of the changes I made:\n1. Modified cell 5 (bert_encode function) to:\n   - Accept a max_len parameter with default value of 50\n   - Properly shape the cls token using tf.convert_to_tensor for correct concatenation\n   - Use to_tensor() with shape parameter to force all outputs to the specified max_len (padding with 0 if needed)\n   \n2. Modified cell 6 to call bert_encode with max_len=200 to match the model's input shape\n\n3. Modified cell 7 to increase max_len from 50 to 200 to accommodate the actual sequence length (172 tokens from the data)\n\nThis ensures that:\n- The encoded inputs have shape (8, 200) matching the model's expected input shape\n- The model can train without shape mismatch errors\n- The training completes successfully\n\nThe changes preserve the original intent of the code (encoding BERT inputs and training a classifier), they just fix the shape mismatch issue between the encoded data and the model input layer."
+    }
+  ],
+  "operations": [
+    {
+      "step": 1,
+      "action": "run_code(code=<282 chars>)",
+      "output": "Execution Count: 2 | Status: error\n\n---ERROR---: NameError: name 'train_input' is not defined\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.156
+    },
+    {
+      "step": 2,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\nNumber of replicas :  1\n2.17.0\n\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\ntokenizer_config.json:   0%|          | 0.00/49.0 [00:00<?, ?B/s]vocab.txt: 0.00B [00:00, ?B/s]tokenizer.json: 0.00B [00:00, ?B/s]config.json:   0%|          | 0.00/625 [00:00<?, ?B/s]/usr/local/lib/python3.10/dist-packages/transformers/tokenization_utils_base.py:1601: FutureWarning: `clean_up_tokenization_spaces` was not set. It will be set to `True` by default. This behavior will be depracted in transformers v4.45, and will be then set to `False` by default. For more details check this issue: https://github.com/huggingface/transformers/issues/31884\n  warnings.warn(\n\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\nmodel.safetensors:   0%|          | 0.00/714M [00:00<?, ?B/s]Some weights of the PyTorch model were not used when initializing the TF 2.0 model TFBertModel: ['cls.predictions.transform.dense.bias', 'cls.predictions.transform.LayerNorm.weight', 'cls.seq_relationship.bias', 'cls.predictions.transform.dense.weight', 'cls.predictions.bias', 'cls.seq_relationship.weight', 'cls.predictions.transform.LayerNorm.bias']\n- This IS expected if you are initializing TFBertModel from a PyTorch model trained on another task or with another architecture (e.g. initializing a TFBertForSequenceClassification model from a BertForPreTraining model).\n- This IS NOT expected if you are initializing TFBertModel from a PyTorch model that you expect to be exactly identical (e.g. initializing a TFBertForSequenceClassification model from a BertForSequenceClassification model).\nModel: \"model\"\n\n\nCell 9:\nExecution Count: 10 | Status: error\nEpoch 1/2\n\n---ERROR---: ValueError: in user code:\n\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\", line 1398, in train_function  *\n        return step_function(self, iterator)\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\", line 1381, in step_function  **\n        outputs = model.distribute_strategy.run(run_step, args=(data,))\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\", line 1370, in run_step  **\n        outputs = model.train_step(data)\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\", line 1147, in train_step\n        y_pred = self(x, training=True)\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/utils/traceback_utils.py\", line 70, in error_handler\n        raise e.with_traceback(filtered_tb) from None\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/input_spec.py\", line 298, in assert_input_compatibility\n        raise ValueError(\n\n    ValueError: Input 0 of layer \"model\" is incompatible with the layer: expected shape=(None, 50), found shape=(None, 172)\n\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 24.495
+    },
+    {
+      "step": 3,
+      "action": "run_code(code=<282 chars>)",
+      "output": "Execution Count: 11 | Status: ok\nShape of train_input['input_word_ids']: (8, 172)\nShape of train_input['input_mask']: (8, 172)\nShape of train_input['input_type_ids']: (8, 172)\nmax_len value: 50\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0559
+    },
+    {
+      "step": 4,
+      "action": "edit_cell(cell_index=9, code=<365 chars>)",
+      "output": "Cell 9 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0064
+    },
+    {
+      "step": 5,
+      "action": "run_cell(cell_index=9)",
+      "output": "Execution Count: 12 | Status: error\nEpoch 1/2\nWARNING:tensorflow:Gradients do not exist for variables ['tf_bert_model/bert/pooler/dense/kernel:0', 'tf_bert_model/bert/pooler/dense/bias:0'] when minimizing the loss. If you're using `model.compile()`, did you forget to provide a `loss` argument?\n\n---ERROR---: ValueError: Creating variables on a non-first call to a function decorated with tf.function.\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 18.8913
+    },
+    {
+      "step": 6,
+      "action": "edit_cell(cell_index=7, code=<803 chars>)",
+      "output": "Cell 7 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.1462
+    },
+    {
+      "step": 7,
+      "action": "edit_cell(cell_index=9, code='model.fit(train_input, train.label.values, epochs = 2, verbose = 1, batch_size = 64, validation_split = 0.2)')",
+      "output": "Cell 9 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0165
+    },
+    {
+      "step": 8,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\nNumber of replicas :  1\n2.17.0\n\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n/usr/local/lib/python3.10/dist-packages/transformers/tokenization_utils_base.py:1601: FutureWarning: `clean_up_tokenization_spaces` was not set. It will be set to `True` by default. This behavior will be depracted in transformers v4.45, and will be then set to `False` by default. For more details check this issue: https://github.com/huggingface/transformers/issues/31884\n  warnings.warn(\n\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\nSome weights of the PyTorch model were not used when initializing the TF 2.0 model TFBertModel: ['cls.seq_relationship.weight', 'cls.predictions.transform.dense.weight', 'cls.predictions.transform.dense.bias', 'cls.predictions.bias', 'cls.seq_relationship.bias', 'cls.predictions.transform.LayerNorm.weight', 'cls.predictions.transform.LayerNorm.bias']\n- This IS expected if you are initializing TFBertModel from a PyTorch model trained on another task or with another architecture (e.g. initializing a TFBertForSequenceClassification model from a BertForPreTraining model).\n- This IS NOT expected if you are initializing TFBertModel from a PyTorch model that you expect to be exactly identical (e.g. initializing a TFBertForSequenceClassification model from a BertForSequenceClassification model).\nModel: \"model\"\n\n\nCell 9:\nExecution Count: 10 | Status: error\nEpoch 1/2\n\n---ERROR---: ValueError: in user code:\n\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\", line 1398, in train_function  *\n        return step_function(self, iterator)\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\", line 1381, in step_function  **\n        outputs = model.distribute_strategy.run(run_step, args=(data,))\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\", line 1370, in run_step  **\n        outputs = model.train_step(data)\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/training.py\", line 1147, in train_step\n        y_pred = self(x, training=True)\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/utils/traceback_utils.py\", line 70, in error_handler\n        raise e.with_traceback(filtered_tb) from None\n    File \"/usr/local/lib/python3.10/dist-packages/tf_keras/src/engine/input_spec.py\", line 298, in assert_input_compatibility\n        raise ValueError(\n\n    ValueError: Input 0 of layer \"model\" is incompatible with the layer: expected shape=(None, 200), found shape=(None, 172)\n\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 39.3452
+    },
+    {
+      "step": 9,
+      "action": "edit_cell(cell_index=5, code=<1069 chars>)",
+      "output": "Cell 5 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0281
+    },
+    {
+      "step": 10,
+      "action": "edit_cell(cell_index=6, code='train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer, max_len=200)')",
+      "output": "Cell 6 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0209
+    },
+    {
+      "step": 11,
+      "action": "run_code(code=<249 chars>)",
+      "output": "Execution Count: 11 | Status: ok\nShape of train_input['input_word_ids']: (8, 172)\nShape of train_input['input_mask']: (8, 172)\nShape of train_input['input_type_ids']: (8, 172)\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0629
+    },
+    {
+      "step": 12,
+      "action": "run_code(code=<558 chars>)",
+      "output": "Execution Count: 12 | Status: error\n\n---ERROR---: ValueError: Shape (1, None) must have rank 1\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.1179
+    },
+    {
+      "step": 13,
+      "action": "edit_cell(cell_index=5, code=<1114 chars>)",
+      "output": "Cell 5 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0107
+    },
+    {
+      "step": 14,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\nNumber of replicas :  1\n2.17.0\n\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n/usr/local/lib/python3.10/dist-packages/transformers/tokenization_utils_base.py:1601: FutureWarning: `clean_up_tokenization_spaces` was not set. It will be set to `True` by default. This behavior will be depracted in transformers v4.45, and will be then set to `False` by default. For more details check this issue: https://github.com/huggingface/transformers/issues/31884\n  warnings.warn(\n\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\nSome weights of the PyTorch model were not used when initializing the TF 2.0 model TFBertModel: ['cls.seq_relationship.weight', 'cls.predictions.bias', 'cls.seq_relationship.bias', 'cls.predictions.transform.LayerNorm.bias', 'cls.predictions.transform.dense.weight', 'cls.predictions.transform.dense.bias', 'cls.predictions.transform.LayerNorm.weight']\n- This IS expected if you are initializing TFBertModel from a PyTorch model trained on another task or with another architecture (e.g. initializing a TFBertForSequenceClassification model from a BertForPreTraining model).\n- This IS NOT expected if you are initializing TFBertModel from a PyTorch model that you expect to be exactly identical (e.g. initializing a TFBertForSequenceClassification model from a BertForSequenceClassification model).\nModel: \"model\"\n\n\nCell 9:\nExecution Count: 10 | Status: ok\nEpoch 1/2\nWARNING:tensorflow:Gradients do not exist for variables ['tf_bert_model/bert/pooler/dense/kernel:0', 'tf_bert_model/bert/pooler/dense/bias:0'] when minimizing the loss. If you're using `model.compile()`, did you forget to provide a `loss` argument?\n<tf_keras.src.callbacks.History at 0x7f3eb18be680>",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 98.0083
+    },
+    {
+      "step": 15,
+      "action": "run_cell(cell_index=9)",
+      "output": "Execution Count: 11 | Status: ok\nEpoch 1/2\n<tf_keras.src.callbacks.History at 0x7f3df05198a0>",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 13.3812
+    },
+    {
+      "step": 16,
+      "action": "run_code(code=<231 chars>)",
+      "output": "Execution Count: 12 | Status: ok\nModel input shapes: [TensorShape([None, 200]), TensorShape([None, 200]), TensorShape([None, 200])]\nModel output shape: (None, 3)\n\nTraining completed. History object: {'loss': [1.5963252782821655, 0.7440810799598694], 'accuracy': [0.1666666716337204, 0.8333333134651184], 'val_loss': [1.7040985822677612, 6.9728617668151855], 'val_accuracy': [0.5, 0.0]}\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.1574
+    },
+    {
+      "step": 17,
+      "action": "Submitted",
+      "output": "Fixed the ValueError in cell 9 by resolving the shape mismatch between the encoded inputs and the model's input layer. \n\nChanges made:\n1. Modified cell 5 (bert_encode function) to accept a max_len parameter and use to_tensor(shape=...) to properly pad/truncate outputs to the specified length. Also fixed the cls token shape for correct concatenation.\n\n2. Modified cell 6 to call bert_encode with max_len=200 to match the model's expected input shape.\n\n3. Modified cell 7 to update max_len from 50 to 200 to accommodate the actual encoded sequence length (172 tokens from the data).\n\nThe encoded inputs now have shape (8, 200) matching the model's expected input shape (None, 200), and training completes successfully.",
+      "return_code": 0,
+      "success": true
+    }
+  ],
+  "code_changes": [
+    {
+      "cell_index": 9,
+      "step": 4,
+      "code": "# Truncate inputs to max_len\ntrain_input_truncated = {\n    'input_word_ids': train_input['input_word_ids'][:, :max_len],\n    'input_mask': train_input['input_mask'][:, :max_len],\n    'input_type_ids': train_input['input_type_ids'][:, :max_len]\n}\n\nmodel.fit(train_input_truncated, train.label.values, epochs = 2, verbose = 1, batch_size = 64, validation_split = 0.2)"
+    },
+    {
+      "cell_index": 7,
+      "step": 6,
+      "code": "max_len = 200\nfrom transformers import BertTokenizer, TFBertModel\n\n\ndef build_model():\n    bert_encoder = TFBertModel.from_pretrained(model_name)\n    input_word_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name=\"input_word_ids\")\n    input_mask = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name=\"input_mask\")\n    input_type_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name=\"input_type_ids\")\n\n    embedding = bert_encoder([input_word_ids, input_mask, input_type_ids])[0]\n    output = tf.keras.layers.Dense(3, activation='softmax')(embedding[:,0,:])\n\n    model = tf.keras.Model(inputs=[input_word_ids, input_mask, input_type_ids], outputs=output)\n    model.compile(tf.keras.optimizers.Adam(lr=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])\n\n    return model"
+    },
+    {
+      "cell_index": 9,
+      "step": 7,
+      "code": "model.fit(train_input, train.label.values, epochs = 2, verbose = 1, batch_size = 64, validation_split = 0.2)"
+    },
+    {
+      "cell_index": 5,
+      "step": 9,
+      "code": "def bert_encode(hypotheses, premises, tokenizer, max_len=50):\n\n  num_examples = len(hypotheses)\n\n  sentence1 = tf.ragged.constant([\n      encode_sentence(s)\n      for s in np.array(hypotheses)])\n  sentence2 = tf.ragged.constant([\n      encode_sentence(s)\n       for s in np.array(premises)])\n\n  cls = [tokenizer.convert_tokens_to_ids(['[CLS]'])]*sentence1.shape[0]\n  input_word_ids = tf.concat([cls, sentence1, sentence2], axis=-1)\n\n  input_mask = tf.ones_like(input_word_ids)\n  input_mask = input_mask.to_tensor(default_value=0, shape=(num_examples, max_len))\n\n  type_cls = tf.zeros_like(cls)\n  type_s1 = tf.zeros_like(sentence1)\n  type_s2 = tf.ones_like(sentence2)\n  input_type_ids = tf.concat(\n      [type_cls, type_s1, type_s2], axis=-1)\n  input_type_ids = input_type_ids.to_tensor(default_value=0, shape=(num_examples, max_len))\n\n  input_word_ids = input_word_ids.to_tensor(default_value=0, shape=(num_examples, max_len))\n\n  inputs = {\n      'input_word_ids': input_word_ids,\n      'input_mask': input_mask,\n      'input_type_ids': input_type_ids}\n\n  return inputs"
+    },
+    {
+      "cell_index": 6,
+      "step": 10,
+      "code": "train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer, max_len=200)"
+    },
+    {
+      "cell_index": 5,
+      "step": 13,
+      "code": "def bert_encode(hypotheses, premises, tokenizer, max_len=50):\n\n  num_examples = len(hypotheses)\n\n  sentence1 = tf.ragged.constant([\n      encode_sentence(s)\n      for s in np.array(hypotheses)])\n  sentence2 = tf.ragged.constant([\n      encode_sentence(s)\n       for s in np.array(premises)])\n\n  cls = tf.convert_to_tensor([[tokenizer.convert_tokens_to_ids(['[CLS]'])[0]]] * sentence1.shape[0], dtype=tf.int32)\n  input_word_ids = tf.concat([cls, sentence1, sentence2], axis=-1)\n\n  input_mask = tf.ones_like(input_word_ids)\n  input_mask = input_mask.to_tensor(default_value=0, shape=(num_examples, max_len))\n\n  type_cls = tf.zeros_like(cls)\n  type_s1 = tf.zeros_like(sentence1)\n  type_s2 = tf.ones_like(sentence2)\n  input_type_ids = tf.concat(\n      [type_cls, type_s1, type_s2], axis=-1)\n  input_type_ids = input_type_ids.to_tensor(default_value=0, shape=(num_examples, max_len))\n\n  input_word_ids = input_word_ids.to_tensor(default_value=0, shape=(num_examples, max_len))\n\n  inputs = {\n      'input_word_ids': input_word_ids,\n      'input_mask': input_mask,\n      'input_type_ids': input_type_ids}\n\n  return inputs"
+    }
+  ]
+}
