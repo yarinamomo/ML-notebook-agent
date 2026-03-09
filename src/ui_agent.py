@@ -4,6 +4,7 @@ from pathlib import Path
 
 from minisweagent.agents.default import DefaultAgent
 from minisweagent.exceptions import InterruptAgentFlow
+from src.utils.format_nb_cells import format_cell_source_for_llm
 import src.utils.ui as ui
 from src.utils.summary_util import build_summary, extract_reasoning, find_action
 from typing import override, TYPE_CHECKING
@@ -72,12 +73,13 @@ class UiAgent(DefaultAgent):
     def save_summary(self, path: Path | None = None) -> dict:
         """Build an execution summary from the message history. Save to *path* if given."""
         elapsed = (time.monotonic() - self._start_time) if self._start_time else 0.0
-        initial_cells = []        
+        formatted_cells = []        
         if hasattr(self.env, 'problem') and self.env.problem:
             initial_notebook = self.env.problem.get_initial_notebook()
-            initial_cells = initial_notebook.cells if initial_notebook else []
+            notebook_cells = initial_notebook.cells if initial_notebook else []
+            formatted_cells = [format_cell_source_for_llm(i, cell) for i, cell in enumerate(notebook_cells)]
             
-        summary = build_summary(self.messages, self.cost, execution_time_seconds=elapsed, initial_cells=initial_cells)
+        summary = build_summary(self.messages, self.cost, execution_time_seconds=elapsed, initial_cells=formatted_cells)
         if path:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
