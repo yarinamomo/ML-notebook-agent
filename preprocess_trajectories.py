@@ -27,35 +27,55 @@ def classify_action(action: str) -> str:
         return "get_cell_count"
     elif "run_code" in action:
         return "run_code"
-    elif "COMPLETE_TASK" in action or "Job Submitted" in action:
+    elif (
+        "COMPLETE_TASK" in action
+        or "Job Submitted" in action
+        or action.strip().lower() == "submitted"
+    ):
         return "submit"
     else:
         return "other"
 
 
-def parse_original_notebook_cell(cell_text: str) -> tuple[int, str]:
-    """Parse a cell from original_notebook format.
-    
-    Format: '# --- [CELL 0]: ---\n\nimport numpy as np\n...'
-    Returns: (cell_index, code)
+def parse_original_notebook_cell(cell_data, fallback_index: int | None = None) -> tuple[int | None, str | None]:
+    """Parse one entry from original_notebook into (cell_index, code).
+
+    Supports two formats:
+    - Legacy string format: '# --- [CELL 0]: ---\n\n...'
+    - Notebook JSON cell dict format: {'cell_type': 'code', 'source': ...}
     """
-    lines = cell_text.split("\n")
-    if not lines[0].startswith("# --- [CELL "):
-        return None, None
-    
-    # Extract cell index from header
-    header = lines[0]
-    try:
-        cell_idx = int(header.split("[CELL ")[1].split("]")[0])
-    except (IndexError, ValueError):
-        return None, None
-    
-    # Code is everything after the header (skip empty lines)
-    code_lines = lines[1:]
-    while code_lines and not code_lines[0].strip():
-        code_lines.pop(0)
-    
-    return cell_idx, "\n".join(code_lines)
+    # Newer format: real notebook cell dicts from nbformat JSON.
+    if isinstance(cell_data, dict):
+        if cell_data.get("cell_type") != "code":
+            return None, None
+
+        source = cell_data.get("source", "")
+        if isinstance(source, list):
+            code = "".join(source)
+        else:
+            code = str(source)
+
+        return fallback_index, code
+
+    # Legacy format: serialized cell text with a header line.
+    if isinstance(cell_data, str):
+        lines = cell_data.split("\n")
+        if not lines or not lines[0].startswith("# --- [CELL "):
+            return None, None
+
+        header = lines[0]
+        try:
+            cell_idx = int(header.split("[CELL ")[1].split("]")[0])
+        except (IndexError, ValueError):
+            return None, None
+
+        code_lines = lines[1:]
+        while code_lines and not code_lines[0].strip():
+            code_lines.pop(0)
+
+        return cell_idx, "\n".join(code_lines)
+
+    return None, None
 
 
 def parse_cell_statuses(output: str) -> dict[int, str]:
@@ -123,18 +143,22 @@ def process_summary(summary_file: Path, model: str, library: str, run: str) -> d
     code_changes = summary.get("code_changes", [])
     
     # Create operation lookup by step
-    ops_by_step = {op["step"]: op for op in operations}
+    ops_by_step = {op.get("step"): op for op in operations if isinstance(op, dict) and "step" in op}
     
     # Create code changes lookup by step
-    changes_by_step = {change["step"]: change for change in code_changes}
+    changes_by_step = {
+        change.get("step"): change
+        for change in code_changes
+        if isinstance(change, dict) and "step" in change
+    }
     
     # Track current state of each cell
     cell_states = {}
     
     # Parse original notebook to initialize cell states
     original_notebook = summary.get("original_notebook", [])
-    for cell_text in original_notebook:
-        cell_idx, code = parse_original_notebook_cell(cell_text)
+    for idx, cell_data in enumerate(original_notebook):
+        cell_idx, code = parse_original_notebook_cell(cell_data, fallback_index=idx)
         if cell_idx is not None:
             cell_states[cell_idx] = code
     
@@ -181,8 +205,8 @@ def process_summary(summary_file: Path, model: str, library: str, run: str) -> d
     # Build notebook_cells with original code
     # The viewer will compute the state at each step using code_changes
     notebook_cells = []
-    for cell_text in original_notebook:
-        cell_idx, original_code = parse_original_notebook_cell(cell_text)
+    for idx, cell_data in enumerate(original_notebook):
+        cell_idx, original_code = parse_original_notebook_cell(cell_data, fallback_index=idx)
         if cell_idx is None:
             continue
         
@@ -286,7 +310,7 @@ def scan_trajectories_dir(trajectories_dir: Path) -> list[dict]:
 
 def main():
     base_dir = Path(__file__).parent
-    trajectories_remote_dir = base_dir / "trajectories_remote"
+    trajectories_remote_dir = base_dir / "results" / "agent_2"
     output_dir = base_dir / "viewer" / "public"
     output_dir.mkdir(parents=True, exist_ok=True)
     output_file = output_dir / "data.json"
