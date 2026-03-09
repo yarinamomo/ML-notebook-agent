@@ -30,10 +30,24 @@ class FakeBenchmarkProblem:
         return self._cell_count
 
     def get_cells(self):
-        return ["print('hello')"]
+        return [
+            {
+                "cell_type": "code",
+                "execution_count": None,
+                "source": "print('hello')",
+                "metadata": {},
+                "outputs": [],
+            }
+        ]
 
     def get_cell(self, index):
-        return "print('hello')"
+        return {
+            "cell_type": "code",
+            "execution_count": None,
+            "source": "print('hello')",
+            "metadata": {},
+            "outputs": [],
+        }
 
     def edit_cell(self, index, code):
         return None
