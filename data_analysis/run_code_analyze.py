@@ -343,13 +343,13 @@ def generate_report(analysis_results, output_file):
         f.write("COMMON PATTERNS\n")
         f.write("=" * 80 + "\n\n")
         
-        # Analyze code lengths
-        code_lengths = [len(op['code']) for op in operations]
-        if code_lengths:
-            avg_length = sum(code_lengths) / len(code_lengths)
-            f.write(f"Average code length: {avg_length:.0f} characters\n")
-            f.write(f"Shortest code: {min(code_lengths)} characters\n")
-            f.write(f"Longest code: {max(code_lengths)} characters\n\n")
+        # Analyze code loc
+        code_loc = [len(op['code'].splitlines()) for op in operations]
+        if code_loc:
+            avg_loc = sum(code_loc) / len(code_loc)
+            f.write(f"Average code loc: {avg_loc:.1f} lines\n")
+            f.write(f"Shortest code: {min(code_loc)} lines\n")
+            f.write(f"Longest code: {max(code_loc)} lines\n\n")
         else:
             f.write("No operations found to analyze.\n\n")
         
