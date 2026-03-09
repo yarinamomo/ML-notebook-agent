@@ -11,6 +11,7 @@ from collections import defaultdict
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 # Define the valid tool names from notebook_tools._TOOL_PARAM_ORDER
 # Ordered for stacked bar chart display
@@ -369,3 +370,162 @@ def main(base_dir: Path):
     print("Summary Complete!")
     print(f"Charts saved to: {output_dir.absolute()}")
     print("="*60)
+
+
+def compare_performance_across_settings(results_dir: str = 'results', 
+                                       settings: list = None,
+                                       output_dir: str = None):
+    """
+    Compare performance metrics (pass@k rate, pass all k rate, average and std of run success rates)
+    across different settings and LLMs.
+    
+    Loads data from overall_summary.json files in results/{setting}/{llm}/
+    and creates separate comparison tables for each LLM with metrics:
+    - Pass@K Rate: Fraction of instances with at least one successful run
+    - Pass All K Rate: Fraction of instances where all K runs are successful
+    - Avg Run SR: Average success rate across all 3 runs
+    - Std Run SR: Standard deviation of success rates across the 3 runs
+    
+    Args:
+        results_dir: Path to the results directory (default: 'results')
+        settings: List of settings to compare (default: ['baseline', 'without_run_code', 'agent'])
+        output_dir: Directory to save output files (default: results_dir/data_analysis)
+    
+    Returns:
+        dict: Dictionary mapping LLM name to DataFrame with performance comparison for that LLM
+    """
+    if settings is None:
+        settings = ['baseline', 'without_run_code', 'agent']
+    
+    if output_dir is None:
+        output_dir = Path(results_dir) / 'data_analysis'
+    else:
+        output_dir = Path(output_dir)
+    
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    results_path = Path(results_dir)
+    data_by_llm = defaultdict(list)
+    
+    # Iterate through each setting
+    for setting in settings:
+        setting_path = results_path / setting
+        
+        if not setting_path.exists():
+            print(f"Warning: Setting directory not found: {setting_path}")
+            continue
+        
+        # Find all LLM directories in this setting
+        for llm_dir in setting_path.iterdir():
+            if not llm_dir.is_dir():
+                continue
+            
+            llm_name = llm_dir.name
+            summary_file = llm_dir / 'overall_summary.json'
+            
+            if not summary_file.exists():
+                print(f"Warning: overall_summary.json not found in {llm_dir}")
+                continue
+            
+            try:
+                with open(summary_file, 'r', encoding='utf-8') as f:
+                    summary = json.load(f)
+                
+                # Extract metrics from summary
+                stats = summary.get('statistics', {})
+                outcome_dist = stats.get('outcome_distribution', {})
+                per_run = outcome_dist.get('per_run', {})
+                
+                # Extract run success rates
+                run_sr = [
+                    per_run.get('run_1', {}).get('success_rate', np.nan),
+                    per_run.get('run_2', {}).get('success_rate', np.nan),
+                    per_run.get('run_3', {}).get('success_rate', np.nan),
+                ]
+                
+                # Calculate average and std (ignore NaN values)
+                run_sr_valid = [x for x in run_sr if not np.isnan(x)]
+                avg_run_sr = np.mean(run_sr_valid) if run_sr_valid else np.nan
+                std_run_sr = np.std(run_sr_valid) if len(run_sr_valid) > 1 else np.nan
+                
+                row = {
+                    'Setting': setting,
+                    'Pass@K Rate': outcome_dist.get('pass_at_k_rate', np.nan),
+                    'Pass All K Rate': outcome_dist.get('pass_all_k_rate', np.nan),
+                    'Avg Run SR': avg_run_sr,
+                    'Std Run SR': std_run_sr,
+                }
+                
+                data_by_llm[llm_name].append(row)
+                print(f"Loaded: {setting} / {llm_name}")
+                
+            except Exception as e:
+                print(f"Error loading {summary_file}: {e}")
+    
+    if not data_by_llm:
+        print("No data found to compare")
+        return None
+    
+    # Create and save a table for each LLM
+    all_dfs = {}
+    
+    for llm_name in sorted(data_by_llm.keys()):
+        # Create DataFrame for this LLM
+        df = pd.DataFrame(data_by_llm[llm_name])
+        
+        # Sort by setting order
+        setting_order = {s: i for i, s in enumerate(settings)}
+        df['_setting_order'] = df['Setting'].map(setting_order)
+        df = df.sort_values('_setting_order').drop('_setting_order', axis=1)
+        df = df.reset_index(drop=True)
+        
+        all_dfs[llm_name] = df
+        
+        # Create a formatted table visualization
+        fig, ax = plt.subplots(figsize=(12, 6))
+        ax.axis('tight')
+        ax.axis('off')
+        
+        # Format dataframe for display (round to 4 decimal places)
+        df_display = df.copy()
+        df_display['Setting'] = df_display['Setting'].str.replace('_', ' ').str.title()
+        for col in ['Pass@K Rate', 'Pass All K Rate', 'Avg Run SR', 'Std Run SR']:
+            if col in df_display.columns:
+                df_display[col] = df_display[col].apply(lambda x: f"{x:.4f}" if pd.notna(x) else "N/A")
+        
+        # Create table
+        table = ax.table(cellText=df_display.values, colLabels=df_display.columns,
+                         cellLoc='center', loc='center', 
+                         colColours=['#f0f0f0'] * len(df_display.columns))
+        
+        table.auto_set_font_size(False)
+        table.set_fontsize(11)
+        table.scale(1, 2.5)
+        
+        # Alternate row colors
+        for i in range(len(df_display) + 1):
+            for j in range(len(df_display.columns)):
+                cell = table[(i, j)]
+                if i == 0:
+                    cell.set_facecolor('#4472C4')
+                    cell.set_text_props(weight='bold', color='white')
+                else:
+                    cell.set_facecolor('#E8F0F8' if i % 2 == 0 else 'white')
+        
+        plt.title(f'Performance Comparison: {llm_name}', 
+                  fontsize=14, fontweight='bold', pad=20)
+        
+        table_path = output_dir / f'performance_comparison_{llm_name.replace("/", "_")}.png'
+        plt.savefig(table_path, dpi=300, bbox_inches='tight')
+        print(f"Saved performance comparison table to: {table_path}")
+        plt.close()
+    
+    # Print summary statistics
+    for llm_name in sorted(all_dfs.keys()):
+        print("\n" + "="*80)
+        print(f"Performance Comparison Summary ({llm_name})")
+        print("="*80)
+        print(all_dfs[llm_name].to_string(index=False))
+    print("="*80)
+    
+    return all_dfs
