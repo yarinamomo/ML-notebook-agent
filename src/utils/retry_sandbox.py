@@ -1,5 +1,5 @@
 """
-Retry decorator for sandbox operations with automatic kernel restart.
+Retry decorators for sandbox operations.
 """
 import time
 from functools import wraps
@@ -11,59 +11,64 @@ if TYPE_CHECKING:
     from src.sandbox import DockerSandbox
 
 
-def retry_with_kernel_restart(max_retries=3):
-    """Decorator that retries operations with automatic websocket/kernel restart on failure.
+def check_websocket_connected():
+    """Decorator that checks websocket is connected before executing operation.
     
-    Tracks failures across multiple calls:
-    - First failure (after all retries): marks operation as failed, re-raises original exception
-    - Second failure (after all retries): raises EnvironmentUnavailable to signal flow interruption
+    Attempts to reconnect via restart_kernel if disconnected.
+    
+    Returns:
+        Decorated function
+    """
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(self: "DockerSandbox", *args, **kwargs):
+            if not self._is_websocket_connected():
+                logger.warning("WebSocket disconnected, attempting to reconnect...")
+                self.restart_kernel()
+            
+            return func(self, *args, **kwargs)
+        
+        return wrapper
+    return decorator
+
+
+def retry_on_failure(max_retries=3, delay_seconds=1.0):
+    """Decorator that retries a function on failure, raises EnvironmentUnavailable after max retries.
     
     Args:
-        max_retries: Maximum number of retry attempts (default: 3)
+        max_retries: Number of retry attempts (default: 3)
+        delay_seconds: Delay between retries (default: 1.0)
     
     Returns:
         Decorated function with retry logic
     """
-    # Track if operation has failed before
-    has_failed_before = False
-    
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        def wrapper(self: "DockerSandbox", *args, **kwargs):
-            nonlocal has_failed_before
-            
+        def wrapper(self: "DockerSandbox", *args, **kwargs):            
             for attempt in range(max_retries + 1):
                 try:
-                    # Ensure WebSocket is connected before attempting operation
-                    if not self._is_websocket_connected():
-                        if attempt == 0:
-                            logger.warning("WebSocket disconnected, attempting to reconnect...")
-                        else:
-                            logger.info("Reconnection attempt %d/%d", attempt, max_retries)
-                        
-                        self.restart_kernel()
-                    
-                    # Attempt the actual operation
                     result = func(self, *args, **kwargs)
-                    # Success - clear failure flag
-                    has_failed_before = False
                     return result
-                except Exception as e:
-                    logger.info("Attempt %d/%d failed with error: %s", attempt + 1, max_retries, str(e))
+                except Exception as exc:
+                    logger.info(f"Attempt {attempt + 1}/{max_retries + 1} failed with error: {str(exc)}")
+                    
                     if attempt < max_retries:
-                        time.sleep(1)  # Brief pause before retrying
+                        time.sleep(delay_seconds)
                         continue
                     else:
-                        if has_failed_before:
-                            logger.error("Operation %s failed after all retries on multiple attempts, interrupting agent flow")
-                            raise EnvironmentUnavailable({
-                                "role": "exit",
-                                "content": "EnvironmentUnavailable",
-                                "extra": {"exit_status": "EnvironmentUnavailable", "submission": f"Kernel execution failed repeatedly after all retry attempts"},
-                            }) from e
-                        else:
-                            has_failed_before = True  # Mark as failed after exhausting retries
-                            raise
-            
+                        # All retries exhausted
+                        logger.error(
+                            "Operation failed after %d retries, raising EnvironmentUnavailable",
+                            max_retries + 1,
+                        )
+                        raise EnvironmentUnavailable({
+                            "role": "exit",
+                            "content": "EnvironmentUnavailable",
+                            "extra": {
+                                "exit_status": "EnvironmentUnavailable",
+                                "submission": "Operation failed after all retry attempts",
+                            },
+                        }) from exc
+        
         return wrapper
     return decorator

@@ -9,7 +9,7 @@ import json
 from typing import cast
 from unittest.mock import Mock, MagicMock, patch, call, PropertyMock
 from src.sandbox import DockerSandbox
-from src.utils.retry_sandbox import retry_with_kernel_restart
+from src.utils.retry_sandbox import retry_on_failure, check_websocket_connected
 from src.ui_agent import EnvironmentUnavailable
 from src.utils.nb_types import StreamOutput, ExecuteResultOutput, ErrorOutput, CellExecutionResult
 
@@ -314,45 +314,58 @@ class TestRetryLogic:
             mock_restart.assert_called()
 
 
-class TestRetryDecoratorBehavior:
-    """Test retry decorator state behavior across calls."""
+class TestDecoratorBehavior:
+    """Test decorator behavior."""
 
-    def test_retry_fail_once_then_success_resets_flag(self):
-        """First failed call raises RuntimeError; second successful call does not escalate."""
+    def test_check_websocket_connected_reconnects_if_needed(self):
+        """check_websocket_connected should restart kernel if disconnected."""
         mock_sandbox = Mock()
-        mock_sandbox._is_websocket_connected.return_value = True
+        mock_sandbox._is_websocket_connected.return_value = False
         mock_sandbox.restart_kernel = Mock()
 
-        call_state = {"count": 0}
+        @check_websocket_connected()
+        def fake_operation(self):
+            return "success"
 
-        @retry_with_kernel_restart(max_retries=2)
-        def flaky_operation(self):
-            call_state["count"] += 1
-            if call_state["count"] <= 3:
-                raise RuntimeError("first call fails")
-            return "ok"
+        result = fake_operation(mock_sandbox)
+        
+        assert result == "success"
+        mock_sandbox.restart_kernel.assert_called_once()
 
-        with pytest.raises(RuntimeError, match="first call fails"):
-            flaky_operation(mock_sandbox)
-
-        result = flaky_operation(mock_sandbox)
-        assert result == "ok"
-
-    def test_retry_fail_twice_raises_environment_unavailable(self):
-        """Two consecutive fully-failed calls escalate to EnvironmentUnavailable on second call."""
+    def test_retry_on_failure_raises_environment_unavailable(self):
+        """retry_on_failure should raise EnvironmentUnavailable after max retries."""
         mock_sandbox = Mock()
-        mock_sandbox._is_websocket_connected.return_value = True
-        mock_sandbox.restart_kernel = Mock()
 
-        @retry_with_kernel_restart(max_retries=2)
+        call_count = {"count": 0}
+
+        @retry_on_failure(max_retries=1)
         def always_fails(self):
+            call_count["count"] += 1
             raise RuntimeError("persistent failure")
-
-        with pytest.raises(RuntimeError, match="persistent failure"):
-            always_fails(mock_sandbox)
 
         with pytest.raises(EnvironmentUnavailable):
             always_fails(mock_sandbox)
+        
+        # Should have tried initial attempt + 1 retry = 2 times total
+        assert call_count["count"] == 2
+
+    def test_retry_on_failure_succeeds_on_retry(self):
+        """retry_on_failure should succeed if operation succeeds on retry."""
+        mock_sandbox = Mock()
+
+        call_count = {"count": 0}
+
+        @retry_on_failure(max_retries=2)
+        def flaky_operation(self):
+            call_count["count"] += 1
+            if call_count["count"] < 2:
+                raise RuntimeError("temporary failure")
+            return "ok"
+
+        result = flaky_operation(mock_sandbox)
+        
+        assert result == "ok"
+        assert call_count["count"] == 2
 
 
 class TestInterruptLogic:

@@ -9,7 +9,7 @@ import threading
 from functools import wraps
 from src.utils.log import logger
 from src.utils.nb_types import CellExecutionResult
-from src.utils.retry_sandbox import retry_with_kernel_restart
+from src.utils.retry_sandbox import check_websocket_connected, retry_on_failure
 import os
 import datetime
 
@@ -201,25 +201,8 @@ class DockerSandbox:
         except Exception:
             return False
 
-    @retry_with_kernel_restart()
-    def run(self, code: str, timeout=30) -> CellExecutionResult:
-        """
-        Execute code in the container kernel and return outputs.
-        
-        Args:
-            code: Python code to execute
-            timeout: Maximum execution time in seconds before interrupting (default: 30)
-            
-        Returns:
-            CellExecutionResult with execution output
-            
-        Raises:
-            RuntimeError: If kernel is unresponsive or execution fails
-            EnvironmentUnavailable: If the environment is unavailable or encounters critical errors
-        """
-        if not self._is_websocket_connected():
-            raise RuntimeError("WebSocket disconnected before execution")
-        
+    def _run_cell(self, code: str, timeout=30) -> CellExecutionResult:
+        code = f"import os\nos.chdir('/app/container')\n{code}" # TODO Is this necessary?
         msg_id = str(uuid.uuid4())
         self.execution_results[msg_id] = {
             'status': 'pending',
@@ -296,6 +279,29 @@ class DockerSandbox:
             logger.exception("Execution failed: %s", exc)
             raise RuntimeError("Kernel execution failed") from exc
 
+    @retry_on_failure()
+    @check_websocket_connected()
+    def run(self, code: str, timeout=30) -> CellExecutionResult:
+        return self._run_cell(code, timeout)
+
+    @retry_on_failure()
+    @check_websocket_connected()
+    def run_all(self, codes: list[str], timeout=30) -> list[CellExecutionResult]:
+        # Restart kernel to ensure clean state
+        self.restart_kernel()
+        
+        results = []
+        for i, code in enumerate(codes):
+            result = self._run_cell(code, timeout)
+            results.append(result)
+            
+            # Stop on error or timeout
+            if result["status"] in ["error", "timeout"]:
+                logger.info(f"Code snippet {i + 1}/{len(codes)} execution failed with status={result['status']}. Stopping run_all.")
+                break
+        
+        return results
+
     def _interrupt_kernel(self):
         """Send interrupt signal to the kernel via REST API."""
         try:
@@ -356,6 +362,7 @@ class DockerSandbox:
             logger.info("Kernel restarted successfully")
         except Exception as e:
             logger.exception("Failed to restart kernel")
+            logger.exception(e)
             raise RuntimeError("Failed to restart kernel") from e
 
     def stop(self):

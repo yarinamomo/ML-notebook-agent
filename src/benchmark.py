@@ -103,24 +103,21 @@ class BenchmarkProblem:
         save_cells(self._cells, self._initial_notebook, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
 
     def run_cell(self, index: int) -> CellExecutionResult:
-        code = self._get_cell_source(index)
-        # Change working directory inside the Docker container before executing code
-        code = f"import os\nos.chdir('/app/container')\n{code}" # TODO this should be moved into sandbox.
-        result = self.sandbox.run(code, timeout=self.timeout)
+        result = self.sandbox.run( self._get_cell_source(index), timeout=self.timeout)
         self._exec_states[index] = result
         save_cells(self._cells, self._initial_notebook, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
         return result
 
     def run_all(self) -> List[CellExecutionResult]:
-        self.sandbox.restart_kernel()
-        results = []
-        for i in range(len(self._cells)):
-            result: CellExecutionResult = self.run_cell(i)
-            results.append(result)
-            if result["status"] in ["error", "timeout"]:
-                # If a cell fails, we stop execution and return results so far
-                logging.info(f"Cell {i} execution failed. Stopping run_all." + (f" Last output: {result.get('outputs', [])[-1]}" if result.get('outputs', []) else ""))
-                break
+        codes = [self._get_cell_source(i) for i in range(len(self._cells))]
+
+        results = self.sandbox.run_all(codes, timeout=self.timeout)
+        
+        # Update execution states
+        for i, result in enumerate(results):
+            self._exec_states[i] = result
+        
+        save_cells(self._cells, self._initial_notebook, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
         return results
 
 
