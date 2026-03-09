@@ -140,40 +140,40 @@ def plot_code_length_distribution(input_dir, output_dir):
     
     operations = data['operations']
     
-    # Get code lengths
-    code_lengths = [len(op['code']) for op in operations]
+    # Get code lengths (lines of code)
+    code_loc = [len(op['code'].splitlines()) for op in operations]
     
     # Create figure
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
     
     # Plot 1: Histogram
-    ax1.hist(code_lengths, bins=50, color='steelblue', edgecolor='black', alpha=0.7)
-    ax1.axvline(np.median(code_lengths), color='red', linestyle='--', linewidth=2, label=f'Median: {np.median(code_lengths):.0f}')
-    ax1.axvline(np.mean(code_lengths), color='orange', linestyle='--', linewidth=2, label=f'Mean: {np.mean(code_lengths):.0f}')
+    ax1.hist(code_loc, bins=50, color='steelblue', edgecolor='black', alpha=0.7)
+    ax1.axvline(np.median(code_loc), color='red', linestyle='--', linewidth=2, label=f'Median: {np.median(code_loc):.1f}')
+    ax1.axvline(np.mean(code_loc), color='orange', linestyle='--', linewidth=2, label=f'Mean: {np.mean(code_loc):.1f}')
     
-    ax1.set_xlabel('Code Length (characters)', fontsize=12, fontweight='bold')
+    ax1.set_xlabel('Code lines', fontsize=12, fontweight='bold')
     ax1.set_ylabel('Frequency', fontsize=12, fontweight='bold')
-    ax1.set_title('Distribution of run_code Code Lengths', fontsize=14, fontweight='bold')
+    ax1.set_title('Distribution of run_code Code lines', fontsize=14, fontweight='bold')
     ax1.legend()
     ax1.grid(axis='y', alpha=0.3)
     
     # Plot 2: Box plot
-    box = ax2.boxplot([code_lengths], vert=True, patch_artist=True, 
+    box = ax2.boxplot([code_loc], vert=True, patch_artist=True, 
                        labels=['All Operations'])
     box['boxes'][0].set_facecolor('lightblue')
     box['boxes'][0].set_edgecolor('black')
     
     # Add statistics text
-    stats_text = f"Min: {min(code_lengths)}\n"
-    stats_text += f"Q1: {np.percentile(code_lengths, 25):.0f}\n"
-    stats_text += f"Median: {np.median(code_lengths):.0f}\n"
-    stats_text += f"Q3: {np.percentile(code_lengths, 75):.0f}\n"
-    stats_text += f"Max: {max(code_lengths)}"
+    stats_text = f"Min: {min(code_loc)}\n"
+    stats_text += f"Q1: {np.percentile(code_loc, 25):.1f}\n"
+    stats_text += f"Median: {np.median(code_loc):.1f}\n"
+    stats_text += f"Q3: {np.percentile(code_loc, 75):.1f}\n"
+    stats_text += f"Max: {max(code_loc)}"
     
-    ax2.text(1.15, np.median(code_lengths), stats_text, 
+    ax2.text(1.15, np.median(code_loc), stats_text, 
              fontsize=10, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
     
-    ax2.set_ylabel('Code Length (characters)', fontsize=12, fontweight='bold')
+    ax2.set_ylabel('Code Length (lines)', fontsize=12, fontweight='bold')
     ax2.set_title('run_code Code Length Statistics', fontsize=14, fontweight='bold')
     ax2.grid(axis='y', alpha=0.3)
     
