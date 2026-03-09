@@ -19,21 +19,16 @@ class EnvironmentUnavailable(InterruptAgentFlow):
 class UiAgent(DefaultAgent):
     env: "NotebookEnvironment"
 
-    def __init__(self, *args, initial_notebook: str = "", **kwargs):
+    def __init__(self, *args, **kwargs):
         self.total_timeout: int = kwargs.pop("total_timeout", 0)
         super().__init__(*args, **kwargs)
         self._start_time: float | None = None
-        self.extra_template_vars["initial_notebook"] = initial_notebook
+        self.extra_template_vars["initial_notebook"] = self.env.get_initial_notebook()
 
     @override
     def run(self, task: str = "", **kwargs) -> dict:
         """ """
         self._start_time = time.monotonic()
-        # Store initial cells before the agent starts modifying the notebook
-        if hasattr(self.env, 'problem') and self.env.problem:
-            self._initial_cells = self.env.problem.get_cells()
-        else:
-            self._initial_cells = []
         return super().run(task, **kwargs)
 
     @override
@@ -77,7 +72,11 @@ class UiAgent(DefaultAgent):
     def save_summary(self, path: Path | None = None) -> dict:
         """Build an execution summary from the message history. Save to *path* if given."""
         elapsed = (time.monotonic() - self._start_time) if self._start_time else 0.0
-        initial_cells = getattr(self, '_initial_cells', [])
+        initial_cells = []        
+        if hasattr(self.env, 'problem') and self.env.problem:
+            initial_notebook = self.env.problem.get_initial_notebook()
+            initial_cells = initial_notebook.cells if initial_notebook else []
+            
         summary = build_summary(self.messages, self.cost, execution_time_seconds=elapsed, initial_cells=initial_cells)
         if path:
             path.parent.mkdir(parents=True, exist_ok=True)
