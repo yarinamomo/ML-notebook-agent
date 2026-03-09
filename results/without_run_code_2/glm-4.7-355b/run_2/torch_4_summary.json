@@ -1,0 +1,432 @@
+{
+  "metadata": {
+    "generated_at": "2026-03-08T04:21:44.576019",
+    "execution_time_seconds": 147.51,
+    "success": true,
+    "status": "Submitted",
+    "cost": 0.0943
+  },
+  "statistics": {
+    "total_steps": 20,
+    "total_operations": 20,
+    "successful_operations": 13,
+    "failed_operations": 7,
+    "cells_edited": 2,
+    "unique_cells_edited": 2,
+    "avg_tool_execution_time_seconds": 4.38
+  },
+  "original_notebook": [
+    {
+      "cell_type": "code",
+      "execution_count": 1,
+      "metadata": {
+        "_cell_guid": "b1076dfc-b9ad-4769-8c92-a6c4dae69d19",
+        "_uuid": "8f2839f25d086af736a60e9eeb907d3b93b6e0e5",
+        "execution": {
+          "iopub.execute_input": "2023-12-04T06:47:51.502344Z",
+          "iopub.status.busy": "2023-12-04T06:47:51.501437Z",
+          "iopub.status.idle": "2023-12-04T06:47:51.507237Z",
+          "shell.execute_reply": "2023-12-04T06:47:51.505852Z",
+          "shell.execute_reply.started": "2023-12-04T06:47:51.502309Z"
+        }
+      },
+      "outputs": [],
+      "source": "import pandas as pd\nimport numpy as np\nimport warnings\nwarnings.filterwarnings('ignore')"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 2,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-12-04T06:46:58.207185Z",
+          "iopub.status.busy": "2023-12-04T06:46:58.206793Z",
+          "iopub.status.idle": "2023-12-04T06:47:01.129106Z",
+          "shell.execute_reply": "2023-12-04T06:47:01.128319Z",
+          "shell.execute_reply.started": "2023-12-04T06:46:58.207151Z"
+        }
+      },
+      "outputs": [],
+      "source": "import logging  # 日志相关的包\nimport random\n\nimport torch\n\nlogging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(levelname)s: %(message)s')\n\nseed = 2023\nrandom.seed(seed)\nnp.random.seed(seed)\ntorch.cuda.manual_seed(seed)\ntorch.manual_seed(seed)\n\ndevice = 'cuda' if torch.cuda.is_available() else 'cpu'"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 3,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-12-04T06:50:01.137202Z",
+          "iopub.status.busy": "2023-12-04T06:50:01.136826Z",
+          "iopub.status.idle": "2023-12-04T07:02:24.788891Z",
+          "shell.execute_reply": "2023-12-04T07:02:24.787832Z",
+          "shell.execute_reply.started": "2023-12-04T06:50:01.137170Z"
+        }
+      },
+      "outputs": [],
+      "source": "from gensim.models.word2vec import Word2Vec\n\nnum_features = 10 #100  # 词向量维度\nnum_workers = 8\n\n# train_df = pd.read_csv('data/train_set.csv.zip', sep='\\t')\ntrain_df = pd.read_csv('data/train_set.csv.zip', sep='\\t', nrows=5000)\ntrain_text = list(map(lambda x:list(x.split()), train_df.iloc[:, 1]))\nmodel = Word2Vec(train_text, workers=num_workers, vector_size=num_features)\nmodel.init_sims(replace=True)\n\nmodel.wv.save_word2vec_format('data/word2vec.txt', binary=False)"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 4,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-12-04T07:09:10.280065Z",
+          "iopub.status.busy": "2023-12-04T07:09:10.279688Z",
+          "iopub.status.idle": "2023-12-04T07:10:22.062928Z",
+          "shell.execute_reply": "2023-12-04T07:10:22.061968Z",
+          "shell.execute_reply.started": "2023-12-04T07:09:10.280036Z"
+        }
+      },
+      "outputs": [],
+      "source": "from collections import Counter\nfrom transformers import BasicTokenizer\n\nbasic_tokenizer = BasicTokenizer()\n\nclass Vocab():\n    def __init__(self, train_data):\n        self.min_count = 5\n        self.pad = 0\n        self.unk = 1\n        self._id2word = ['[PAD]', '[UNK]']\n        self._id2extword = ['[PAD]', '[UNK]']\n        \n        self._id2label = []\n        self.target_names = []\n        \n        self.build_vocab(train_data)\n        \n        reverse = lambda x: dict(zip(x, range(len(x))))\n        self._word2id = reverse(self._id2word)\n        self._label2id = reverse(self._id2label)\n        \n    def build_vocab(self, data):\n        self.word_counter = Counter()\n        \n        for text in data['text']:\n            words = text.split()\n            for word in words:\n                self.word_counter[word] += 1\n                \n        for word, count in self.word_counter.most_common():\n            if count >= self.min_count:\n                self._id2word.append(word)\n                \n        label2name = {0: '科技', 1: '股票', 2: '体育', 3: '娱乐', 4: '时政', 5: '社会', 6: '教育',\n                      7: '财经', 8: '家居', 9: '游戏', 10: '房产', 11: '时尚', 12: '彩票', 13: '星座'}\n        self.label_counter = Counter(data['label'])\n        \n        for label in range(len(self.label_counter)):\n            count = self.label_counter[label]\n            self._id2label.append(label)\n            self.target_names.append(label2name[label])\n            \n    def load_pretrained_embs(self, embfile):\n        with open(embfile, encoding='utf-8') as f:\n            lines = f.readlines()\n            items = lines[0].split()\n            word_count, embedding_dim = int(items[0]), int(items[1])\n            \n        index = len(self._id2extword)\n        embeddings = np.zeros((word_count + index, embedding_dim))\n        for line in lines[1:]:\n            values = line.split()\n            self._id2extword.append(values[0])\n            vector = np.array(values[1:], dtype='float64')\n            embeddings[self.unk] += vector\n            embeddings[index] = vector\n            index += 1\n            \n        embeddings[self.unk] = embeddings[self.unk] / word_count\n        embeddings = embeddings / np.std(embeddings)\n        \n        reverse = lambda x: dict(zip(x, range(len(x))))\n        self._extword2id = reverse(self._id2extword)\n        \n        assert len(set(self._id2extword)) == len(self._id2extword)\n        \n        return embeddings\n    \n    def word2id(self, xs):\n        if isinstance(xs, list): \n            return [self._word2id.get(x, self.unk) for x in xs]\n        return self._word2id.get(xs, self.unk)\n    \n    def extword2id(self, xs):\n        if isinstance(xs, list):\n            return [self._extword2id.get(x, self.unk) for x in xs]\n        return self._extword2id.get(xs, self.unk)\n    \n    def label2id(self, xs):\n        if isinstance(xs, list):\n            return [self._label2id.get(x, self.unk) for x in xs]\n        return self._label2id.get(xs, self.unk)\n    \n    def word_size(self):\n        return len(self._id2word)\n    \n    def extword_size(self):\n        return len(self._id2extword)\n    \n    def label_size(self):\n        return len(self._id2label)\n    \nvocab = Vocab(train_df)\n            "
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 5,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-12-04T07:17:31.821240Z",
+          "iopub.status.busy": "2023-12-04T07:17:31.820561Z",
+          "iopub.status.idle": "2023-12-04T07:17:31.832059Z",
+          "shell.execute_reply": "2023-12-04T07:17:31.831080Z",
+          "shell.execute_reply.started": "2023-12-04T07:17:31.821207Z"
+        }
+      },
+      "outputs": [],
+      "source": "import torch.nn as nn\nimport torch.nn.functional as F\n\nclass Attention(nn.Module):\n    '''Scaled Dot-Product Attention'''\n    def __init__(self, hidden_size):\n        super(Attention, self).__init__()\n        self.weight = nn.Parameter(torch.Tensor(hidden_size, hidden_size))\n        self.weight.data.normal_(mean=0.0, std=0.05)\n        \n        self.bias = nn.Parameter(torch.Tensor(hidden_size))\n        b = np.zeros(hidden_size, dtype=np.float32)\n        self.bias.data.copy_(torch.from_numpy(b))\n        \n        self.query = nn.Parameter(torch.Tensor(hidden_size))\n        self.query.data.normal_(mean=0.0, std=0.05)\n        \n    def forward(self, batch_hidden, batch_masks):\n        # batch_hidden: batch_size x len x hidden_size (2 * hidden_size of lstm)\n        # batch_masks: batch_size x len\n        \n        # broadcast机制\n        key = torch.matmul(batch_hidden, self.weight) + self.bias  # b x len x hidden\n        \n        outputs = torch.matmul(key, self.query)  # b x len\n        \n        # 填充一个很小的负数，softmax后就会变为0\n        masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32)) \n        \n        attn_scores = F.softmax(masked_outputs, dim=1)  # b x len\n        \n        # 经过softmax后可能存在nan，因此将这些位置都变为0\n        masked_attn_scores = attn_scores.masked_fill((1 - batch_masks).bool(), 0.0)\n        \n        # 矩阵批量乘法（batch matrix-matrix product）函数\n        batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)  # b x hidden\n        \n        return batch_outputs, attn_scores\n    "
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 6,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-12-04T07:17:36.988194Z",
+          "iopub.status.busy": "2023-12-04T07:17:36.987442Z",
+          "iopub.status.idle": "2023-12-04T07:17:36.998919Z",
+          "shell.execute_reply": "2023-12-04T07:17:36.997834Z",
+          "shell.execute_reply.started": "2023-12-04T07:17:36.988160Z"
+        }
+      },
+      "outputs": [],
+      "source": "word2vec_path = 'data/word2vec.txt'\ndropout = 0.15\nword_hidden_size = 128\nword_num_layers = 2\n\nclass WordLSTMEncoder(nn.Module):\n    '''\n    结合word2vec（预训练）和nn.Embedding()（待训练）的词向量表示，然后进一步用lstm提取序列信息，更新词向量表示\n    '''\n    def __init__(self, vocab):\n        super(WordLSTMEncoder, self).__init__()\n        self.dropout = nn.Dropout(dropout)\n        self.word_dims = num_features\n\n        self.word_embed = nn.Embedding(vocab.word_size(), self.word_dims, padding_idx=0)\n\n        extword_embed = vocab.load_pretrained_embs(word2vec_path)\n        extword_size, word_dims = extword_embed.shape\n\n        self.extword_embed = nn.Embedding(extword_size, word_dims, padding_idx=0)\n        self.extword_embed.weight.data.copy_(torch.from_numpy(extword_embed))\n        self.extword_embed.weight.requires_grad = False\n\n        input_size = self.word_dims\n\n        self.word_lstm = nn.LSTM(input_size=input_size,\n                                 hidden_size=word_hidden_size,\n                                 num_layers=word_num_layers,\n                                 batch_first=True,\n                                 bidirectional=True)\n\n    def forward(self, word_ids, extword_ids, batch_masks):\n\n\n\n\n        word_embed = self.word_embed(word_ids)\n        extword_embed = self.extword_embed(extword_ids)\n        batch_embed = word_embed + extword_embed\n\n        if self.training:\n            batch_embed = self.dropout(batch_embed)\n\n        hiddens, _ = self.word_lstm(batch_embed)\n        hiddens = hiddens * batch_masks.unsqueeze(2)\n\n        if self.training:\n            hiddens = self.dropout(hiddens)\n\n        return hiddens"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 7,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-12-04T07:19:16.118356Z",
+          "iopub.status.busy": "2023-12-04T07:19:16.117565Z",
+          "iopub.status.idle": "2023-12-04T07:19:16.128586Z",
+          "shell.execute_reply": "2023-12-04T07:19:16.126990Z",
+          "shell.execute_reply.started": "2023-12-04T07:19:16.118311Z"
+        }
+      },
+      "outputs": [],
+      "source": "sent_hidden_size = 256\nsent_num_layers = 2\n\nclass SentEncoder(nn.Module):\n    '''句子级别的语义表示'''\n    def __init__(self, sent_rep_size):\n        super(SentEncoder, self).__init__()\n        self.dropout = nn.Dropout(dropout)\n        \n        self.sent_lstm = nn.LSTM(input_size=sent_rep_size, \n                                 hidden_size=sent_hidden_size,\n                                 num_layers=sent_num_layers,\n                                 batch_first=True,\n                                 bidirectional=True)\n        \n    def forward(self, sent_reps, sent_masks):\n        \n        sent_hiddens, _ = self.sent_lstm(sent_reps)\n        sent_hiddens = sent_hiddens * sent_masks.unsqueeze(2)\n        \n        if self.training:\n            sent_hiddens = self.dropout(sent_hiddens)\n            \n        return sent_hiddens"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 8,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-12-04T07:19:18.389694Z",
+          "iopub.status.busy": "2023-12-04T07:19:18.389361Z",
+          "iopub.status.idle": "2023-12-04T07:19:18.575941Z",
+          "shell.execute_reply": "2023-12-04T07:19:18.574722Z",
+          "shell.execute_reply.started": "2023-12-04T07:19:18.389669Z"
+        }
+      },
+      "outputs": [
+        {
+          "ename": "TypeError",
+          "evalue": "empty() received an invalid combination of arguments - got (tuple, dtype=NoneType, device=NoneType), but expected one of:\n * (tuple of ints size, *, tuple of names names, torch.memory_format memory_format = None, torch.dtype dtype = None, torch.layout layout = None, torch.device device = None, bool pin_memory = False, bool requires_grad = False)\n * (tuple of ints size, *, torch.memory_format memory_format = None, Tensor out = None, torch.dtype dtype = None, torch.layout layout = None, torch.device device = None, bool pin_memory = False, bool requires_grad = False)\n",
+          "output_type": "error",
+          "traceback": [
+            "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+            "\u001b[0;31mTypeError\u001b[0m                                 Traceback (most recent call last)",
+            "\u001b[0;32m<ipython-input-8-9dcaca8d46d8>\u001b[0m in \u001b[0;36m<cell line: 49>\u001b[0;34m()\u001b[0m\n\u001b[1;32m     47\u001b[0m         \u001b[0;32mreturn\u001b[0m \u001b[0mbatch_outputs\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m     48\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m---> 49\u001b[0;31m \u001b[0mmodel\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mModel\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mvocab\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m",
+            "\u001b[0;32m<ipython-input-8-9dcaca8d46d8>\u001b[0m in \u001b[0;36m__init__\u001b[0;34m(self, vocab)\u001b[0m\n\u001b[1;32m      7\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      8\u001b[0m         \u001b[0mparameters\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;34m[\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m----> 9\u001b[0;31m         \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mword_encoder\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mWordLSTMEncoder\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mvocab\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m     10\u001b[0m         \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mword_attention\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mAttention\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0msent_rep_size\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m     11\u001b[0m         \u001b[0;31m# filter(判断函数, 可迭代对象)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;32m<ipython-input-6-4bec8961b11c>\u001b[0m in \u001b[0;36m__init__\u001b[0;34m(self, vocab)\u001b[0m\n\u001b[1;32m     13\u001b[0m         \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mword_dims\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mnum_features\u001b[0m \u001b[0;31m#100\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m     14\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m---> 15\u001b[0;31m         \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mword_embed\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mnn\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mEmbedding\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mvocab\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mword_size\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mword_dims\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mpadding_idx\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0;36m0\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m     16\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m     17\u001b[0m         \u001b[0mextword_embed\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mvocab\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mload_pretrained_embs\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mword2vec_path\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;32m/usr/local/lib/python3.10/dist-packages/torch/nn/modules/sparse.py\u001b[0m in \u001b[0;36m__init__\u001b[0;34m(self, num_embeddings, embedding_dim, padding_idx, max_norm, norm_type, scale_grad_by_freq, sparse, _weight, _freeze, device, dtype)\u001b[0m\n\u001b[1;32m    142\u001b[0m         \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mscale_grad_by_freq\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mscale_grad_by_freq\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    143\u001b[0m         \u001b[0;32mif\u001b[0m \u001b[0m_weight\u001b[0m \u001b[0;32mis\u001b[0m \u001b[0;32mNone\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 144\u001b[0;31m             self.weight = Parameter(torch.empty((num_embeddings, embedding_dim), **factory_kwargs),\n\u001b[0m\u001b[1;32m    145\u001b[0m                                     requires_grad=not _freeze)\n\u001b[1;32m    146\u001b[0m             \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mreset_parameters\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;31mTypeError\u001b[0m: empty() received an invalid combination of arguments - got (tuple, dtype=NoneType, device=NoneType), but expected one of:\n * (tuple of ints size, *, tuple of names names, torch.memory_format memory_format = None, torch.dtype dtype = None, torch.layout layout = None, torch.device device = None, bool pin_memory = False, bool requires_grad = False)\n * (tuple of ints size, *, torch.memory_format memory_format = None, Tensor out = None, torch.dtype dtype = None, torch.layout layout = None, torch.device device = None, bool pin_memory = False, bool requires_grad = False)\n"
+          ]
+        }
+      ],
+      "source": "class Model(nn.Module):\n    def __init__(self, vocab):\n        super(Model, self).__init__()\n        self.sent_rep_size = word_hidden_size * 2\n        self.doc_rep_size = sent_hidden_size * 2\n        self.all_parameters = {}\n\n        parameters = []\n        self.word_encoder = WordLSTMEncoder(vocab)\n        self.word_attention = Attention(self.sent_rep_size)\n\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.word_encoder.parameters())))\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.word_attention.parameters())))\n        self.sent_encoder = SentEncoder(self.sent_rep_size)\n        self.sent_attention = Attention(self.doc_rep_size)\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_encoder.parameters())))\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_attention.parameters())))\n        self.out = nn.Linear(self.doc_rep_size, vocab.label_size(), bias=True)\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.out.parameters())))\n\n        self.to(device)\n\n        if len(parameters) > 0:\n            self.all_parameters['basic_parameters'] = parameters\n\n\n        para_num = sum([np.prod(list(p.size())) for p in self.parameters()])\n\n    def forward(self, batch_inputs):\n\n\n\n        batch_inputs1, batch_inputs2, batch_masks = batch_inputs\n        batch_size, max_doc_len, max_sent_len = batch_inputs1.shape[0], batch_inputs1.shape[1], batch_inputs1.shape[2]\n        batch_inputs1 = batch_inputs1.view(batch_size * max_doc_len, max_sent_len)\n        batch_inputs2 = batch_inputs2.view(batch_size * max_doc_len, max_sent_len)\n        batch_masks = batch_masks.view(batch_size * max_doc_len, max_sent_len)\n        batch_hiddens = self.word_encoder(batch_inputs1, batch_inputs2, batch_masks)\n        sent_reps, atten_scores = self.word_attention(batch_hiddens, batch_masks)\n        sent_reps = sent_reps.view(batch_size, max_doc_len, self.sent_rep_size)\n        batch_masks = batch_masks.view(batch_size, max_doc_len, max_sent_len)\n        sent_masks = batch_masks.bool().any(2).float()\n        sent_hiddens = self.sent_encoder(sent_reps, sent_masks)\n        doc_reps, atten_scores = self.sent_attention(sent_hiddens, sent_masks)\n        batch_outputs = self.out(doc_reps)\n\n        return batch_outputs\n\nmodel = Model(vocab)"
+    }
+  ],
+  "llm_responses": [
+    {
+      "step": 1,
+      "content": "Let me analyze the error in cell 7. The error message indicates an issue with PyTorch's `torch.empty()` function when creating the model, likely related to the `vocab.label_size` or how labels are being processed. Let me first inspect the state of the vocab object to understand the issue better.",
+      "reasoning": "Let me analyze the error. The error occurs in cell 7 when creating the `Model` instance. The error message is:\n\n```\nTypeError: empty() received an invalid combination of arguments - got (tuple, dtype=NoneType, device=NoneType), but expected one of:\n```\n\nThis error is related to PyTorch's `torch.empty()` function being called with invalid arguments. Looking at the code in cell 7, I see that `self.out = nn.Linear(self.doc_rep_size, vocab.label_size, bias=True)` is being created.\n\nThe issue is likely that `vocab.label_size` is returning unexpected values causing issues with the `nn.Linear` layer. Let me check what `vocab.label_size()` returns in the Vocab class.\n\nLooking at the Vocab class in cell 3:\n```python\ndef label_size(self):\n    return len(self._id2label)\n```\n\nThe problem might be that `vocab.label_size()` is 0 or has an unexpected value. Let me trace through the Vocab initialization:\n\n```python\ndef build_vocab(self, data):\n    self.label_counter = Counter(data['label'])\n\n    for label in range(len(self.label_counter)):\n        count = self.label_counter[label]\n        self._id2label.append(label)\n        self.target_names.append(label2name[label])\n```\n\nWait, I see the issue! When iterating through `label_counter`, using `range(len(self.label_counter))` doesn't guarantee that the labels will be in the expected order. The `Counter` object might have keys in a different order than expected.\n\nActually, looking more carefully at the code, I think the real issue might be in how the labels are being formatted. The error message suggests there's a problem with creating tensors, and this might be an issue with PyTorch version compatibility.\n \nI'll need to verify the state of the `vocab` object by running debug code. The current implementation of label handling seems problematic. The loop attempts to add labels based on Counter length, but the Counter might contain unexpected or unordered label data. This could lead to mismatched or incomplete label assignment, potentially causing tensor creation issues.\n\nThe train dataset structure and label generation process need careful examination to understand the exact source of the error. Tracing the code execution and inspecting the label configuration will be crucial for resolving this problem. I see the error originates from tensor initialization when creating the `nn.Linear` layer. The `vocab.label_size` being returned is `1`, which is causing the `empty()` function to complain about argument types. This suggests a deeper issue with how the Counter is being processed, potentially related to the number of unique labels and their mapping. The key problem seems to be how the `self._id2label` list is being constructed, which might not match the expected label structure for the neural network layer.\n\nThe training set's numeric labels are being counted and converted, but the mechanism for adding labels and their target names appears incomplete or misaligned with the model's requirements. I check the label conversion and verification process. The mapping from numeric labels to category names seems problematic. The current code attempts to append labels and names, but the number of unique labels might not match the expected range. This suggests a potential issue with handling label assignments, possibly caused by out-of-range labels or inconsistent label category mapping. The initialization of label mappings requires careful validation to ensure each numeric label corresponds correctly to its intended category name.\n\nI notice the `label2id` method has a potential flaw. If no matching label is found, it defaults to returning `self.unk`, which could be `1` instead of a valid label ID. This default behavior might inadvertently introduce incorrect label mappings during training or evaluation.\n\nThe specific error message highlights an issue with the `empty()` function, suggesting a potential problem in how tensors are being created or initialized in the underlying PyTorch implementation.\n\nI'm curious about the precise circumstances causing this initialization error, particularly how the `vocab.label_size` and dimension parameters interact with tensor creation.\n\nThe data source seems to be from a compressed CSV file, with the data structure involving indexed columns that might reveal more about the underlying data characteristics. Investigating the actual data loading and preprocessing steps could provide clarity on the root cause of this tensor initialization problem.\n\nThe label handling initialization appears to have subtle complexity, with a potential undefined behavior in the labeling mechanism that might impact model configuration. I'm investigating the nn.Linear parameter passing, noticing potential issues with index handling in self._id2label. The list could be problematic if it's empty or contains unexpected values, which might trigger tensor creation errors. PyTorch's strict parameter validation for nn.Linear means any unusual input could cause initialization failures. I'll need to verify the complete state of the vocab object to diagnose the underlying problem, particularly focusing on the label index mapping process.\n\nThe Counter's automatic key ordering by suggests a systematic approach is being attempted, but methodological implementation might introduce subtle complications. Careful tracing of how labels are processed and added will be critical to resolving this initialization challenge."
+    },
+    {
+      "step": 2,
+      "content": "I need to run all cells to get the vocab object created, then investigate the error.<tool_call>run_all</tool_call>",
+      "reasoning": "The vocab is not defined in the kernel. I need to run the notebook from the beginning to get all the necessary state. Let me run all cells."
+    },
+    {
+      "step": 3,
+      "content": "Let me check what `vocab.word_size` is returning:",
+      "reasoning": "Now I can see the error. The traceback shows that the error happens in cell 7 when creating the model, specifically in the WordLSTMEncoder.__init__ method, specifically at line:\n\n```python\nself.word_embed = nn.Embedding(vocab.word_size, self.word_dims, padding_idx=0)\n```\n\nThe error is that nn.Embedding is receiving a \"tuple\" for num_embeddings, but it's not being unpacked correctly. This suggests that `vocab.word_size()` is returning a tuple instead of an integer.\n\nLooking at cell 3, the Vocab class has:\n```python\ndef word_size(self):\n    return len(self._id2word)\n```\n\nThe issue is that `vocab.word_size` is being used as a property/method. In Python, if you define `word_size` as a method (with def), you need to call it with parentheses `vocab.word_size()`. But in the code, it's being used as `vocab.word_size` without parentheses. \n\nWait, looking at cell 3 more carefully, the methods are defined without `@property` decorator:\n```python\ndef word_size(self):\n    return len(self._id2word)\n```\n\nSo `vocab.word_size` would be a method object, not the result. But that would likely give a different error.\n\nLet me check the exact error again. The error says it got (tuple, dtype=NoneType, device=NoneType). So it seems like it's receiving a tuple as the first argument. This is suspicious.\n\nWait! I see the issue now. In cell 3:\n```python\nreverse = lambda x: dict(zip(x, range(len(x))))\nself._word2id = reverse(self._id2word)\n```\n\nBut `self._id2word` is a `list`, and `zip(x, range(len(x)))` creates an iterator. When you convert it to `dict`, it should work. But wait...\n \nThe problem is likely that the lambda function is returning a tuple instead of a dictionary. When calling `reverse(...)`, the `dict()` conversion might not be happening as expected, causing `vocab.word_size` to unexpectedly return a tuple instead of an integer. This explains why `nn.Embedding` is receiving a tuple when it expects a single integer for `num_embeddings`.\n\nThe lambda function actually returns a `dict`, so the tuple origin remains unclear. I suspect the method call syntax might be incorrect - specifically, whether `word_size` is being invoked as a property or method. This could reveal why a tuple is unexpectedly appearing in the embedding initialization.\n\nThe parameter mismatch in `nn.Embedding` suggests something unusual is happening with the arguments being passed, potentially involving a non-numeric first parameter."
+    },
+    {
+      "step": 4,
+      "content": "I found the issue! In cell 5, `vocab.word_size` is being used without parentheses. It should be `vocab.word_size()`. Let me fix this:",
+      "reasoning": "Ah! I found the issue! The problem is in cell 5 (WordLSTMEncoder), not cell 7. Looking at line 17 in cell 5:\n\n```python\nself.word_embed = nn.Embedding(vocab.word_size, self.word_dims, padding_idx=0)\n```\n\nIt's calling `vocab.word_size` without parentheses, which passes the method object instead of calling it to get the integer value. The same issue may exist for `vocab.label_size()` in cell 7.\n\nLet me check cell 5 to see what's there:"
+    },
+    {
+      "step": 5,
+      "content": "",
+      "reasoning": "Now let me run cell 7 again to see if the model is created successfully."
+    },
+    {
+      "step": 6,
+      "content": "Let me run all cells again to ensure the fix is applied properly:<tool_call>run_all</tool_call>",
+      "reasoning": "The error still shows `vocab.word_size` without parentheses on line 17, which is strange. The kernel might be using the cached code. Let me run from cell 0 to refresh everything, then run the notebook again."
+    },
+    {
+      "step": 7,
+      "content": "Good, the error has moved forward! Now it's failing at line 20 in cell 7 where `vocab.label_size` is called without parentheses. Let me fix this:",
+      "reasoning": "Good progress! The error moved from cell 5 to cell 7, and now it's at line 20, in the nn.Linear() call. The error is `vocab.label_size` being passed as a method instead of being called.\n\nLine 20 is:\n```python\nself.out = nn.Linear(self.doc_rep_size, vocab.label_size, bias=True)\n```\n\nIt should be:\n```python\nself.out = nn.Linear(self.doc_rep_size, vocab.label_size(), bias=True)\n```\n\nLet me fix this."
+    },
+    {
+      "step": 8,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Now let me run all cells to verify the fix works:"
+    },
+    {
+      "step": 9,
+      "content": "Let me run cells 2 and 3 to establish the proper state:",
+      "reasoning": "Interesting! There's a new error. The issue is in cell 3: it tries to use `train_df` which is only defined in cell 2. When I ran cells 0-2 successfully, but then cell 3 failed, the state was lost. But that's okay - when the full run re-executed, cell 3 now crashes with a NameError.\n\nLet me check - wait, cell 2 runs successfully, so `train_df` should be defined. Let me look at the output more carefully...\n\nActually, looking at the output from the last run, cell 2 ran successfully, but then cell 3 failed with \"name 'train_df' is not defined\". This is strange. Let me check if maybe there's an issue with the code execution order.\n\nActually, I think what happened is that the notebook was reset or something and we need to check the state. Let me just run cell 3 individually to see what happens. But wait, the error says cell 3 crashed with NameError. If cell 2 ran successfully, then train_df should be defined...\n\nWait, I need to look at the output more carefully. The cell 3 has \"Execution Count: 1\" which suggests the notebook was reset. Let me re-run from cell 2 to properly establish the state."
+    },
+    {
+      "step": 10,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "I see - the kernel doesn't have the correct state after I ran run_all. Let me start fresh and run all cells again."
+    },
+    {
+      "step": 11,
+      "content": "Let me try running from cell 0 to establish a clean state:",
+      "reasoning": "The cell state shows `Execution Count: 1` for cell 3 even though we're in the same run. Let me try running cell 3 which is the Vocab class definition. This should run and define the class, then cell 4 onwards should work.\n\nActually wait, I see that cell 2 has execution count 3 which means it ran successfully (it created `train_df`). But cell 3 says execution count 1 and has an error about `train_df` not being defined.\n\nWait, the cell 3 error shows `vocab = Vocab(train_df)` at line 96, but the Vocab class definition itself should not run that line. Let me look more carefully at the output.\n\nI see - the errors are showing that cells 0 and 1 ran with execution count 1 and 2, cell 2 ran with execution count 3 (ok), but cell 3 shows execution count 1 and error. This suggests the output is from a different run.\n\nLet me just run all cells again to get a fresh start with the fixes applied."
+    },
+    {
+      "step": 12,
+      "content": "",
+      "reasoning": "Good, cell 0 ran successfully. Now let me run cells 0-6 sequentially to get everything prepared:"
+    },
+    {
+      "step": 13,
+      "content": "",
+      "reasoning": "Let me continue from where I left off:"
+    },
+    {
+      "step": 14,
+      "content": "",
+      "reasoning": "Now let me run cell 3."
+    },
+    {
+      "step": 15,
+      "content": "",
+      "reasoning": "Good! Cell 3 now runs successfully. Let me continue with the remaining cells."
+    },
+    {
+      "step": 16,
+      "content": "",
+      "reasoning": "Good progress! Let me continue running the cells to see if the fix works."
+    },
+    {
+      "step": 17,
+      "content": "",
+      "reasoning": "Cell 5 ran successfully (note: it just defined the class, the model creation will happen later). Let me run cell 6."
+    },
+    {
+      "step": 18,
+      "content": "",
+      "reasoning": "Now let me run cell 7 to see if the fix is correct."
+    },
+    {
+      "step": 19,
+      "content": "Perfect! All cells ran successfully. Let me run all cells one more time to confirm everything works:<tool_call>run_all</tool_call>",
+      "reasoning": "Excellent! All cells ran successfully! Let me verify by running all cells again to make sure everything is working properly."
+    },
+    {
+      "step": 20,
+      "content": "Excellent! All cells now run successfully. Let me submit the summary of the fixes:",
+      "reasoning": "Excellent! All cells are now running successfully. The issue was that two method references in the notebook were missing parentheses when they should have been method calls:\n\n1. In cell 5: `vocab.word_size` → `vocab.word_size()`\n2. In cell 7: `vocab.label_size` → `vocab.label_size()`\n\nThese methods need to be called to return integer values for the PyTorch layers. Without the parentheses, they were being passed as method objects rather than their return values (integers), which caused the torch.empty() error.\n\nLet me submit the fix now."
+    }
+  ],
+  "operations": [
+    {
+      "step": 1,
+      "action": "run_code(code=<228 chars>)",
+      "output": "Execution Count: 2 | Status: error\n\n---ERROR---: NameError: name 'vocab' is not defined\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.1066
+    },
+    {
+      "step": 2,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n2026-03-08 04:19:36,276 INFO: collecting all words and their counts\n\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: error\n\n---ERROR---: TypeError: empty() received an invalid combination of arguments - got (tuple, dtype=NoneType, device=NoneType), but expected one of:\n * (tuple of ints size, *, tuple of names names, torch.memory_format memory_format = None, torch.dtype dtype = None, torch.layout layout = None, torch.device device = None, bool pin_memory = False, bool requires_grad = False)\n * (tuple of ints size, *, torch.memory_format memory_format = None, Tensor out = None, torch.dtype dtype = None, torch.layout layout = None, torch.device device = None, bool pin_memory = False, bool requires_grad = False)\n\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 12.5406
+    },
+    {
+      "step": 3,
+      "action": "run_code(code=<203 chars>)",
+      "output": "Execution Count: 9 | Status: ok\nvocab.word_size: <bound method Vocab.word_size of <__main__.Vocab object at 0x78e8c05ebc40>>\ntype(vocab.word_size): <class 'method'>\nvocab.word_size(): 3966\ntype(vocab.word_size()): <class 'int'>\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0575
+    },
+    {
+      "step": 4,
+      "action": "edit_cell(cell_index=5, code=<1618 chars>)",
+      "output": "Cell 5 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0043
+    },
+    {
+      "step": 5,
+      "action": "run_cell(cell_index=7)",
+      "output": "Execution Count: 10 | Status: error\n\n---ERROR---: TypeError: empty() received an invalid combination of arguments - got (tuple, dtype=NoneType, device=NoneType), but expected one of:\n * (tuple of ints size, *, tuple of names names, torch.memory_format memory_format = None, torch.dtype dtype = None, torch.layout layout = None, torch.device device = None, bool pin_memory = False, bool requires_grad = False)\n * (tuple of ints size, *, torch.memory_format memory_format = None, Tensor out = None, torch.dtype dtype = None, torch.layout layout = None, torch.device device = None, bool pin_memory = False, bool requires_grad = False)\n\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.0552
+    },
+    {
+      "step": 6,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n2026-03-08 04:20:07,648 INFO: collecting all words and their counts\n\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: error\n\n---ERROR---: TypeError: empty() received an invalid combination of arguments - got (tuple, dtype=NoneType, device=NoneType), but expected one of:\n * (tuple of ints size, *, tuple of names names, torch.memory_format memory_format = None, torch.dtype dtype = None, torch.layout layout = None, torch.device device = None, bool pin_memory = False, bool requires_grad = False)\n * (tuple of ints size, *, torch.memory_format memory_format = None, Tensor out = None, torch.dtype dtype = None, torch.layout layout = None, torch.device device = None, bool pin_memory = False, bool requires_grad = False)\n\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 12.351
+    },
+    {
+      "step": 7,
+      "action": "edit_cell(cell_index=7, code=<2339 chars>)",
+      "output": "Cell 7 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0059
+    },
+    {
+      "step": 8,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n2026-03-08 04:20:32,344 INFO: collecting all words and their counts\n\n\nCell 3:\nExecution Count: 1 | Status: error\n\n---ERROR---: NameError: name 'train_df' is not defined\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 18.5179
+    },
+    {
+      "step": 9,
+      "action": "run_cell(cell_index=2)",
+      "output": "Execution Count: 2 | Status: error\n\n---ERROR---: NameError: name 'pd' is not defined\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.5583
+    },
+    {
+      "step": 10,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n2026-03-08 04:20:56,743 INFO: collecting all words and their counts\n\n\nCell 3:\nExecution Count: 1 | Status: error\n\n---ERROR---: NameError: name 'train_df' is not defined\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 18.0395
+    },
+    {
+      "step": 11,
+      "action": "run_cell(cell_index=0)",
+      "output": "Execution Count: 2 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.3594
+    },
+    {
+      "step": 12,
+      "action": "run_cell(cell_index=1)",
+      "output": "Execution Count: 3 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0555
+    },
+    {
+      "step": 13,
+      "action": "run_cell(cell_index=2)",
+      "output": "Execution Count: 4 | Status: ok\n2026-03-08 04:21:15,128 INFO: collecting all words and their counts\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 6.891
+    },
+    {
+      "step": 14,
+      "action": "run_cell(cell_index=3)",
+      "output": "Execution Count: 5 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 1.1134
+    },
+    {
+      "step": 15,
+      "action": "run_cell(cell_index=4)",
+      "output": "Execution Count: 6 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0542
+    },
+    {
+      "step": 16,
+      "action": "run_cell(cell_index=5)",
+      "output": "Execution Count: 7 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0557
+    },
+    {
+      "step": 17,
+      "action": "run_cell(cell_index=6)",
+      "output": "Execution Count: 8 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0557
+    },
+    {
+      "step": 18,
+      "action": "run_cell(cell_index=7)",
+      "output": "Execution Count: 9 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.1063
+    },
+    {
+      "step": 19,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n2026-03-08 04:21:32,765 INFO: collecting all words and their counts\n\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 12.254
+    },
+    {
+      "step": 20,
+      "action": "Submitted",
+      "output": "Fixed two method call errors in the PyTorch model definition:\n\n1. Cell 5: Changed `vocab.word_size` to `vocab.word_size()` (missing parentheses when creating nn.Embedding layer)\n2. Cell 7: Changed `vocab.label_size` to `vocab.label_size()` (missing parentheses when creating nn.Linear output layer)\n\nThese Vocab methods need to be called to return integer values for the layer dimensions. Without parentheses, the method objects were being passed instead of their return values, causing torch.empty() to receive invalid argument types and crash.",
+      "return_code": 0,
+      "success": true
+    }
+  ],
+  "code_changes": [
+    {
+      "cell_index": 5,
+      "step": 4,
+      "code": "word2vec_path = 'data/word2vec.txt'\ndropout = 0.15\nword_hidden_size = 128\nword_num_layers = 2\n\nclass WordLSTMEncoder(nn.Module):\n    '''\n    结合word2vec（预训练）和nn.Embedding()（待训练）的词向量表示，然后进一步用lstm提取序列信息，更新词向量表示\n    '''\n    def __init__(self, vocab):\n        super(WordLSTMEncoder, self).__init__()\n        self.dropout = nn.Dropout(dropout)\n        self.word_dims = num_features\n\n        self.word_embed = nn.Embedding(vocab.word_size(), self.word_dims, padding_idx=0)\n\n        extword_embed = vocab.load_pretrained_embs(word2vec_path)\n        extword_size, word_dims = extword_embed.shape\n\n        self.extword_embed = nn.Embedding(extword_size, word_dims, padding_idx=0)\n        self.extword_embed.weight.data.copy_(torch.from_numpy(extword_embed))\n        self.extword_embed.weight.requires_grad = False\n\n        input_size = self.word_dims\n\n        self.word_lstm = nn.LSTM(input_size=input_size,\n                                 hidden_size=word_hidden_size,\n                                 num_layers=word_num_layers,\n                                 batch_first=True,\n                                 bidirectional=True)\n\n    def forward(self, word_ids, extword_ids, batch_masks):\n\n\n\n\n        word_embed = self.word_embed(word_ids)\n        extword_embed = self.extword_embed(extword_ids)\n        batch_embed = word_embed + extword_embed\n\n        if self.training:\n            batch_embed = self.dropout(batch_embed)\n\n        hiddens, _ = self.word_lstm(batch_embed)\n        hiddens = hiddens * batch_masks.unsqueeze(2)\n\n        if self.training:\n            hiddens = self.dropout(hiddens)\n\n        return hiddens"
+    },
+    {
+      "cell_index": 7,
+      "step": 7,
+      "code": "class Model(nn.Module):\n    def __init__(self, vocab):\n        super(Model, self).__init__()\n        self.sent_rep_size = word_hidden_size * 2\n        self.doc_rep_size = sent_hidden_size * 2\n        self.all_parameters = {}\n\n        parameters = []\n        self.word_encoder = WordLSTMEncoder(vocab)\n        self.word_attention = Attention(self.sent_rep_size)\n\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.word_encoder.parameters())))\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.word_attention.parameters())))\n        self.sent_encoder = SentEncoder(self.sent_rep_size)\n        self.sent_attention = Attention(self.doc_rep_size)\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_encoder.parameters())))\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_attention.parameters())))\n        self.out = nn.Linear(self.doc_rep_size, vocab.label_size(), bias=True)\n        parameters.extend(list(filter(lambda p: p.requires_grad, self.out.parameters())))\n\n        self.to(device)\n\n        if len(parameters) > 0:\n            self.all_parameters['basic_parameters'] = parameters\n\n\n        para_num = sum([np.prod(list(p.size())) for p in self.parameters()])\n\n    def forward(self, batch_inputs):\n\n\n\n        batch_inputs1, batch_inputs2, batch_masks = batch_inputs\n        batch_size, max_doc_len, max_sent_len = batch_inputs1.shape[0], batch_inputs1.shape[1], batch_inputs1.shape[2]\n        batch_inputs1 = batch_inputs1.view(batch_size * max_doc_len, max_sent_len)\n        batch_inputs2 = batch_inputs2.view(batch_size * max_doc_len, max_sent_len)\n        batch_masks = batch_masks.view(batch_size * max_doc_len, max_sent_len)\n        batch_hiddens = self.word_encoder(batch_inputs1, batch_inputs2, batch_masks)\n        sent_reps, atten_scores = self.word_attention(batch_hiddens, batch_masks)\n        sent_reps = sent_reps.view(batch_size, max_doc_len, self.sent_rep_size)\n        batch_masks = batch_masks.view(batch_size, max_doc_len, max_sent_len)\n        sent_masks = batch_masks.bool().any(2).float()\n        sent_hiddens = self.sent_encoder(sent_reps, sent_masks)\n        doc_reps, atten_scores = self.sent_attention(sent_hiddens, sent_masks)\n        batch_outputs = self.out(doc_reps)\n\n        return batch_outputs\n\nmodel = Model(vocab)"
+    }
+  ]
+}

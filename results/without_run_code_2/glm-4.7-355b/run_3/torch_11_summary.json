@@ -1,0 +1,628 @@
+{
+  "metadata": {
+    "generated_at": "2026-03-08T01:18:16.018740",
+    "execution_time_seconds": 3742.15,
+    "success": false,
+    "status": "AgentTimeout",
+    "cost": 0.1257
+  },
+  "statistics": {
+    "total_steps": 18,
+    "total_operations": 19,
+    "successful_operations": 11,
+    "failed_operations": 8,
+    "cells_edited": 7,
+    "unique_cells_edited": 4,
+    "avg_tool_execution_time_seconds": 204.05
+  },
+  "original_notebook": [
+    {
+      "cell_type": "code",
+      "execution_count": 1,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:30:23.374374Z",
+          "iopub.status.busy": "2023-04-27T11:30:23.373393Z",
+          "iopub.status.idle": "2023-04-27T11:31:44.238729Z",
+          "shell.execute_reply": "2023-04-27T11:31:44.237337Z",
+          "shell.execute_reply.started": "2023-04-27T11:30:23.374331Z"
+        }
+      },
+      "outputs": [],
+      "source": "from datasets import load_dataset\nimport torch\nimport torch.nn.functional as F\nimport numpy as np\nimport time\nimport pickle\n\ndataset = load_dataset(\"sst\", \"default\", trust_remote_code=True)\ndataset2 = load_dataset(\"multi_nli\")"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 2,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:31:44.241108Z",
+          "iopub.status.busy": "2023-04-27T11:31:44.240548Z",
+          "iopub.status.idle": "2023-04-27T11:31:44.246436Z",
+          "shell.execute_reply": "2023-04-27T11:31:44.245351Z",
+          "shell.execute_reply.started": "2023-04-27T11:31:44.241072Z"
+        }
+      },
+      "outputs": [],
+      "source": "torch.manual_seed = 555\n# torch.set_default_tensor_type('torch.cuda.FloatTensor')"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 3,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:31:44.248700Z",
+          "iopub.status.busy": "2023-04-27T11:31:44.248310Z",
+          "iopub.status.idle": "2023-04-27T11:31:52.778956Z",
+          "shell.execute_reply": "2023-04-27T11:31:52.777821Z",
+          "shell.execute_reply.started": "2023-04-27T11:31:44.248663Z"
+        }
+      },
+      "outputs": [],
+      "source": "# !wget http://nlp.stanford.edu/data/glove.6B.zip\n# !unzip glove*.zip\n\nglv = dict()\nglv_size = 50\nwith open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:\n    for line in fp:\n        word, *vec = line.split()\n        glv[word] = torch.tensor(list(map(float , vec)))"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 4,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:31:52.783372Z",
+          "iopub.status.busy": "2023-04-27T11:31:52.782392Z",
+          "iopub.status.idle": "2023-04-27T11:31:55.199557Z",
+          "shell.execute_reply": "2023-04-27T11:31:55.198536Z",
+          "shell.execute_reply.started": "2023-04-27T11:31:52.783312Z"
+        }
+      },
+      "outputs": [],
+      "source": "embed = torch.zeros((len(glv)+2 , glv_size))\nind =2\n\nword2index ={'_pad_':0}\nindex2word ={0:'_pad_'}\n\nfor x in glv:\n    if(len(glv[x]) != glv_size):\n        continue\n    embed[ind] = glv[x]\n    word2index[x] = ind\n    index2word[ind] = x\n    ind+=1"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 5,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:31:55.201808Z",
+          "iopub.status.busy": "2023-04-27T11:31:55.201364Z",
+          "iopub.status.idle": "2023-04-27T11:31:55.222150Z",
+          "shell.execute_reply": "2023-04-27T11:31:55.220777Z",
+          "shell.execute_reply.started": "2023-04-27T11:31:55.201762Z"
+        }
+      },
+      "outputs": [],
+      "source": "sentences = dataset['train']['sentence']\ntestsent = dataset['test']['sentence']"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 6,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:31:55.224524Z",
+          "iopub.status.busy": "2023-04-27T11:31:55.223827Z",
+          "iopub.status.idle": "2023-04-27T11:31:56.490646Z",
+          "shell.execute_reply": "2023-04-27T11:31:56.489343Z",
+          "shell.execute_reply.started": "2023-04-27T11:31:55.224471Z"
+        }
+      },
+      "outputs": [],
+      "source": "from nltk.corpus import stopwords\nfrom nltk.tokenize import word_tokenize\nstop_words = set(stopwords.words('english'))\n\ndef tokenize(sentences):\n    tokens =[]\n    max_len = 0\n    for sentence in sentences:\n        sentence = sentence.replace('\\\\',' ')\n        sentence = sentence.replace('/',' ')\n        sentence = sentence.replace('\\'',' ')\n        word_tokens = word_tokenize(sentence)\n        max_len = max(max_len ,len( word_tokens))\n        tokens.append([w for w in word_tokens if not w.lower() in stop_words and len(w)>2])\n    return tokens , max_len\n"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 7,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:31:56.493307Z",
+          "iopub.status.busy": "2023-04-27T11:31:56.492819Z",
+          "iopub.status.idle": "2023-04-27T11:31:56.501503Z",
+          "shell.execute_reply": "2023-04-27T11:31:56.500145Z",
+          "shell.execute_reply.started": "2023-04-27T11:31:56.493243Z"
+        }
+      },
+      "outputs": [],
+      "source": "def build_vocab(sentences):\n    vocab = set()\n    X = list()\n    y = list()\n    \n    for tokens in sentences:\n        for token in tokens:\n            vocab.add(token)\n    vocab = list(vocab)\n    int2text = dict()\n    text2int = dict()\n    vocab = [\"_pad_\"] + vocab\n    for ind ,x in enumerate(vocab):\n        int2text[ind] = x \n        text2int[x] = ind \n    \n    return vocab ,int2text , text2int\n\n    \n"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 8,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:31:56.503787Z",
+          "iopub.status.busy": "2023-04-27T11:31:56.503225Z",
+          "iopub.status.idle": "2023-04-27T11:31:56.515485Z",
+          "shell.execute_reply": "2023-04-27T11:31:56.514249Z",
+          "shell.execute_reply.started": "2023-04-27T11:31:56.503735Z"
+        }
+      },
+      "outputs": [],
+      "source": "def build_input(sentences ,word2index, text2int):\n    X =[]\n    Y =[]\n    for tokens in sentences:\n        curx = [word2index['_pad_']]\n        cury = list()\n        for token in tokens:\n            if token in word2index:\n                curx.append(word2index[token])\n                cury.append(text2int[token])\n            else:\n                curx.append(1)\n                cury.append(1)\n        cury.append(text2int['_pad_'])\n        X.append(torch.tensor(curx))\n        Y.append(torch.tensor(cury))\n    return X,Y"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 9,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:31:56.517794Z",
+          "iopub.status.busy": "2023-04-27T11:31:56.517215Z",
+          "iopub.status.idle": "2023-04-27T11:31:56.527611Z",
+          "shell.execute_reply": "2023-04-27T11:31:56.526329Z",
+          "shell.execute_reply.started": "2023-04-27T11:31:56.517745Z"
+        }
+      },
+      "outputs": [],
+      "source": "def build_input_test(sentences ,word2index):\n    X =[]\n    for tokens in sentences:\n        curx = [word2index['_pad_']]\n        for token in tokens:\n            if token in word2index:\n                curx.append(word2index[token])\n            else:\n                curx.append(1)\n        X.append(torch.tensor(curx))\n    return X"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 10,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:31:56.533422Z",
+          "iopub.status.busy": "2023-04-27T11:31:56.532955Z",
+          "iopub.status.idle": "2023-04-27T11:31:58.165270Z",
+          "shell.execute_reply": "2023-04-27T11:31:58.163870Z",
+          "shell.execute_reply.started": "2023-04-27T11:31:56.533386Z"
+        }
+      },
+      "outputs": [],
+      "source": "tokens , max_len = tokenize(sentences)\nvocab , int2text , text2int = build_vocab(tokens)\nX,Y = build_input(tokens , word2index,text2int)"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 11,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:31:58.166855Z",
+          "iopub.status.busy": "2023-04-27T11:31:58.166496Z",
+          "iopub.status.idle": "2023-04-27T11:31:58.177115Z",
+          "shell.execute_reply": "2023-04-27T11:31:58.175694Z",
+          "shell.execute_reply.started": "2023-04-27T11:31:58.166822Z"
+        }
+      },
+      "outputs": [],
+      "source": "from torch.utils.data import Dataset, DataLoader\nclass  data(Dataset):\n    def __init__(self , X,Y,vs , padsz):\n        self.X = X\n        self.Y = Y\n        self.vocab_size = vs\n        self.mx = padsz\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        dif = self.mx - len(self.X[index])\n        _x = self.X[index]\n        _y = self.Y[index]\n        if dif > 0:\n            a = torch.zeros(self.mx)\n            b = torch.zeros(self.mx)\n            a[:len(_x)] = _x\n            b[:len(_y)] = _y\n            _x = a\n            _y = torch.zeros( ( self.mx, self.vocab_size))\n            _y [torch.arange(self.mx),b.long()] =1\n        return _x.long() , _y.long()"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 12,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:31:58.178788Z",
+          "iopub.status.busy": "2023-04-27T11:31:58.178472Z",
+          "iopub.status.idle": "2023-04-27T11:31:58.193540Z",
+          "shell.execute_reply": "2023-04-27T11:31:58.192446Z",
+          "shell.execute_reply.started": "2023-04-27T11:31:58.178756Z"
+        }
+      },
+      "outputs": [],
+      "source": "elmotrain = data(X,Y, len(vocab),40)"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 13,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:31:58.195705Z",
+          "iopub.status.busy": "2023-04-27T11:31:58.194767Z",
+          "iopub.status.idle": "2023-04-27T11:31:58.205510Z",
+          "shell.execute_reply": "2023-04-27T11:31:58.204506Z",
+          "shell.execute_reply.started": "2023-04-27T11:31:58.195662Z"
+        }
+      },
+      "outputs": [],
+      "source": "traindata = DataLoader(elmotrain, batch_size=32 )"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 14,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:31:58.207749Z",
+          "iopub.status.busy": "2023-04-27T11:31:58.206712Z",
+          "iopub.status.idle": "2023-04-27T11:31:58.631527Z",
+          "shell.execute_reply": "2023-04-27T11:31:58.630228Z",
+          "shell.execute_reply.started": "2023-04-27T11:31:58.207674Z"
+        }
+      },
+      "outputs": [],
+      "source": "tokens_test,ml = tokenize(testsent)\nX_test = build_input_test(tokens_test , word2index)"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 15,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:31:58.642118Z",
+          "iopub.status.busy": "2023-04-27T11:31:58.641684Z",
+          "iopub.status.idle": "2023-04-27T11:31:58.658399Z",
+          "shell.execute_reply": "2023-04-27T11:31:58.657147Z",
+          "shell.execute_reply.started": "2023-04-27T11:31:58.642082Z"
+        }
+      },
+      "outputs": [],
+      "source": "class elmo(torch.nn.Module):\n    def __init__(self , vocab_size,dim ,classes = 2, embed = None):\n        super(elmo, self).__init__()\n        self.embedding = torch.nn.Embedding(vocab_size , dim )\n        if(embed != None):\n          self.embedding.weights = torch.nn.Parameter(embed)\n#         self.forward_lstm1 = torch.nn.LSTM(dim, dim)\n#         self.forward_lstm2 = torch.nn.LSTM(dim, dim)\n#         self.backward_lstm1 = torch.nn.LSTM(dim, dim)\n#         self.backward_lstm2 = torch.nn.LSTM(dim, dim)\n        self.bilstm1 = torch.nn.LSTM(dim,dim , bidirectional = True , batch_first = True)\n        self.bilstm2 = torch.nn.LSTM(dim*2,dim , bidirectional = True, batch_first = True)\n    \n        self.parameter =torch.nn.Parameter (torch.tensor([1.,1.,1.]))\n        self.dense = torch.nn.Linear(dim*2 , 512)\n        self.dense2 = torch.nn.Linear(512 , 1024)\n        self.dense3 = torch.nn.Linear(1024 , 512)\n        self.dense4 = torch.nn.Linear(512 , classes)\n        self.dropout = torch.nn.Dropout(p=0.5)\n    def forward(self , x , training= 1):\n        # print(x.shape)\n        embed = self.embedding(x )\n        # print(embed.shape)\n        out1 , h1 = self.bilstm1(embed)\n        out2 , h2 = self.bilstm2(out1)\n#         print(h1[1])\n        dembed = torch.cat([embed,embed],2)\n\n        \n        first_layer = dembed     * self.parameter[0]   \n        second_layer = out1    * self.parameter[1]\n        embed_layer = out2         * self.parameter[2]\n        \n#         reverse_embed = torch.flip(embed ,[2] )\n#         out_f1 , hn_f1 = self.forward_lstm1(embed)\n#         out_b1 , hn_b1 = self.backward_lstm1(reverse_embed)\n#         out_f2 , hn_f2 = self.forward_lstm2(out_f1)\n#         out_b2 , hn_b2 = self.backward_lstm2(out_b1)\n        \n        \n#         reverse_bl1 = torch.flip(out_b1 , [1])\n#         reverse_bl2 = torch.flip(out_b2 , [1])\n        \n#         first_layer = torch.cat([out_f1,reverse_bl1],2)     * self.parameter[0]   \n#         second_layer = torch.cat([out_f2,reverse_bl2],2)    * self.parameter[1]\n#         embed_layer = torch.cat([embed , embed] ,2)         * self.parameter[2]\n        \n        encoding =  first_layer + second_layer + embed_layer\n        encoding = torch.sum(encoding,axis = 1)\n        # print(\"enc : \", encoding.shape)\n#         encoding = out1\n        if training:\n          x = F.relu(self.dense(encoding))\n          x = F.relu(self.dropout(self.dense2(x)))\n          x = F.relu(self.dense3(x))\n          x = F.softmax(self.dense4(x) , 1)\n          # print(\"softmax : \",x)\n          return x\n        else:\n            return encoding\n        \n        "
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 16,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:31:58.660658Z",
+          "iopub.status.busy": "2023-04-27T11:31:58.660303Z",
+          "iopub.status.idle": "2023-04-27T11:31:58.718108Z",
+          "shell.execute_reply": "2023-04-27T11:31:58.716797Z",
+          "shell.execute_reply.started": "2023-04-27T11:31:58.660624Z"
+        }
+      },
+      "outputs": [],
+      "source": "embed_size = len(word2index)  # Number of unique indices in word2index\nmodel = elmo(embed_size , glv_size, embed=embed)\noptimizer = torch.optim.Adam(model.parameters())"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 17,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:31:58.720628Z",
+          "iopub.status.busy": "2023-04-27T11:31:58.719924Z",
+          "iopub.status.idle": "2023-04-27T11:31:58.730739Z",
+          "shell.execute_reply": "2023-04-27T11:31:58.729365Z",
+          "shell.execute_reply.started": "2023-04-27T11:31:58.720578Z"
+        }
+      },
+      "outputs": [],
+      "source": "def train( traindata,epochs = 5):\n\n    for x in range(epochs):\n        datal = iter(traindata)\n        print(\"epoch \",x+1)\n        print(\"*\"*20)\n        st =time.time()\n        bloss = []\n        numb = 0\n        for idx ,(cx, cy)  in enumerate(datal):\n            optimizer.zero_grad()\n#             print(cx.shape,cy.shape)\n            outputs = model.forward(cx)\n#             print(cy.shape , outputs.shape)\n            loss = torch.sum((cy - outputs)**2)\n            bloss.append(loss/cx.shape[0])\n            loss.backward()\n            optimizer.step()\n            numb+=1\n        \n        \n        print(\"avg trainig loss : {}\".format(sum(bloss)/numb) ,end = \"  \")\n        print(\"time taken : {}\".format(time.time()  - st))\n        print(\"\")\n"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 19,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:33:27.206650Z",
+          "iopub.status.busy": "2023-04-27T11:33:27.206223Z",
+          "iopub.status.idle": "2023-04-27T11:33:27.224476Z",
+          "shell.execute_reply": "2023-04-27T11:33:27.223193Z",
+          "shell.execute_reply.started": "2023-04-27T11:33:27.206617Z"
+        }
+      },
+      "outputs": [],
+      "source": "ylb =[0 if x<0.5 else 1 for x in dataset['train']['label']]\nyl = dataset['train']['label']\n\nytb = [0 if x<0.5 else 1 for x in dataset['test']['label']]\nyt = dataset['test']['label']"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 20,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:33:27.374954Z",
+          "iopub.status.busy": "2023-04-27T11:33:27.374533Z",
+          "iopub.status.idle": "2023-04-27T11:33:27.383592Z",
+          "shell.execute_reply": "2023-04-27T11:33:27.381763Z",
+          "shell.execute_reply.started": "2023-04-27T11:33:27.374918Z"
+        }
+      },
+      "outputs": [],
+      "source": "class sentimentdata(Dataset):\n    def __init__(self , X,Y, num_classes, padsz=40):\n        self.X = X\n        self.Y = Y\n        self.num_classes = num_classes\n        self.mx = padsz\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        dif = self.mx - len(self.X[index])\n        _x = self.X[index]\n        _y = self.Y[index]\n        if dif > 0:\n            a = torch.zeros(self.mx)\n            a[:len(_x)] = _x\n            _x = a\n        # Convert label to one-hot encoding\n        y_onehot = torch.zeros(self.num_classes)\n        y_onehot[_y] = 1\n        return _x.long() , y_onehot\n\nst_train_loader = sentimentdata(X ,ylb, 2)\nst_test_loader = sentimentdata(X_test ,ytb, 2)\n\nst_train = DataLoader(st_train_loader, batch_size=5 )\nst_test= DataLoader(st_test_loader, batch_size=5 )"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 21,
+      "metadata": {
+        "execution": {
+          "iopub.execute_input": "2023-04-27T11:33:34.955800Z",
+          "iopub.status.busy": "2023-04-27T11:33:34.955406Z",
+          "iopub.status.idle": "2023-04-27T11:33:35.025061Z",
+          "shell.execute_reply": "2023-04-27T11:33:35.023158Z",
+          "shell.execute_reply.started": "2023-04-27T11:33:34.955765Z"
+        }
+      },
+      "outputs": [
+        {
+          "name": "stdout",
+          "output_type": "stream",
+          "text": "epoch  1\n********************\n"
+        },
+        {
+          "ename": "RuntimeError",
+          "evalue": "stack expects each tensor to be equal size, but got [19] at entry 0 and [21] at entry 1",
+          "output_type": "error",
+          "traceback": [
+            "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+            "\u001b[0;31mRuntimeError\u001b[0m                              Traceback (most recent call last)",
+            "\u001b[0;32m<ipython-input-21-db70380867c1>\u001b[0m in \u001b[0;36m<cell line: 1>\u001b[0;34m()\u001b[0m\n\u001b[0;32m----> 1\u001b[0;31m \u001b[0mtrain\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mst_train\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;36m2\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m",
+            "\u001b[0;32m<ipython-input-17-e67e75c40a2c>\u001b[0m in \u001b[0;36mtrain\u001b[0;34m(traindata, epochs)\u001b[0m\n\u001b[1;32m      8\u001b[0m         \u001b[0mbloss\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;34m[\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      9\u001b[0m         \u001b[0mnumb\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;36m0\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m---> 10\u001b[0;31m         \u001b[0;32mfor\u001b[0m \u001b[0midx\u001b[0m \u001b[0;34m,\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mcx\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mcy\u001b[0m\u001b[0;34m)\u001b[0m  \u001b[0;32min\u001b[0m \u001b[0menumerate\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mdatal\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m     11\u001b[0m             \u001b[0moptimizer\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mzero_grad\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m     12\u001b[0m \u001b[0;31m#             print(cx.shape,cy.shape)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;32m/usr/local/lib/python3.10/dist-packages/torch/utils/data/dataloader.py\u001b[0m in \u001b[0;36m__next__\u001b[0;34m(self)\u001b[0m\n\u001b[1;32m    628\u001b[0m                 \u001b[0;31m# TODO(https://github.com/pytorch/pytorch/issues/76750)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    629\u001b[0m                 \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_reset\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m  \u001b[0;31m# type: ignore[call-arg]\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 630\u001b[0;31m             \u001b[0mdata\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_next_data\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    631\u001b[0m             \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_num_yielded\u001b[0m \u001b[0;34m+=\u001b[0m \u001b[0;36m1\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    632\u001b[0m             \u001b[0;32mif\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_dataset_kind\u001b[0m \u001b[0;34m==\u001b[0m \u001b[0m_DatasetKind\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mIterable\u001b[0m \u001b[0;32mand\u001b[0m\u001b[0;31m \u001b[0m\u001b[0;31m\\\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;32m/usr/local/lib/python3.10/dist-packages/torch/utils/data/dataloader.py\u001b[0m in \u001b[0;36m_next_data\u001b[0;34m(self)\u001b[0m\n\u001b[1;32m    671\u001b[0m     \u001b[0;32mdef\u001b[0m \u001b[0m_next_data\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mself\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    672\u001b[0m         \u001b[0mindex\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_next_index\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m  \u001b[0;31m# may raise StopIteration\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 673\u001b[0;31m         \u001b[0mdata\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_dataset_fetcher\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mfetch\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mindex\u001b[0m\u001b[0;34m)\u001b[0m  \u001b[0;31m# may raise StopIteration\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    674\u001b[0m         \u001b[0;32mif\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_pin_memory\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    675\u001b[0m             \u001b[0mdata\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0m_utils\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mpin_memory\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mpin_memory\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mdata\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_pin_memory_device\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;32m/usr/local/lib/python3.10/dist-packages/torch/utils/data/_utils/fetch.py\u001b[0m in \u001b[0;36mfetch\u001b[0;34m(self, possibly_batched_index)\u001b[0m\n\u001b[1;32m     53\u001b[0m         \u001b[0;32melse\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m     54\u001b[0m             \u001b[0mdata\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mdataset\u001b[0m\u001b[0;34m[\u001b[0m\u001b[0mpossibly_batched_index\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m---> 55\u001b[0;31m         \u001b[0;32mreturn\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mcollate_fn\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mdata\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m",
+            "\u001b[0;32m/usr/local/lib/python3.10/dist-packages/torch/utils/data/_utils/collate.py\u001b[0m in \u001b[0;36mdefault_collate\u001b[0;34m(batch)\u001b[0m\n\u001b[1;32m    315\u001b[0m         \u001b[0;34m>>\u001b[0m\u001b[0;34m>\u001b[0m \u001b[0mdefault_collate\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mbatch\u001b[0m\u001b[0;34m)\u001b[0m  \u001b[0;31m# Handle `CustomType` automatically\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    316\u001b[0m     \"\"\"\n\u001b[0;32m--> 317\u001b[0;31m     \u001b[0;32mreturn\u001b[0m \u001b[0mcollate\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mbatch\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mcollate_fn_map\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mdefault_collate_fn_map\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m",
+            "\u001b[0;32m/usr/local/lib/python3.10/dist-packages/torch/utils/data/_utils/collate.py\u001b[0m in \u001b[0;36mcollate\u001b[0;34m(batch, collate_fn_map)\u001b[0m\n\u001b[1;32m    172\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    173\u001b[0m         \u001b[0;32mif\u001b[0m \u001b[0misinstance\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0melem\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mtuple\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 174\u001b[0;31m             \u001b[0;32mreturn\u001b[0m \u001b[0;34m[\u001b[0m\u001b[0mcollate\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0msamples\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mcollate_fn_map\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mcollate_fn_map\u001b[0m\u001b[0;34m)\u001b[0m \u001b[0;32mfor\u001b[0m \u001b[0msamples\u001b[0m \u001b[0;32min\u001b[0m \u001b[0mtransposed\u001b[0m\u001b[0;34m]\u001b[0m  \u001b[0;31m# Backwards compatibility.\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    175\u001b[0m         \u001b[0;32melse\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    176\u001b[0m             \u001b[0;32mtry\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;32m/usr/local/lib/python3.10/dist-packages/torch/utils/data/_utils/collate.py\u001b[0m in \u001b[0;36m<listcomp>\u001b[0;34m(.0)\u001b[0m\n\u001b[1;32m    172\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    173\u001b[0m         \u001b[0;32mif\u001b[0m \u001b[0misinstance\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0melem\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mtuple\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 174\u001b[0;31m             \u001b[0;32mreturn\u001b[0m \u001b[0;34m[\u001b[0m\u001b[0mcollate\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0msamples\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mcollate_fn_map\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mcollate_fn_map\u001b[0m\u001b[0;34m)\u001b[0m \u001b[0;32mfor\u001b[0m \u001b[0msamples\u001b[0m \u001b[0;32min\u001b[0m \u001b[0mtransposed\u001b[0m\u001b[0;34m]\u001b[0m  \u001b[0;31m# Backwards compatibility.\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    175\u001b[0m         \u001b[0;32melse\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    176\u001b[0m             \u001b[0;32mtry\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;32m/usr/local/lib/python3.10/dist-packages/torch/utils/data/_utils/collate.py\u001b[0m in \u001b[0;36mcollate\u001b[0;34m(batch, collate_fn_map)\u001b[0m\n\u001b[1;32m    140\u001b[0m     \u001b[0;32mif\u001b[0m \u001b[0mcollate_fn_map\u001b[0m \u001b[0;32mis\u001b[0m \u001b[0;32mnot\u001b[0m \u001b[0;32mNone\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    141\u001b[0m         \u001b[0;32mif\u001b[0m \u001b[0melem_type\u001b[0m \u001b[0;32min\u001b[0m \u001b[0mcollate_fn_map\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 142\u001b[0;31m             \u001b[0;32mreturn\u001b[0m \u001b[0mcollate_fn_map\u001b[0m\u001b[0;34m[\u001b[0m\u001b[0melem_type\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mbatch\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mcollate_fn_map\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mcollate_fn_map\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    143\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    144\u001b[0m         \u001b[0;32mfor\u001b[0m \u001b[0mcollate_type\u001b[0m \u001b[0;32min\u001b[0m \u001b[0mcollate_fn_map\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;32m/usr/local/lib/python3.10/dist-packages/torch/utils/data/_utils/collate.py\u001b[0m in \u001b[0;36mcollate_tensor_fn\u001b[0;34m(batch, collate_fn_map)\u001b[0m\n\u001b[1;32m    212\u001b[0m         \u001b[0mstorage\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0melem\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_typed_storage\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_new_shared\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mnumel\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mdevice\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0melem\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mdevice\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    213\u001b[0m         \u001b[0mout\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0melem\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mnew\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mstorage\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mresize_\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mlen\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mbatch\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m*\u001b[0m\u001b[0mlist\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0melem\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0msize\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 214\u001b[0;31m     \u001b[0;32mreturn\u001b[0m \u001b[0mtorch\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mstack\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mbatch\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;36m0\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mout\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mout\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    215\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    216\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;31mRuntimeError\u001b[0m: stack expects each tensor to be equal size, but got [19] at entry 0 and [21] at entry 1"
+          ]
+        }
+      ],
+      "source": "train(st_train,2) "
+    }
+  ],
+  "llm_responses": [
+    {
+      "step": 1,
+      "content": "Looking at the error in cell 19, the issue is in the `data` class defined in cell 10. The error \"stack expects each tensor to be equal size\" indicates that the tensors being batched have different lengths because the padding logic in `__getitem__` is broken.\n\nThe problem is on this line:\n```python\ndif = len(self.mx - self.X[index])\n```\n\n`self.mx` is 40 (an integer) and `self.X[index]` is a tensor, so this operation doesn't work correctly. It should be:\n```python\ndif = self.mx - len(self.X[index])\n```\n\nLet me fix this:",
+      "reasoning": "Looking at the error message from cell 19:\n```\nRuntimeError: stack expects each tensor to be equal size, but got [19] at entry 0 and [21] at entry 1\n```\n\nThis error is occurring in the `train` function when trying to process data. The issue is that when we're batching, the tensors have different sizes.\n\nLet me trace through the code:\n\n1. Cell 10 defines the `data` class which is a Dataset\n2. In the `__getitem__` method, there's this line:\n   ```python\n   dif = len(self.mx - self.X[index])\n   ```\n   \n   This is problematic! `self.mx` is 40 (the padding size), and `self.X[index]` is a tensor. subtracting a tensor from an integer doesn't work as expected. It should be:\n   ```python\n   dif = self.mx - len(self.X[index])\n   ```\n\n3. This line is causing the tensors to have different sizes because the padding logic is broken.\n\nLet me look at the `__getitem__` method more carefully:\n\n```python\ndef __getitem__(self , index):\n    dif = len(self.mx - self.X[index] )  # This is wrong!\n    _x = self.X[index]\n    _y = self.Y[index]\n    if dif > 0:\n        a = torch.zeros(self.mx)\n        b = torch.zeros(self.mx)\n        a[:len(_x)] = _x\n        b[:len(_y)] = _y\n        _x = a\n        _y = torch.zeros( ( self.mx, self.vocab_size))\n        _y [torch.arange(self.mx),b.long()] =1\n    return _x.long() , _y.long()\n```\n\nThe problem is in the first line: `dif = len(self.mx - self.X[index])`. This should be:\n\n\nThe correct approach is to calculate the difference by subtracting the length of the current tensor from the maximum size. This ensures proper padding for tensors of varying lengths, preventing the runtime error during batch processing."
+    },
+    {
+      "step": 2,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Good, I've fixed the padding logic. Let me now run all cells to see if this fixes the error."
+    },
+    {
+      "step": 3,
+      "content": "I see that now there's an issue with cell 0. The datasets library requires `trust_remote_code=True` for the sst dataset. Let me fix this:",
+      "reasoning": "The error is now in cell 0 - the datasets library is asking for `trust_remote_code=True`. But this was working in the original run. Looking back at the original output, cell 0 had \"Status: ok\". So there seems to have been a change in the environment or datasets library.\n\nSince I can't install/uninstall anything according to the rules, and the original notebook was working, I should focus on the original error which was in cell 19. But now I can't reproduce that because cell 0 is failing.\n\nWait, looking at the original output again - cell 0 had \"Status: ok\" and cell 19 had \"Status: error\". So the original crash was only due to the bug in cell 10 that I fixed.\n\nBut now when I run all cells, cell 0 is failing because of the `trust_remote_code=True` issue. This is strange because it was working before.\n\nLet me check the original notebook cell 0 again - it doesn't have `trust_remote_code=True`. The error says I should add it. Let me add it to cell 0 to fix this issue so I can continue debugging.\n\nWait, but the task says \"Do not try to install/uninstall any libraries\" - but adding a parameter to an existing function call isn't installing libraries, it's just fixing the code. The original crash was in cell 19, not cell 0. But now cell 0 needs to be fixed as well to proceed.\n\nLet me fix cell 0 by adding trust_remote_code=True."
+    },
+    {
+      "step": 4,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Good, now let me run all cells again to see if we have any more errors."
+    },
+    {
+      "step": 5,
+      "content": "Looking at the error more carefully, the `sentimentdata` class (cell 18) doesn't pad the X tensors - they have different lengths (19 and 21), so they can't be stacked into batches by the DataLoader. I need to add padding logic similar to the `data` class:",
+      "reasoning": "The issue persists! Let me look more carefully at the error. The error is happening in cell 19 which calls `train(st_train, 2)`. The `st_train` is created from `sentimentdata` class, not the `data` class.\n\nLooking at cell 18:\n```python\nclass sentimentdata(Dataset):\n    def __init__(self , X,Y ):\n        self.X = X\n        self.Y = Y\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        x = self.X[index]\n        y= self.Y[index]\n\n        return x,y\n```\n\nThis class doesn't do any padding! So the X tensors have different lengths (19 and 21 in the error message), which can't be stacked into a batch.\n\nThe fix is to add padding to the `sentimentdata` class just like in the `data` class, or we need to use the `data` class instead. Let me look at the train function:\n\n```python\ndef train( traindata,epochs = 5):\n\n    for x in range(epochs):\n        datal = iter(traindata)\n        #...\n        for idx ,(cx, cy)  in enumerate(datal):\n            optimizer.zero_grad()\n\n            outputs = model.forward(cx)\n```\n\nSo the train function expects a DataLoader, and gets `cx` which should be padded to the same length. The `sentimentdata` class doesn't do any padding, but the train function needs padded tensors.\n\nI need to fix the `sentimentdata` class to do padding like the `data` class does. But wait, I also notice that the original `data` class has a Y output that's one-hot encoded. The `sentimentdata` class doesn't do this. Let me check what the train function expects:\n\n\nThe train function directly passes the output of the DataLoader to `model.forward(cx)`, and then compares it with `cy`. This means the `sentimentdata` class needs to provide both padding and matching output format.\n\nI'll modify the class to ensure consistent tensor lengths and correct output preparation for the model's training process. The goal is to create a data structure that seamlessly integrates with the existing training workflow.\n\nThe solutions involve either implementing padding within `sentimentdata` or using the existing `data` class, which already handles the necessary preprocessing. I need to verify the vocab size is preserved during the data loading process.\n\nThe dataset creation seems to be skipping the `data` class initialization, which could lead to mismatched tensor dimensions and training complications. I'll investigate how the vocab size is being passed and ensure compatibility between different data objects.\n\nThe core challenge appears to be reconciling the different data representation approaches while maintaining the original code's training intent. Padding seems necessary to ensure uniform tensor lengths across the batch.\n\nI'll modify the `sentimentdata` class to incorporate padding directly, ensuring consistent input dimensions for the Dataloader. This approach maintains the original code structure while resolving the tensor length mismatch.\n\nThe `sentimentdata` class needs to handle padding manually, which will require tracking the maximum sequence length and constructing appropriately sized tensors. This strategy aligns with the method used in the `data` class. I see the issue now. The `sentimentdata` class is returning raw tensors without padding or one-hot encoding, which causes shape mismatches when creating batches. I'll modify the class to handle padding and one-hot transformation similar to the `data` class, ensuring consistent input and output shapes for the model.\n\nThe current implementation simply returns raw X and Y tensors, which will result in incompatible tensor shapes when batching. I need to implement padding logic and convert the target labels to a one-hot encoded format with the correct vocabulary size.\n\nThe training function expects batched inputs (cx, cy) where cx is padded to a consistent length and cy is one-hot encoded. This means I'll need to add preprocessing steps that match the data preparation used in the `data` class.\n\nI'll set a fixed padding length of 40, which matches the initialization in the `elmotrain` data object. The sentiment labels are already set at 0 for negative and 1 for positive, so the encoding is straightforward.\n\nThe key modifications will involve adding padding to input sequences and converting labels to one-hot vectors to ensure compatibility with the model's expected input format.\n\nI'll modify the `sentimentdata` class to handle sequence length consistency and label encoding. By adding a padding mechanism and one-hot conversion, the data loader can successfully batch inputs with uniform tensor shapes. The padding will standardize sequence lengths across different samples, enabling smooth batch processing.\n\nThe implementation will involve creating a fixed-length array, truncating or expanding sequences as needed, and generating a corresponding one-hot encoded label representation."
+    },
+    {
+      "step": 6,
+      "content": "",
+      "reasoning": "Now I need to update how `st_train_loader` and `st_test_loader` are created to pass `vocab_size` and use the padding size."
+    },
+    {
+      "step": 7,
+      "content": "",
+      "reasoning": "Now let me run cell 19 again to test if the fix works."
+    },
+    {
+      "step": 8,
+      "content": "Let me re-run cell 18 to update the class definition:",
+      "reasoning": "It seems the cell was previously executed and is still using the old class definition. Let me re-run the updated cell 18 first to update the class definition in the kernel."
+    },
+    {
+      "step": 9,
+      "content": "",
+      "reasoning": "Cell 18 ran successfully. Now let me try running cell 19 again:"
+    },
+    {
+      "step": 10,
+      "content": "Good progress! The padding error is fixed, but now there's an embedding index error. The issue is that the model's embedding layer size (`len(vocab)`) doesn't match the indices in X (which are from `word2index` that maps to glove embeddings). \n\nLooking at cell 3, the embedding matrix has size `(len(glv)+2, glv_size)`, but the model in cell 15 is initialized with `vocab_size=len(vocab)`. Let me fix this:",
+      "reasoning": "Good progress! The padding issue is fixed, but now we have an \"index out of range in self\" error in the embedding layer. This is happening because the embedding layer's vocabulary size doesn't match the indices in X.\n\nLooking back at the notebooks:\n- Cell 11: `elmotrain = data(X,Y, len(vocab),40)` - this uses `len(vocab)` as vocab_size\n- Cell 15: `model = elmo(len(vocab) , glv_size)` - this also uses `len(vocab)` as vocab_size for embedding\n\nBut the X contains indices from word2index, not from vocab. So:\n\nThe issue is that:\n1. `word2index` maps words to indices (based on glove embeddings)\n2. `vocab/text2int/` maps words to different indices (based on the tokenized vocab)\n3. X indices are from word2index, which go up to len(glv)+1 \n4. But the embedding layer expects indices up to len(vocab)\n\nThe indices in X are from word2index (indices into the glove embeddings), but the model is initialized with vocab_size=len(vocab). The word2index maps to glove embeddings, which has len(glv)+2 entries.\n\nLet me check what len(glv) is... actually I should just run the code to understand the problem.\n\nActually looking at more carefully:\n- In cell 3: `embed = torch.zeros((len(glv)+2 , glv_size))` - so there are len(glv)+2 embedding slots indexed 0, 1, 2...\n- `word2index` maps to these indices\n- The model is initialized with `vocab_size = len(vocab)`\n- But X contains indices from word2index which can be larger than len(vocab)\n\nThe fix should be to make the model's embedding size match what's in X. Since X indices come from word2index which maps to glove embeddings (indices 0 to len(glv)+1), we need to set the embedding size to be len(embed).\n\nLet me check cell 3 again - embed has size (len(glv)+2, glv_size). The model should be initialized with this vocab size. Let me fix cell 15:\n\n\nI'll modify the model initialization to use the correct vocabulary size based on the embedding matrix dimensions."
+    },
+    {
+      "step": 11,
+      "content": "",
+      "reasoning": "Now I need to initialize the embedding weights with the glove embeddings. Let me update cell 15:"
+    },
+    {
+      "step": 12,
+      "content": "",
+      "reasoning": "Now I need to re-run cells 15, 18, and 19 to see if the model works correctly with the corrected embedding size."
+    },
+    {
+      "step": 13,
+      "content": "",
+      "reasoning": "Now let me run cell 15 to reinitialize the model:"
+    },
+    {
+      "step": 14,
+      "content": "",
+      "reasoning": "Now let me try to run the training again:"
+    },
+    {
+      "step": 15,
+      "content": "The error is in the loss calculation. The model outputs shape (5, 2) for 2 classes, but the labels are scalars (0 or 1). I need to convert the labels to one-hot encoded format in the sentimentdata class:",
+      "reasoning": "The error is now in the loss calculation. The issue is that `cy` has shape (5,) - these are labels, and `outputs` has shape (5, 2) - these are softmax probabilities for 2 classes.\n\nThe model handles ELMo embedding training with the `data` class (where Y is a one-hot encoded tensor), but for sentiment classification, we have simple labels. The train function should use cross-entropy loss for labels, not MSE loss.\n\nHowever, I should keep the original intent as much as possible. Looking at the train function, it computes MSE loss between `cy` and `outputs`. For sentiment classification with labels (0 or 1) and the model outputting softmax probabilities (shape [batch_size, 2]), we need to:\n\n1. Either convert the labels to one-hot encoded vectors, or\n2. Change the loss function\n\nActually, looking more carefully at `sentimentdata`, it returns `y` as a scalar tensor. The model output is shape [batch_size, 2] (softmax probabilities). The labels are scalars (0 or 1). \n\nThe fix should be to convert the labels to one-hot format in the `sentimentdata` class, similar to how the `data` class creates Y as one-hot vectors. Let me check if that would work better.\n\nActually, the simplest fix is to modify the sentimentdata class to convert labels (0 or 1) to one-hot encoded tensors of shape (2,).\n\nLet me fix the sentimentdata class:"
+    },
+    {
+      "step": 16,
+      "content": "",
+      "reasoning": "Now I need to run cells 18, 15, and 19 again to see if the training works."
+    },
+    {
+      "step": 17,
+      "content": "",
+      "reasoning": "Now let me try running the training again."
+    },
+    {
+      "step": 18,
+      "content": "Let me run all cells to verify everything works properly without the long-running training:<tool_call>run_all</tool_call>",
+      "reasoning": "Hmm, I see a keyboard interrupt and timeout. This suggests the training is taking too long or getting stuck. Let me run all cells again to see the current state without the long-running training:"
+    }
+  ],
+  "operations": [
+    {
+      "step": 1,
+      "action": "edit_cell(cell_index=10, code=<702 chars>)",
+      "output": "Cell 10 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0064
+    },
+    {
+      "step": 2,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: error\nREADME.md: 0.00B [00:00, ?B/s]sst.py: 0.00B [00:00, ?B/s]\n---ERROR---: ValueError: The repository for sst contains custom code which must be executed to correctly load the dataset. You can inspect the repository content at https://hf.co/datasets/sst.\nPlease pass the argument `trust_remote_code=True` to allow custom code to be run.\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 5.1136
+    },
+    {
+      "step": 3,
+      "action": "edit_cell(cell_index=0, code=<226 chars>)",
+      "output": "Cell 0 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.006
+    },
+    {
+      "step": 4,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\nDownloading data:   0%|          | 0.00/6.37M [00:00<?, ?B/s]Downloading data:   0%|          | 0.00/790k [00:00<?, ?B/s]Generating train split:   0%|          | 0/8544 [00:00<?, ? examples/s]Generating validation split:   0%|          | 0/1101 [00:00<?, ? examples/s]Generating test split:   0%|          | 0/2210 [00:00<?, ? examples/s]README.md: 0.00B [00:00, ?B/s]train-00000-of-00001.parquet:   0%|          | 0.00/214M [00:00<?, ?B/s](…)alidation_matched-00000-of-00001.parquet:   0%|          | 0.00/4.94M [00:00<?, ?B/s](…)dation_mismatched-00000-of-00001.parquet:   0%|          | 0.00/5.10M [00:00<?, ?B/s]Generating train split:   0%|          | 0/392702 [00:00<?, ? examples/s]Generating validation_matched split:   0%|          | 0/9815 [00:00<?, ? examples/s]Generating validation_mismatched split:   0%|          | 0/9832 [00:00<?, ? examples/s]\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\n\nCell 9:\nExecution Count: 10 | Status: ok\n\nCell 10:\nExecution Count: 11 | Status: ok\n\nCell 11:\nExecution Count: 12 | Status: ok\n\nCell 12:\nExecution Count: 13 | Status: ok\n\nCell 13:\nExecution Count: 14 | Status: ok\n\nCell 14:\nExecution Count: 15 | Status: ok\n\nCell 15:\nExecution Count: 16 | Status: ok\n\nCell 16:\nExecution Count: 17 | Status: ok\n\nCell 17:\nExecution Count: 18 | Status: ok\n\nCell 18:\nExecution Count: 19 | Status: ok\n\nCell 19:\nExecution Count: 20 | Status: error\nepoch  1\n********************\n\n---ERROR---: RuntimeError: stack expects each tensor to be equal size, but got [19] at entry 0 and [21] at entry 1\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 38.7155
+    },
+    {
+      "step": 5,
+      "action": "edit_cell(cell_index=18, code=<511 chars>)",
+      "output": "Cell 18 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0109
+    },
+    {
+      "step": 6,
+      "action": "edit_cell(cell_index=18, code=<725 chars>)",
+      "output": "Cell 18 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0036
+    },
+    {
+      "step": 7,
+      "action": "run_cell(cell_index=19)",
+      "output": "Execution Count: 21 | Status: error\nepoch  1\n********************\n\n---ERROR---: RuntimeError: stack expects each tensor to be equal size, but got [19] at entry 0 and [21] at entry 1\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.0558
+    },
+    {
+      "step": 8,
+      "action": "run_cell(cell_index=18)",
+      "output": "Execution Count: 22 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.1053
+    },
+    {
+      "step": 9,
+      "action": "run_cell(cell_index=19)",
+      "output": "Execution Count: 23 | Status: error\nepoch  1\n********************\n\n---ERROR---: IndexError: index out of range in self\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.0546
+    },
+    {
+      "step": 10,
+      "action": "edit_cell(cell_index=15, code=<155 chars>)",
+      "output": "Cell 15 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0076
+    },
+    {
+      "step": 11,
+      "action": "edit_cell(cell_index=15, code=<168 chars>)",
+      "output": "Cell 15 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0048
+    },
+    {
+      "step": 12,
+      "action": "run_cell(cell_index=18)",
+      "output": "Execution Count: 24 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0549
+    },
+    {
+      "step": 13,
+      "action": "run_cell(cell_index=15)",
+      "output": "Execution Count: 25 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.2065
+    },
+    {
+      "step": 14,
+      "action": "run_cell(cell_index=19)",
+      "output": "Execution Count: 26 | Status: error\nepoch  1\n********************\n\n---ERROR---: RuntimeError: The size of tensor a (5) must match the size of tensor b (2) at non-singleton dimension 1\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 0.3061
+    },
+    {
+      "step": 15,
+      "action": "edit_cell(cell_index=18, code=<821 chars>)",
+      "output": "Cell 18 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0067
+    },
+    {
+      "step": 16,
+      "action": "run_cell(cell_index=18)",
+      "output": "Execution Count: 27 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0555
+    },
+    {
+      "step": 17,
+      "action": "run_cell(cell_index=19)",
+      "output": "Execution Count: 28 | Status: timeout\nepoch  1\n********************\n\n---ERROR---: KeyboardInterrupt: \n\n---ERROR---: TimeoutError: Execution exceeded timeout of 1800 seconds and was interrupted\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 1801.1085
+    },
+    {
+      "step": 18,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\n\nCell 9:\nExecution Count: 10 | Status: ok\n\nCell 10:\nExecution Count: 11 | Status: ok\n\nCell 11:\nExecution Count: 12 | Status: ok\n\nCell 12:\nExecution Count: 13 | Status: ok\n\nCell 13:\nExecution Count: 14 | Status: ok\n\nCell 14:\nExecution Count: 15 | Status: ok\n\nCell 15:\nExecution Count: 16 | Status: ok\n\nCell 16:\nExecution Count: 17 | Status: ok\n\nCell 17:\nExecution Count: 18 | Status: ok\n\nCell 18:\nExecution Count: 19 | Status: ok\n\nCell 19:\nExecution Count: None | Status: timeout\nepoch  1\n********************\n\n---ERROR---: TimeoutError: Execution exceeded timeout of 1800 seconds and was interrupted\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 1827.1372
+    },
+    {
+      "step": 18,
+      "action": "AgentTimeout",
+      "output": "Agent execution exceeded total timeout of 3600 seconds",
+      "return_code": 1,
+      "success": false
+    }
+  ],
+  "code_changes": [
+    {
+      "cell_index": 10,
+      "step": 1,
+      "code": "from torch.utils.data import Dataset, DataLoader\nclass  data(Dataset):\n    def __init__(self , X,Y,vs , padsz):\n        self.X = X\n        self.Y = Y\n        self.vocab_size = vs\n        self.mx = padsz\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        dif = self.mx - len(self.X[index])\n        _x = self.X[index]\n        _y = self.Y[index]\n        if dif > 0:\n            a = torch.zeros(self.mx)\n            b = torch.zeros(self.mx)\n            a[:len(_x)] = _x\n            b[:len(_y)] = _y\n            _x = a\n            _y = torch.zeros( ( self.mx, self.vocab_size))\n            _y [torch.arange(self.mx),b.long()] =1\n        return _x.long() , _y.long()"
+    },
+    {
+      "cell_index": 0,
+      "step": 3,
+      "code": "from datasets import load_dataset\nimport torch\nimport torch.nn.functional as F\nimport numpy as np\nimport time\nimport pickle\n\ndataset = load_dataset(\"sst\", \"default\", trust_remote_code=True)\ndataset2 = load_dataset(\"multi_nli\")"
+    },
+    {
+      "cell_index": 18,
+      "step": 5,
+      "code": "class sentimentdata(Dataset):\n    def __init__(self , X,Y, vocab_size, padsz=40):\n        self.X = X\n        self.Y = Y\n        self.vocab_size = vocab_size\n        self.mx = padsz\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        dif = self.mx - len(self.X[index])\n        _x = self.X[index]\n        _y = self.Y[index]\n        if dif > 0:\n            a = torch.zeros(self.mx)\n            a[:len(_x)] = _x\n            _x = a\n        return _x.long() , torch.tensor(_y)"
+    },
+    {
+      "cell_index": 18,
+      "step": 6,
+      "code": "class sentimentdata(Dataset):\n    def __init__(self , X,Y, vocab_size, padsz=40):\n        self.X = X\n        self.Y = Y\n        self.vocab_size = vocab_size\n        self.mx = padsz\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        dif = self.mx - len(self.X[index])\n        _x = self.X[index]\n        _y = self.Y[index]\n        if dif > 0:\n            a = torch.zeros(self.mx)\n            a[:len(_x)] = _x\n            _x = a\n        return _x.long() , torch.tensor(_y)\nst_train_loader = sentimentdata(X ,ylb, len(vocab))\nst_test_loader = sentimentdata(X_test ,ytb, len(vocab))\n\nst_train = DataLoader(st_train_loader, batch_size=5 )\nst_test= DataLoader(st_test_loader, batch_size=5 )"
+    },
+    {
+      "cell_index": 15,
+      "step": 10,
+      "code": "embed_size = len(word2index)  # Number of unique indices in word2index\nmodel = elmo(embed_size , glv_size)\noptimizer = torch.optim.Adam(model.parameters())"
+    },
+    {
+      "cell_index": 15,
+      "step": 11,
+      "code": "embed_size = len(word2index)  # Number of unique indices in word2index\nmodel = elmo(embed_size , glv_size, embed=embed)\noptimizer = torch.optim.Adam(model.parameters())"
+    },
+    {
+      "cell_index": 18,
+      "step": 15,
+      "code": "class sentimentdata(Dataset):\n    def __init__(self , X,Y, num_classes, padsz=40):\n        self.X = X\n        self.Y = Y\n        self.num_classes = num_classes\n        self.mx = padsz\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        dif = self.mx - len(self.X[index])\n        _x = self.X[index]\n        _y = self.Y[index]\n        if dif > 0:\n            a = torch.zeros(self.mx)\n            a[:len(_x)] = _x\n            _x = a\n        # Convert label to one-hot encoding\n        y_onehot = torch.zeros(self.num_classes)\n        y_onehot[_y] = 1\n        return _x.long() , y_onehot\n\nst_train_loader = sentimentdata(X ,ylb, 2)\nst_test_loader = sentimentdata(X_test ,ytb, 2)\n\nst_train = DataLoader(st_train_loader, batch_size=5 )\nst_test= DataLoader(st_test_loader, batch_size=5 )"
+    }
+  ]
+}
