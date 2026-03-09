@@ -73,8 +73,11 @@ def stratify_sample_on_library(instances, sample_size):
 def main():
     confidence_level = 0.9
     margin_error = 0.1
+    random_seed = 42
 
-    target_setting = "results/baseline/glm-4.7-355b"
+    random.seed(random_seed)
+
+    target_setting = "results/agent_2/glm-4.7-355b"
     summary_path = Path(target_setting) / "overall_summary.json"
 
     with open(summary_path, "r", encoding="utf-8") as f:
@@ -106,6 +109,7 @@ def main():
         "target_setting": target_setting,
         "confidence_level": confidence_level,
         "margin_error": margin_error,
+        "random_seed": random_seed,
         "population_size": population_size,
         "sample_size": sample_size,
         "sampled_instances": sampled_instances,
