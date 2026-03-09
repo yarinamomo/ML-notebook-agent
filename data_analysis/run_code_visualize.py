@@ -43,7 +43,8 @@ def plot_category_distribution(input_dir, output_dir):
         percentages.append((count / total_ops) * 100)
     
     # Create figure with two subplots
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6), width_ratios=[0.6, 0.4])
+    # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6), width_ratios=[0.6, 0.4])
+    fig, ax1 = plt.subplots(1, 1, figsize=(10, 4))
     
     # Plot 1: Horizontal bar chart
     colors = plt.cm.viridis(np.linspace(0.3, 0.9, len(categories)))
@@ -61,66 +62,66 @@ def plot_category_distribution(input_dir, output_dir):
     ax1.grid(axis='x', alpha=0.3, linestyle='--')
     ax1.set_xlim(0, max(counts) * 1.15)
     
-    # Plot 2: Co-occurrence heatmap of pair overlap categories
-    # Check if we have overlap data
-    if not isinstance(data, dict) or 'overlaps' not in data:
-        print("No overlap data found. Run analysis first.")
-        return
+    # # Plot 2: Co-occurrence heatmap of pair overlap categories
+    # # Check if we have overlap data
+    # if not isinstance(data, dict) or 'overlaps' not in data:
+    #     print("No overlap data found. Run analysis first.")
+    #     return
     
-    overlaps = data['overlaps']
+    # overlaps = data['overlaps']
     
-    # Remove 'other' and 'print_output' from categories list
-    categories = [cat for cat in overlaps['all_categories'] if cat != 'other' and cat != 'print_output']
-    n_cats = len(categories)
+    # # Remove 'other' and 'print_output' from categories list
+    # categories = [cat for cat in overlaps['all_categories'] if cat != 'other' and cat != 'print_output']
+    # n_cats = len(categories)
     
-    # Build co-occurrence matrix
-    cooccur_matrix = np.zeros((n_cats, n_cats))
+    # # Build co-occurrence matrix
+    # cooccur_matrix = np.zeros((n_cats, n_cats))
     
-    # Diagonal: count of each category
-    category_counts = Counter()
-    for op in operations:
-        for cat in op['categories']:
-            category_counts[cat] += 1
+    # # Diagonal: count of each category
+    # category_counts = Counter()
+    # for op in operations:
+    #     for cat in op['categories']:
+    #         category_counts[cat] += 1
     
-    for i, cat in enumerate(categories):
-        cooccur_matrix[i, i] = category_counts[cat]
+    # for i, cat in enumerate(categories):
+    #     cooccur_matrix[i, i] = category_counts[cat]
     
-    # Off-diagonal: co-occurrence counts
-    for pair_str, count in overlaps['co_occurrence_pairs'].items():
-        cat1, cat2 = pair_str.split('|')
-        # Skip pairs involving 'other' or 'print_output' categories
-        if cat1 == 'other' or cat2 == 'other' or cat1 == 'print_output' or cat2 == 'print_output':
-            continue
-        i = categories.index(cat1)
-        j = categories.index(cat2)
-        cooccur_matrix[i, j] = count
-        cooccur_matrix[j, i] = count  # Symmetric
+    # # Off-diagonal: co-occurrence counts
+    # for pair_str, count in overlaps['co_occurrence_pairs'].items():
+    #     cat1, cat2 = pair_str.split('|')
+    #     # Skip pairs involving 'other' or 'print_output' categories
+    #     if cat1 == 'other' or cat2 == 'other' or cat1 == 'print_output' or cat2 == 'print_output':
+    #         continue
+    #     i = categories.index(cat1)
+    #     j = categories.index(cat2)
+    #     cooccur_matrix[i, j] = count
+    #     cooccur_matrix[j, i] = count  # Symmetric
     
-    # Plot heatmap
-    im = ax2.imshow(cooccur_matrix, cmap='YlOrRd', aspect='auto')
+    # # Plot heatmap
+    # im = ax2.imshow(cooccur_matrix, cmap='YlOrRd', aspect='auto')
     
-    # Set ticks and labels
-    cat_labels = [cat.replace('_', ' ').title() for cat in categories]
-    ax2.set_xticks(np.arange(n_cats))
-    ax2.set_yticks(np.arange(n_cats))
-    ax2.set_xticklabels(cat_labels, rotation=45, ha='right')
-    ax2.set_yticklabels(cat_labels)
+    # # Set ticks and labels
+    # cat_labels = [cat.replace('_', ' ').title() for cat in categories]
+    # ax2.set_xticks(np.arange(n_cats))
+    # ax2.set_yticks(np.arange(n_cats))
+    # ax2.set_xticklabels(cat_labels, rotation=45, ha='right')
+    # ax2.set_yticklabels(cat_labels)
     
-    # Add text annotations
-    for i in range(n_cats):
-        for j in range(n_cats):
-            count = int(cooccur_matrix[i, j])
-            if count > 0:
-                color = 'white' if cooccur_matrix[i, j] > cooccur_matrix.max() / 2 else 'black'
-                ax2.text(j, i, str(count), ha='center', va='center', 
-                        color=color, fontsize=9, fontweight='bold')
+    # # Add text annotations
+    # for i in range(n_cats):
+    #     for j in range(n_cats):
+    #         count = int(cooccur_matrix[i, j])
+    #         if count > 0:
+    #             color = 'white' if cooccur_matrix[i, j] > cooccur_matrix.max() / 2 else 'black'
+    #             ax2.text(j, i, str(count), ha='center', va='center', 
+    #                     color=color, fontsize=9, fontweight='bold')
     
-    ax2.set_title('Runinfo Category Co-occurrence Matrix\n(diagonal = total count, off-diagonal = overlap count)', 
-                  fontsize=12, fontweight='bold')
+    # ax2.set_title('Runinfo Category Co-occurrence Matrix\n(diagonal = total count, off-diagonal = overlap count)', 
+    #               fontsize=12, fontweight='bold')
     
-    # Add colorbar
-    cbar = plt.colorbar(im, ax=ax2)
-    cbar.set_label('Number of Operations', rotation=270, labelpad=20)
+    # # Add colorbar
+    # cbar = plt.colorbar(im, ax=ax2)
+    # cbar.set_label('Number of Operations', rotation=270, labelpad=20)
     
     plt.tight_layout()
     
