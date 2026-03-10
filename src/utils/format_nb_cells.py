@@ -112,7 +112,7 @@ def format_initial_notebook(notebook: NotebookNode) -> str:
         has_error = any(output.get("output_type") == "error" for output in cell_outputs)
 
         exec_result: CellExecutionResult = {
-            "outputs": [output if (output.get("output_type") == "error") else "" for output in cell_outputs],
+            "outputs": [output for output in cell_outputs if output.get("output_type") == "error"],
             "execution_count": cell.get("execution_count", None),
             "status": "error" if has_error else "ok",
             "done": True
@@ -161,12 +161,10 @@ def _truncate_stream_output(output: str, max_words: int = 500) -> str:
     return truncated.replace('[OUTPUT TRUNCATED', '[STREAM TRUNCATED', 1)
 
 
-def _clean_outputs(outputs: list):
+def _clean_outputs(outputs: list[CellOutput]) -> list[CellOutput]:
     cleaned_outputs = []
     handled_streams = set()    
     for out in outputs:
-        if not out:
-            continue
         msg_type = out.get('msg_type', out.get('output_type', ''))
         content = out.get('content', out)
         if msg_type == 'stream':
