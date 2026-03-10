@@ -14,16 +14,10 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df= pd.read_csv(r'data/Retailsales.csv')
-# df=df.drop(columns='Unnamed: 0')
-# df.head()
-
-# === AFTER (edited) ===
 df= pd.read_csv(r'data/Retailsales.csv')
-df=df.drop(columns='Unnamed: 0', errors='ignore')
+df=df.drop(columns='Unnamed: 0')
 df.head()
 
 #%%
@@ -42,6 +36,8 @@ df
 # #This Error is occuring due to some string values in Order ID Column
 
 # === AFTER (edited) ===
-# df=df['Order ID'].astype('int')
-# The CSV file appears to be a Git LFS pointer, not actual data
-# Skipping this cell as 'Order ID' column doesn't exist
+# Remove rows where 'Order ID' contains the header string 'Order ID'
+df = df[df['Order ID'] != 'Order ID']
+# Now convert Order ID column to integer
+df['Order ID'] = df['Order ID'].astype('int')
+df

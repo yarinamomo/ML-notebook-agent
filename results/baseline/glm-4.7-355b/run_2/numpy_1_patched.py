@@ -35,26 +35,10 @@ transformer = transforms.Compose([
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# dataset = ImageFolder(root = "data_small/celeba_hq_256", 
-#                       transform = transformer) 
-
-# === AFTER (edited) ===
-from PIL import Image, UnidentifiedImageError
-
-# Custom loader that handles corrupted images gracefully
-def safe_loader(path):
-    try:
-        return Image.open(path).convert('RGB')
-    except (UnidentifiedImageError, Exception):
-        # Return a blank image for corrupted files
-        return Image.new('RGB', (64, 64), (0, 0, 0))
-
-dataset = ImageFolder(root = "data_small/celeba_hq_256",
-                      transform = transformer,
-                      loader=safe_loader)
+dataset = ImageFolder(root = "data_small/celeba_hq_256", 
+                      transform = transformer)
 
 #%%
 # --- [CELL 4]: ---
@@ -213,13 +197,34 @@ for epoch in range(NUM_EPOCHS):
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 9}
-import matplotlib.pyplot as plt 
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# === BEFORE (original) ===
+# import matplotlib.pyplot as plt 
+# def visual():
+#     n=6
+#     k=0
+#     z = torch.randn((16, 100, 1, 1)).to(device)
+#     out= gen(z)
+#     plt.figure(figsize=(16,16))
+#     out = out.cpu()
+#     out = out.detach().numpy()
+#     for i in range(n):
+#         for j in range(n):
+#             ax=plt.subplot(n,n,k+1)
+#             img = (out[k]+1)/2
+#             img = np.transpose(img,(1,2,0))
+#             plt.imshow(img)
+#             plt.axis('off')
+#             k+=1
+# visual()
+
+# === AFTER (edited) ===
+import matplotlib.pyplot as plt
 def visual():
     n=6
     k=0
-    z = torch.randn((16, 100, 1, 1)).to(device)
+    z = torch.randn((n*n, 100, 1, 1)).to(device)
     out= gen(z)
     plt.figure(figsize=(16,16))
     out = out.cpu()

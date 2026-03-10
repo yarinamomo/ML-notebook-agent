@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -11,21 +11,14 @@ import seaborn as sns
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df= pd.read_csv("data/iris.csv")
-
-# === AFTER (edited) ===
-from sklearn.datasets import load_iris
-iris = load_iris()
-df = pd.DataFrame(data=iris.data, columns=iris.feature_names)
-df['species'] = iris.target
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+df= pd.read_csv("data/iris.csv")
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 X = df.drop("species",axis=1)
 Y = df["species"]
 x_train, x_test , y_train, y_test=train_test_split (X ,Y , test_size=0.25, random_state=42)
@@ -33,20 +26,20 @@ x_train, x_test , y_train, y_test=train_test_split (X ,Y , test_size=0.25, rando
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 clf = LogisticRegression()
 clf.fit(x_train, y_train)
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 y_pred = clf.predict(x_test)
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # === BEFORE (original) ===
 # from sklearn import metrics
 # confusion_matrix = metrics.confusion_matrix(y_test , y_pred)
@@ -58,15 +51,9 @@ y_pred = clf.predict(x_test)
 
 # === AFTER (edited) ===
 from sklearn import metrics
-from sklearn.datasets import load_iris
-
-# Load iris to get target names
-iris = load_iris()
-
 confusion_matrix = metrics.confusion_matrix(y_test , y_pred)
 
-# Use the actual iris target names for display labels
-cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix , display_labels=iris.target_names)
+cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix , display_labels=['setosa', 'versicolor', 'virginica'])
 
 cm_display.plot()
 plt.show()

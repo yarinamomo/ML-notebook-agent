@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -16,30 +16,25 @@ from sklearn.metrics import accuracy_score
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 train=pd.read_csv('data/train.csv')
-
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 test  = pd.read_csv('data/test.csv')
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train=train.drop(columns=['id'])
-
-# === AFTER (edited) ===
-train=train.drop(columns=['id'], errors='ignore')
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+train=train.drop(columns=['id'])
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 train = train[train['gravity']<1.036]
 
 #%%
@@ -50,6 +45,10 @@ train = train[train['ph']<7.1]
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
-fig = sm.qqplot(train['gravity'],line=45,fit=True)
+# === BEFORE (original) ===
+# fig = sm.qqplot(train['gravity'],line=45,fit=True)
+
+# === AFTER (edited) ===
+fig = sm.qqplot(train['gravity'],line='45',fit=True)

@@ -25,17 +25,16 @@ df=df.dropna()
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
-
-# === AFTER (edited) ===
-if "sex" in df.columns:
-    df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
+df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
-sns.violinplot(df, x='species')
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# === BEFORE (original) ===
+# sns.violinplot(df, x='species')
+
+# === AFTER (edited) ===
+sns.violinplot(df, x='species', y='bill_length_mm')

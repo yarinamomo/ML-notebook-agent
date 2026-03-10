@@ -25,37 +25,60 @@ image_count
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# import PIL
-# princess = list(data_dir.glob('princess/*'))
-# PIL.Image.open(str(princess[1]))
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 import PIL
 princess = list(data_dir.glob('princess/*'))
-# Try to find a valid image
-for img_path in princess:
-    try:
-        PIL.Image.open(str(img_path))
-        princess = [img_path]
-        break
-    except:
-        continue
-PIL.Image.open(str(princess[0]))
+PIL.Image.open(str(princess[1]))
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# === BEFORE (original) ===
+# image_height, image_width = PIL.Image.open(str(princess[1])).size
+# batch_size,epochs = 64,10
+
+# === AFTER (edited) ===
 image_height, image_width = PIL.Image.open(str(princess[1])).size
 batch_size,epochs = 64,10
+
+# Validate all images and remove corrupted ones
+import os
+from PIL import Image
+
+valid_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.JPEG', '.JPG', '.PNG'}
+
+for class_dir in data_dir.iterdir():
+    if class_dir.is_dir():
+        for img_file in list(class_dir.iterdir()):
+            # Check file extension
+            if img_file.suffix not in valid_extensions:
+                try:
+                    os.remove(img_file)
+                    print(f"Removed invalid file: {img_file}")
+                except Exception as e:
+                    print(f"Error removing {img_file}: {e}")
+                continue
+            
+            # Try to open the image to check if it's valid
+            try:
+                with Image.open(img_file) as img:
+                    img.verify()
+                # Re-open to load the image (verify() closes the file)
+                with Image.open(img_file) as img:
+                    img.load()
+            except Exception as e:
+                try:
+                    os.remove(img_file)
+                    print(f"Removed corrupted image: {img_file}")
+                except Exception as e2:
+                    print(f"Error removing {img_file}: {e2}")
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 train_ds = tf.keras.utils.image_dataset_from_directory(
     data_dir,
     validation_split=0.2,
@@ -69,7 +92,7 @@ train_ds = tf.keras.utils.image_dataset_from_directory(
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 val_ds = tf.keras.utils.image_dataset_from_directory(
     data_dir,
     validation_split=0.2,
@@ -83,13 +106,13 @@ val_ds = tf.keras.utils.image_dataset_from_directory(
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 normalization_layer = layers.Rescaling(1./255)
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 from tensorflow import keras
 data_augmentation = keras.Sequential(
   [
@@ -105,14 +128,14 @@ data_augmentation = keras.Sequential(
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 num_of_classes = len(train_ds.class_names)
 num_of_classes
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 model = Sequential([
   data_augmentation,
   normalization_layer,
@@ -131,11 +154,11 @@ model = Sequential([
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 model.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 history = model.fit(train_ds,validation_data=val_ds, epochs=1)

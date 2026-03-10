@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
@@ -25,7 +25,7 @@ import cv2
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 import os 
 os.listdir('data_small/dataset/train')
 
@@ -63,133 +63,71 @@ for root, dirs, files in os.walk(train_path_nonwatermarked_images, topdown=True)
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# output_array_wm = []
-# 
-# for i in tp_watermarked:
-#     output_string_wm = train_path_watermarked_images + i
-#     output_array_wm.append(output_string_wm)
-#     out_array_wm=np.array(output_array_wm)
-
-# === AFTER (edited) ===
 output_array_wm = []
 
 for i in tp_watermarked:
     output_string_wm = train_path_watermarked_images + i
     output_array_wm.append(output_string_wm)
-out_array_wm=np.array(output_array_wm)
+    out_array_wm=np.array(output_array_wm)
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# output_array_nwm = []
-# 
-# for i in tp_nonwatermarked:
-#     output_string_nwm = train_path_nonwatermarked_images + i
-#     output_array_nwm.append(output_string_nwm)
-#     out_array_nwm=np.array(output_array_nwm)
-
-# === AFTER (edited) ===
 output_array_nwm = []
 
 for i in tp_nonwatermarked:
     output_string_nwm = train_path_nonwatermarked_images + i
     output_array_nwm.append(output_string_nwm)
-out_array_nwm=np.array(output_array_nwm)
+    out_array_nwm=np.array(output_array_nwm)
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
-# === BEFORE (original) ===
-# # dimension to resize to 
-# width = 196 # only certain dimensions work due to UpSampling (196x196 works, 148x148 works)
-# height = 196
-# dim = (width, height) # set the dimensions
-# def createPixelArr(files):
-#     data = []
-#     for image in files:
-#         try: # take each image and use imread to get the pixel values in a matrix 
-#             img_arr = cv2.imread(image, cv2.IMREAD_COLOR)
-#             img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
-#             resized_arr = cv2.resize(img_arr, (width, height)) # rescale the image so every image is of the same dimension
-#             data.append(resized_arr) # add the matrix of pixel values 
-#         except Exception as e:
-#             print(e) # some error thrown in imread or resize
-#     return np.array(data)
-
-# === AFTER (edited) ===
-width = 196
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# dimension to resize to 
+width = 196 # only certain dimensions work due to UpSampling (196x196 works, 148x148 works)
 height = 196
-dim = (width, height)
+dim = (width, height) # set the dimensions
 def createPixelArr(files):
     data = []
     for image in files:
-        try:
+        try: # take each image and use imread to get the pixel values in a matrix 
             img_arr = cv2.imread(image, cv2.IMREAD_COLOR)
-            if img_arr is not None:
-                img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
-                resized_arr = cv2.resize(img_arr, (width, height))
-                data.append(resized_arr)
-            else:
-                print(f"Failed to load: {image}")
+            img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
+            resized_arr = cv2.resize(img_arr, (width, height)) # rescale the image so every image is of the same dimension
+            data.append(resized_arr) # add the matrix of pixel values 
         except Exception as e:
-            print(f"Error loading {image}: {e}")
-    if len(data) == 0:
-        print("WARNING: No images were loaded from the provided paths!")
+            print(e) # some error thrown in imread or resize
     return np.array(data)
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# train_wms_pixVals = createPixelArr(out_array_wm[:90]) # 1000
-# train_nwms_pixVals = createPixelArr(out_array_nwm[:90]) # 1000
-
-# === AFTER (edited) ===
-import os
-# Check if the first file exists
-first_wm_path = out_array_wm[0] if len(out_array_wm) > 0 else None
-first_nwm_path = out_array_nwm[0] if len(out_array_nwm) > 0 else None
-
-print(f"Current working directory: {os.getcwd()}")
-print(f"Watermarked path: {first_wm_path}")
-print(f"Exists: {os.path.exists(first_wm_path)}")
-print(f"Non-watermarked path: {first_nwm_path}")
-print(f"Exists: {os.path.exists(first_nwm_path)}")
-
-# Check what parts of the path exist
-print(f"\nDirectory exists ('data_small'): {os.path.exists('data_small')}")
-print(f"Directory exists ('data_small/dataset'): {os.path.exists('data_small/dataset')}")
-print(f"Directory exists ('data_small/dataset/train'): {os.path.exists('data_small/dataset/train')}")
-print(f"Directory exists ('data_small/dataset/train/watermark'): {os.path.exists('data_small/dataset/train/watermark')}")
-print(f"Directory exists ('data_small/dataset/train/no_watermark'): {os.path.exists('data_small/dataset/train/no_watermark')}")
-
-# Check if we need to prepend /app/container/
-print(f"\nFull watermarked path: /app/container/{first_wm_path}")
-print(f"Full path exists: {os.path.exists('/app/container/' + first_wm_path)}")
-
-train_wms_pixVals = createPixelArr(out_array_wm[:90])
-train_nwms_pixVals = createPixelArr(out_array_nwm[:90])
-
-print(f"train_wms_pixVals length: {len(train_wms_pixVals)}")
-print(f"train_nwms_pixVals length: {len(train_nwms_pixVals)}")
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+train_wms_pixVals = createPixelArr(out_array_wm[:90]) # 1000
+train_nwms_pixVals = createPixelArr(out_array_nwm[:90]) # 1000
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
-X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1) 
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# === BEFORE (original) ===
+# X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1)
+
+# === AFTER (edited) ===
+# Combine both classes: watermarked (label 1) and non-watermarked (label 0)
+X = np.concatenate([train_wms_pixVals, train_nwms_pixVals])
+y = np.array([1] * len(train_wms_pixVals) + [0] * len(train_nwms_pixVals))
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -214,7 +152,7 @@ from timm.models.registry import register_model
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 model_ft = timm.create_model(
     'efficientnet_b3a', pretrained=True, num_classes=2
 )
@@ -229,9 +167,94 @@ model_ft.classifier = nn.Sequential(
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
-device = torch.device('cpu') # 'cuda:0'
+# === BEFORE (original) ===
+# device = torch.device('cpu') # 'cuda:0'
+# 
+# def train_model(model, train_loader, test_loader, criterion, optimizer, num_epochs=80):
+#     since = time.time()
+# 
+#     val_acc_history = []
+#     train_acc_history = []
+# 
+#     best_model_wts = copy.deepcopy(model.state_dict())
+#     best_acc = 0.0
+# 
+#     for epoch in range(num_epochs):
+#         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
+#         print('-' * 10)
+# 
+#         model.train()
+# 
+#         running_loss = 0.0
+#         running_corrects = 0
+# 
+#         for inputs, labels in tqdm(train_loader):
+#             inputs = inputs.to(device)
+#             labels = labels.to(device)
+# 
+#             optimizer.zero_grad()
+# 
+#             with torch.set_grad_enabled(True):
+#                 with torch.cuda.amp.autocast():
+#                     outputs = model(inputs)
+#                     loss = criterion(outputs, labels)
+# 
+#                 _, preds = torch.max(outputs, 1)
+# 
+#                 loss.backward()
+#                 optimizer.step()
+# 
+#             running_loss += loss.item() * inputs.size(0)
+#             running_corrects += torch.sum(preds == labels.data)
+# 
+#         epoch_loss = running_loss / len(train_loader.dataset)
+#         epoch_acc = running_corrects.double() / len(train_loader.dataset)
+# 
+#         print('Train Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
+#         train_acc_history.append(epoch_acc)
+# 
+#         model.eval()
+# 
+#         running_loss = 0.0
+#         running_corrects = 0
+# 
+#         for inputs, labels in tqdm(test_loader):
+#             inputs = inputs.to(device)
+#             labels = labels.to(device)
+# 
+#             with torch.set_grad_enabled(False):
+#                 with torch.cuda.amp.autocast():
+#                     outputs = model(inputs)
+#                     loss = criterion(outputs, labels)
+# 
+#                 _, preds = torch.max(outputs, 1)
+# 
+#             running_loss += loss.item() * inputs.size(0)
+#             running_corrects += torch.sum(preds == labels.data)
+# 
+#         epoch_loss = running_loss / len(test_loader.dataset)
+#         epoch_acc = running_corrects.double() / len(test_loader.dataset)
+# 
+#         print('Test Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
+#         val_acc_history.append(epoch_acc)
+# 
+#         if epoch_acc > best_acc:
+#             best_acc = epoch_acc
+#             best_model_wts = copy.deepcopy(model.state_dict())
+# 
+#         print()
+# 
+#     time_elapsed = time.time() - since
+#     print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+#     print('Best val Acc: {:4f}'.format(best_acc))
+# 
+#     model.load_state_dict(best_model_wts)
+#     return model, train_acc_history, val_acc_history
+
+# === AFTER (edited) ===
+device = torch.device('cpu')
 
 def train_model(model, train_loader, test_loader, criterion, optimizer, num_epochs=80):
     since = time.time()
@@ -258,9 +281,8 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
             optimizer.zero_grad()
 
             with torch.set_grad_enabled(True):
-                with torch.cuda.amp.autocast():
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
 
                 _, preds = torch.max(outputs, 1)
 
@@ -286,9 +308,8 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
             labels = labels.to(device)
 
             with torch.set_grad_enabled(False):
-                with torch.cuda.amp.autocast():
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
 
                 _, preds = torch.max(outputs, 1)
 
@@ -314,47 +335,62 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
     model.load_state_dict(best_model_wts)
     return model, train_acc_history, val_acc_history
 
-
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = optim.AdamW(params=model_ft.parameters(), lr=0.2e-5)
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# === BEFORE (original) ===
+# class MyDataset(Dataset):
+#     def __init__(self, X, y):
+#         self.X = X
+#         self.y = y
+#         
+#     def __len__(self):
+#         return len(self.X)
+#     
+#     def __getitem__(self, idx):
+#         return self.X[idx], self.y[idx]
+
+# === AFTER (edited) ===
 class MyDataset(Dataset):
     def __init__(self, X, y):
         self.X = X
         self.y = y
-        
+
     def __len__(self):
         return len(self.X)
-    
+
     def __getitem__(self, idx):
-        return self.X[idx], self.y[idx]
+        # Convert numpy array to tensor and permute from HWC to CHW format
+        img = torch.tensor(self.X[idx]).permute(2, 0, 1).float() / 255.0
+        label = self.y[idx]
+        return img, label
 
 #%%
 # --- [CELL 15]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
 train_dataset = MyDataset(X_train, y_train)
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 
 #%%
 # --- [CELL 16]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
 test_dataset = MyDataset(X_test, y_test)
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
 #%%
 # --- [CELL 17]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
 import warnings
 warnings.filterwarnings("ignore")
 

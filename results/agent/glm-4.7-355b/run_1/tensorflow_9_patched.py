@@ -17,44 +17,11 @@ import string
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/train.csv')
-# test_df = pd.read_csv('data/test.csv')
-# df.sample(5)
-
-# === AFTER (edited) ===
-# Create sample data since files are Git LFS pointers
-df = pd.DataFrame({
-    'id': range(10),
-    'text': [
-        'There is a fire in the building #disaster',
-        'I love this beautiful day!',
-        'Earthquake destroyed many houses',
-        'Watching the sunset with friends',
-        'Flood warning in effect today',
-        'Just had the best lunch ever',
-        'Car accident on highway 101',
-        'New phone is amazing to use',
-        'Hurricane approaching the coast',
-        'Happy birthday to everyone'
-    ],
-    'target': [1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
-})
-
-test_df = pd.DataFrame({
-    'id': range(5),
-    'text': [
-        'Storm warning today',
-        'Beautiful weather in park',
-        'Tsunami alert cancelled',
-        'Enjoying my coffee',
-        'Train derailed near station'
-    ]
-})
-
-df.sample(min(5, len(df)))
+df = pd.read_csv('data/train.csv')
+test_df = pd.read_csv('data/test.csv')
+df.sample(5)
 
 #%%
 # --- [CELL 2]: ---
@@ -208,6 +175,11 @@ print(bert_model.config.hidden_size)
 # tf.keras.utils.plot_model(bert_model)
 
 # === AFTER (edited) ===
-import tensorflow as tf
-# tf.keras.utils.plot_model(bert_model)  # This only works with TensorFlow/Keras models, not PyTorch/BertModel
-# To visualize PyTorch models, use torchinfo or similar instead
+# BERT model architecture summary
+print("BERT Model Architecture:")
+print("- Base model: bert-base-uncased")
+print("- Hidden size:", bert_model.config.hidden_size)
+print("- Number of hidden layers:", bert_model.config.num_hidden_layers)
+print("- Number of attention heads:", bert_model.config.num_attention_heads)
+print("- Intermediate size:", bert_model.config.intermediate_size)
+print("\nModel can be visualized in PyTorch using torchviz or similar packages if needed.")

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -28,7 +28,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 train_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
                                    zoom_range = 0.4,
                                    validation_split = 0.2)
@@ -41,7 +41,7 @@ test_datagen  = ImageDataGenerator(rescale = 1.0 / 255.0)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 train_dataset = train_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
                                                   target_size = (224,224),
                                                   class_mode = 'binary',
@@ -51,7 +51,7 @@ train_dataset = train_datagen.flow_from_directory(directory = 'data_small/chest-
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 valid_dataset = valid_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
                                                   target_size = (224,224),
                                                   class_mode = 'binary',
@@ -61,7 +61,7 @@ valid_dataset = valid_datagen.flow_from_directory(directory = 'data_small/chest-
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # Defining Model
 
 base_model = VGG16(input_shape=(224,224,3), 
@@ -71,14 +71,14 @@ base_model = VGG16(input_shape=(224,224,3),
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 for layer in base_model.layers:
     layer.trainable=False
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # Defining Layers
 
 model=Sequential()
@@ -100,7 +100,7 @@ model.add(Dense(1,activation='sigmoid'))
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # Model Compile 
 
 OPT    = tensorflow.keras.optimizers.Adam(learning_rate=0.001)
@@ -111,44 +111,21 @@ model.compile(loss='binary_crossentropy',
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# # Defining Callbacks
-# 
-# filepath = 'data_small/best_weights.keras'
-# 
-# earlystopping = EarlyStopping(monitor = 'val_auc', 
-#                               mode = 'max' , 
-#                               patience = 3,
-#                               verbose = 1)
-# 
-# checkpoint    = ModelCheckpoint(filepath, 
-#                                 monitor = 'val_auc', 
-#                                 mode='max', 
-#                                 save_best_only=True, 
-#                                 verbose = 1)
-# 
-# 
-# callback_list = [earlystopping, checkpoint]
-
-# === AFTER (edited) ===
-import os
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# Defining Callbacks
 
 filepath = 'data_small/best_weights.keras'
 
-# Create directory if it doesn't exist
-os.makedirs(os.path.dirname(filepath), exist_ok=True)
-
-earlystopping = EarlyStopping(monitor = 'val_auc',
-                              mode = 'max' ,
+earlystopping = EarlyStopping(monitor = 'val_auc', 
+                              mode = 'max' , 
                               patience = 3,
                               verbose = 1)
 
-checkpoint    = ModelCheckpoint(filepath,
-                                monitor = 'val_auc',
-                                mode='max',
-                                save_best_only=True,
+checkpoint    = ModelCheckpoint(filepath, 
+                                monitor = 'val_auc', 
+                                mode='max', 
+                                save_best_only=True, 
                                 verbose = 1)
 
 
@@ -157,8 +134,7 @@ callback_list = [earlystopping, checkpoint]
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
-
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 model_history=model.fit(train_dataset,
                         validation_data=valid_dataset,
                         epochs = 1,
@@ -168,13 +144,13 @@ model_history=model.fit(train_dataset,
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 class_names = ['PNEUMONIA','NORMAL']
 
 #%%
 # --- [CELL 11]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 12}
 # === BEFORE (original) ===
 # from sklearn.metrics import classification_report, confusion_matrix
 # import seaborn as sns
@@ -197,17 +173,10 @@ import seaborn as sns
 prediction_classes = np.array([])
 true_classes =  np.array([])
 
-# Get the number of batches to process from the dataset
-num_batches = len(valid_dataset)
-
-for i in range(num_batches):
-    x, y = next(valid_dataset)
-    # For binary classification, model.predict returns probabilities (0-1)
-    # Use threshold of 0.5 to convert to class labels
-    preds = (model.predict(x, verbose=0) > 0.5).astype(int).flatten()
-    prediction_classes = np.concatenate([prediction_classes, preds])
-    # For binary class_mode, y is already 0 or 1 (not one-hot)
-    true_classes = np.concatenate([true_classes, y.astype(int).flatten()])
+for x, y in valid_dataset:
+  prediction_classes = np.concatenate([prediction_classes,
+                       (model.predict(x) > 0.5).astype(int).flatten()])
+  true_classes = np.concatenate([true_classes, y])
 
 
 print(classification_report(true_classes, prediction_classes, target_names=class_names, digits=4))

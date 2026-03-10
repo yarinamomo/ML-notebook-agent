@@ -32,44 +32,11 @@ test_dir = data_dir + '/test'
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# # TODO: Define your transforms for the training, validation, and testing sets
-# 
-# # Define transforms
-# train_transforms = transforms.Compose([
-#     transforms.RandomResizedCrop(224),
-#     transforms.RandomHorizontalFlip(),
-#     transforms.ToTensor(),
-#     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-# ])
-# 
-# val_test_transforms = transforms.Compose([
-#     transforms.Resize(256),
-#     transforms.CenterCrop(224),
-#     transforms.ToTensor(),
-#     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) 
-# ])
-# # TODO: Load the datasets with ImageFolder
-# 
-# # Load datasets 
-# train_ds = datasets.ImageFolder(train_dir, train_transforms)
-# valid_ds = datasets.ImageFolder(valid_dir, val_test_transforms)
-# test_ds = datasets.ImageFolder(test_dir, val_test_transforms)
-# 
-# # TODO: Using the image datasets and the trainforms, define the dataloaders
-# 
-# # Create dataloaders
-# train_loader = torch.utils.data.DataLoader(train_ds, batch_size=64, shuffle=True)
-# valid_loader = torch.utils.data.DataLoader(valid_ds, batch_size=64)
-# test_loader = torch.utils.data.DataLoader(test_ds, batch_size=64)
+# TODO: Define your transforms for the training, validation, and testing sets
 
-# === AFTER (edited) ===
-import os
-import torchvision.transforms as transforms
-from torchvision import datasets, models, transforms
-
+# Define transforms
 train_transforms = transforms.Compose([
     transforms.RandomResizedCrop(224),
     transforms.RandomHorizontalFlip(),
@@ -81,47 +48,28 @@ val_test_transforms = transforms.Compose([
     transforms.Resize(256),
     transforms.CenterCrop(224),
     transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) 
 ])
+# TODO: Load the datasets with ImageFolder
 
-# Use default ImageFolder with custom loader to handle corrupted files
-from torchvision.datasets.folder import default_loader
+# Load datasets 
+train_ds = datasets.ImageFolder(train_dir, train_transforms)
+valid_ds = datasets.ImageFolder(valid_dir, val_test_transforms)
+test_ds = datasets.ImageFolder(test_dir, val_test_transforms)
 
-def robust_loader(path):
-    try:
-        return default_loader(path)
-    except Exception as e:
-        # Return a blank image if loading fails
-        from PIL import Image
-        return Image.new('RGB', (224, 224))
+# TODO: Using the image datasets and the trainforms, define the dataloaders
 
-train_ds = datasets.ImageFolder(train_dir, train_transforms, loader=robust_loader)
-valid_ds = datasets.ImageFolder(valid_dir, val_test_transforms, loader=robust_loader)
-test_ds = datasets.ImageFolder(test_dir, val_test_transforms, loader=robust_loader)
-
-train_loader = torch.utils.data.DataLoader(train_ds, batch_size=64, shuffle=True, num_workers=0)
-valid_loader = torch.utils.data.DataLoader(valid_ds, batch_size=64, num_workers=0)
-test_loader = torch.utils.data.DataLoader(test_ds, batch_size=64, num_workers=0)
+# Create dataloaders
+train_loader = torch.utils.data.DataLoader(train_ds, batch_size=64, shuffle=True)
+valid_loader = torch.utils.data.DataLoader(valid_ds, batch_size=64)
+test_loader = torch.utils.data.DataLoader(test_ds, batch_size=64)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# with open('data_small/cat_to_name.json', 'r') as f:
-#     cat_to_name = json.load(f)
-
-# === AFTER (edited) ===
-# Try to load the JSON file, if it doesn't exist, create a mapping from the dataset
-try:
-    with open('data_small/cat_to_name.json', 'r') as f:
-        cat_to_name = json.load(f)
-except (FileNotFoundError, json.JSONDecodeError):
-    # Create a mapping from class indices to names using the dataset
-    # train_ds is defined in cell 2, so we need to access it
-    # For now, create a simple mapping based on class numbers
-    cat_to_name = {str(i): f'Class_{i}' for i in range(102)}
-    print("cat_to_name.json not found or empty, using default class naming")
+with open('data_small/cat_to_name.json', 'r') as f:
+    cat_to_name = json.load(f)
 
 #%%
 # --- [CELL 4]: ---
@@ -281,44 +229,24 @@ model = load_checkpoint('checkpoint.pth')
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
-# === BEFORE (original) ===
-# def process_image(image_path):
-#     """Scales, crops, and normalizes a PIL image for a PyTorch model"""
-#     # TODO: Process a PIL image for use in a PyTorch model
-# 
-#     img = Image.open(image_path)
-#     
-#     transformations = transforms.Compose([
-#         transforms.Resize(256),
-#         transforms.CenterCrop(224),
-#         transforms.ToTensor(),
-#         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) 
-#     ])
-#     
-#     img_tensor = transformations(img)
-#     
-#     return img_tensor
-
-# === AFTER (edited) ===
 def process_image(image_path):
     """Scales, crops, and normalizes a PIL image for a PyTorch model"""
-    try:
-        img = Image.open(image_path)
+    # TODO: Process a PIL image for use in a PyTorch model
 
-        transformations = transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ])
-
-        img_tensor = transformations(img)
-        return img_tensor
-    except Exception as e:
-        # Return a blank tensor if image cannot be loaded
-        return torch.zeros((3, 224, 224))
+    img = Image.open(image_path)
+    
+    transformations = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) 
+    ])
+    
+    img_tensor = transformations(img)
+    
+    return img_tensor
 
 #%%
 # --- [CELL 9]: ---
@@ -420,7 +348,7 @@ def predict(image_path, model, topk=5):
 
 # === AFTER (edited) ===
 import matplotlib.pyplot as plt
-import random
+
 
 def display_image(image_path):
     img = process_image(image_path)
@@ -428,56 +356,26 @@ def display_image(image_path):
 
 model = load_checkpoint('checkpoint.pth')
 
-# Find a valid test image by trying multiple random samples
-max_attempts = 100
-test_image_path = None
-for attempt in range(max_attempts):
-    try:
-        # Use Python's random.choice instead of np.random.choice for list of tuples
-        test_image_tuple = random.choice(test_ds.imgs)
-        test_image_path = test_image_tuple[0]
-        # Try to load and test the image
-        img = Image.open(test_image_path)
-        # If successful, break and use this image
-        break
-    except:
-        test_image_path = None
-        continue
 
-if test_image_path is None:
-    print("Could not find a valid test image after 100 attempts")
-else:
+test_paths = [x[0] for x in test_ds.imgs]
+test_image_path = np.random.choice(test_paths)
+display_image(test_image_path)
+
+probs, classes = predict(test_image_path, model)
+
+class_names = [cat_to_name[str(cls)] for cls in classes]
+
+print("Probabilities:", probs)
+print("Classes:", class_names)
+
+
+for i in range(5):
+    test_image_path = np.random.choice(test_paths)
     display_image(test_image_path)
 
     probs, classes = predict(test_image_path, model)
 
-    class_names = [cat_to_name[cls] for cls in classes]
+    class_names = [cat_to_name[str(cls)] for cls in classes]
 
     print("Probabilities:", probs)
     print("Classes:", class_names)
-
-
-    for i in range(5):
-        # Find a valid image for each iteration
-        max_attempts = 100
-        test_image_path = None
-        for attempt in range(max_attempts):
-            try:
-                test_image_tuple = random.choice(test_ds.imgs)
-                test_image_path = test_image_tuple[0]
-                img = Image.open(test_image_path)
-                break
-            except:
-                test_image_path = None
-                continue
-        
-        if test_image_path is None:
-            print(f"Could not find a valid test image for iteration {i+1}")
-        else:
-            display_image(test_image_path)
-
-            probs, classes = predict(test_image_path, model)
-
-            class_names = [cat_to_name[cls] for cls in classes]
-            print("Probabilities:", probs)
-            print("Classes:", class_names)

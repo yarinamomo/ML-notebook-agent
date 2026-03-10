@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
@@ -22,34 +22,29 @@ for dirname, _, filenames in os.walk('data'):
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 df = pd.read_csv("data/IMDb_All_Genres_etf_clean1.csv")
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # clean_df = df[(df["Total Gross (millions)"]!="$0.00M") & (df["Total Gross (millions)"]!="Gross Unkown")].copy()
 # clean_df = clean_df[clean_df['Censor']!="(Banned)"]
 
 # === AFTER (edited) ===
-# Check if the expected columns exist in the DataFrame
-if "Total Gross (millions)" in df.columns and "Censor" in df.columns:
-    clean_df = df[(df["Total Gross (millions)"]!="$0.00M") & (df["Total Gross (millions)"]!="Gross Unkown")].copy()
-    clean_df = clean_df[clean_df['Censor']!="(Banned)"]
+# Find the correct column name for Total Gross
+gross_col = None
+for col in df.columns:
+    if "Gross" in col:
+        gross_col = col
+        break
+
+if gross_col is None:
+    print("Error: Could not find a column containing 'Gross'")
+    print("Available columns:", df.columns.tolist())
 else:
-    # Create dummy data with expected structure for reproducibility
-    clean_df = pd.DataFrame({
-        "Total Gross (millions)": [
-            "$100.50M", "$250.75M", "$50.25M", "$10.00M", 
-            "$500.00M", "$75.50M", "$25.00M", "$500.00M"
-        ],
-        "Censor": [
-            "(PG-13)", "(R)", "(G)", "(PG-13)",
-            "(Banned)", "(PG-13)", "(PG)", "(R)"
-        ]
-    })
-    # Apply the same filtering logic
-    clean_df = clean_df[(clean_df["Total Gross (millions)"]!="$0.00M") & (clean_df["Total Gross (millions)"]!="Gross Unkown")].copy()
+    print(f"Using column: '{gross_col}'")
+    clean_df = df[(df[gross_col]!="$0.00M") & (df[gross_col]!="Gross Unkown")].copy()
     clean_df = clean_df[clean_df['Censor']!="(Banned)"]

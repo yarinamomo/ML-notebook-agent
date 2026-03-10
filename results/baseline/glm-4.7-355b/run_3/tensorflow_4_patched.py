@@ -15,7 +15,7 @@ import pickle
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # train_dir="../input/signature-verification-dataset-iraninan/train"
 # test_dir="../input/signature-verification-dataset-iraninan/test"
 
@@ -25,13 +25,13 @@ test_dir="data/signature-verification-dataset/sign_data/test"
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 SIZE = 224
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # def find_files_in_folder(path, folder_name):
 #     folder_path = None
@@ -150,8 +150,6 @@ SIZE = 224
 # print("number of forged_images",len(forged_images))
 
 # === AFTER (edited) ===
-SIZE = 224
-
 def find_files_in_folder(path, folder_name):
     folder_path = None
     for root, dirs, files in os.walk(path):
@@ -186,17 +184,15 @@ for per in os.listdir(train_dir):
 
         if per[-1]=='g':
             img = cv2.imread(data)
-            if img is not None:
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                img = cv2.resize(img, (SIZE,SIZE))
-                forged_images.append([img])
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            img = cv2.resize(img, (SIZE,SIZE))
+            forged_images.append(img)
 
         else:
             img = cv2.imread(data)
-            if img is not None:
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                img = cv2.resize(img, (SIZE,SIZE))
-                real_images.append([img])
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            img = cv2.resize(img, (SIZE,SIZE))
+            real_images.append(img)
 
 
 
@@ -213,17 +209,15 @@ for per in os.listdir(test_dir):
 
         if per[-1]=='g':
             img = cv2.imread(data)
-            if img is not None:
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                img = cv2.resize(img, (SIZE,SIZE))
-                forged_images.append([img])
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            img = cv2.resize(img, (SIZE,SIZE))
+            forged_images.append(img)
 
         else:
             img = cv2.imread(data)
-            if img is not None:
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                img = cv2.resize(img, (SIZE,SIZE))
-                real_images.append([img])
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            img = cv2.resize(img, (SIZE,SIZE))
+            real_images.append(img)
 
 
 
@@ -275,7 +269,7 @@ print("number of forged_images",len(forged_images))
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # Categorical labels
 # print(train_labels.shape)
 # train_labels = to_categorical(train_labels)

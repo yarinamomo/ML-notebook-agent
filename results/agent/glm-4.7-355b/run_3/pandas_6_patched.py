@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -14,36 +14,27 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df= pd.read_csv(r'data/Retailsales.csv')
-# df=df.drop(columns='Unnamed: 0')
-# df.head()
-
-# === AFTER (edited) ===
-import os
-os.chdir('/app/container')
-df = pd.read_csv(r'data/Retailsales.csv')
-df = df.drop(columns='Unnamed: 0', errors='ignore')
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+df= pd.read_csv(r'data/Retailsales.csv')
+df=df.drop(columns='Unnamed: 0')
 df.head()
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 df=df.dropna(how='all')
 df
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # df=df['Order ID'].astype('int')
 # #This Error is occuring due to some string values in Order ID Column
 
 # === AFTER (edited) ===
-# Check if 'Order ID' column exists before converting
-if 'Order ID' in df.columns:
-    df = df['Order ID'].astype('int')
+df = df[df['Order ID'] != 'Order ID']
+df['Order ID'] = df['Order ID'].astype('int')

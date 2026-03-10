@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import numpy 
 import matplotlib.pyplot as plt 
 import os 
@@ -12,7 +12,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 src_path_train = 'data_small/training_set'
 src_path_test = 'data_small/test_set'
 
@@ -26,7 +26,7 @@ test_datagen = ImageDataGenerator(rescale = 1 / 255.0)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 batch_size = 30
 train_generator = train_datagen.flow_from_directory(
     directory= src_path_train,
@@ -52,7 +52,7 @@ valid_generator = train_datagen.flow_from_directory(
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 test_generator = test_datagen.flow_from_directory(
     directory=src_path_test,
     target_size=(223, 223),
@@ -84,12 +84,9 @@ test_generator = test_datagen.flow_from_directory(
 # model.evaluate(test_generator)
 
 # === AFTER (edited) ===
-from tensorflow.keras.layers import Input
-
 def prepare_model():
     model = Sequential()
-    model.add(Input(shape=(223, 223, 3)))
-    model.add(Conv2D(32, kernel_size=(3,3), activation='relu'))
+    model.add(Conv2D(32,kernel_size=(3,3),activation='relu',input_shape=(223, 223, 3)))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Flatten())
     model.add(Dense(16, activation='relu'))

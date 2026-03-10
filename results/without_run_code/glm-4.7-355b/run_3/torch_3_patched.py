@@ -44,7 +44,6 @@ from torch import nn
 #             loss_func = nn.NLLLoss()
 #             loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))
 #         return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states= None,attentions =None)
-#             
 
 # === AFTER (edited) ===
 class CustomModelMultichoice(nn.Module):
@@ -56,14 +55,14 @@ class CustomModelMultichoice(nn.Module):
 
         self.sigmoid = nn.Sigmoid()
         self.num_choice = num_choice
-    def forward(self,input_ids = None,token_type_ids = None ,attention_mask = None,labels = None):
+    def forward(self,input_ids = None,token_type_ids = None,attention_mask = None,labels = None):
         outputs = self.model(input_ids=input_ids,token_type_ids=token_type_ids,attention_mask=attention_mask)
         logits = self.sigmoid(outputs.logits)
         loss = None
         if labels is not None:
             loss_func = nn.NLLLoss()
             loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))
-        return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states= None,attentions =None)
+        return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states = None,attentions =None)
 
 #%%
 # --- [CELL 5]: ---
@@ -82,7 +81,6 @@ candidate1 = "Việt Nam"
 candidate2 = "Mỹ"
 candidate3 = 'Việt Nam'
 
-
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
@@ -91,7 +89,6 @@ from transformers import AutoTokenizer
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_CHOICE)
 inputs = tokenizer([[prompt, candidate1], [prompt, candidate2],[prompt, candidate3]], return_tensors="pt", padding=True)
-
 
 #%%
 # --- [CELL 8]: ---

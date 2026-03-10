@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -27,20 +27,10 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# train_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
-#                                    zoom_range = 0.4,
-#                                    validation_split = 0.2)
-# 
-# valid_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
-#                                    validation_split = 0.2)
-# 
-# test_datagen  = ImageDataGenerator(rescale = 1.0 / 255.0)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 train_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
+                                   zoom_range = 0.4,
                                    validation_split = 0.2)
 
 valid_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
@@ -50,56 +40,28 @@ test_datagen  = ImageDataGenerator(rescale = 1.0 / 255.0)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 27}
-# === BEFORE (original) ===
-# train_dataset = train_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
-#                                                   target_size = (224,224),
-#                                                   class_mode = 'binary',
-#                                                   subset = 'training',
-#                                                   batch_size = 64)
-
-# === AFTER (edited) ===
-train_dataset = tensorflow.keras.utils.image_dataset_from_directory(
-    'data_small/chest-xray-pneumonia/chest_xray/train',
-    validation_split = 0.2,
-    subset = 'training',
-    seed = 123,
-    image_size = (224,224),
-    batch_size = 64,
-    color_mode = 'rgb',
-    label_mode = 'binary',
-    shuffle = True
-).map(lambda x, y: (x / 255.0, y))
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+train_dataset = train_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
+                                                  target_size = (224,224),
+                                                  class_mode = 'binary',
+                                                  subset = 'training',
+                                                  batch_size = 64)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# valid_dataset = valid_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
-#                                                   target_size = (224,224),
-#                                                   class_mode = 'binary',
-#                                                   subset = 'validation',
-#                                                   batch_size = 64)
-
-# === AFTER (edited) ===
-valid_dataset = tensorflow.keras.utils.image_dataset_from_directory(
-    'data_small/chest-xray-pneumonia/chest_xray/train',
-    validation_split = 0.2,
-    subset = 'validation',
-    seed = 123,
-    image_size = (224,224),
-    batch_size = 64,
-    color_mode = 'rgb',
-    label_mode = 'binary',
-    shuffle = False
-).map(lambda x, y: (x / 255.0, y))
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+valid_dataset = valid_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
+                                                  target_size = (224,224),
+                                                  class_mode = 'binary',
+                                                  subset = 'validation',
+                                                  batch_size = 64)
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # Defining Model
 
 base_model = VGG16(input_shape=(224,224,3), 
@@ -109,14 +71,14 @@ base_model = VGG16(input_shape=(224,224,3),
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 for layer in base_model.layers:
     layer.trainable=False
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # Defining Layers
 
 model=Sequential()
@@ -138,7 +100,7 @@ model.add(Dense(1,activation='sigmoid'))
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # Model Compile 
 
 OPT    = tensorflow.keras.optimizers.Adam(learning_rate=0.001)
@@ -150,7 +112,7 @@ model.compile(loss='binary_crossentropy',
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 # Defining Callbacks
 
 filepath = 'data_small/best_weights.keras'
@@ -172,8 +134,7 @@ callback_list = [earlystopping, checkpoint]
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 26}
-
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 model_history=model.fit(train_dataset,
                         validation_data=valid_dataset,
                         epochs = 1,
@@ -183,23 +144,48 @@ model_history=model.fit(train_dataset,
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 class_names = ['PNEUMONIA','NORMAL']
 
 #%%
 # --- [CELL 11]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# === BEFORE (original) ===
+# from sklearn.metrics import classification_report, confusion_matrix
+# import seaborn as sns
+# 
+# prediction_classes = np.array([])
+# true_classes =  np.array([])
+# 
+# for x, y in valid_dataset:
+#   prediction_classes = np.concatenate([prediction_classes,
+#                        np.argmax(model.predict(x), axis = -1)])
+#   true_classes = np.concatenate([true_classes, np.argmax(y.numpy(), axis=-1)])
+# 
+# 
+# print(classification_report(true_classes, prediction_classes, target_names=class_names, digits=4))
+
+# === AFTER (edited) ===
 from sklearn.metrics import classification_report, confusion_matrix
 import seaborn as sns
 
-prediction_classes = np.array([])
-true_classes =  np.array([])
+# Reset the generator to start from the beginning
+valid_dataset.reset()
 
-for x, y in valid_dataset:
-  prediction_classes = np.concatenate([prediction_classes,
-                       np.argmax(model.predict(x), axis = -1)])
-  true_classes = np.concatenate([true_classes, np.argmax(y.numpy(), axis=-1)])
+# Get predictions for all validation data
+predictions = model.predict(valid_dataset, steps=None, verbose=1)
 
+# Get all true labels from the dataset
+valid_dataset.reset()
+true_classes = []
+for i in range(len(valid_dataset)):
+    _, y = valid_dataset[i]
+    true_classes.extend(y)
+true_classes = np.array(true_classes)
+
+# Reshape predictions from (n, 1) to (n,) and convert to binary classes using threshold
+prediction_classes = predictions.flatten()
+prediction_classes = (prediction_classes > 0.5).astype(int)
 
 print(classification_report(true_classes, prediction_classes, target_names=class_names, digits=4))

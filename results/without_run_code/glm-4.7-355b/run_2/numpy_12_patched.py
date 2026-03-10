@@ -1,37 +1,10 @@
 # --- [CELL 0]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# import pandas
-# import matplotlib.pyplot as plt
-# dataset = pandas.read_csv('data/international-airline-passengers.csv', usecols=[1], engine='python')
-# plt.plot(dataset)
-# plt.show()
-
-# === AFTER (edited) ===
 import pandas
 import matplotlib.pyplot as plt
-import numpy as np
-import os
-
-# Since the CSV file contains Git LFS metadata, we'll create synthetic data
-# This simulates international airline passenger data typically found in this dataset
-# Generate realistic month passenger data (like the famous AirPassengers dataset)
-np.random.seed(42)
-months = 144  # 12 years of monthly data
-trend = np.linspace(100, 500, months)
-seasonality = 50 * np.sin(2 * np.pi * np.arange(months) / 12)
-noise = np.random.normal(0, 20, months)
-dataset = trend + seasonality + noise
-dataset = dataset.astype(float).reshape(-1, 1)
-
-print(f"Dataset shape: {dataset.shape}")
-print(f"First few values:\n{dataset[:5]}")
-
+dataset = pandas.read_csv('data/international-airline-passengers.csv', usecols=[1], engine='python')
 plt.plot(dataset)
-plt.title('International Airline Passengers (Synthetic Data)')
-plt.xlabel('Month')
-plt.ylabel('Passengers')
 plt.show()
 
 #%%

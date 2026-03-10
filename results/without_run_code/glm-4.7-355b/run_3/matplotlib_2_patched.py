@@ -58,70 +58,14 @@ import torch.nn.functional as F
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# import numpy as np
-# import pandas as pd
-# import pyarrow.parquet as pq
-# import matplotlib.pyplot as plt
-# 
-# # Function to convert to 3D
-# def to_3d(arr):
-#     douaa = []
-#     for i in range(0, 3):
-#         dou = np.stack(np.stack(arr)[i], axis=-1)
-#         douaa.append(dou)
-#     douaa = np.array(douaa)
-#     return douaa
-# 
-# # Load Parquet file
-# parquet_file_path = 'data/QCDToGGQQ_IMGjet_RH1all_jet0_run0_n36272.test.snappy.parquet'
-# parquet_file = pq.ParquetFile(parquet_file_path)
-# 
-# # Get the total number of rows
-# total_rows = parquet_file.metadata.num_rows
-# 
-# # Initialize arrays to store images and labels
-# images_array = []
-# labels_array = []
-# 
-# # Loop over the file in chunks
-# chunk_size = 50
-# for i in range(0, total_rows, chunk_size):
-#     # Read a chunk of rows from the file
-#     chunk = parquet_file.read_row_group(i)
-#     df = chunk.to_pandas()
-# 
-#     # Initialize arrays inside the loop
-#     chunk_images_array = []
-#     chunk_labels_array = []
-# 
-#     # Loop over rows in the chunk
-#     for j in range(len(df)):
-#         # Convert 'X_jets' to 3D
-#         df['X_jets'][j] = to_3d(df['X_jets'][j].copy())  # Use .copy() to create a copy
-# 
-#         # Append image and label to arrays
-#         chunk_images_array.append(df['X_jets'][j])
-#         chunk_labels_array.append(df['y'][j])
-# 
-#     # Append chunk data to the main arrays
-#     images_array.extend(chunk_images_array)
-#     labels_array.extend(chunk_labels_array)
-# 
-# # Convert arrays to NumPy arrays
-# images_array = np.array(images_array)
-# labels_array = np.array(labels_array)
-
-# === AFTER (edited) ===
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 import matplotlib.pyplot as plt
-import os
 
-
+# Function to convert to 3D
 def to_3d(arr):
     douaa = []
     for i in range(0, 3):
@@ -130,100 +74,49 @@ def to_3d(arr):
     douaa = np.array(douaa)
     return douaa
 
-
+# Load Parquet file
 parquet_file_path = 'data/QCDToGGQQ_IMGjet_RH1all_jet0_run0_n36272.test.snappy.parquet'
+parquet_file = pq.ParquetFile(parquet_file_path)
 
-# Try to load parquet file, if it fails, generate synthetic data
-try:
-    if os.path.exists(parquet_file_path):
-        parquet_file = pq.ParquetFile(parquet_file_path)
-        total_rows = parquet_file.metadata.num_rows
-        images_array = []
-        labels_array = []
-        chunk_size = 50
-        for i in range(0, total_rows, chunk_size):
-            chunk = parquet_file.read_row_group(i)
-            df = chunk.to_pandas()
-            chunk_images_array = []
-            chunk_labels_array = []
-            for j in range(len(df)):
-                df['X_jets'][j] = to_3d(df['X_jets'][j].copy())
-                chunk_images_array.append(df['X_jets'][j])
-                chunk_labels_array.append(df['y'][j])
-            images_array.extend(chunk_images_array)
-            labels_array.extend(chunk_labels_array)
-        images_array = np.array(images_array)
-        labels_array = np.array(labels_array)
-        print(f"Loaded dataset from parquet file: {images_array.shape}, labels: {labels_array.shape}")
-    else:
-        raise FileNotFoundError(f"Parquet file not found at {parquet_file_path}")
-except Exception as e:
-    print(f"Could not load parquet file: {e}")
-    print("Generating synthetic data...")
-    # Generate synthetic quantum jet data
-    # Shape: (num_samples, 3, 125, 125) - 3 channels, 125x125 images
-    num_samples = 100
-    image_size = 125
-    images_array = []
-    labels_array = []
-    
-    for i in range(num_samples):
-        # Generate synthetic 3-channel image data representing particle jets
-        # Channel 0: Energy/Momentum patterns
-        channel1 = np.random.exponential(scale=0.5, size=(image_size, image_size))
-        # Add some Gaussian blobs to simulate jet structures
-        for _ in range(3):
-            cx, cy = np.random.randint(0, image_size, 2)
-            sigma = np.random.uniform(5, 15)
-            x, y = np.meshgrid(np.arange(image_size), np.arange(image_size))
-            blob = np.exp(-((x-cx)**2 + (y-cy)**2) / (2*sigma**2)) * np.random.uniform(2, 5)
-            channel1 += blob
-        
-        # Channel 2: Track patterns
-        channel2 = np.random.exponential(scale=0.3, size=(image_size, image_size))
-        for _ in range(2):
-            cx, cy = np.random.randint(0, image_size, 2)
-            sigma = np.random.uniform(3, 10)
-            x, y = np.meshgrid(np.arange(image_size), np.arange(image_size))
-            blob = np.exp(-((x-cx)**2 + (y-cy)**2) / (2*sigma**2)) * np.random.uniform(1, 3)
-            channel2 += blob
-        
-        # Channel 3: ECAL/Muon detector patterns
-        channel3 = np.random.exponential(scale=0.2, size=(image_size, image_size))
-        for _ in range(2):
-            cx, cy = np.random.randint(0, image_size, 2)
-            sigma = np.random.uniform(5, 12)
-            x, y = np.meshgrid(np.arange(image_size), np.arange(image_size))
-            blob = np.exp(-((x-cx)**2 + (y-cy)**2) / (2*sigma**2)) * np.random.uniform(1, 4)
-            channel3 += blob
-        
-        # Stack channels and normalize
-        image = np.stack([channel1, channel2, channel3])
-        image = image / (np.max(image) + 1e-8)  # Normalize
-        
-        images_array.append(image)
-        # Generate binary labels (0: QCD, 1: signal)
-        labels_array.append(np.random.randint(0, 2))
-    
-    images_array = np.array(images_array)
-    labels_array = np.array(labels_array)
-    print(f"Generated synthetic dataset: {images_array.shape}, labels: {labels_array.shape}")
+# Get the total number of rows
+total_rows = parquet_file.metadata.num_rows
+
+# Initialize arrays to store images and labels
+images_array = []
+labels_array = []
+
+# Loop over the file in chunks
+chunk_size = 50
+for i in range(0, total_rows, chunk_size):
+    # Read a chunk of rows from the file
+    chunk = parquet_file.read_row_group(i)
+    df = chunk.to_pandas()
+
+    # Initialize arrays inside the loop
+    chunk_images_array = []
+    chunk_labels_array = []
+
+    # Loop over rows in the chunk
+    for j in range(len(df)):
+        # Convert 'X_jets' to 3D
+        df['X_jets'][j] = to_3d(df['X_jets'][j].copy())  # Use .copy() to create a copy
+
+        # Append image and label to arrays
+        chunk_images_array.append(df['X_jets'][j])
+        chunk_labels_array.append(df['y'][j])
+
+    # Append chunk data to the main arrays
+    images_array.extend(chunk_images_array)
+    labels_array.extend(chunk_labels_array)
+
+# Convert arrays to NumPy arrays
+images_array = np.array(images_array)
+labels_array = np.array(labels_array)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train_images, test_images, train_labels, test_labels = train_test_split(
-#     images_array, labels_array, test_size=0.3
-# )
-# 
-# print(train_images.shape)
-# print(train_labels.shape)
-
-# === AFTER (edited) ===
-from sklearn.model_selection import train_test_split
-
 train_images, test_images, train_labels, test_labels = train_test_split(
     images_array, labels_array, test_size=0.3
 )
@@ -235,7 +128,6 @@ print(train_labels.shape)
 # --- [CELL 3]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -249,7 +141,6 @@ for i in range(num_images_to_plot):
     plt.imshow(reduced_images_array[i], cmap='gray')  # Displaying the mean across channels
     plt.title(f"Label: {labels_array[i]}")
     plt.show()
-
 
 #%%
 # --- [CELL 4]: ---
@@ -337,7 +228,8 @@ train_loader = DataLoader(custom_dataset, batch_size=batch_size, shuffle=shuffle
 # plt.show()
 
 # === AFTER (edited) ===
-plt.imshow(custom_dataset.images[1][0, :, :])
+import matplotlib.pyplot as plt
 
-plt.title(f"Label: {labels_array[1]}")
+plt.imshow(custom_dataset.images[1][0, :, :])
+plt.title(f"Label: {custom_dataset.labels[0]}")
 plt.show()

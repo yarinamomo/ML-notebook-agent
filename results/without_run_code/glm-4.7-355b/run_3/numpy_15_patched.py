@@ -13,35 +13,14 @@ from sklearn.metrics import accuracy_score
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/iris-data.csv')
-
-# === AFTER (edited) ===
-# Try to load iris data from sklearn as backup
-from sklearn.datasets import load_iris
-iris = load_iris()
-df = pd.DataFrame(data=iris.data, columns=iris.feature_names)
-# Rename columns to match expected format (underscores instead of spaces)
-df.columns = ['sepal_length_cm', 'sepal_width_cm', 'petal_length_cm', 'petal_width_cm']
-# Map numeric targets to class names
-target_names = {0: 'Iris-setosa', 1: 'Iris-versicolor', 2: 'Iris-virginica'}
-df['class'] = iris.target
-df['class'] = df['class'].map(target_names)
-print("Using sklearn iris dataset as backup")
-print(df.head())
+df = pd.read_csv('data/iris-data.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# #Removing all null values row
-# df = df.dropna(subset=['petal_width_cm'])
-# df.info()
-
-# === AFTER (edited) ===
 #Removing all null values row
 df = df.dropna(subset=['petal_width_cm'])
 df.info()
@@ -101,10 +80,17 @@ y_ts_arr = y_test.values
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# === BEFORE (original) ===
+# def weightInitialization(n_features):
+#     w = np.zeros((1,n_features))
+#     b = 0
+#     return w,b
+
+# === AFTER (edited) ===
 def weightInitialization(n_features):
-    w = np.zeros((1,n_features))
+    w = np.zeros((n_features,1))
     b = 0
     return w,b
 
@@ -136,7 +122,6 @@ def model_optimize(w, b, X, Y):
     grads = {"dw": dw, "db": db}
     
     return grads, cost
-    
 
 #%%
 # --- [CELL 13]: ---
@@ -216,73 +201,39 @@ def model_predict(w, b, X, Y, learning_rate, no_iterations):
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
-# === BEFORE (original) ===
-# def predict(final_pred, m):
-#     y_pred = np.zeros((1,m))
-#     for i in range(final_pred.shape[1]):
-#         if final_pred[0][i] > 0.5:
-#             y_pred[0][i] = 1
-#     return y_pred
-
-# === AFTER (edited) ===
 def predict(final_pred, m):
-    y_pred = np.zeros((m,1))
-    for i in range(final_pred.shape[0]):
-        if final_pred[i][0] > 0.5:
-            y_pred[i][0] = 1
+    y_pred = np.zeros((1,m))
+    for i in range(final_pred.shape[1]):
+        if final_pred[0][i] > 0.5:
+            y_pred[0][i] = 1
     return y_pred
 
 #%%
 # --- [CELL 16]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
-# === BEFORE (original) ===
-# #Get number of features
-# n_features = X_tr_arr.shape[1]
-# print('Number of Features', n_features)
-# w, b = weightInitialization(n_features)
-# #Gradient Descent
-# coeff, gradient, costs = model_predict(w, b, X_tr_arr, y_tr_arr, learning_rate=0.0001,no_iterations=4500)
-# #Final prediction
-# w = coeff["w"]
-# b = coeff["b"]
-# print('Optimized weights', w)
-# print('Optimized intercept',b)
-# #
-# final_train_pred = sigmoid_activation(np.dot(w,X_tr_arr.T)+b)
-# final_test_pred = sigmoid_activation(np.dot(w,X_ts_arr.T)+b)
-# #
-# m_tr =  X_tr_arr.shape[0]
-# m_ts =  X_ts_arr.shape[0]
-# #
-# y_tr_pred = predict(final_train_pred, m_tr)
-# print('Training Accuracy',accuracy_score(y_tr_pred.T, y_tr_arr))
-# #
-# y_ts_pred = predict(final_test_pred, m_ts)
-# print('Test Accuracy',accuracy_score(y_ts_pred.T, y_ts_arr))
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+#Get number of features
 n_features = X_tr_arr.shape[1]
 print('Number of Features', n_features)
-w, b = initialize_params(n_features)
-
+w, b = weightInitialization(n_features)
+#Gradient Descent
 coeff, gradient, costs = model_predict(w, b, X_tr_arr, y_tr_arr, learning_rate=0.0001,no_iterations=4500)
-
+#Final prediction
 w = coeff["w"]
 b = coeff["b"]
 print('Optimized weights', w)
 print('Optimized intercept',b)
-
-final_train_pred = sigmoid(np.dot(X_tr_arr, w) + b)
-final_test_pred = sigmoid(np.dot(X_ts_arr, w) + b)
-
+#
+final_train_pred = sigmoid_activation(np.dot(w,X_tr_arr.T)+b)
+final_test_pred = sigmoid_activation(np.dot(w,X_ts_arr.T)+b)
+#
 m_tr =  X_tr_arr.shape[0]
 m_ts =  X_ts_arr.shape[0]
-
+#
 y_tr_pred = predict(final_train_pred, m_tr)
-print('Training Accuracy',accuracy_score(y_tr_arr, y_tr_pred.flatten()))
-
+print('Training Accuracy',accuracy_score(y_tr_pred.T, y_tr_arr))
+#
 y_ts_pred = predict(final_test_pred, m_ts)
-print('Test Accuracy',accuracy_score(y_ts_arr, y_ts_pred.flatten()))
+print('Test Accuracy',accuracy_score(y_ts_pred.T, y_ts_arr))

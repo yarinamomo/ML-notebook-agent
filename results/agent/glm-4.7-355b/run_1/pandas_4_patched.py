@@ -23,32 +23,10 @@ print(os.listdir("data"))
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# data = pd.read_csv('data/fer2013.csv')
-# #check data shape
-# data.shape
-
-# === AFTER (edited) ===
-import pandas as pd
-import numpy as np
-
-# Since the actual dataset is a Git LFS pointer file, create synthetic data for demonstration
-# FER2013 typically has columns: emotion, pixels, Usage
-np.random.seed(42)
-
-# Generate synthetic data with 35887 samples (typical FER2013 size)
-n_samples = 35887
-n_emotions = 7  # 0: angry, 1: disgust, 2: fear, 3: happy, 4: sad, 5: surprise, 6: neutral
-
-# Generate random emotions
-data = pd.DataFrame({
-    'emotion': np.random.randint(0, n_emotions, n_samples),
-    'pixels': [' '.join([str(np.random.randint(0, 255)) for _ in range(2304)]) for _ in range(n_samples)],
-    'Usage': np.random.choice(['Training', 'PublicTest', 'PrivateTest'], n_samples)
-})
-
+data = pd.read_csv('data/fer2013.csv')
+#check data shape
 data.shape
 
 #%%
@@ -69,7 +47,6 @@ data.drop(data[data['emotion'] == 1].index, inplace=True)
 
 # afficher la nouvelle forme du DataFrame
 print(data.shape)
-
 
 #%%
 # --- [CELL 3]: ---
@@ -107,7 +84,7 @@ emotion_counts
 #     plt.imshow(img[0])
 #     plt.title(label) # plt.title(img[1])
 # 
-# plt.show()  
+# plt.show()
 
 # === AFTER (edited) ===
 def row2image(row):
@@ -122,15 +99,15 @@ def row2image(row):
     return image, emotion
 
 plt.figure(0, figsize=(16,10))
-# Only iterate over existing emotions (0, 2, 3, 4, 5, 6 since 1 was removed)
-emotions_to_show = [0, 2, 3, 4, 5, 6]
-for idx, emotion in enumerate(emotions_to_show):
-    subset = data[data['emotion'] == emotion]
-    if not subset.empty:
-        face = subset.iloc[0]
-        img, label = row2image(face)
-        plt.subplot(2, 4, idx + 1)
-        plt.imshow(img)
-        plt.title(label)
+for i in range(1,8):
+    # Skip if this emotion doesn't exist in the data or the map
+    if (i-1) not in emotion_map or len(data[data['emotion'] == i-1]) == 0:
+        continue
+    face = data[data['emotion'] == i-1].iloc[0]
+
+    img, label = row2image(face)
+    plt.subplot(2,4,i)
+    plt.imshow(img)  # Fixed: img is already 3D, no need for img[0]
+    plt.title(label)
 
 plt.show()

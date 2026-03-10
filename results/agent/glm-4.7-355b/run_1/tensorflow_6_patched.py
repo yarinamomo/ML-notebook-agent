@@ -44,40 +44,10 @@ import tensorflow as tf
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train = pd.read_csv("data/train.csv")
-# test = pd.read_csv("data/test.csv")
-
-# === AFTER (edited) ===
-# Create synthetic MNIST-like data since the original files are Git LFS pointers
-import numpy as np
-import pandas as pd
-
-# Create training data with 42000 samples (typical MNIST size)
-# Each image is 28x28 = 784 pixels, plus label column
-np.random.seed(42)
-n_train = 42000
-n_test = 28000
-n_features = 28 * 28  # 784
-
-# Generate random pixel values (0-255)
-train_pixels = np.random.randint(0, 256, size=(n_train, n_features))
-# Generate random labels (0-9 for digit classification)
-train_labels = np.random.randint(0, 10, size=n_train)
-
-# Create training dataframe
-train = pd.DataFrame(train_pixels, columns=[f'pixel{i}' for i in range(n_features)])
-train['label'] = train_labels
-
-# Generate test data with random pixel values
-test_pixels = np.random.randint(0, 256, size=(n_test, n_features))
-test = pd.DataFrame(test_pixels, columns=[f'pixel{i}' for i in range(n_features)])
-
-print(f"Train shape: {train.shape}")
-print(f"Test shape: {test.shape}")
-print(f"Train columns (first 5 and last): {list(train.columns[:5]) + ['...'] + [train.columns[-1]]}")
+train = pd.read_csv("data/train.csv")
+test = pd.read_csv("data/test.csv")
 
 #%%
 # --- [CELL 3]: ---
@@ -124,7 +94,6 @@ Y_train = to_categorical(Y_train, num_classes = 10)
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 random_seed = 2
 X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size = 0.1, random_state=random_seed)
-
 
 #%%
 # --- [CELL 8]: ---
@@ -217,36 +186,15 @@ model.compile(optimizer = optimizer , loss = "categorical_crossentropy", metrics
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
-# === BEFORE (original) ===
-# # Set a learning rate annealer定义学习率退火算法。定义回调函数，在训练时，相应的回调函数的方法就会被在各自的阶段被调用。
-# # https://keras.io/zh/callbacks/
-# # https://keras.io/zh/callbacks/#reducelronplateau
-# learning_rate_reduction = ReduceLROnPlateau(monitor='val_acc', 
-#                                             patience=3, 
-#                                             verbose=1, 
-#                                             factor=0.5, 
-#                                             min_lr=0.00001)
-# '''
-# 
-# 在您提供的代码中，learningratereduction是ReduceLROnPlateau回调函数的一个实例，用于在模型训练过程中动态地减小学习率。
-# 具体来说，它监视了验证集的准确性（即'monitor'='valacc'），并且如果在3个时期内没有改进，
-# 则减小学习率（即'patience'=3）。该调用还指定了减小因子（即'factor'=0.5）和最小学习率（即'minlr'=0.00001），
-# 以便在执行减少操作时进行限制，从而保持学习率的稳定性和有效性。如果您想要更好地了解ReduceLROnPlateau的工作原理和参数设置，
-# 
-# verbose是ReduceLROnPlateau回调函数的一个可选参数，用于控制输出详细程度的标志。
-# 如果verbose=1，则在执行时期减少操作时将输出一条消息，以指示学习率的更新和当前的状态。
-# 如果verbose=0，则不会输出任何消息。通常情况下，verbose的默认值为0，因为它可以大大减少输出的噪声和干扰。
-# 如果您需要更详细的输出和信息，可以将verbose的值设置为1或更高
-# 可以查看Keras文档：https://keras.io/callbacks/#reducelronplateau。
-# '''
-
-# === AFTER (edited) ===
-learning_rate_reduction = ReduceLROnPlateau(monitor='val_accuracy',
-                                            patience=3,
-                                            verbose=1,
-                                            factor=0.5,
+# Set a learning rate annealer定义学习率退火算法。定义回调函数，在训练时，相应的回调函数的方法就会被在各自的阶段被调用。
+# https://keras.io/zh/callbacks/
+# https://keras.io/zh/callbacks/#reducelronplateau
+learning_rate_reduction = ReduceLROnPlateau(monitor='val_acc', 
+                                            patience=3, 
+                                            verbose=1, 
+                                            factor=0.5, 
                                             min_lr=0.00001)
 '''
 
@@ -264,22 +212,13 @@ verbose是ReduceLROnPlateau回调函数的一个可选参数，用于控制输�
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
-# === BEFORE (original) ===
-# # 定义一个ModelCheckpoint回调函数，用于保存验证集上准确率最高的模型
-# checkpoint_filepath = 'best_model.keras'
-# model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
-#     filepath=checkpoint_filepath,
-#     monitor='val_acc',
-#     mode='max',
-#     save_best_only=True)
-
-# === AFTER (edited) ===
+# 定义一个ModelCheckpoint回调函数，用于保存验证集上准确率最高的模型
 checkpoint_filepath = 'best_model.keras'
 model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
     filepath=checkpoint_filepath,
-    monitor='val_accuracy',
+    monitor='val_acc',
     mode='max',
     save_best_only=True)
 

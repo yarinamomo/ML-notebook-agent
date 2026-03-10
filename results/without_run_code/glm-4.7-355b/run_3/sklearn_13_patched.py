@@ -5,8 +5,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
@@ -22,19 +20,12 @@ df = pd.read_csv("data/SalaryData_Test(1).csv")
 # y = df.Salary.values.reshape(-1,1)
 
 # === AFTER (edited) ===
-# Check column names in DataFrame
-print("Column names in DataFrame:", df.columns.tolist())
+from sklearn.preprocessing import LabelEncoder
 
-# Safely access columns using bracket notation
-try:
-    x = df['workclass'].values.reshape(-1,1)
-    y = df['Salary'].values.reshape(-1,1)
-except KeyError as e:
-    print(f"Column not found: {e}")
-    # Create sample data for demonstration
-    print("Using sample data for demonstration...")
-    x = np.array([[0], [1], [2], [3], [4]])
-    y = np.array([[0], [1], [2], [3], [4]])
+le_x = LabelEncoder()
+le_y = LabelEncoder()
+x = le_x.fit_transform(df.workclass.values).reshape(-1,1)
+y = le_y.fit_transform(df.Salary.values).reshape(-1,1)
 
 #%%
 # --- [CELL 3]: ---

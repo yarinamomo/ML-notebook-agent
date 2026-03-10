@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 from IPython.display import Image, display
 import os
 import random
@@ -39,148 +39,52 @@ for category_name in selected_categories:
         display(Image(filename=random_image_path))
         print("\n" + "="*30 + "\n")  # Separating images with a line
 
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# from torchvision.datasets import ImageFolder
-# import torchvision.transforms as transforms
-# 
-# transformations = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
-# 
-# dataset = ImageFolder(directory_path, transform = transformations)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 from torchvision.datasets import ImageFolder
 import torchvision.transforms as transforms
-from PIL import Image, UnidentifiedImageError
-import torch
 
-def safe_pil_loader(path):
-    try:
-        with open(path, 'rb') as f:
-            img = Image.open(f)
-            img.load()  # Force load to verify it's valid
-            return img.convert('RGB')
-    except (OSError, UnidentifiedImageError, Exception) as e:
-        return None
-
-# Transformations
 transformations = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
 
-# Create ImageFolder to get samples
-base_dataset = ImageFolder(directory_path, transform=None)
-
-# Filter out invalid samples
-valid_samples = []
-for path, target in base_dataset.samples:
-    if safe_pil_loader(path) is not None:
-        valid_samples.append((path, target))
-
-print(f"Filtered {len(base_dataset.samples)} down to {len(valid_samples)} valid samples")
-
-# Create a custom dataset class that uses valid samples
-class FilteredImageFolder(torch.utils.data.Dataset):
-    def __init__(self, samples, transform=None):
-        self.samples = samples
-        self.transform = transform
-        self.classes = base_dataset.classes
-        self.class_to_idx = base_dataset.class_to_idx
-    
-    def __len__(self):
-        return len(self.samples)
-    
-    def __getitem__(self, index):
-        path, target = self.samples[index]
-        img = safe_pil_loader(path)
-        if img is None:
-            # Fallback to first sample if somehow still fails
-            img = safe_pil_loader(self.samples[0][0])
-            target = self.samples[0][1]
-        if self.transform is not None:
-            img = self.transform(img)
-        return img, target
-
-# Create the filtered dataset
-dataset = FilteredImageFolder(valid_samples, transform=transformations)
-print(f"Dataset created with {len(dataset)} samples")
+dataset = ImageFolder(directory_path, transform = transformations)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# import matplotlib.pyplot as plt # for reporducing and fixing purposes
-# import torch
-# 
-# def show_images(dataset, num_images=6):
-# 
-#     # Get random indices from the dataset
-#     random_indices = torch.randperm(len(dataset))[:num_images]
-# 
-#     # Create a subplot with the specified number of rows and columns
-#     rows = 1
-#     cols = num_images
-#     fig, axes = plt.subplots(rows, cols, figsize=(15, 3))
-# 
-#     for i, idx in enumerate(random_indices):
-#         # Get the image and label from the dataset
-#         image, label = dataset[idx]
-# 
-#         # Convert the PyTorch tensor to a NumPy array for visualization
-#         image_np = image.permute(1, 2, 0).numpy()
-# 
-#         # Display the image
-#         axes[i].imshow(image_np)
-#         axes[i].set_title(f"Label: {label}")
-# 
-#         # Remove x and y axis ticks
-#         axes[i].axis("off")
-# 
-#     plt.show()
-# 
-# # Call the helper function to display images from the transformed dataset
-# transformed = dataset # fix for reporducing and fixing purposes, undefined variable
-# show_images(transformed)
-
-# === AFTER (edited) ===
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt # for reporducing and fixing purposes
 import torch
 
 def show_images(dataset, num_images=6):
+
+    # Get random indices from the dataset
+    random_indices = torch.randperm(len(dataset))[:num_images]
+
+    # Create a subplot with the specified number of rows and columns
     rows = 1
     cols = num_images
     fig, axes = plt.subplots(rows, cols, figsize=(15, 3))
 
-    # Try to find valid images
-    random_indices = torch.randperm(len(dataset))
-    displayed = 0
-    idx = 0
-    
-    while displayed < num_images and idx < len(dataset):
-        try:
-            index = random_indices[idx]
-            image, label = dataset[index]
+    for i, idx in enumerate(random_indices):
+        # Get the image and label from the dataset
+        image, label = dataset[idx]
 
-            image_np = image.permute(1, 2, 0).numpy()
+        # Convert the PyTorch tensor to a NumPy array for visualization
+        image_np = image.permute(1, 2, 0).numpy()
 
-            axes[displayed].imshow(image_np)
-            axes[displayed].set_title(f"Label: {label}")
-            axes[displayed].axis("off")
-            displayed += 1
-        except Exception as e:
-            pass
-        idx += 1
+        # Display the image
+        axes[i].imshow(image_np)
+        axes[i].set_title(f"Label: {label}")
 
-    for i in range(displayed, num_images):
+        # Remove x and y axis ticks
         axes[i].axis("off")
 
     plt.show()
 
-
-transformed = dataset
+# Call the helper function to display images from the transformed dataset
+transformed = dataset # fix for reporducing and fixing purposes, undefined variable
 show_images(transformed)
 
 #%%
@@ -276,46 +180,109 @@ class ResNet(ImageClassificationBase):
 
 model = ResNet()
 
-
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 8}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# === BEFORE (original) ===
+# import torch
+# import torch.nn as nn
+# import torch.optim as optim
+# import torch.nn.functional as F
+# from torch.utils.data import DataLoader
+# 
+# # Assuming you have a DataLoader for training and validation (train_dl, val_dl)
+# # Make sure to set num_classes as appropriate
+# 
+# # Initialize the modified ResNet model
+# resnet_model = models.resnet18(pretrained=True)
+# 
+# # Define your loss function and optimizer
+# criterion = nn.CrossEntropyLoss()
+# optimizer = optim.SGD(resnet_model.parameters(), lr=0.001, momentum=0.9) # fix for crash isolation purposes # resnet_model instead of model
+# 
+# # Training loop
+# num_epochs = 1  # Adjust as needed # 10
+# 
+# for epoch in range(num_epochs):
+#     resnet_model.train()  # fix for crash isolation purposes # resnet_model instead of model
+#     for inputs, labels in train_dl:
+#         optimizer.zero_grad()
+#         outputs = resnet_model(inputs)  # fix for crash isolation purposes # resnet_model instead of model
+#         loss = criterion(outputs, labels)
+#         loss.backward()
+#         optimizer.step()
+# 
+#     # Validation loop
+#     resnet_model.eval()  # fix for crash isolation purposes # resnet_model instead of model
+#     with torch.no_grad():
+#         correct = 0
+#         total = 0
+#         for inputs, labels in val_dl:
+#             outputs = resnet_model(inputs)  # fix for crash isolation purposes # resnet_model instead of model
+#             _, predicted = torch.max(outputs.data, 1)
+#             total += labels.size(0)
+#             correct += (predicted == labels).sum().item()
+# 
+#         accuracy = correct / total
+#         print(f'Epoch {epoch + 1}/{num_epochs}, Validation Accuracy: {accuracy:.4f}')
+# 
+# # After training, you can use the evaluate function
+# def evaluate(model, test_dl):
+#     model.eval()
+#     with torch.no_grad():
+#         correct = 0
+#         total = 0
+#         for inputs, labels in test_dl:
+#             # Ensure the batch dimension is added at the beginning
+#             inputs = inputs.unsqueeze(-1)  # Assuming the channels dimension is 1 (grayscale), change to 0 for RGB
+#             outputs = model(inputs)
+#             
+#             _, predicted = torch.max(outputs.data, 1)
+#             total += labels.size(0)
+#             correct += (predicted == labels).sum().item()
+# 
+#         accuracy = correct / total
+#         print(f'Test Accuracy: {accuracy:.4f}')
+# 
+# 
+# # Usage
+# evaluate(resnet_model,val_dl) # fix for crash isolation purposes # val_dl instead of val_ds
+
+# === AFTER (edited) ===
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+import torchvision.models as models
 
-# Assuming you have a DataLoader for training and validation (train_dl, val_dl)
-# Make sure to set num_classes as appropriate
 
-# Initialize the modified ResNet model
 resnet_model = models.resnet18(pretrained=True)
 
-# Define your loss function and optimizer
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(resnet_model.parameters(), lr=0.001, momentum=0.9) # fix for crash isolation purposes # resnet_model instead of model
 
-# Training loop
-num_epochs = 1  # Adjust as needed # 10
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(resnet_model.parameters(), lr=0.001, momentum=0.9)
+
+
+num_epochs = 1
 
 for epoch in range(num_epochs):
-    resnet_model.train()  # fix for crash isolation purposes # resnet_model instead of model
+    resnet_model.train()
     for inputs, labels in train_dl:
         optimizer.zero_grad()
-        outputs = resnet_model(inputs)  # fix for crash isolation purposes # resnet_model instead of model
+        outputs = resnet_model(inputs)
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
 
-    # Validation loop
-    resnet_model.eval()  # fix for crash isolation purposes # resnet_model instead of model
+
+    resnet_model.eval()
     with torch.no_grad():
         correct = 0
         total = 0
         for inputs, labels in val_dl:
-            outputs = resnet_model(inputs)  # fix for crash isolation purposes # resnet_model instead of model
+            outputs = resnet_model(inputs)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
@@ -323,17 +290,15 @@ for epoch in range(num_epochs):
         accuracy = correct / total
         print(f'Epoch {epoch + 1}/{num_epochs}, Validation Accuracy: {accuracy:.4f}')
 
-# After training, you can use the evaluate function
+
 def evaluate(model, test_dl):
     model.eval()
     with torch.no_grad():
         correct = 0
         total = 0
         for inputs, labels in test_dl:
-            # Ensure the batch dimension is added at the beginning
-            inputs = inputs.unsqueeze(-1)  # Assuming the channels dimension is 1 (grayscale), change to 0 for RGB
             outputs = model(inputs)
-            
+
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
@@ -342,5 +307,5 @@ def evaluate(model, test_dl):
         print(f'Test Accuracy: {accuracy:.4f}')
 
 
-# Usage
-evaluate(resnet_model,val_dl) # fix for crash isolation purposes # val_dl instead of val_ds
+
+evaluate(resnet_model,val_dl)

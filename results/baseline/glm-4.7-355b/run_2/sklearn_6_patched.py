@@ -38,13 +38,9 @@ test_ds = pd.read_csv("data/test.csv")
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
-
-# === AFTER (edited) ===
-train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True, errors='ignore')
+train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 #%%
 # --- [CELL 4]: ---
@@ -68,33 +64,33 @@ for column in string_columns:
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 X = train_ds.drop(['SalePrice'], axis = 1)
 y = train_ds['SalePrice']
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 42)
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 from sklearn.ensemble import RandomForestRegressor
 FReg = RandomForestRegressor(n_estimators = 100, random_state = 42)
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 FReg.fit(X_train, y_train)
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 y_pred = FReg.predict(X_test)
 mse = mean_squared_error(y_test, y_pred)
 r2 = r2_score(y_test, y_pred)
@@ -103,30 +99,34 @@ print(f'MSE: {mse}')
 
 #%%
 # --- [CELL 11]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# test_ds_ids = test_ds['Id'] # fix for crash isolation purpose
-# test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
-
-# === AFTER (edited) ===
-test_ds_ids = test_ds['Id']
-test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True, errors='ignore')
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+test_ds_ids = test_ds['Id'] # fix for crash isolation purpose
+test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-for column in test_ds:
-    null_count = test_ds[column].isnull().sum()
-    if null_count > 1:
-        print(f"Dropping column {column} with {null_count} missing values.")
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# === BEFORE (original) ===
+# for column in test_ds:
+#     null_count = test_ds[column].isnull().sum()
+#     if null_count > 1:
+#         print(f"Dropping column {column} with {null_count} missing values.")
+#         test_ds.drop(column, axis = 1, inplace = True)
+
+# === AFTER (edited) ===
+# Only drop columns from test_ds that were also dropped from train_ds (i.e., are not in train_ds columns)
+# This ensures both datasets have the same feature set
+for column in test_ds.columns:
+    if column not in train_ds.columns:
+        print(f"Dropping column {column} (missing in train_ds).")
         test_ds.drop(column, axis = 1, inplace = True)
 
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 le = LabelEncoder()
 string_columns = test_ds.select_dtypes(include = ['object']).columns
 for column in string_columns:
@@ -135,7 +135,7 @@ for column in string_columns:
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 15}
 predictions = FReg.predict(test_ds)
 submissions_df = pd.DataFrame({
     "ID" : test_ds_ids, # test_data['ID'], # fix for crash isolation purpose

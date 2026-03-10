@@ -93,58 +93,8 @@ def prepare_model():
     model.add(Dense(2, activation='softmax'))
     model.compile(loss="categorical_crossentropy",optimizer="adam",metrics=['accuracy'])
     return model
-
-from tensorflow.keras.utils import Sequence
-import numpy as np
-import os
-
-class SafeGenerator(Sequence):
-    def __init__(self, generator):
-        self.generator = generator
-        self.valid_indices = []
-        # Find all valid batches
-        for i in range(len(generator)):
-            try:
-                batch = generator[i]
-                if batch[0] is not None and batch[1] is not None:
-                    self.valid_indices.append(i)
-                else:
-                    print(f"Skipping invalid batch {i}")
-            except Exception as e:
-                print(f"Skipping batch {i} due to error: {e}")
-        print(f"Found {len(self.valid_indices)} valid batches out of {len(generator)}")
-    
-    def __len__(self):
-        return max(1, len(self.valid_indices))
-    
-    def __getitem__(self, index):
-        if len(self.valid_indices) == 0:
-            # Return a dummy batch if no valid data
-            return np.zeros((1, 223, 223, 3)), np.zeros((1, 2))
-        real_index = self.valid_indices[index % len(self.valid_indices)]
-        try:
-            return self.generator[real_index]
-        except:
-            # Return a dummy batch if error occurs
-            return np.zeros((1, 223, 223, 3)), np.zeros((1, 2))
-
-print("Creating safe generators...")
-train_safe_gen = SafeGenerator(train_generator)
-valid_safe_gen = SafeGenerator(valid_generator)
-test_safe_gen = SafeGenerator(test_generator)
-
 model = prepare_model()
-
-if len(train_safe_gen.valid_indices) > 0:
-    model.fit(train_safe_gen,
-              validation_data=valid_safe_gen,
-              epochs=5,
-              verbose=1)
-else:
-    print("No valid training data available. Skipping training.")
-
-if len(test_safe_gen.valid_indices) > 0:
-    print("Evaluating model...")
-    model.evaluate(test_safe_gen)
-else:
-    print("No valid test data available. Skipping evaluation.")
+model.fit(train_generator,
+                    validation_data = valid_generator,
+                    epochs=5)
+model.evaluate(test_generator)

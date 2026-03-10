@@ -60,37 +60,11 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 InputPath = 'data/images-after-converted_small/'
 CsvPath   = 'data/breast-level_annotations (1).csv.zip'
 
-
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# df = pd.read_csv(CsvPath)
-# df.head(3)
-
-# === AFTER (edited) ===
-# Create DataFrame from the actual image files since the CSV is a Git LFS pointer
-df = pd.DataFrame()
-
-image_info = []
-for laterality_view in os.listdir(InputPath):
-    path = os.path.join(InputPath, laterality_view)
-    if os.path.isdir(path):
-        laterality, view_position = laterality_view.split('-')
-        images = os.listdir(path)
-        for img in images:
-            image_id = img.replace('.png', '')
-            image_info.append({
-                'image_id': image_id,
-                'laterality': laterality,
-                'view_position': view_position,
-                # Create a breast_birads value in the expected format
-                'breast_birads': f'BI-RADS-{(hash(image_id) % 5) + 1}'  # Random but deterministic
-            })
-
-df = pd.DataFrame(image_info)
-print(f"Created DataFrame with {len(df)} rows from images")
+df = pd.read_csv(CsvPath)
 df.head(3)
 
 #%%
@@ -99,7 +73,6 @@ df.head(3)
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 X= []
 y=[]
-
 
 #%%
 # --- [CELL 4]: ---
@@ -122,31 +95,25 @@ y=[]
 # === AFTER (edited) ===
 import imageio
 for i in range(df.shape[0]):
-    path = InputPath+df.laterality[i]+'-'+df.view_position[i]+'/'+df.image_id[i]+'.png'
-    # Note: The actual image files are Git LFS pointers, so we create dummy images
-    # Generate a random 100x100 RGB image
-    img = np.random.randint(0, 256, (100, 100, 3), dtype=np.uint8)
-    img_size = img  # Already the right size
 
-    X.append(img_size)
-    y.append(df.breast_birads[i])
+    path = InputPath+df.laterality[i]+'-'+df.view_position[i]+'/'+df.image_id[i]+'.png'
+    if os.path.exists(path):
+        img = cv2.imread(path)  # Load as color (3 channels) instead of grayscale
+        img_size = cv2.resize(img, (100, 100), interpolation = cv2.INTER_LINEAR)
+
+
+        X.append(img_size)
+
+        y.append(df.breast_birads[i])
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# Y = []
-# import re
-# for i in y:
-#     Y.append(int(re.sub("[A-Z]+\-[A-Z]+", "", i)))
-
-# === AFTER (edited) ===
 Y = []
 import re
 for i in y:
-    # Extract the numeric value from strings like "BI-RADS-1", "BI-RADS-2", etc.
-    Y.append(int(re.sub(r"[^0-9]", "", i)))
+    Y.append(int(re.sub("[A-Z]+\-[A-Z]+", "", i)))
 
 #%%
 # --- [CELL 6]: ---
@@ -227,7 +194,6 @@ model.add(Dense(20, activation = 'softmax'))
 
 model.compile(optimizer=Adam(0.00001), loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics = ['accuracy'])
 model.summary()
-
 
 #%%
 # --- [CELL 10]: ---

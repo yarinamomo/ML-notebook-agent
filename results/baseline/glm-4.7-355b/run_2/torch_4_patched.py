@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import pandas as pd
 import numpy as np
 import warnings
@@ -8,26 +8,9 @@ warnings.filterwarnings('ignore')
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# import logging  # 日志相关的包
-# import random
-# 
-# import torch
-# 
-# logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(levelname)s: %(message)s')
-# 
-# seed = 2023
-# random.seed(seed)
-# np.random.seed(seed)
-# torch.cuda.manual_seed(seed)
-# torch.manual_seed(seed)
-# 
-# device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-# === AFTER (edited) ===
-import logging
+import logging  # 日志相关的包
 import random
 
 import torch
@@ -37,8 +20,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(levelname)s: %(
 seed = 2023
 random.seed(seed)
 np.random.seed(seed)
-if torch.cuda.is_available():
-    torch.cuda.manual_seed(seed)
+torch.cuda.manual_seed(seed)
 torch.manual_seed(seed)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -158,7 +140,6 @@ class Vocab():
         return len(self._id2label)
     
 vocab = Vocab(train_df)
-            
 
 #%%
 # --- [CELL 4]: ---
@@ -202,7 +183,6 @@ class Attention(nn.Module):
         batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)  # b x hidden
         
         return batch_outputs, attn_scores
-    
 
 #%%
 # --- [CELL 5]: ---
@@ -259,7 +239,6 @@ class WordLSTMEncoder(nn.Module):
             
         return hiddens
 
-
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
@@ -291,19 +270,71 @@ class SentEncoder(nn.Module):
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# class Model(nn.Module):
+#     def __init__(self, vocab):
+#         super(Model, self).__init__()
+#         self.sent_rep_size = word_hidden_size * 2  # 双向lstm，每个词向量对应的隐藏层维度
+#         self.doc_rep_size = sent_hidden_size * 2  # 文档表示大小，每个句子对应隐藏层的维度
+#         self.all_parameters = {}
+#         
+#         parameters = []
+#         self.word_encoder = WordLSTMEncoder(vocab)
+#         self.word_attention = Attention(self.sent_rep_size)
+#         # filter(判断函数, 可迭代对象)
+#         parameters.extend(list(filter(lambda p: p.requires_grad, self.word_encoder.parameters())))
+#         parameters.extend(list(filter(lambda p: p.requires_grad, self.word_attention.parameters())))
+#         self.sent_encoder = SentEncoder(self.sent_rep_size)
+#         self.sent_attention = Attention(self.doc_rep_size)
+#         parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_encoder.parameters())))
+#         parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_attention.parameters())))
+#         self.out = nn.Linear(self.doc_rep_size, vocab.label_size, bias=True)
+#         parameters.extend(list(filter(lambda p: p.requires_grad, self.out.parameters())))
+#         
+#         self.to(device)
+#         
+#         if len(parameters) > 0:
+#             self.all_parameters['basic_parameters'] = parameters
+#             
+#         # 模型总参数量
+#         para_num = sum([np.prod(list(p.size())) for p in self.parameters()])
+#         
+#     def forward(self, batch_inputs):
+#         # batch_inputs(batch_inputs1, batch_inputs2): b x doc_len x sent_len
+#         # batch_masks: b x doc_len x sent_len
+#         # 不明白为什么这里要同时输入两个batch？？？？？？？
+#         batch_inputs1, batch_inputs2, batch_masks = batch_inputs
+#         batch_size, max_doc_len, max_sent_len = batch_inputs1.shape[0], batch_inputs1.shape[1], batch_inputs1.shape[2]
+#         batch_inputs1 = batch_inputs1.view(batch_size * max_doc_len, max_sent_len)
+#         batch_inputs2 = batch_inputs2.view(batch_size * max_doc_len, max_sent_len)
+#         batch_masks = batch_masks.view(batch_size * max_doc_len, max_sent_len)
+#         batch_hiddens = self.word_encoder(batch_inputs1, batch_inputs2, batch_masks)
+#         sent_reps, atten_scores = self.word_attention(batch_hiddens, batch_masks)
+#         sent_reps = sent_reps.view(batch_size, max_doc_len, self.sent_rep_size)
+#         batch_masks = batch_masks.view(batch_size, max_doc_len, max_sent_len)
+#         sent_masks = batch_masks.bool().any(2).float()
+#         sent_hiddens = self.sent_encoder(sent_reps, sent_masks)
+#         doc_reps, atten_scores = self.sent_attention(sent_hiddens, sent_masks)
+#         batch_outputs = self.out(doc_reps)
+#         
+#         return batch_outputs
+#     
+# model = Model(vocab)
+
+# === AFTER (edited) ===
 class Model(nn.Module):
     def __init__(self, vocab):
         super(Model, self).__init__()
-        self.sent_rep_size = word_hidden_size * 2  # 双向lstm，每个词向量对应的隐藏层维度
-        self.doc_rep_size = sent_hidden_size * 2  # 文档表示大小，每个句子对应隐藏层的维度
+        self.sent_rep_size = word_hidden_size * 2
+        self.doc_rep_size = sent_hidden_size * 2
         self.all_parameters = {}
-        
+
         parameters = []
         self.word_encoder = WordLSTMEncoder(vocab)
         self.word_attention = Attention(self.sent_rep_size)
-        # filter(判断函数, 可迭代对象)
+
         parameters.extend(list(filter(lambda p: p.requires_grad, self.word_encoder.parameters())))
         parameters.extend(list(filter(lambda p: p.requires_grad, self.word_attention.parameters())))
         self.sent_encoder = SentEncoder(self.sent_rep_size)
@@ -312,19 +343,19 @@ class Model(nn.Module):
         parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_attention.parameters())))
         self.out = nn.Linear(self.doc_rep_size, vocab.label_size, bias=True)
         parameters.extend(list(filter(lambda p: p.requires_grad, self.out.parameters())))
-        
-        self.to(device)
-        
+
         if len(parameters) > 0:
             self.all_parameters['basic_parameters'] = parameters
-            
-        # 模型总参数量
+
+        self.to(device)
+
+
         para_num = sum([np.prod(list(p.size())) for p in self.parameters()])
-        
+
     def forward(self, batch_inputs):
-        # batch_inputs(batch_inputs1, batch_inputs2): b x doc_len x sent_len
-        # batch_masks: b x doc_len x sent_len
-        # 不明白为什么这里要同时输入两个batch？？？？？？？
+
+
+
         batch_inputs1, batch_inputs2, batch_masks = batch_inputs
         batch_size, max_doc_len, max_sent_len = batch_inputs1.shape[0], batch_inputs1.shape[1], batch_inputs1.shape[2]
         batch_inputs1 = batch_inputs1.view(batch_size * max_doc_len, max_sent_len)
@@ -338,7 +369,7 @@ class Model(nn.Module):
         sent_hiddens = self.sent_encoder(sent_reps, sent_masks)
         doc_reps, atten_scores = self.sent_attention(sent_hiddens, sent_masks)
         batch_outputs = self.out(doc_reps)
-        
+
         return batch_outputs
-    
+
 model = Model(vocab)

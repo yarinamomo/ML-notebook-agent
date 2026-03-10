@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # from datasets import load_dataset
 # import torch
@@ -21,63 +21,33 @@ import time
 import pickle
 
 dataset = load_dataset("sst", "default", trust_remote_code=True)
-dataset2 = load_dataset("multi_nli")
+dataset2 = load_dataset("multi_nli", trust_remote_code=True)
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# torch.manual_seed = 555
-# # torch.set_default_tensor_type('torch.cuda.FloatTensor')
-
-# === AFTER (edited) ===
-torch.manual_seed(555)
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+torch.manual_seed = 555
+# torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# # !wget http://nlp.stanford.edu/data/glove.6B.zip
-# # !unzip glove*.zip
-# 
-# glv = dict()
-# glv_size = 50
-# with open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:
-#     for line in fp:
-#         word, *vec = line.split()
-#         glv[word] = torch.tensor(list(map(float , vec)))
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+# !wget http://nlp.stanford.edu/data/glove.6B.zip
+# !unzip glove*.zip
 
-# === AFTER (edited) ===
 glv = dict()
 glv_size = 50
-# Try to load GloVe embeddings, but handle errors gracefully
-try:
-    with open('data/glove.6B.{}d.txt'.format(glv_size),'r', encoding='utf-8') as fp:
-        for line in fp:
-            try:
-                word, *vec = line.strip().split()
-                # Skip non-numeric entries (like git-lfs headers)
-                vec_float = []
-                for v in vec:
-                    try:
-                        vec_float.append(float(v))
-                    except ValueError:
-                        break
-                if len(vec_float) == glv_size:
-                    glv[word] = torch.tensor(vec_float)
-            except (ValueError, AttributeError):
-                continue
-    print(f"Loaded {len(glv)} word embeddings")
-except Exception as e:
-    print(f"Error loading GloVe file: {e}")
-    print("Using random initialization instead")
+with open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:
+    for line in fp:
+        word, *vec = line.split()
+        glv[word] = torch.tensor(list(map(float , vec)))
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 embed = torch.zeros((len(glv)+2 , glv_size))
 ind =2
 
@@ -95,14 +65,14 @@ for x in glv:
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 sentences = dataset['train']['sentence']
 testsent = dataset['test']['sentence']
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'not run'}
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 stop_words = set(stopwords.words('english'))
@@ -119,11 +89,10 @@ def tokenize(sentences):
         tokens.append([w for w in word_tokens if not w.lower() in stop_words and len(w)>2])
     return tokens , max_len
 
-
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'not run'}
 def build_vocab(sentences):
     vocab = set()
     X = list()
@@ -142,13 +111,10 @@ def build_vocab(sentences):
     
     return vocab ,int2text , text2int
 
-    
-
-
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'not run'}
 def build_input(sentences ,word2index, text2int):
     X =[]
     Y =[]
@@ -170,7 +136,7 @@ def build_input(sentences ,word2index, text2int):
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'not run'}
 def build_input_test(sentences ,word2index):
     X =[]
     for tokens in sentences:
@@ -186,7 +152,7 @@ def build_input_test(sentences ,word2index):
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'not run'}
 tokens , max_len = tokenize(sentences)
 vocab , int2text , text2int = build_vocab(tokens)
 X,Y = build_input(tokens , word2index,text2int)
@@ -194,7 +160,7 @@ X,Y = build_input(tokens , word2index,text2int)
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'not run'}
 from torch.utils.data import Dataset, DataLoader
 class  data(Dataset):
     def __init__(self , X,Y,vs , padsz):
@@ -221,13 +187,13 @@ class  data(Dataset):
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'not run'}
 elmotrain = data(X,Y, len(vocab),40)
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'not run'}
 traindata = DataLoader(elmotrain, batch_size=32 )
 
 #%%
@@ -301,17 +267,13 @@ class elmo(torch.nn.Module):
           return x
         else:
             return encoding
-        
-        
 
 #%%
 # --- [CELL 15]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'not run'}
-
 model = elmo(len(vocab) , glv_size)
 optimizer = torch.optim.Adam(model.parameters())
-
 
 #%%
 # --- [CELL 16]: ---
@@ -342,7 +304,6 @@ def train( traindata,epochs = 5):
         print("time taken : {}".format(time.time()  - st))
         print("")
 
-
 #%%
 # --- [CELL 17]: ---
 # cell_state: unchanged
@@ -355,28 +316,57 @@ yt = dataset['test']['label']
 
 #%%
 # --- [CELL 18]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# class sentimentdata(Dataset):
+#     def __init__(self , X,Y ):
+#         self.X = X
+#         self.Y = Y
+#     def __len__(self):
+#         return len(self.X)
+#     def __getitem__(self , index):
+#         x = self.X[index]
+#         y= self.Y[index]#torch.zeros(2)
+# #         y[self.Y[index]] = 1
+#         return x,y
+# st_train_loader = sentimentdata(X ,ylb)
+# st_test_loader = sentimentdata(X ,ytb)
+# 
+# st_train = DataLoader(st_train_loader, batch_size=5 )
+# st_test= DataLoader(st_test_loader, batch_size=5 )
+
+# === AFTER (edited) ===
 class sentimentdata(Dataset):
-    def __init__(self , X,Y ):
+    def __init__(self , X,Y, pad_size):
         self.X = X
         self.Y = Y
+        self.pad_size = pad_size
     def __len__(self):
         return len(self.X)
     def __getitem__(self , index):
         x = self.X[index]
-        y= self.Y[index]#torch.zeros(2)
-#         y[self.Y[index]] = 1
+        y= self.Y[index]
+        # Pad x to pad_size
+        if len(x) < self.pad_size:
+            padded_x = torch.zeros(self.pad_size)
+            padded_x[:len(x)] = x
+            x = padded_x
+        elif len(x) > self.pad_size:
+            x = x[:self.pad_size]
+
         return x,y
-st_train_loader = sentimentdata(X ,ylb)
-st_test_loader = sentimentdata(X ,ytb)
 
-st_train = DataLoader(st_train_loader, batch_size=5 )
-st_test= DataLoader(st_test_loader, batch_size=5 )
+# Determine max length from X
+max_len_x = max(len(x) for x in X)
+st_train_loader = sentimentdata(X ,ylb, max_len_x)
+st_test_loader = sentimentdata(X ,ytb, max_len_x)
 
+st_train = DataLoader(st_train_loader, batch_size=5)
+st_test= DataLoader(st_test_loader, batch_size=5)
 
 #%%
 # --- [CELL 19]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'not run'}
-train(st_train,2) 
+train(st_train,2)

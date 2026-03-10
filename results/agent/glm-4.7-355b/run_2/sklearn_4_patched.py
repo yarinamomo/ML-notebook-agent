@@ -313,7 +313,7 @@ from sklearn.ensemble import AdaBoostClassifier
 ml_support_obj = ml_support()
 best_decision_tree_model = RandomForestClassifier(random_state = 42,n_estimators=1200,
                                           min_samples_split=5, min_samples_leaf = 1,
-                                          max_features = 'sqrt', max_depth = None,
+                                          max_features = 'auto', max_depth = None,
                                           bootstrap =True
                                          )
 classification_model = AdaBoostClassifier()

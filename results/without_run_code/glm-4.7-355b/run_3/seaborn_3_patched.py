@@ -30,93 +30,23 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.width', None)
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
 
-
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train = pd.read_csv("data/train.csv")
-# test = pd.read_csv("data/test.csv")
-# 
-# # ignore_index=True kullanarak index sıfırdan başlayacak şekilde birleştirme yapın
-# df = pd.concat([train, test], ignore_index=True)
-# 
-# selected_list = ["GarageArea", "LotArea", "LotFrontage", "OverallQual", "PoolArea", "MSSubClass", "YearBuilt", "GrLivArea",
-#                  "BedroomAbvGr", "LowQualFinSF", "TotRmsAbvGrd", "Id", "SalePrice"]
-# 
-# # Id ve SalePrice'ı seçili sütunlara ekleyin
-# df = df[selected_list]
-# 
-# # "index" sütununu düşürmeye gerek yok
-# df.head()
-# df.shape
-# df.isnull().sum()
+train = pd.read_csv("data/train.csv")
+test = pd.read_csv("data/test.csv")
 
-# === AFTER (edited) ===
-import numpy as np
-
-# Create sample house prices data since the_CSV files are LFS pointers, not actual data
-np.random.seed(42)
-n_train = 1000
-n_test = 200
-
-# Generate realistic house features
-train_data = {
-    'GarageArea': np.random.uniform(200, 800, n_train).astype(int),
-    'LotArea': np.random.uniform(3000, 20000, n_train).astype(int),
-    'LotFrontage': np.random.uniform(30, 100, n_train).astype(int),
-    'OverallQual': np.random.randint(2, 10, n_train),
-    'PoolArea': np.random.randint(0, 600, n_train),
-    'MSSubClass': np.random.randint(20, 80, n_train),
-    'YearBuilt': np.random.randint(1960, 2020, n_train),
-    'GrLivArea': np.random.uniform(500, 4000, n_train).astype(int),
-    'BedroomAbvGr': np.random.randint(1, 5, n_train),
-    'LowQualFinSF': np.random.randint(0, 100, n_train),
-    'TotRmsAbvGrd': np.random.randint(3, 11, n_train),
-    'Id': range(1, n_train + 1),
-    'SalePrice': (
-        np.random.uniform(50000, 500000, n_train) +
-        (np.random.uniform(5000, 20000, n_train) * np.random.randint(2, 10, n_train)) +  # OverallQual effect
-        (np.random.uniform(100, 200, n_train) * np.random.uniform(500, 4000, n_train))  # GrLivArea effect
-    ).astype(int)
-}
-
-test_data = {
-    'GarageArea': np.random.uniform(200, 800, n_test).astype(int),
-    'LotArea': np.random.uniform(3000, 20000, n_test).astype(int),
-    'LotFrontage': np.random.uniform(30, 100, n_test).astype(int),
-    'OverallQual': np.random.randint(2, 10, n_test),
-    'PoolArea': np.random.randint(0, 600, n_test),
-    'MSSubClass': np.random.randint(20, 80, n_test),
-    'YearBuilt': np.random.randint(1960, 2020, n_test),
-    'GrLivArea': np.random.uniform(500, 4000, n_test).astype(int),
-    'BedroomAbvGr': np.random.randint(1, 5, n_test),
-    'LowQualFinSF': np.random.randint(0, 100, n_test),
-    'TotRmsAbvGrd': np.random.randint(3, 11, n_test),
-    'Id': range(n_train + 1, n_train + n_test + 1),
-    'SalePrice': np.nan  # No target for test set
-}
-
-# Create dataframes
-train = pd.DataFrame(train_data)
-test = pd.DataFrame(test_data)
-
-print(f"Train data shape: {train.shape}")
-print(f"Test data shape: {test.shape}")
-
+# ignore_index=True kullanarak index sıfırdan başlayacak şekilde birleştirme yapın
 df = pd.concat([train, test], ignore_index=True)
 
-print(f"\nCombined dataframe shape: {df.shape}")
-print(f"Columns: {df.columns.tolist()}")
-
-# Select the required columns
 selected_list = ["GarageArea", "LotArea", "LotFrontage", "OverallQual", "PoolArea", "MSSubClass", "YearBuilt", "GrLivArea",
                  "BedroomAbvGr", "LowQualFinSF", "TotRmsAbvGrd", "Id", "SalePrice"]
 
+# Id ve SalePrice'ı seçili sütunlara ekleyin
 df = df[selected_list]
 
+# "index" sütununu düşürmeye gerek yok
 df.head()
 df.shape
 df.isnull().sum()
@@ -165,7 +95,6 @@ def grab_col_names(dataframe, cat_th=10, car_th=25):
 
 cat_cols, cat_but_car, num_cols = grab_col_names(df)
 
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
@@ -213,6 +142,7 @@ for col in num_cols:
 
 for col in num_cols:
     sns.barplot(x=df[col])
+    plt.show()
 
 for col in num_cols:
     sns.boxplot(data=df, x=col)

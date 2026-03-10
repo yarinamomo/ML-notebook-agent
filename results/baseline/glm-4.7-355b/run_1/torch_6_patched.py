@@ -25,94 +25,30 @@ seed=42
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# #use this block later to read cvs hopefully :)
-# train_df=pd.read_csv("data_small/train.csv",index_col=0)
-# #
-# train_labels=train_df['label'].to_numpy()
-# train_labels=train_labels.reshape(train_labels.shape[0],1)
-# 
-# #vocab=train_df['label'].to_numpy()
-# train_df=train_df.drop(columns=['label', 'label_type']) #train_df=train_df.drop(columns=('label')) # for reproducing and fixing
-# test_df=pd.read_csv("data_small/test.csv",index_col=0)
-# #
-# test_labels=test_df['label'].to_numpy()
-# test_labels=test_labels.reshape(test_labels.shape[0],1)
-# 
-# test_df=test_df.drop(columns=('label'))
-# val_df = pd.read_csv("data_small/val.csv",index_col=0)
-# #
-# val_labels=val_df['label'].to_numpy()
-# val_labels=val_labels.reshape(val_labels.shape[0],1)
-# 
-# val_df = val_df.drop(columns=('label'))
-# vocab=np.append(train_labels,val_labels)
-# #print(vocab.shape)
-# vocab=np.unique(vocab)
-# vocab=vocab.reshape(vocab.shape[0],1)
-# print(vocab.shape)
-# oh = OneHotEncoder(sparse_output=False)
-# hot_vocab=oh.fit_transform(vocab)
-# train_df.shape,val_df.shape,test_df.shape
-# train_df
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+#use this block later to read cvs hopefully :)
 train_df=pd.read_csv("data_small/train.csv",index_col=0)
-
-# Try to handle different possible label column names
-if 'label' in train_df.columns:
-    train_labels=train_df['label'].to_numpy()
-    train_df=train_df.drop(columns=['label'], errors='ignore')
-elif 'labels' in train_df.columns:
-    train_labels=train_df['labels'].to_numpy()
-    train_df=train_df.drop(columns=['labels'], errors='ignore')
-else:
-    # Find the first non-feature column that could be labels
-    train_labels=train_df.iloc[:, 0].to_numpy()
-    train_df=train_df.drop(columns=[train_df.columns[0]], errors='ignore')
-    
-if 'label_type' in train_df.columns:
-    train_df=train_df.drop(columns=['label_type'], errors='ignore')
-
+#
+train_labels=train_df['label'].to_numpy()
 train_labels=train_labels.reshape(train_labels.shape[0],1)
 
+#vocab=train_df['label'].to_numpy()
+train_df=train_df.drop(columns=['label', 'label_type']) #train_df=train_df.drop(columns=('label')) # for reproducing and fixing
 test_df=pd.read_csv("data_small/test.csv",index_col=0)
-
-if 'label' in test_df.columns:
-    test_labels=test_df['label'].to_numpy()
-    test_df=test_df.drop(columns=['label'], errors='ignore')
-elif 'labels' in test_df.columns:
-    test_labels=test_df['labels'].to_numpy()
-    test_df=test_df.drop(columns=['labels'], errors='ignore')
-else:
-    test_labels=test_df.iloc[:, 0].to_numpy()
-    test_df=test_df.drop(columns=[test_df.columns[0]], errors='ignore')
-    
+#
+test_labels=test_df['label'].to_numpy()
 test_labels=test_labels.reshape(test_labels.shape[0],1)
 
+test_df=test_df.drop(columns=('label'))
 val_df = pd.read_csv("data_small/val.csv",index_col=0)
-
-if 'label' in val_df.columns:
-    val_labels=val_df['label'].to_numpy()
-    val_df = val_df.drop(columns=['label'], errors='ignore')
-elif 'labels' in val_df.columns:
-    val_labels=val_df['labels'].to_numpy()
-    val_df = val_df.drop(columns=['labels'], errors='ignore')
-else:
-    col_to_use = list(set(val_df.columns) - set(train_df.columns))
-    if col_to_use:
-        val_labels = val_df[col_to_use[0]].to_numpy()
-        val_df = val_df.drop(columns=[col_to_use[0]], errors='ignore')
-    else:
-        val_labels = val_df.iloc[:, 0].to_numpy()
-        val_df = val_df.drop(columns=[val_df.columns[0]], errors='ignore')
-    
+#
+val_labels=val_df['label'].to_numpy()
 val_labels=val_labels.reshape(val_labels.shape[0],1)
 
+val_df = val_df.drop(columns=('label'))
 vocab=np.append(train_labels,val_labels)
-
+#print(vocab.shape)
 vocab=np.unique(vocab)
 vocab=vocab.reshape(vocab.shape[0],1)
 print(vocab.shape)
@@ -124,7 +60,7 @@ train_df
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 train_arr=train_df.to_numpy()
 train_arr=torch.from_numpy(train_arr)
 test_arr=test_df.to_numpy()
@@ -156,7 +92,7 @@ test_labels=test_labels.to(torch.float32)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 class myDataset(Dataset):
     def __init__(self, array,labels):
         self.array = array.to(device)
@@ -179,50 +115,88 @@ class myDataset(Dataset):
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 customDataset=myDataset(train_arr,train_labels)
 train_dataloader = DataLoader(customDataset, batch_size=64,shuffle=True, num_workers=0)
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-#trial torch model
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# === BEFORE (original) ===
+# #trial torch model
+# class AnswerModel(torch.nn.Module):
+# 
+#     def __init__(self):
+#         super(AnswerModel, self).__init__()
+#         
+#         self.norm0 = torch.nn.LayerNorm(1536).to(device)
+#         self.dropout0 = torch.nn.Dropout(0.5).to(device)
+#         self.linear1 = torch.nn.Linear(1536, 512).to(device)
+#         #check layer norm
+#         self.norm1 = torch.nn.LayerNorm(512).to(device)
+#         self.dropout1 = torch.nn.Dropout(0.5).to(device)
+#         
+#         self.activation = torch.nn.ReLU().to(device)
+#         
+#         self.linear2 = torch.nn.Linear(512 , 6294).to(device)
+#         
+#         self.aux = torch.nn.Linear(512,4).to(device)
+#         self.dropout1 = torch.nn.Dropout(0.5).to(device)
+#         self.gate = torch.nn.Linear(4, 6294).to(device)
+#         self.sigmoid=torch.nn.Sigmoid().to(device)
+#         
+#         
+#     def forward(self, x):
+#         x = self.norm0(x).to(device)
+#         x = self.dropout0(x).to(device)
+#         
+#         x= self.linear1(x).to(device)
+#         x = self.dropout1(x).to(device)
+#         
+#         xaux =self.aux(x).to(device)
+#         xaux =self.gate(xaux).to(device)
+#         vqa = self.linear2(x).to(device)
+#         out = vqa * self.sigmoid(xaux)
+#         return out,xaux
+# model= AnswerModel().to(device)
+# print(model)
+
+# === AFTER (edited) ===
 class AnswerModel(torch.nn.Module):
 
     def __init__(self):
         super(AnswerModel, self).__init__()
-        
+
         self.norm0 = torch.nn.LayerNorm(1536).to(device)
         self.dropout0 = torch.nn.Dropout(0.5).to(device)
         self.linear1 = torch.nn.Linear(1536, 512).to(device)
-        #check layer norm
+
         self.norm1 = torch.nn.LayerNorm(512).to(device)
         self.dropout1 = torch.nn.Dropout(0.5).to(device)
-        
+
         self.activation = torch.nn.ReLU().to(device)
-        
+
         self.linear2 = torch.nn.Linear(512 , 6294).to(device)
-        
-        self.aux = torch.nn.Linear(512,4).to(device)
-        self.dropout1 = torch.nn.Dropout(0.5).to(device)
-        self.gate = torch.nn.Linear(4, 6294).to(device)
+
+        self.aux = torch.nn.Linear(512, 6294).to(device)
+        self.gate = torch.nn.Linear(6294, 6294).to(device)
         self.sigmoid=torch.nn.Sigmoid().to(device)
-        
-        
+
+
     def forward(self, x):
         x = self.norm0(x).to(device)
         x = self.dropout0(x).to(device)
-        
+
         x= self.linear1(x).to(device)
         x = self.dropout1(x).to(device)
-        
+
         xaux =self.aux(x).to(device)
         xaux =self.gate(xaux).to(device)
         vqa = self.linear2(x).to(device)
@@ -233,50 +207,89 @@ print(model)
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-#1 epoch
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# === BEFORE (original) ===
+# #1 epoch
+# def run_model(model,dataloader, optimizer,train = True ):
+#     if train:
+#         model.train()
+#   
+#     pred = []
+#     True_labels = []
+#     loss = torch.nn.CrossEntropyLoss()
+#     #loss_aux = torch.nn.CrossEntropyLoss()
+#     total_loss = 0
+#     for (data, label) in dataloader: 
+#         
+#         data=data.to(device)
+#         label=label.to(device)
+#         #print("!!!!!!!!!!!!!!PLS!!!!!!!!!!!!!!!!")
+#         #print(next(model.parameters()).is_cuda)
+#         #print("!!!!!!!!!!!!!!!DATALOCATION!!!!!!!!!!!!!!!!!")
+#         #print(data.device)
+#         optimizer.zero_grad()
+#         output,out_aux = model(data)
+#         output=output.type(torch.FloatTensor).to(device)
+#         out_aux=out_aux.type(torch.FloatTensor).to(device)
+#         #print("output shape is,",output.shape)
+#         #print("label shape is,",label.shape)
+#    
+#         loss_ = loss(output, label).to(device)
+#         loss_aux=loss(out_aux,label).to(device)
+#         mod_loss = loss_+loss_aux 
+#         mod_loss.backward()
+#         total_loss+=mod_loss.item()
+#         
+#         optimizer.step()
+#         pred.append(output)
+#         True_labels.append(label)
+#         #print("total loss",total_loss)
+#         
+#     return pred ,True_labels, total_loss/len(dataloader)
+
+# === AFTER (edited) ===
 def run_model(model,dataloader, optimizer,train = True ):
     if train:
         model.train()
-  
+
     pred = []
     True_labels = []
-    loss = torch.nn.CrossEntropyLoss()
-    #loss_aux = torch.nn.CrossEntropyLoss()
+    loss = torch.nn.BCEWithLogitsLoss()
+
     total_loss = 0
-    for (data, label) in dataloader: 
-        
+    for (data, label) in dataloader:
+
         data=data.to(device)
         label=label.to(device)
-        #print("!!!!!!!!!!!!!!PLS!!!!!!!!!!!!!!!!")
-        #print(next(model.parameters()).is_cuda)
-        #print("!!!!!!!!!!!!!!!DATALOCATION!!!!!!!!!!!!!!!!!")
-        #print(data.device)
+
+
+
+
         optimizer.zero_grad()
         output,out_aux = model(data)
         output=output.type(torch.FloatTensor).to(device)
         out_aux=out_aux.type(torch.FloatTensor).to(device)
-        #print("output shape is,",output.shape)
-        #print("label shape is,",label.shape)
-   
+
+
+
         loss_ = loss(output, label).to(device)
         loss_aux=loss(out_aux,label).to(device)
-        mod_loss = loss_+loss_aux 
+        mod_loss = loss_+loss_aux
         mod_loss.backward()
         total_loss+=mod_loss.item()
-        
+
         optimizer.step()
         pred.append(output)
         True_labels.append(label)
-        #print("total loss",total_loss)
-        
+
+
     return pred ,True_labels, total_loss/len(dataloader)
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 9}
 epoch = 2 #150
 
 optimizer = torch.optim.Adam(model.parameters(), 0.001, weight_decay=.01)
@@ -300,4 +313,3 @@ for e in range(epoch):
     print("training accuracy is ",correct/len(pred)*1.0)
   # calculate acc, f1 score, recall ......
     print(loss)
-    

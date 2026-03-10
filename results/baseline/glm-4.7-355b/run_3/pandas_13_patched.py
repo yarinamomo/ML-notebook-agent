@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
@@ -27,50 +27,35 @@ from sklearn.metrics import mean_absolute_error,mean_squared_error,r2_score
 
 import matplotlib.pyplot as plt
 
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 df = pd.read_csv('data/car data.csv')
 df.head()
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # 删除重复数据
 df.drop_duplicates(inplace = True)
 df.duplicated().sum()  # 检查是否已删除
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# # 一种转换方法
-# dfm = DataFrameMapper([(['Year'],StandardScaler()),
-#                        (['Selling_Price'],None),
-#                        (['Driven_kms'],MinMaxScaler()),
-#                        ('Owner',None),
-#                        (['Car_Name'],OneHotEncoder()),
-#                        (['Fuel_Type'],OneHotEncoder()),
-#                        (['Selling_type'],OneHotEncoder()),
-#                        (['Transmission'],OneHotEncoder()),
-#                        (['Present_Price'],MinMaxScaler())
-#                       ],df_out=True)
-# transformed = dfm.fit_transform(df)
-
-# === AFTER (edited) ===
-dfm = DataFrameMapper([('Year',StandardScaler()),
-                       ('Selling_Price',None),
-                       ('Driven_kms',MinMaxScaler()),
+# 一种转换方法
+dfm = DataFrameMapper([(['Year'],StandardScaler()),
+                       (['Selling_Price'],None),
+                       (['Driven_kms'],MinMaxScaler()),
                        ('Owner',None),
-                       ('Car_Name',OneHotEncoder()),
-                       ('Fuel_Type',OneHotEncoder()),
-                       ('Selling_type',OneHotEncoder()),
-                       ('Transmission',OneHotEncoder()),
-                       ('Present_Price',MinMaxScaler())
+                       (['Car_Name'],OneHotEncoder()),
+                       (['Fuel_Type'],OneHotEncoder()),
+                       (['Selling_type'],OneHotEncoder()),
+                       (['Transmission'],OneHotEncoder()),
+                       (['Present_Price'],MinMaxScaler())
                       ],df_out=True)
 transformed = dfm.fit_transform(df)
 
@@ -185,20 +170,46 @@ rfr_gs_y_predict = rfr_gs.predict(X_2_test)
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
-# 表格方式
-model_dict = {'X_train': [gbr, gbr_gs, rfr, rfr_gs],
-              'X_2_train': [gbr2, rfr2]}
+# === BEFORE (original) ===
+# # 表格方式
+# model_dict = {'X_train': [gbr, gbr_gs, rfr, rfr_gs],
+#               'X_2_train': [gbr2, rfr2]}
+# 
+# for key in model_dict:
+#     f_list = []
+#     for model in model_dict[key]:
+#         feature_importance = model.feature_importances_
+#         f_list.append(feature_importance)
+#     
+#     fearture_names = X_train.columns.tolist() if key == 'X_train' else X_2_train.columns.tolist()
+#     f_index = ['gbr', 'gbr_gs', 'rfr', 'rfr_gs'] if key == 'X_train' else ['gbr2','rfr2']
+#     
+#     feature_df = pd.DataFrame(np.array(f_list), columns=fearture_names, index=f_index)
+#     display(feature_df)
 
-for key in model_dict:
-    f_list = []
-    for model in model_dict[key]:
-        feature_importance = model.feature_importances_
-        f_list.append(feature_importance)
-    
-    fearture_names = X_train.columns.tolist() if key == 'X_train' else X_2_train.columns.tolist()
-    f_index = ['gbr', 'gbr_gs', 'rfr', 'rfr_gs'] if key == 'X_train' else ['gbr2','rfr2']
-    
-    feature_df = pd.DataFrame(np.array(f_list), columns=fearture_names, index=f_index)
-    display(feature_df)
+# === AFTER (edited) ===
+# Process X_train models separately (gbr, rfr)
+f_list_xtrain = []
+for model in [gbr, rfr]:
+    feature_importance = model.feature_importances_
+    f_list_xtrain.append(feature_importance)
+
+fearture_names_xtrain = X_train.columns.tolist()
+f_index_xtrain = ['gbr', 'rfr']
+
+feature_df_xtrain = pd.DataFrame(np.array(f_list_xtrain), columns=fearture_names_xtrain, index=f_index_xtrain)
+display(feature_df_xtrain)
+
+# Process X_2_train models separately (gbr2, rfr2, gbr_gs, rfr_gs)
+f_list_x2train = []
+for model in [gbr2, rfr2, gbr_gs, rfr_gs]:
+    feature_importance = model.feature_importances_
+    f_list_x2train.append(feature_importance)
+
+fearture_names_x2train = X_2_train.columns.tolist()
+f_index_x2train = ['gbr2', 'rfr2', 'gbr_gs', 'rfr_gs']
+
+feature_df_x2train = pd.DataFrame(np.array(f_list_x2train), columns=fearture_names_x2train, index=f_index_x2train)
+display(feature_df_x2train)

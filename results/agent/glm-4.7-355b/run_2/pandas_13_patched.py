@@ -27,7 +27,6 @@ from sklearn.metrics import mean_absolute_error,mean_squared_error,r2_score
 
 import matplotlib.pyplot as plt
 
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
@@ -192,7 +191,7 @@ rfr_gs_y_predict = rfr_gs.predict(X_2_test)
 
 # === AFTER (edited) ===
 model_dict = {'X_train': [gbr, rfr],
-              'X_2_train': [gbr2, rfr2, gbr_gs, rfr_gs]}
+              'X_2_train': [gbr_gs, gbr2, rfr_gs, rfr2]}
 
 for key in model_dict:
     f_list = []
@@ -201,7 +200,7 @@ for key in model_dict:
         f_list.append(feature_importance)
 
     fearture_names = X_train.columns.tolist() if key == 'X_train' else X_2_train.columns.tolist()
-    f_index = ['gbr', 'rfr'] if key == 'X_train' else ['gbr2','rfr2','gbr_gs','rfr_gs']
+    f_index = ['gbr', 'rfr'] if key == 'X_train' else ['gbr_gs', 'gbr2', 'rfr_gs', 'rfr2']
 
     feature_df = pd.DataFrame(np.array(f_list), columns=fearture_names, index=f_index)
     display(feature_df)

@@ -24,14 +24,9 @@ cat_feat = ['Gender', 'Driving_License', 'Previously_Insured', 'Vehicle_Age_lt_1
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train['Gender'] = train['Gender'].map( {'Female': 0, 'Male': 1} ).astype(int)
-
-# === AFTER (edited) ===
-if 'Gender' in train.columns:
-    train['Gender'] = train['Gender'].map( {'Female': 0, 'Male': 1} ).astype(int)
+train['Gender'] = train['Gender'].map( {'Female': 0, 'Male': 1} ).astype(int)
 
 #%%
 # --- [CELL 4]: ---
@@ -42,7 +37,7 @@ train=pd.get_dummies(train,drop_first=True)
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 train=train.rename(columns={"Vehicle_Age_< 1 Year": "Vehicle_Age_lt_1_Year", "Vehicle_Age_> 2 Years": "Vehicle_Age_gt_2_Years"})
 train['Vehicle_Age_lt_1_Year']=train['Vehicle_Age_lt_1_Year'].astype('int')
 train['Vehicle_Age_gt_2_Years']=train['Vehicle_Age_gt_2_Years'].astype('int')
@@ -51,7 +46,7 @@ train['Vehicle_Damage_Yes']=train['Vehicle_Damage_Yes'].astype('int')
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler, RobustScaler
 ss = StandardScaler()
 train[num_feat] = ss.fit_transform(train[num_feat])
@@ -63,20 +58,20 @@ train[['Annual_Premium']] = mm.fit_transform(train[['Annual_Premium']])
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 train=train.drop('id',axis=1)
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 for column in cat_feat:
     train[column] = train[column].astype('str')
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 test['Gender'] = test['Gender'].map( {'Female': 0, 'Male': 1} ).astype(int)
 test=pd.get_dummies(test,drop_first=True)
 test=test.rename(columns={"Vehicle_Age_< 1 Year": "Vehicle_Age_lt_1_Year", "Vehicle_Age_> 2 Years": "Vehicle_Age_gt_2_Years"})
@@ -87,7 +82,7 @@ test['Vehicle_Damage_Yes']=test['Vehicle_Damage_Yes'].astype('int')
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler, RobustScaler
 ss = StandardScaler()
 test[num_feat] = ss.fit_transform(test[num_feat])
@@ -99,14 +94,14 @@ test[['Annual_Premium']] = mm.fit_transform(test[['Annual_Premium']])
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 for column in cat_feat:
     test[column] = test[column].astype('str')
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 from sklearn.model_selection import train_test_split
 
 train_target=train['Response']
@@ -116,15 +111,21 @@ x_train,x_test,y_train,y_test = train_test_split(train,train_target, random_stat
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 test=test.drop('id',axis=1)
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-# didn't work in original one also
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# === BEFORE (original) ===
+# # didn't work in original one also
+# 
+# for column in cat_feat:
+#     x_train[column] = x_train[column].astype('int')
+#     x_test[column] = x_test[column].astype('int')
 
+# === AFTER (edited) ===
 for column in cat_feat:
-    x_train[column] = x_train[column].astype('int')
-    x_test[column] = x_test[column].astype('int')
+    x_train[column] = x_train[column].astype(float).astype(int)
+    x_test[column] = x_test[column].astype(float).astype(int)

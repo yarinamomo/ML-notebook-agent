@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -15,70 +15,40 @@ from sklearn.metrics import accuracy_score
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train=pd.read_csv('data/train.csv')
-
-# === AFTER (edited) ===
-# Create sample training data with expected columns
-np.random.seed(42)
-train = pd.DataFrame({
-    'id': range(100),
-    'gravity': np.random.uniform(1.020, 1.040, 100),
-    'ph': np.random.uniform(5.0, 8.0, 100),
-    'osmo': np.random.uniform(100, 1000, 100),
-    'cond': np.random.uniform(100, 1000, 100),
-    'urea': np.random.uniform(100, 500, 100),
-    'calc': np.random.uniform(1, 10, 100),
-    'target': np.random.randint(0, 2, 100)
-})
+# cell_state: unchanged
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+train=pd.read_csv('data/train.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# test  = pd.read_csv('data/test.csv')
-
-# === AFTER (edited) ===
-# Create sample test data with expected columns
-np.random.seed(43)
-test = pd.DataFrame({
-    'id': range(100, 200),
-    'gravity': np.random.uniform(1.020, 1.040, 100),
-    'ph': np.random.uniform(5.0, 8.0, 100),
-    'osmo': np.random.uniform(100, 1000, 100),
-    'cond': np.random.uniform(100, 1000, 100),
-    'urea': np.random.uniform(100, 500, 100),
-    'calc': np.random.uniform(1, 10, 100)
-})
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+test  = pd.read_csv('data/test.csv')
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 train=train.drop(columns=['id'])
-
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 train = train[train['gravity']<1.036]
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 train = train[train['ph']<7.1]
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # fig = sm.qqplot(train['gravity'],line=45,fit=True)
 
 # === AFTER (edited) ===
-fig = sm.qqplot(train['gravity'], line='45', fit=True)
+fig = sm.qqplot(train['gravity'],line='45',fit=True)

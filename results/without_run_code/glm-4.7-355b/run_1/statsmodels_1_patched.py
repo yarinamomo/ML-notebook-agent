@@ -19,7 +19,6 @@ from sklearn.metrics import accuracy_score
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 train=pd.read_csv('data/train.csv')
 
-
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
@@ -28,40 +27,21 @@ test  = pd.read_csv('data/test.csv')
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train=train.drop(columns=['id'])
-
-# === AFTER (edited) ===
-train=train.drop(columns=['id'], errors='ignore')
-print("Columns in train data:", train.columns.tolist())
+train=train.drop(columns=['id'])
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# train = train[train['gravity']<1.036]
-
-# === AFTER (edited) ===
-if 'gravity' in train.columns:
-    train = train[train['gravity']<1.036]
-else:
-    print("Warning: 'gravity' column not found in data")
+train = train[train['gravity']<1.036]
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# train = train[train['ph']<7.1]
-
-# === AFTER (edited) ===
-if 'ph' in train.columns:
-    train = train[train['ph']<7.1]
-else:
-    print("Warning: 'ph' column not found in data")
+train = train[train['ph']<7.1]
 
 #%%
 # --- [CELL 6]: ---
@@ -71,7 +51,4 @@ else:
 # fig = sm.qqplot(train['gravity'],line=45,fit=True)
 
 # === AFTER (edited) ===
-if 'gravity' in train.columns:
-    fig = sm.qqplot(train['gravity'],line=45,fit=True)
-else:
-    print("Warning: 'gravity' column not found in data - cannot create QQ plot")
+fig = sm.qqplot(train['gravity'],line='45',fit=True)

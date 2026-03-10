@@ -1,30 +1,6 @@
 # --- [CELL 0]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# import pandas as pd
-# import numpy as np
-# import matplotlib.pyplot as plt
-# import xgboost as xgb
-# import seaborn as sns
-# from statsmodels.tsa.arima.model import ARIMA
-# from statsmodels.tsa.statespace.sarimax import SARIMAX
-# from statsmodels.tsa.stattools import adfuller
-# from sklearn.model_selection import train_test_split
-# from sklearn.metrics import mean_squared_error
-# from sklearn.model_selection import GridSearchCV
-# from statsmodels.tsa.seasonal import seasonal_decompose
-# from matplotlib.ticker import MultipleLocator
-# # from fbprophet import Prophet
-# 
-# train_csv_path = "data/train.csv"
-# train = pd.read_csv(train_csv_path)
-# 
-# test_csv_path = "data/test.csv"
-# test = pd.read_csv(test_csv_path)
-# 
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -38,55 +14,18 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV
 from statsmodels.tsa.seasonal import seasonal_decompose
 from matplotlib.ticker import MultipleLocator
+# from fbprophet import Prophet
 
+train_csv_path = "data/train.csv"
+train = pd.read_csv(train_csv_path)
 
-# Generate synthetic data since actual CSV files are not available
-# Create a time series with daily frequency from 2013-01-01 to 2017-12-31
-np.random.seed(42)
-date_range = pd.date_range(start='2013-01-01', end='2017-12-31', freq='D')
-n_days = len(date_range)
-
-# Create multi-store, multi-item data
-stores = list(range(1, 11))  # 10 stores
-items = list(range(1, 51))   # 50 items
-
-data = []
-for store in stores:
-    for item in items:
-        # Generate sales with trend, seasonality, and noise
-        base_sales = 10 + (item * 2) + (store * 5)
-        trend = np.arange(n_days) * 0.01
-        seasonal = 5 * np.sin(2 * np.pi * np.arange(n_days) / 365.25)
-        weekly = 3 * np.sin(2 * np.pi * np.arange(n_days) / 7)
-        noise = np.random.normal(0, 5, n_days)
-        sales = base_sales + trend + seasonal + weekly + noise
-        sales = np.maximum(sales, 0)  # Ensure non-negative sales
-        
-        for i, date in enumerate(date_range):
-            data.append({
-                'date': date,
-                'store': store,
-                'item': item,
-                'sales': sales[i]
-            })
-
-train = pd.DataFrame(data)
-
-# Create test data (last 90 days of 2017)
-test = train[train['date'] >= '2017-10-01'].copy()
-# Remove sales from test as that's what we'd predict
-test = test.drop('sales', axis=1)
-
-print(f"Train data shape: {train.shape}")
-print(f"Test data shape: {test.shape}")
-print(f"\nTrain data columns: {train.columns.tolist()}")
-print(f"\nFirst few rows of train data:")
-print(train.head())
+test_csv_path = "data/test.csv"
+test = pd.read_csv(test_csv_path)
 
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 train['date'] = pd.to_datetime(train['date'])
 train['day'] = train['date'].dt.day
 train['month'] = train['date'].dt.month
@@ -121,28 +60,26 @@ train['sales_lag_365'] = train['sales'].shift(365)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # Filter for a specific store-item combination, say store 1 and item 1
 train_subset = train[(train['store'] == 8) & (train['item'] == 20)]
 train_subset.set_index('date', inplace=True)
 train_subset.index.freq = 'D'
 train_subset.head()
 
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 sarima_data = train_subset[['sales']]
 
 print(sarima_data.index)
 sarima_data.head()
 
-
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # Data Splitting
 train_end_date = '2017-09-30'
 pred_start_date = '2017-10-01'
@@ -177,7 +114,7 @@ print(f'RMSE: {rmse}')
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 residuals = y_val - y_pred
 plt.figure(figsize=(12, 6))
 plt.plot(residuals.index, residuals, label='Residuals')
@@ -190,7 +127,7 @@ plt.show()
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # === BEFORE (original) ===
 # from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 # 
@@ -209,9 +146,9 @@ plt.show()
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 plt.figure(figsize=(12, 6))
-plot_acf(residuals, lags=45, title='ACF of Residuals')
+plot_acf(residuals, lags=30, title='ACF of Residuals')
 plt.show()
 
 plt.figure(figsize=(12, 6))
-plot_pacf(residuals, lags=45, title='PACF of Residuals')
+plot_pacf(residuals, lags=30, title='PACF of Residuals')
 plt.show()

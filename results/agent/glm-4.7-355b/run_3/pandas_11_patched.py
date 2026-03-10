@@ -1,8 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-
-
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 import tensorflow as tf
@@ -37,43 +35,11 @@ from sklearn.model_selection import KFold, StratifiedKFold
 import warnings
 warnings.filterwarnings("ignore")
 
-
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/creditcard.csv')
-# df.head()
-
-# === AFTER (edited) ===
-# Generate synthetic credit card fraud detection data
-# The actual data file appears to be stored in Git LFS and is not accessible
-# Creating synthetic data that matches the expected structure
-
-np.random.seed(42)
-n_samples = 10000
-
-# Generate synthetic features V1-V28 (typical in credit card fraud datasets)
-v_features = np.random.randn(n_samples, 28)
-v_columns = [f'V{i}' for i in range(1, 29)]
-
-# Generate Time column (seconds from first transaction)
-time = np.random.randint(0, 172800, n_samples)  # 48 hours worth of data
-
-# Generate Amount column (transaction amounts)
-amount = np.random.exponential(scale=100, size=n_samples)
-
-# Generate Class column (0: legitimate, 1: fraudulent) - highly imbalanced
-class_labels = np.random.choice([0, 1], size=n_samples, p=[0.992, 0.008])
-
-# Create DataFrame
-df = pd.DataFrame(v_features, columns=v_columns)
-df['Time'] = time
-df['Amount'] = amount
-df['Class'] = class_labels
-
+df = pd.read_csv('data/creditcard.csv')
 df.head()
 
 #%%
@@ -125,16 +91,11 @@ plt.figure()
 fig, ax = plt.subplots(8,4,figsize=(16,28))
 
 for feature in var:
-    # Skip non-numeric columns that can't be plotted
-    if feature not in ['Class']:
-        i += 1
-        try:
-            plt.subplot(8,4,i)
-            sns.kdeplot(t0[feature], bw=0.5,label="Class = 0");
-            sns.kdeplot(t1[feature], bw=0.5,label="Class = 1");
-            plt.xlabel(feature, fontsize=12)
-            locs, labels = plt.xticks()
-            plt.tick_params(axis='both', which='major', labelsize=12)
-        except:
-            pass
+    i += 1
+    plt.subplot(8,4,i)
+    sns.kdeplot(t0[feature], bw=0.5,label="Class = 0");
+    sns.kdeplot(t1[feature], bw=0.5,label="Class = 1");
+    plt.xlabel(feature, fontsize=12)
+    locs, labels = plt.xticks()
+    plt.tick_params(axis='both', which='major', labelsize=12)
 plt.show();

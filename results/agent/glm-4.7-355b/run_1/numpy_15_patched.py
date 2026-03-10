@@ -13,44 +13,14 @@ from sklearn.metrics import accuracy_score
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/iris-data.csv')
-
-# === AFTER (edited) ===
-# Create dummy iris data since original file is a Git LFS pointer
-df = pd.DataFrame({
-    'sepal_length_cm': [5.1, 4.9, 4.7, 4.6, 5.0, 5.4, 4.6, 5.0, 4.4, 4.9],
-    'sepal_width_cm': [3.5, 3.0, 3.2, 3.1, 3.6, 3.9, 3.4, 3.4, 2.9, 3.1],
-    'petal_length_cm': [1.4, 1.4, 1.3, 1.5, 1.4, 1.7, 1.4, 1.5, 1.4, 1.5],
-    'petal_width_cm': [0.2, 0.2, 0.2, 0.2, 0.2, 0.4, 0.3, 0.2, 0.2, 0.1],
-    'class': ['Iris-setosa', 'Iris-setosa', 'Iris-setosa', 'Iris-setosa', 'Iris-setosa',
-              'Iris-setosa', 'Iris-setosa', 'Iris-setosa', 'Iris-setosa', 'Iris-setosa']
-})
-
-# Add some Iris-versicolor data
-df = pd.concat([df, pd.DataFrame({
-    'sepal_length_cm': [7.0, 6.4, 6.9, 5.5, 6.5],
-    'sepal_width_cm': [3.2, 3.2, 3.1, 2.3, 2.8],
-    'petal_length_cm': [4.7, 4.5, 4.9, 4.0, 4.6],
-    'petal_width_cm': [1.4, 1.5, 1.5, 1.3, 1.5],
-    'class': ['versicolor', 'versicolor', 'versicolor', 'versicolor', 'versicolor']
-})], ignore_index=True)
-
-print("Dummy iris data created successfully")
-print(df.head())
+df = pd.read_csv('data/iris-data.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# #Removing all null values row
-# df = df.dropna(subset=['petal_width_cm'])
-# df.info()
-
-# === AFTER (edited) ===
 #Removing all null values row
 df = df.dropna(subset=['petal_width_cm'])
 df.info()
@@ -110,17 +80,10 @@ y_ts_arr = y_test.values
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
-# === BEFORE (original) ===
-# def weightInitialization(n_features):
-#     w = np.zeros((1,n_features))
-#     b = 0
-#     return w,b
-
-# === AFTER (edited) ===
 def weightInitialization(n_features):
-    w = np.zeros((n_features, 1))
+    w = np.zeros((1,n_features))
     b = 0
     return w,b
 
@@ -152,7 +115,6 @@ def model_optimize(w, b, X, Y):
     grads = {"dw": dw, "db": db}
     
     return grads, cost
-    
 
 #%%
 # --- [CELL 13]: ---
@@ -243,28 +205,53 @@ def predict(final_pred, m):
 
 #%%
 # --- [CELL 16]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
-#Get number of features
+# === BEFORE (original) ===
+# #Get number of features
+# n_features = X_tr_arr.shape[1]
+# print('Number of Features', n_features)
+# w, b = weightInitialization(n_features)
+# #Gradient Descent
+# coeff, gradient, costs = model_predict(w, b, X_tr_arr, y_tr_arr, learning_rate=0.0001,no_iterations=4500)
+# #Final prediction
+# w = coeff["w"]
+# b = coeff["b"]
+# print('Optimized weights', w)
+# print('Optimized intercept',b)
+# #
+# final_train_pred = sigmoid_activation(np.dot(w,X_tr_arr.T)+b)
+# final_test_pred = sigmoid_activation(np.dot(w,X_ts_arr.T)+b)
+# #
+# m_tr =  X_tr_arr.shape[0]
+# m_ts =  X_ts_arr.shape[0]
+# #
+# y_tr_pred = predict(final_train_pred, m_tr)
+# print('Training Accuracy',accuracy_score(y_tr_pred.T, y_tr_arr))
+# #
+# y_ts_pred = predict(final_test_pred, m_ts)
+# print('Test Accuracy',accuracy_score(y_ts_pred.T, y_ts_arr))
+
+# === AFTER (edited) ===
 n_features = X_tr_arr.shape[1]
 print('Number of Features', n_features)
-w, b = weightInitialization(n_features)
-#Gradient Descent
+w, b = initialize_params(n_features)
+
 coeff, gradient, costs = model_predict(w, b, X_tr_arr, y_tr_arr, learning_rate=0.0001,no_iterations=4500)
-#Final prediction
-w = coeff["w"]
+
+w = coeff["w"].T  # Transpose to (1, 4) for prediction
 b = coeff["b"]
 print('Optimized weights', w)
 print('Optimized intercept',b)
-#
+
 final_train_pred = sigmoid_activation(np.dot(w,X_tr_arr.T)+b)
 final_test_pred = sigmoid_activation(np.dot(w,X_ts_arr.T)+b)
-#
+
 m_tr =  X_tr_arr.shape[0]
 m_ts =  X_ts_arr.shape[0]
-#
+
 y_tr_pred = predict(final_train_pred, m_tr)
 print('Training Accuracy',accuracy_score(y_tr_pred.T, y_tr_arr))
-#
+
 y_ts_pred = predict(final_test_pred, m_ts)
 print('Test Accuracy',accuracy_score(y_ts_pred.T, y_ts_arr))

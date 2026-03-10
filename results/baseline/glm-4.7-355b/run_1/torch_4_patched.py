@@ -27,30 +27,15 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# from gensim.models.word2vec import Word2Vec
-# 
-# num_features = 10 #100  # 词向量维度
-# num_workers = 8
-# 
-# # train_df = pd.read_csv('data/train_set.csv.zip', sep='\t')
-# train_df = pd.read_csv('data/train_set.csv.zip', sep='\t', nrows=5000)
-# train_text = list(map(lambda x:list(x.split()), train_df.iloc[:, 1]))
-# model = Word2Vec(train_text, workers=num_workers, vector_size=num_features)
-# model.init_sims(replace=True)
-# 
-# model.wv.save_word2vec_format('data/word2vec.txt', binary=False)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 from gensim.models.word2vec import Word2Vec
 
-num_features = 10
+num_features = 10 #100  # 词向量维度
 num_workers = 8
 
-
-train_df = pd.read_csv('data/train_set.csv', sep='\t', nrows=5000)
+# train_df = pd.read_csv('data/train_set.csv.zip', sep='\t')
+train_df = pd.read_csv('data/train_set.csv.zip', sep='\t', nrows=5000)
 train_text = list(map(lambda x:list(x.split()), train_df.iloc[:, 1]))
 model = Word2Vec(train_text, workers=num_workers, vector_size=num_features)
 model.init_sims(replace=True)
@@ -60,7 +45,7 @@ model.wv.save_word2vec_format('data/word2vec.txt', binary=False)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 from collections import Counter
 from transformers import BasicTokenizer
 
@@ -155,12 +140,52 @@ class Vocab():
         return len(self._id2label)
     
 vocab = Vocab(train_df)
-            
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# === BEFORE (original) ===
+# import torch.nn as nn
+# import torch.nn.functional as F
+# 
+# class Attention(nn.Module):
+#     '''Scaled Dot-Product Attention'''
+#     def __init__(self, hidden_size):
+#         super(Attention, self).__init__()
+#         self.weight = nn.Parameter(torch.Tensor(hidden_size, hidden_size))
+#         self.weight.data.normal_(mean=0.0, std=0.05)
+#         
+#         self.bias = nn.Parameter(torch.Tensor(hidden_size))
+#         b = np.zeros(hidden_size, dtype=np.float32)
+#         self.bias.data.copy_(torch.from_numpy(b))
+#         
+#         self.query = nn.Parameter(torch.Tensor(hidden_size))
+#         self.query.data.normal_(mean=0.0, std=0.05)
+#         
+#     def forward(self, batch_hidden, batch_masks):
+#         # batch_hidden: batch_size x len x hidden_size (2 * hidden_size of lstm)
+#         # batch_masks: batch_size x len
+#         
+#         # broadcast机制
+#         key = torch.matmul(batch_hidden, self.weight) + self.bias  # b x len x hidden
+#         
+#         outputs = torch.matmul(key, self.query)  # b x len
+#         
+#         # 填充一个很小的负数，softmax后就会变为0
+#         masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32)) 
+#         
+#         attn_scores = F.softmax(masked_outputs, dim=1)  # b x len
+#         
+#         # 经过softmax后可能存在nan，因此将这些位置都变为0
+#         masked_attn_scores = attn_scores.masked_fill((1 - batch_masks).bool(), 0.0)
+#         
+#         # 矩阵批量乘法（batch matrix-matrix product）函数
+#         batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)  # b x hidden
+#         
+#         return batch_outputs, attn_scores
+
+# === AFTER (edited) ===
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -168,43 +193,43 @@ class Attention(nn.Module):
     '''Scaled Dot-Product Attention'''
     def __init__(self, hidden_size):
         super(Attention, self).__init__()
-        self.weight = nn.Parameter(torch.Tensor(hidden_size, hidden_size))
+        # Use torch.empty() explicitly instead of torch.Tensor(size)
+        self.weight = nn.Parameter(torch.empty(hidden_size, hidden_size))
         self.weight.data.normal_(mean=0.0, std=0.05)
-        
-        self.bias = nn.Parameter(torch.Tensor(hidden_size))
-        b = np.zeros(hidden_size, dtype=np.float32)
-        self.bias.data.copy_(torch.from_numpy(b))
-        
-        self.query = nn.Parameter(torch.Tensor(hidden_size))
+
+        # Use torch.zeros() explicitly for bias initialization
+        self.bias = nn.Parameter(torch.zeros(hidden_size, dtype=torch.float32))
+
+        # Use torch.empty() explicitly instead of torch.Tensor(size)
+        self.query = nn.Parameter(torch.empty(hidden_size))
         self.query.data.normal_(mean=0.0, std=0.05)
-        
+
     def forward(self, batch_hidden, batch_masks):
-        # batch_hidden: batch_size x len x hidden_size (2 * hidden_size of lstm)
-        # batch_masks: batch_size x len
-        
-        # broadcast机制
-        key = torch.matmul(batch_hidden, self.weight) + self.bias  # b x len x hidden
-        
-        outputs = torch.matmul(key, self.query)  # b x len
-        
-        # 填充一个很小的负数，softmax后就会变为0
-        masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32)) 
-        
-        attn_scores = F.softmax(masked_outputs, dim=1)  # b x len
-        
-        # 经过softmax后可能存在nan，因此将这些位置都变为0
+
+
+
+
+        key = torch.matmul(batch_hidden, self.weight) + self.bias
+
+        outputs = torch.matmul(key, self.query)
+
+
+        masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32))
+
+        attn_scores = F.softmax(masked_outputs, dim=1)
+
+
         masked_attn_scores = attn_scores.masked_fill((1 - batch_masks).bool(), 0.0)
-        
-        # 矩阵批量乘法（batch matrix-matrix product）函数
-        batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)  # b x hidden
-        
+
+
+        batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)
+
         return batch_outputs, attn_scores
-    
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 word2vec_path = 'data/word2vec.txt'
 dropout = 0.15
 word_hidden_size = 128
@@ -256,11 +281,10 @@ class WordLSTMEncoder(nn.Module):
             
         return hiddens
 
-
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 sent_hidden_size = 256
 sent_num_layers = 2
 
@@ -289,7 +313,7 @@ class SentEncoder(nn.Module):
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 8}
 class Model(nn.Module):
     def __init__(self, vocab):
         super(Model, self).__init__()

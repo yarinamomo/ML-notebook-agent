@@ -27,35 +27,11 @@ from sklearn.metrics import mean_absolute_error,mean_squared_error,r2_score
 
 import matplotlib.pyplot as plt
 
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/car data.csv')
-# df.head()
-
-# === AFTER (edited) ===
-# Create sample data since the actual file is a Git LFS pointer and doesn't contain data
-import numpy as np
-
-# Create a sample dataframe with the expected columns
-np.random.seed(42)
-n_samples = 100
-
-df = pd.DataFrame({
-    'Year': np.random.randint(2010, 2020, n_samples),
-    'Selling_Price': np.random.uniform(3, 35, n_samples),
-    'Present_Price': np.random.uniform(2, 30, n_samples),
-    'Driven_kms': np.random.randint(1000, 80000, n_samples),
-    'Fuel_Type': np.random.choice(['Petrol', 'Diesel', 'CNG'], n_samples),
-    'Selling_type': np.random.choice(['Dealer', 'Individual'], n_samples),
-    'Transmission': np.random.choice(['Manual', 'Automatic'], n_samples),
-    'Owner': np.random.choice([0, 1, 2], n_samples),
-    'Car_Name': np.random.choice(['ritz', 'swift', 'wagon r', 'alto', 'city', 'corolla', 'rt4', 'camry'], n_samples)
-})
-
+df = pd.read_csv('data/car data.csv')
 df.head()
 
 #%%
@@ -68,23 +44,9 @@ df.duplicated().sum()  # 检查是否已删除
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# # 一种转换方法
-# dfm = DataFrameMapper([(['Year'],StandardScaler()),
-#                        (['Selling_Price'],None),
-#                        (['Driven_kms'],MinMaxScaler()),
-#                        ('Owner',None),
-#                        (['Car_Name'],OneHotEncoder()),
-#                        (['Fuel_Type'],OneHotEncoder()),
-#                        (['Selling_type'],OneHotEncoder()),
-#                        (['Transmission'],OneHotEncoder()),
-#                        (['Present_Price'],MinMaxScaler())
-#                       ],df_out=True)
-# transformed = dfm.fit_transform(df)
-
-# === AFTER (edited) ===
+# 一种转换方法
 dfm = DataFrameMapper([(['Year'],StandardScaler()),
                        (['Selling_Price'],None),
                        (['Driven_kms'],MinMaxScaler()),
@@ -99,24 +61,10 @@ transformed = dfm.fit_transform(df)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# # 第二种 不处理数值
-# # 文本类型的处理上不再使用独热编码
-# dfm2 = DataFrameMapper([(['Year'],None),
-#                         (['Selling_Price'],None),
-#                         (['Driven_kms'],None),
-#                         ('Owner',None),
-#                         (['Car_Name'],LabelEncoder()),
-#                         (['Fuel_Type'],LabelEncoder()),
-#                         (['Selling_type'],LabelEncoder()),
-#                         (['Transmission'],LabelEncoder()),
-#                         (['Present_Price'],None)
-#                        ],df_out=True)
-# transformed2 = dfm2.fit_transform(df)
-
-# === AFTER (edited) ===
+# 第二种 不处理数值
+# 文本类型的处理上不再使用独热编码
 dfm2 = DataFrameMapper([(['Year'],None),
                         (['Selling_Price'],None),
                         (['Driven_kms'],None),
@@ -243,7 +191,7 @@ rfr_gs_y_predict = rfr_gs.predict(X_2_test)
 
 # === AFTER (edited) ===
 model_dict = {'X_train': [gbr, rfr],
-              'X_2_train': [gbr2, gbr_gs, rfr2, rfr_gs]}
+              'X_2_train': [gbr_gs, gbr2, rfr_gs, rfr2]}
 
 for key in model_dict:
     f_list = []
@@ -252,7 +200,7 @@ for key in model_dict:
         f_list.append(feature_importance)
 
     fearture_names = X_train.columns.tolist() if key == 'X_train' else X_2_train.columns.tolist()
-    f_index = ['gbr', 'rfr'] if key == 'X_train' else ['gbr2', 'gbr_gs', 'rfr2', 'rfr_gs']
+    f_index = ['gbr', 'rfr'] if key == 'X_train' else ['gbr_gs', 'gbr2', 'rfr_gs', 'rfr2']
 
     feature_df = pd.DataFrame(np.array(f_list), columns=fearture_names, index=f_index)
     display(feature_df)

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # from datasets import load_dataset
 # import torch
@@ -26,45 +26,28 @@ dataset2 = load_dataset("multi_nli", trust_remote_code=True)
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 torch.manual_seed = 555
 # torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# # !wget http://nlp.stanford.edu/data/glove.6B.zip
-# # !unzip glove*.zip
-# 
-# glv = dict()
-# glv_size = 50
-# with open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:
-#     for line in fp:
-#         word, *vec = line.split()
-#         glv[word] = torch.tensor(list(map(float , vec)))
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# !wget http://nlp.stanford.edu/data/glove.6B.zip
+# !unzip glove*.zip
 
-# === AFTER (edited) ===
 glv = dict()
 glv_size = 50
 with open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:
     for line in fp:
-        parts = line.split()
-        # Skip lines that don't have enough elements or start with invalid characters
-        if len(parts) < glv_size + 1:
-            continue
-        word, *vec = parts
-        # Try to parse the vector, skip if it fails
-        try:
-            glv[word] = torch.tensor(list(map(float, vec)))
-        except (ValueError, TypeError):
-            continue
+        word, *vec = line.split()
+        glv[word] = torch.tensor(list(map(float , vec)))
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 embed = torch.zeros((len(glv)+2 , glv_size))
 ind =2
 
@@ -82,14 +65,14 @@ for x in glv:
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 sentences = dataset['train']['sentence']
 testsent = dataset['test']['sentence']
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 stop_words = set(stopwords.words('english'))
@@ -106,11 +89,10 @@ def tokenize(sentences):
         tokens.append([w for w in word_tokens if not w.lower() in stop_words and len(w)>2])
     return tokens , max_len
 
-
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 def build_vocab(sentences):
     vocab = set()
     X = list()
@@ -129,13 +111,10 @@ def build_vocab(sentences):
     
     return vocab ,int2text , text2int
 
-    
-
-
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 def build_input(sentences ,word2index, text2int):
     X =[]
     Y =[]
@@ -157,7 +136,7 @@ def build_input(sentences ,word2index, text2int):
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 def build_input_test(sentences ,word2index):
     X =[]
     for tokens in sentences:
@@ -173,7 +152,7 @@ def build_input_test(sentences ,word2index):
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 tokens , max_len = tokenize(sentences)
 vocab , int2text , text2int = build_vocab(tokens)
 X,Y = build_input(tokens , word2index,text2int)
@@ -181,7 +160,7 @@ X,Y = build_input(tokens , word2index,text2int)
 #%%
 # --- [CELL 10]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # === BEFORE (original) ===
 # from torch.utils.data import Dataset, DataLoader
 # class  data(Dataset):
@@ -217,52 +196,50 @@ class  data(Dataset):
     def __len__(self):
         return len(self.X)
     def __getitem__(self , index):
+        dif = self.mx - len(self.X[index])
         _x = self.X[index]
         _y = self.Y[index]
-        
-        # Create padded tensors
-        dif = self.mx - len(_x)
         if dif > 0:
             a = torch.zeros(self.mx)
             b = torch.zeros(self.mx)
             a[:len(_x)] = _x
             b[:len(_y)] = _y
             _x = a
-            _y = torch.zeros((self.mx, self.vocab_size))
-            _y[torch.arange(self.mx), b.long()] = 1
+            _y = torch.zeros( ( self.mx, self.vocab_size))
+            _y [torch.arange(self.mx),b.long()] =1
         else:
-            # Truncate if too long
-            a = _x[:self.mx]
-            b = _y[:self.mx]
+            a = torch.zeros(self.mx)
+            b = torch.zeros(self.mx)
+            a[:len(_x)] = _x
+            b[:len(_y)] = _y
             _x = a
-            _y = torch.zeros((self.mx, self.vocab_size))
-            _y[torch.arange(self.mx), b.long()] = 1
-        
-        return _x.long(), _y.long()
+            _y = torch.zeros( ( self.mx, self.vocab_size))
+            _y [torch.arange(self.mx),b.long()] =1
+        return _x.long() , _y.long()
 
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 elmotrain = data(X,Y, len(vocab),40)
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 traindata = DataLoader(elmotrain, batch_size=32 )
 
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
 tokens_test,ml = tokenize(testsent)
 X_test = build_input_test(tokens_test , word2index)
 
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
 class elmo(torch.nn.Module):
     def __init__(self , vocab_size,dim ,classes = 2, embed = None):
         super(elmo, self).__init__()
@@ -323,22 +300,18 @@ class elmo(torch.nn.Module):
           return x
         else:
             return encoding
-        
-        
 
 #%%
 # --- [CELL 15]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
-
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
 model = elmo(len(vocab) , glv_size)
 optimizer = torch.optim.Adam(model.parameters())
-
 
 #%%
 # --- [CELL 16]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
 def train( traindata,epochs = 5):
 
     for x in range(epochs):
@@ -364,11 +337,10 @@ def train( traindata,epochs = 5):
         print("time taken : {}".format(time.time()  - st))
         print("")
 
-
 #%%
 # --- [CELL 17]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
 ylb =[0 if x<0.5 else 1 for x in dataset['train']['label']]
 yl = dataset['train']['label']
 
@@ -378,7 +350,7 @@ yt = dataset['test']['label']
 #%%
 # --- [CELL 18]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 24}
 # === BEFORE (original) ===
 # class sentimentdata(Dataset):
 #     def __init__(self , X,Y ):
@@ -399,34 +371,32 @@ yt = dataset['test']['label']
 
 # === AFTER (edited) ===
 class sentimentdata(Dataset):
-    def __init__(self , X,Y, max_len=40):
+    def __init__(self , X,Y, padsz = 40):
         self.X = X
         self.Y = Y
-        self.max_len = max_len
+        self.padsz = padsz
     def __len__(self):
         return len(self.X)
     def __getitem__(self , index):
         x = self.X[index]
-        y = self.Y[index]
+        y= self.Y[index]
+        x_len = len(x)
         
-        # Pad x to max_len as long type (required for embedding)
-        if len(x) < self.max_len:
-            padded_x = torch.zeros(self.max_len, dtype=torch.long)
-            padded_x[:len(x)] = x
-            x = padded_x
+        if x_len <= self.padsz:
+            padded_x = torch.zeros(self.padsz)
+            padded_x[:x_len] = x
         else:
-            x = x[:self.max_len]
+            padded_x = x[:self.padsz]
         
-        return x, y
+        return padded_x.long(), y
+st_train_loader = sentimentdata(X ,ylb)
+st_test_loader = sentimentdata(X ,ytb)
 
-st_train_loader = sentimentdata(X, ylb)
-st_test_loader = sentimentdata(X, ytb)
-
-st_train = DataLoader(st_train_loader, batch_size=5)
-st_test = DataLoader(st_test_loader, batch_size=5)
+st_train = DataLoader(st_train_loader, batch_size=5 )
+st_test= DataLoader(st_test_loader, batch_size=5 )
 
 #%%
 # --- [CELL 19]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 22}
-train(st_train,2) 
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 23}
+train(st_train,2)

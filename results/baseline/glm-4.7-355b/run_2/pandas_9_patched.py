@@ -28,45 +28,21 @@ df = pd.read_csv("data/IMDb_All_Genres_etf_clean1.csv")
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # clean_df = df[(df["Total Gross (millions)"]!="$0.00M") & (df["Total Gross (millions)"]!="Gross Unkown")].copy()
 # clean_df = clean_df[clean_df['Censor']!="(Banned)"]
 
 # === AFTER (edited) ===
-# First, let's see what columns are actually in the dataframe
-print("Columns in df:", df.columns.tolist())
-
-# Try to find similar column names
-print("\nColumns containing 'Gross':", [col for col in df.columns if 'gross' in col.lower() or 'Gross' in col])
-print("Columns containing 'Censor':", [col for col in df.columns if 'censor' in col.lower() or 'Censor' in col])
-
-# Print first few rows to understand the data structure
-print("\nFirst few rows:")
-print(df.head())
-
-# Now attempt filtering with the actual column names we found
-# Based on typical column naming, let's try some common variations
+# Strip whitespace from column names to handle any formatting issues
 clean_df = df.copy()
+clean_df.columns = clean_df.columns.str.strip()
 
-# Try different possible column names for Total Gross
-gross_col = None
-for col in df.columns:
-    if 'gross' in col.lower():
-        gross_col = col
-        break
+# Print available columns to check the exact column names
+print("Available columns:", clean_df.columns.tolist())
 
-# Try different possible column names for Censor
-censor_col = None
-for col in df.columns:
-    if 'censor' in col.lower():
-        censor_col = col
-        break
+# Filter the data - using the corrected column names
+clean_df = clean_df[(clean_df["Total Gross (millions)"]!="$0.00M") & (clean_df["Total Gross (millions)"]!="Gross Unkown")].copy()
+clean_df = clean_df[clean_df['Censor']!="(Banned)"]
 
-if gross_col and censor_col:
-    clean_df = clean_df[(clean_df[gross_col] != "$0.00M") & (clean_df[gross_col] != "Gross Unkown")]
-    clean_df = clean_df[clean_df[censor_col] != "(Banned)"]
-    print(f"\nFiltered successfully using columns: '{gross_col}' and '{censor_col}'")
-    print(f"Rows after filtering: {len(clean_df)}")
-else:
-    print(f"\nCould not find matching columns. Gross column: {gross_col}, Censor column: {censor_col}")
+print(f"Filtered dataframe has {len(clean_df)} rows")

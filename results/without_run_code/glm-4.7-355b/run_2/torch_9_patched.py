@@ -28,7 +28,6 @@ def show_tensor_images(image_tensor, num_images=25, size=(1, 28, 28)):
 # --- [CELL 1]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-
 class Generator(nn.Module):
     '''
     Generator Class
@@ -209,92 +208,15 @@ beta_1 = 0.5
 beta_2 = 0.999
 device = 'cpu'
 
-from PIL import Image, UnidentifiedImageError
-import numpy as np
-
-def safe_loader_with_opencv(path):
-    """
-    Try to load image using multiple methods, first trying PIL, then OpenCV if available.
-    Falls back to creating a dummy image if all methods fail.
-    """
-    # Method 1: Try PIL
-    try:
-        with open(path, 'rb') as f:
-            img = Image.open(f)
-            img_rgb = img.convert('RGB')
-            img_rgb.load()
-            return img_rgb
-    except (UnidentifiedImageError, IOError, OSError, AttributeError) as e:
-        pass
-    
-    # Method 2: Try OpenCV
-    try:
-        import cv2
-        img = cv2.imread(path)
-        if img is not None:
-            # Convert BGR to RGB
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            return Image.fromarray(img)
-    except ImportError:
-        pass
-    except Exception as e:
-        pass
-    
-    # Method 3: Try to read as bytes and create a dummy image
-    try:
-        # Read file to get size info
-        with open(path, 'rb') as f:
-            data = f.read()
-        # Create a small dummy image as fallback - this at least won't crash
-        # Use file path to create deterministic patterns
-        hash_val = hash(path) % 256
-        dummy_array = np.ones((32, 32, 3), dtype=np.uint8) * hash_val
-        return Image.fromarray(dummy_array)
-    except Exception as e:
-        # Ultimate fallback - create a patterned image
-        dummy_array = np.random.randint(0, 256, (32, 32, 3), dtype=np.uint8)
-        return Image.fromarray(dummy_array)
 
 train_transform = transforms.Compose([
+    transforms.Resize((64, 64)),
     transforms.ToTensor(),
-    # Changed normalization for RGB images (3 channels)
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
 ])
 
-# Create a dataset that accepts all images and uses our robust loader
-class SafeImageFolder(datasets.ImageFolder):
-    def __init__(self, root, transform=None, loader=None):
-        # Initialize parent with default loader
-        super().__init__(root, transform=transform)
-        # Override the loader to use our safe version
-        if loader is not None:
-            self.loader = loader
-        else:
-            self.loader = safe_loader_with_opencv
-        
-        # Accept all samples - we'll handle errors during loading
-        print(f"Dataset initialized with {len(self.samples)} images")
-
-train_dataset = SafeImageFolder(root='data_small/eyes data', transform=train_transform, loader=safe_loader_with_opencv)
-
-# Check if we have any samples
-if len(train_dataset) == 0:
-    raise ValueError("No images found in the dataset!")
-
-# Try loading a few samples to verify
-print(f"Attempting to load first 3 samples...")
-success_count = 0
-for i in range(min(3, len(train_dataset))):
-    try:
-        img, label = train_dataset[i]
-        print(f"  Sample {i}: shape={img.shape}, label={label}")
-        success_count += 1
-    except Exception as e:
-        print(f"  Sample {i}: Failed to load - {e}")
-
-print(f"Successfully loaded {success_count}/{min(3, len(train_dataset))} test samples")
-
-dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=min(batch_size, len(train_dataset)), shuffle=True)
+train_dataset = datasets.ImageFolder(root='data_small/eyes data', transform=train_transform)
+dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
 
 #%%
 # --- [CELL 4]: ---
@@ -310,81 +232,8 @@ def show_batch(dl):
         show_images(images)
         break
 
-
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 show_batch(dataloader)
-
-#%%
-# --- [CELL 6]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-gen = Generator(z_dim).to(device)
-gen_opt = torch.optim.Adam(gen.parameters(), lr=lr, betas=(beta_1, beta_2))
-disc = Discriminator().to(device) 
-disc_opt = torch.optim.Adam(disc.parameters(), lr=lr, betas=(beta_1, beta_2))
-
-# You initialize the weights to the normal distribution
-# with mean 0 and standard deviation 0.02
-def weights_init(m):
-    if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
-        torch.nn.init.normal_(m.weight, 0.0, 0.02)
-    if isinstance(m, nn.BatchNorm2d):
-        torch.nn.init.normal_(m.weight, 0.0, 0.02)
-        torch.nn.init.constant_(m.bias, 0)
-gen = gen.apply(weights_init)
-disc = disc.apply(weights_init)
-
-#%%
-# --- [CELL 7]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-n_epochs = 2 #20
-cur_step = 0
-mean_generator_loss = 0
-mean_discriminator_loss = 0
-for epoch in range(n_epochs):
-    # Dataloader returns the batches
-    for real, _ in tqdm(dataloader):
-        cur_batch_size = len(real)
-        real = real.to(device)
-
-        ## Update discriminator ##
-        disc_opt.zero_grad()
-        fake_noise = get_noise(cur_batch_size, z_dim, device=device)
-        fake = gen(fake_noise)
-        disc_fake_pred = disc(fake.detach())
-        disc_fake_loss = criterion(disc_fake_pred, torch.zeros_like(disc_fake_pred))
-        disc_real_pred = disc(real)
-        disc_real_loss = criterion(disc_real_pred, torch.ones_like(disc_real_pred))
-        disc_loss = (disc_fake_loss + disc_real_loss) / 2
-
-        # Keep track of the average discriminator loss
-        mean_discriminator_loss += disc_loss.item() / display_step
-        # Update gradients
-        disc_loss.backward(retain_graph=True)
-        # Update optimizer
-        disc_opt.step()
-
-        ## Update generator ##
-        gen_opt.zero_grad()
-        fake_noise_2 = get_noise(cur_batch_size, z_dim, device=device)
-        fake_2 = gen(fake_noise_2)
-        disc_fake_pred = disc(fake_2)
-        gen_loss = criterion(disc_fake_pred, torch.ones_like(disc_fake_pred))
-        gen_loss.backward()
-        gen_opt.step()
-
-        # Keep track of the average generator loss
-        mean_generator_loss += gen_loss.item() / display_step
-
-        ## Visualization code ##
-        if cur_step % display_step == 0 and cur_step > 0:
-            print(f"Step {cur_step}: Generator loss: {mean_generator_loss}, discriminator loss: {mean_discriminator_loss}")
-            show_tensor_images(fake)
-            show_tensor_images(real)
-            mean_generator_loss = 0
-            mean_discriminator_loss = 0
-        cur_step += 1

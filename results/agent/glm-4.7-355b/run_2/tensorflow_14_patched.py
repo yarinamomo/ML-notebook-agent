@@ -13,61 +13,16 @@ import tensorflow.keras.backend as K
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# # Define VGG_FACE_MODEL architecture
-# model = Sequential()
-# model.add(ZeroPadding2D((1,1),input_shape=(224,224, 3)))
-# model.add(Convolution2D(64, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(64, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))	
-# model.add(Convolution2D(128, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(128, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(Convolution2D(4096, (7, 7), activation='relu'))
-# model.add(Dropout(0.5))
-# model.add(Convolution2D(4096, (1, 1), activation='relu'))
-# model.add(Dropout(0.5))
-# model.add(Convolution2D(2622, (1, 1)))
-# model.add(Flatten())
-# model.add(Activation('softmax'))
-# 
-# # Load VGG Face model weights
-# model.load_weights('data/vgg_face_weights.h5')
-
-# === AFTER (edited) ===
+# Define VGG_FACE_MODEL architecture
 model = Sequential()
 model.add(ZeroPadding2D((1,1),input_shape=(224,224, 3)))
 model.add(Convolution2D(64, (3, 3), activation='relu'))
 model.add(ZeroPadding2D((1,1)))
 model.add(Convolution2D(64, (3, 3), activation='relu'))
 model.add(MaxPooling2D((2,2), strides=(2,2)))
-model.add(ZeroPadding2D((1,1)))
+model.add(ZeroPadding2D((1,1)))	
 model.add(Convolution2D(128, (3, 3), activation='relu'))
 model.add(ZeroPadding2D((1,1)))
 model.add(Convolution2D(128, (3, 3), activation='relu'))
@@ -101,9 +56,8 @@ model.add(Convolution2D(2622, (1, 1)))
 model.add(Flatten())
 model.add(Activation('softmax'))
 
-
-# Skip loading weights due to corrupted file
-# model.load_weights('data/vgg_face_weights.h5')
+# Load VGG Face model weights
+model.load_weights('data/vgg_face_weights.h5')
 
 #%%
 # --- [CELL 2]: ---
@@ -169,7 +123,9 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 # === AFTER (edited) ===
 main_data_directory = 'data/train-data-imgs'
 
+
 input_size = (224, 224)
+
 
 train_datagen = ImageDataGenerator(
     rescale=1.0/255,
@@ -189,44 +145,32 @@ train_generator = train_datagen.flow_from_directory(
 )
 
 
-# Remove classes parameter as it's invalid with include_top=False
-base_model = VGG16(weights='imagenet', include_top=False)
+base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
 
 
 for layer in base_model.layers:
     layer.trainable = False
 
 
-# Note: base_model with include_top=False has no output for loss calculation, 
-# so we need to add a prediction head for training
-from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
-from tensorflow.keras.models import Model
-
 x = base_model.output
-x = GlobalAveragePooling2D()(x)
-x = Dense(256, activation='relu')(x)
-# Check if train_generator has num_classes attribute
-num_classes = getattr(train_generator, 'num_classes', 7)
-predictions = Dense(num_classes, activation='softmax')(x)
+x = Flatten()(x)
+x = Dense(4096, activation='relu')(x)
+x = Dropout(0.5)(x)
+x = Dense(4096, activation='relu')(x)
+x = Dropout(0.5)(x)
+predictions = Dense(7, activation='softmax')(x)
 
-model_for_training = Model(inputs=base_model.input, outputs=predictions)
-
-# Compile the complete model, not just the base_model
-model_for_training.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+model = tf.keras.Model(inputs=base_model.input, outputs=predictions)
 
 
-# Skip loading corrupted weights
-# base_model.load_weights('data/vgg_face_weights.h5')
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-# Skip training since the image files in the dataset appear to be corrupted
-# Uncomment the training code below when valid image data is available
-"""
-model_for_training.fit(
+
+model.fit(
     train_generator,
     steps_per_epoch=len(train_generator),
     epochs=10,
 )
 
-model_for_training.save('data/updated_vgg_face_weights.h5')
-"""
-print("Model architecture set up successfully. Training skipped due to corrupted image data.")
+
+model.save('data/updated_vgg_face_weights.h5')

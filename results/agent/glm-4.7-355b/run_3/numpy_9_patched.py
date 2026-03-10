@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # import os
 # import numpy as np
@@ -77,41 +77,9 @@ import numpy as np
 import torch
 
 
-def load_file_safely(filepath):
-    """Try loading a numpy file, with multiple fallback strategies."""
-    try:
-        return np.load(filepath)
-    except ValueError as e:
-        if "allow_pickle" in str(e):
-            try:
-                return np.load(filepath, allow_pickle=True)
-            except Exception:
-                pass
-        # If allow_pickle fails or ValueError is not about pickle, fall back
-        raise
-    except Exception:
-        raise
-
-
 def load_loss_weights_from_directory(directory_path):
-    if not os.path.exists(directory_path):
-        print(f"Warning: Directory {directory_path} does not exist. Using dummy weights.")
-        return np.array([0.5, 0.5, 0.5], dtype=np.float32)
-    
     weight_files = [filename for filename in os.listdir(directory_path) if filename.endswith(".npy")]
-    if not weight_files:
-        print(f"Warning: No .npy files found in {directory_path}. Using dummy weights.")
-        return np.array([0.5, 0.5, 0.5], dtype=np.float32)
-    
-    weights = []
-    for filename in weight_files:
-        filepath = os.path.join(directory_path, filename)
-        try:
-            weights.append(load_file_safely(filepath))
-        except Exception as e:
-            print(f"Warning: Could not load {filename}: {e}. Using fallback value.")
-            weights.append(np.array([0.5], dtype=np.float32))
-    
+    weights = [np.atleast_1d(np.load(os.path.join(directory_path, filename))) for filename in weight_files]
     return np.concatenate(weights)
 
 
@@ -122,12 +90,9 @@ def save_weights_to_directory(directory_path, weights):
 
 regression_weights_directory = 'data/adjusted_survival_2019'
 
-print(f"Testing directory existence for: {regression_weights_directory}")
-print(f"Directory exists: {os.path.exists(regression_weights_directory)}")
 
 regression_weight = load_loss_weights_from_directory(regression_weights_directory)
 
-print(f"Successfully loaded weights: {regression_weight}")
 
 num_epochs_update_regression = 5
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -163,7 +128,6 @@ for epoch in range(num_epochs_update_regression):
 
 
     save_weights_to_directory(output_directory, regression_weight.cpu().numpy())
-
 
 
 

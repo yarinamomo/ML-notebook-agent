@@ -25,7 +25,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import cv2
 
-
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
@@ -35,21 +34,9 @@ from tensorflow.keras.preprocessing.image import load_img
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# labels_all = pd.read_csv('data_small/New folder/labels.csv')
-# print(labels_all.shape)
-# labels_all.head()
-
-# === AFTER (edited) ===
-# Create mock data since labels.csv contains LFS metadata instead of actual data
-data = {
-    'id': ['dog1', 'dog2', 'dog3', 'dog4', 'dog5', 'dog6', 'dog7', 'dog8', 'dog9', 'dog10'],
-    'breed': ['scottish_deerhound', 'maltese_dog', 'afghan_hound', 'entlebucher', 'bernese_mountain_dog',
-              'scottish_deerhound', 'maltese_dog', 'afghan_hound', 'entlebucher', 'bernese_mountain_dog']
-}
-labels_all = pd.DataFrame(data)
+labels_all = pd.read_csv('data_small/New folder/labels.csv')
 print(labels_all.shape)
 labels_all.head()
 
@@ -71,7 +58,6 @@ train_path = 'data_small/New folder/train'
 
 #reading dataset labels
 train_labels = pd.read_csv('data_small/New folder/labels.csv')
-
 
 #%%
 # --- [CELL 6]: ---

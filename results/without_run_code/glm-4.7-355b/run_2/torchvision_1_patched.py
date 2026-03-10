@@ -39,122 +39,58 @@ for category_name in selected_categories:
         display(Image(filename=random_image_path))
         print("\n" + "="*30 + "\n")  # Separating images with a line
 
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# from torchvision.datasets import ImageFolder
-# import torchvision.transforms as transforms
-# 
-# transformations = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
-# 
-# dataset = ImageFolder(directory_path, transform = transformations)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 from torchvision.datasets import ImageFolder
 import torchvision.transforms as transforms
 
 transformations = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
 
-# Custom loader that handles corrupted images gracefully
-def safe_image_loader(path):
-    from PIL import Image
-    try:
-        with open(path, 'rb') as f:
-            img = Image.open(f)
-            return img.convert('RGB')
-    except Exception as e:
-        raise UnidentifiedImageError(f"Cannot load image: {path}")
-
-dataset = ImageFolder(directory_path, transform=transformations, loader=safe_image_loader)
-print(f"Dataset loaded with {len(dataset)} images (will skip corrupted during iteration).")
+dataset = ImageFolder(directory_path, transform = transformations)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# import matplotlib.pyplot as plt # for reporducing and fixing purposes
-# import torch
-# 
-# def show_images(dataset, num_images=6):
-# 
-#     # Get random indices from the dataset
-#     random_indices = torch.randperm(len(dataset))[:num_images]
-# 
-#     # Create a subplot with the specified number of rows and columns
-#     rows = 1
-#     cols = num_images
-#     fig, axes = plt.subplots(rows, cols, figsize=(15, 3))
-# 
-#     for i, idx in enumerate(random_indices):
-#         # Get the image and label from the dataset
-#         image, label = dataset[idx]
-# 
-#         # Convert the PyTorch tensor to a NumPy array for visualization
-#         image_np = image.permute(1, 2, 0).numpy()
-# 
-#         # Display the image
-#         axes[i].imshow(image_np)
-#         axes[i].set_title(f"Label: {label}")
-# 
-#         # Remove x and y axis ticks
-#         axes[i].axis("off")
-# 
-#     plt.show()
-# 
-# # Call the helper function to display images from the transformed dataset
-# transformed = dataset # fix for reporducing and fixing purposes, undefined variable
-# show_images(transformed)
-
-# === AFTER (edited) ===
-import matplotlib.pyplot as plt
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+import matplotlib.pyplot as plt # for reporducing and fixing purposes
 import torch
 
 def show_images(dataset, num_images=6):
+
+    # Get random indices from the dataset
+    random_indices = torch.randperm(len(dataset))[:num_images]
+
+    # Create a subplot with the specified number of rows and columns
     rows = 1
     cols = num_images
     fig, axes = plt.subplots(rows, cols, figsize=(15, 3))
-    
-    # Get random indices
-    random_indices = torch.randperm(len(dataset))[:num_images * 3]  # Get extra indices to handle corrupted images
-    
-    valid_count = 0
-    idx = 0
-    
-    while valid_count < num_images and idx < len(random_indices):
-        try:
-            image, label = dataset[random_indices[idx]]
-            
-            image_np = image.permute(1, 2, 0).numpy()
-            
-            axes[valid_count].imshow(image_np)
-            axes[valid_count].set_title(f"Label: {label}")
-            axes[valid_count].axis("off")
-            
-            valid_count += 1
-        except Exception as e:
-            # Skip corrupted images
-            pass
-        
-        idx += 1
-    
-    # If we couldn't get enough valid images, hide the extra axes
-    for i in range(valid_count, num_images):
+
+    for i, idx in enumerate(random_indices):
+        # Get the image and label from the dataset
+        image, label = dataset[idx]
+
+        # Convert the PyTorch tensor to a NumPy array for visualization
+        image_np = image.permute(1, 2, 0).numpy()
+
+        # Display the image
+        axes[i].imshow(image_np)
+        axes[i].set_title(f"Label: {label}")
+
+        # Remove x and y axis ticks
         axes[i].axis("off")
-    
+
     plt.show()
 
-
-transformed = dataset
+# Call the helper function to display images from the transformed dataset
+transformed = dataset # fix for reporducing and fixing purposes, undefined variable
 show_images(transformed)
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 from torch.utils.data import random_split
 
 class_mapping = transformed.class_to_idx
@@ -244,11 +180,10 @@ class ResNet(ImageClassificationBase):
 
 model = ResNet()
 
-
 #%%
 # --- [CELL 7]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # === BEFORE (original) ===
 # import torch
 # import torch.nn as nn
@@ -321,7 +256,12 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
+
+
+
+
 resnet_model = models.resnet18(pretrained=True)
+
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(resnet_model.parameters(), lr=0.001, momentum=0.9)
@@ -360,7 +300,6 @@ def evaluate(model, test_dl):
         total = 0
         for inputs, labels in test_dl:
 
-            inputs = inputs.unsqueeze(-1)
             outputs = model(inputs)
 
             _, predicted = torch.max(outputs.data, 1)

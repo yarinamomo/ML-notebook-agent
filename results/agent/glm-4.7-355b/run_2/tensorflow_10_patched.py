@@ -1,81 +1,22 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import tensorflow as tf
 from transformers import TFAutoModel
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# === BEFORE (original) ===
-# import pandas as pd
-# import json
-# df_psytar = pd.read_csv("data/PsyTAR.csv")
-# df_psytar.head(5)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 import pandas as pd
 import json
-
-# Try to read the PsyTAR dataset
-try:
-    df_psytar = pd.read_csv("data/PsyTAR.csv")
-    # Check if this is a valid dataset or just a Git LFS pointer
-    if 'ADR' not in df_psytar.columns or 'sentences' not in df_psytar.columns:
-        raise ValueError("Dataset does not have expected columns")
-except:
-    # Create a mock dataset with the expected structure for demonstration
-    print("Creating mock dataset for demonstration purposes...")
-    import numpy as np
-    
-    # Create some sample sentences
-    adr_sentences = [
-        "The patient experienced severe headaches after taking the medication.",
-        "Nausea and vomiting were reported as side effects.",
-        "The drug caused a serious allergic reaction.",
-        "Severe dizziness occurred shortly after administration.",
-        "The patient developed a rash after treatment.",
-        "Stomach pain and discomfort were common side effects.",
-        "The medication led to blurred vision in some patients.",
-        "Severe fatigue was reported after taking the drug.",
-        "The patient experienced difficulty breathing.",
-        "Heart palpitations were observed as an adverse reaction."
-    ]
-    
-    non_adr_sentences = [
-        "The medication was effective in treating the condition.",
-        "Patients showed significant improvement after treatment.",
-        "The drug was well tolerated by most participants.",
-        "No significant side effects were observed.",
-        "The treatment plan worked as expected.",
-        "Patients reported feeling better after a few days.",
-        "The medication reduced symptoms effectively.",
-        "Good outcomes were observed in the trial.",
-        "The drug performed well in clinical studies.",
-        "Patients were satisfied with the treatment results."
-    ]
-    
-    # Create dataframe by concatenating
-    df_adr = pd.DataFrame({
-        'sentences': adr_sentences * 20,
-        'ADR': [1] * (len(adr_sentences) * 20)
-    })
-    
-    df_non_adr = pd.DataFrame({
-        'sentences': non_adr_sentences * 20,
-        'ADR': [0] * (len(non_adr_sentences) * 20)
-    })
-    
-    df_psytar = pd.concat([df_adr, df_non_adr], ignore_index=True)
-    df_psytar = df_psytar.sample(frac=1).reset_index(drop=True)  # Shuffle
-    
+df_psytar = pd.read_csv("data/PsyTAR.csv")
 df_psytar.head(5)
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # for reproducing and fixing purposes, due to the cadec dataset not found
 # df = pd.concat([df_psytar.iloc[:df_psytar.shape[0]+1], df_cadec])
 df=df_psytar
@@ -83,33 +24,33 @@ df=df_psytar
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 df_1 = df[df['ADR']==1]
 df_0 = df[df['ADR']==0]
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 df_0 = df_0.sample(df_1.shape[0])
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 df = pd.concat([df_1,df_0])
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 from transformers import AutoTokenizer
 tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 def process_data(row):
 
     text = row['sentences']
@@ -130,7 +71,7 @@ def process_data(row):
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 processed_data = []
 
 for i in range(len(df[:1000])):
@@ -139,14 +80,14 @@ for i in range(len(df[:1000])):
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 train_data = df["sentences"]
 train_labels = df['ADR']
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 from sklearn.model_selection import train_test_split
 
 new_df = pd.DataFrame(processed_data)
@@ -160,7 +101,7 @@ train_df, valid_df = train_test_split(
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 import pyarrow as pa
 from datasets import Dataset
 
@@ -170,7 +111,7 @@ valid_hg = Dataset(pa.Table.from_pandas(valid_df))
 #%%
 # --- [CELL 12]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # === BEFORE (original) ===
 # class HuggingFaceLayer(tf.keras.layers.Layer):
 #     def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):
@@ -203,12 +144,12 @@ class HuggingFaceLayer(tf.keras.layers.Layer):
 
     def call(self, inputs):
         outputs = self.model(inputs)
-        return outputs
+        return outputs.pooler_output
 
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 22}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 model_name = 'bert-base-uncased'
 model = tf.keras.Sequential()
 model.add(HuggingFaceLayer(model_name=model_name))
@@ -216,8 +157,39 @@ model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 23}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# === BEFORE (original) ===
+# # Compile and train the model
+# model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+# model.fit(train_data, train_labels, epochs=10)
+
+# === AFTER (edited) ===
+# Prepare data for training - use tokenized inputs
+def prepare_dataset(dataset):
+    input_ids = []
+    attention_mask = []
+    labels = []
+    
+    for item in dataset:
+        input_ids.append(item['input_ids'])
+        attention_mask.append(item['attention_mask'])
+        labels.append(item['label'])
+    
+    return {
+        'input_ids': tf.constant(input_ids),
+        'attention_mask': tf.constant(attention_mask)
+    }, tf.constant(labels)
+
+# Prepare training and validation data
+train_inputs, train_labels = prepare_dataset(train_hg)
+valid_inputs, valid_labels = prepare_dataset(valid_hg)
+
 # Compile and train the model
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-model.fit(train_data, train_labels, epochs=10)
+model.fit(
+    train_inputs,
+    train_labels,
+    validation_data=(valid_inputs, valid_labels),
+    epochs=10
+)

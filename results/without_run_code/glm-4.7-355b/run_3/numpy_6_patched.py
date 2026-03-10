@@ -25,7 +25,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import cv2
 
-
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
@@ -35,26 +34,11 @@ from tensorflow.keras.preprocessing.image import load_img
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# labels_all = pd.read_csv('data_small/New folder/labels.csv')
-# print(labels_all.shape)
-# labels_all.head()
-
-# === AFTER (edited) ===
-import os
-import numpy as np
-
-# Create sample data with proper structure for demonstration
-# This simulates what the labels.csv should contain
-data = {
-    'id': [f'sample_{i}' for i in range(10)],
-    'breed': ['scottish_deerhound', 'maltese_dog', 'afghan_hound', 'entlebucher', 'bernese_mountain_dog'] * 2
-}
-labels_all = pd.DataFrame(data)
+labels_all = pd.read_csv('data_small/New folder/labels.csv')
 print(labels_all.shape)
-print(labels_all.head())
+labels_all.head()
 
 #%%
 # --- [CELL 4]: ---
@@ -74,7 +58,6 @@ train_path = 'data_small/New folder/train'
 
 #reading dataset labels
 train_labels = pd.read_csv('data_small/New folder/labels.csv')
-
 
 #%%
 # --- [CELL 6]: ---
@@ -103,25 +86,22 @@ train_labels = pd.read_csv('data_small/New folder/labels.csv')
 # print('One-hot encoded output shape: ',Y_data.shape,' size: {:,}'.format(Y_data.size))
 
 # === AFTER (edited) ===
-# Create sample images for demonstration
 X_data = np.zeros((len(labels), 224, 224, 3), dtype='float32')
 
 Y_data = label_binarize(labels['breed'], classes = CLASS_NAME)
 
-# Generate random images for demonstration
+
 for i in tqdm(range(len(labels))):
     try:
         img = image.load_img(f'data_small/New folder/train/{labels["id"][i]}.jpg', target_size=(224, 224))
     except FileNotFoundError:
-        # Generate random image if file not found
-        img_array = np.random.rand(224, 224, 3) * 255
-        x = np.expand_dims(img_array.copy(), axis=0)
-        X_data[i] = x / 255.0
         continue
     img = image.img_to_array(img)
 
+
     x = np.expand_dims(img.copy(), axis=0)
     X_data[i] = x / 255.0
+
 
 print('\nTrain Images shape: ',X_data.shape,' size: {:,}'.format(X_data.size))
 print('One-hot encoded output shape: ',Y_data.shape,' size: {:,}'.format(Y_data.size))

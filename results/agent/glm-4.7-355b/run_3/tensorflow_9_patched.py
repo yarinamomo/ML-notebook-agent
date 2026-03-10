@@ -17,17 +17,11 @@ import string
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/train.csv')
-# test_df = pd.read_csv('data/test.csv')
-# df.sample(5)
-
-# === AFTER (edited) ===
 df = pd.read_csv('data/train.csv')
 test_df = pd.read_csv('data/test.csv')
-df.sample(min(5, len(df)))
+df.sample(5)
 
 #%%
 # --- [CELL 2]: ---
@@ -37,143 +31,79 @@ class_names =['Not a disaster', 'Disaster']
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# # word_count
-# df['word_count'] = df['text'].apply(lambda x: len(str(x).split()))
-# 
-# # unique_word_count
-# df['unique_word_count'] = df['text'].apply(lambda x: len(set(str(x).split())))
-# 
-# # stop_word_count
-# df['stop_word_count'] = df['text'].apply(lambda x: len([w for w in str(x).lower().split() if w in STOPWORDS]))
-# 
-# # url_count
-# df['url_count'] = df['text'].apply(lambda x: len([w for w in str(x).lower().split() if 'http' in w or 'https' in w]))
-# 
-# # mean_word_length
-# df['mean_word_length'] = df['text'].apply(lambda x: np.mean([len(w) for w in str(x).split()]))
-# 
-# # char_count
-# df['char_count'] = df['text'].apply(lambda x: len(str(x)))
-# 
-# # punctuation_count
-# df['punctuation_count'] = df['text'].apply(lambda x: len([c for c in str(x) if c in string.punctuation]))
-# 
-# # hashtag_count
-# df['hashtag_count'] = df['text'].apply(lambda x: len([c for c in str(x) if c == '#']))
-# 
-# # mention_count
-# df['mention_count'] = df['text'].apply(lambda x: len([c for c in str(x) if c == '@']))
+# word_count
+df['word_count'] = df['text'].apply(lambda x: len(str(x).split()))
 
-# === AFTER (edited) ===
-# Only apply text analysis if 'text' column exists
-if 'text' in df.columns:
-    df['word_count'] = df['text'].apply(lambda x: len(str(x).split()))
-    df['unique_word_count'] = df['text'].apply(lambda x: len(set(str(x).split())))
-    df['stop_word_count'] = df['text'].apply(lambda x: len([w for w in str(x).lower().split() if w in STOPWORDS]))
-    df['url_count'] = df['text'].apply(lambda x: len([w for w in str(x).lower().split() if 'http' in w or 'https' in w]))
-    df['mean_word_length'] = df['text'].apply(lambda x: np.mean([len(w) for w in str(x).split()]))
-    df['char_count'] = df['text'].apply(lambda x: len(str(x)))
-    df['punctuation_count'] = df['text'].apply(lambda x: len([c for c in str(x) if c in string.punctuation]))
-    df['hashtag_count'] = df['text'].apply(lambda x: len([c for c in str(x) if c == '#']))
-    df['mention_count'] = df['text'].apply(lambda x: len([c for c in str(x) if c == '@']))
-else:
-    print("Skipping text feature extraction - 'text' column not found in DataFrame")
+# unique_word_count
+df['unique_word_count'] = df['text'].apply(lambda x: len(set(str(x).split())))
+
+# stop_word_count
+df['stop_word_count'] = df['text'].apply(lambda x: len([w for w in str(x).lower().split() if w in STOPWORDS]))
+
+# url_count
+df['url_count'] = df['text'].apply(lambda x: len([w for w in str(x).lower().split() if 'http' in w or 'https' in w]))
+
+# mean_word_length
+df['mean_word_length'] = df['text'].apply(lambda x: np.mean([len(w) for w in str(x).split()]))
+
+# char_count
+df['char_count'] = df['text'].apply(lambda x: len(str(x)))
+
+# punctuation_count
+df['punctuation_count'] = df['text'].apply(lambda x: len([c for c in str(x) if c in string.punctuation]))
+
+# hashtag_count
+df['hashtag_count'] = df['text'].apply(lambda x: len([c for c in str(x) if c == '#']))
+
+# mention_count
+df['mention_count'] = df['text'].apply(lambda x: len([c for c in str(x) if c == '@']))
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# ## Truncate some extreme values for better visuals ##
-# df['word_count'].loc[df['word_count']>60] = 60 #truncation for better visuals
-# df['char_count'].loc[df['char_count']>350] = 350 #truncation for better visuals
-# df['punctuation_count'].loc[df['punctuation_count']>10] = 10 #truncation for better visuals
-# 
-# f, axes = plt.subplots(3, 1, figsize=(20,30))
-# sns.boxplot(x='target', y='word_count', data=df, ax=axes[0])
-# axes[0].set_xlabel('Target', fontsize=12)
-# axes[0].set_title("Number of words in each class", fontsize=15)
-# 
-# sns.boxplot(x='target', y='char_count', data=df, ax=axes[1])
-# axes[1].set_xlabel('Target', fontsize=12)
-# axes[1].set_title("Number of characters in each class", fontsize=15)
-# 
-# sns.boxplot(x='target', y='punctuation_count', data=df, ax=axes[2])
-# axes[2].set_xlabel('Target', fontsize=12)
-# #plt.ylabel('Number of punctuations in text', fontsize=12)
-# axes[2].set_title("Number of punctuations in each class", fontsize=15)
+## Truncate some extreme values for better visuals ##
+df['word_count'].loc[df['word_count']>60] = 60 #truncation for better visuals
+df['char_count'].loc[df['char_count']>350] = 350 #truncation for better visuals
+df['punctuation_count'].loc[df['punctuation_count']>10] = 10 #truncation for better visuals
 
-# === AFTER (edited) ===
-# Only cap values and create plots if columns exist
-if 'word_count' in df.columns and 'char_count' in df.columns and 'punctuation_count' in df.columns:
-    df['word_count'].loc[df['word_count']>60] = 60
-    df['char_count'].loc[df['char_count']>350] = 350
-    df['punctuation_count'].loc[df['punctuation_count']>10] = 10
+f, axes = plt.subplots(3, 1, figsize=(20,30))
+sns.boxplot(x='target', y='word_count', data=df, ax=axes[0])
+axes[0].set_xlabel('Target', fontsize=12)
+axes[0].set_title("Number of words in each class", fontsize=15)
 
-    f, axes = plt.subplots(3, 1, figsize=(20,30))
-    sns.boxplot(x='target', y='word_count', data=df, ax=axes[0])
-    axes[0].set_xlabel('Target', fontsize=12)
-    axes[0].set_title("Number of words in each class", fontsize=15)
+sns.boxplot(x='target', y='char_count', data=df, ax=axes[1])
+axes[1].set_xlabel('Target', fontsize=12)
+axes[1].set_title("Number of characters in each class", fontsize=15)
 
-    sns.boxplot(x='target', y='char_count', data=df, ax=axes[1])
-    axes[1].set_xlabel('Target', fontsize=12)
-    axes[1].set_title("Number of characters in each class", fontsize=15)
-
-    sns.boxplot(x='target', y='punctuation_count', data=df, ax=axes[2])
-    axes[2].set_xlabel('Target', fontsize=12)
-
-    axes[2].set_title("Number of punctuations in each class", fontsize=15)
-else:
-    print("Skipping plots - required columns not found")
+sns.boxplot(x='target', y='punctuation_count', data=df, ax=axes[2])
+axes[2].set_xlabel('Target', fontsize=12)
+#plt.ylabel('Number of punctuations in text', fontsize=12)
+axes[2].set_title("Number of punctuations in each class", fontsize=15)
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# df['hashtag_count'].loc[df['hashtag_count']>60] = 60 #truncation for better visuals
-# df['mention_count'].loc[df['mention_count']>60] = 60 #truncation for better visuals
-# 
-# f, axes = plt.subplots(3, 1, figsize=(20,30))
-# 
-# sns.boxplot(x='target', y='hashtag_count', data=df, ax=axes[0])
-# axes[0].set_xlabel('Target', fontsize=12)
-# axes[0].set_title("Number of Hashtags in each class", fontsize=15)
-# 
-# sns.boxplot(x='target', y='mention_count', data=df, ax=axes[1])
-# axes[1].set_xlabel('Target', fontsize=12)
-# axes[1].set_title("Number of Mentions in each class", fontsize=15)
-# 
-# sns.boxplot(x='target', y='url_count', data=df, ax=axes[2])
-# axes[2].set_xlabel('Target', fontsize=12)
-# axes[2].set_title("Number of URLs in each class", fontsize=15)
-# plt.show()
+df['hashtag_count'].loc[df['hashtag_count']>60] = 60 #truncation for better visuals
+df['mention_count'].loc[df['mention_count']>60] = 60 #truncation for better visuals
 
-# === AFTER (edited) ===
-# Only cap values and create plots if columns exist
-if 'hashtag_count' in df.columns and 'mention_count' in df.columns and 'url_count' in df.columns:
-    df['hashtag_count'].loc[df['hashtag_count']>60] = 60
-    df['mention_count'].loc[df['mention_count']>60] = 60
+f, axes = plt.subplots(3, 1, figsize=(20,30))
 
-    f, axes = plt.subplots(3, 1, figsize=(20,30))
+sns.boxplot(x='target', y='hashtag_count', data=df, ax=axes[0])
+axes[0].set_xlabel('Target', fontsize=12)
+axes[0].set_title("Number of Hashtags in each class", fontsize=15)
 
-    sns.boxplot(x='target', y='hashtag_count', data=df, ax=axes[0])
-    axes[0].set_xlabel('Target', fontsize=12)
-    axes[0].set_title("Number of Hashtags in each class", fontsize=15)
+sns.boxplot(x='target', y='mention_count', data=df, ax=axes[1])
+axes[1].set_xlabel('Target', fontsize=12)
+axes[1].set_title("Number of Mentions in each class", fontsize=15)
 
-    sns.boxplot(x='target', y='mention_count', data=df, ax=axes[1])
-    axes[1].set_xlabel('Target', fontsize=12)
-    axes[1].set_title("Number of Mentions in each class", fontsize=15)
-
-    sns.boxplot(x='target', y='url_count', data=df, ax=axes[2])
-    axes[2].set_xlabel('Target', fontsize=12)
-    axes[2].set_title("Number of URLs in each class", fontsize=15)
-    plt.show()
-else:
-    print("Skipping plots - required columns not found")
+sns.boxplot(x='target', y='url_count', data=df, ax=axes[2])
+axes[2].set_xlabel('Target', fontsize=12)
+axes[2].set_title("Number of URLs in each class", fontsize=15)
+plt.show()
 
 #%%
 # --- [CELL 6]: ---
@@ -189,26 +119,14 @@ def remove_punc(text):
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# === BEFORE (original) ===
-# text1 = 'Check out my notebook https://www.kaggle.com/campusx/notebook8223fc1abb'
-# text2 = '!hello *world@ 1'
-# df['text'] = df['text'].apply(remove_url)
-# #df['text'] = df['text'].apply(remove_punc)
-# test_df['text'] = test_df['text'].apply(remove_url)
-# #test_df['text'] = test_df['text'].apply(remove_punc)
-
-# === AFTER (edited) ===
 text1 = 'Check out my notebook https://www.kaggle.com/campusx/notebook8223fc1abb'
 text2 = '!hello *world@ 1'
-
-# Only apply text cleaning if 'text' column exists
-if 'text' in df.columns:
-    df['text'] = df['text'].apply(remove_url)
-
-if 'text' in test_df.columns:
-    test_df['text'] = test_df['text'].apply(remove_url)
+df['text'] = df['text'].apply(remove_url)
+#df['text'] = df['text'].apply(remove_punc)
+test_df['text'] = test_df['text'].apply(remove_url)
+#test_df['text'] = test_df['text'].apply(remove_punc)
 
 #%%
 # --- [CELL 8]: ---
@@ -257,7 +175,6 @@ print(bert_model.config.hidden_size)
 # tf.keras.utils.plot_model(bert_model)
 
 # === AFTER (edited) ===
-import torch
-# Print the BERT model architecture (PyTorch model, not TensorFlow)
+import tensorflow as tf
+# Note: bert_model is a PyTorch model, so we use print() instead of tf.keras.utils.plot_model()
 print(bert_model)
-print(f"\nModel configuration:\n{bert_model.config}")

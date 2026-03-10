@@ -1,64 +1,16 @@
 # --- [CELL 0]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# import pandas
-# import matplotlib.pyplot as plt
-# dataset = pandas.read_csv('data/international-airline-passengers.csv', usecols=[1], engine='python')
-# plt.plot(dataset)
-# plt.show()
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
 import pandas
-import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
-
-# Try to read the actual data file
-try:
-    dataset = pandas.read_csv('data/international-airline-passengers.csv', engine='python', header=0)
-    
-    # Check if this is an LFS pointer file (not real data)
-    if len(dataset) < 10 or dataset.iloc[0, 0].startswith('version https://git-lfs.github.com'):
-        # Create synthetic international airline passengers data
-        # Typical data: monthly passengers from 1949-1960
-        np.random.seed(42)
-        months = pd.date_range(start='1949-01', periods=144, freq='M')
-        # Create a trend with seasonality
-        trend = np.linspace(100, 400, 144)
-        seasonality = 50 * np.sin(np.arange(144) * 2 * np.pi / 12)
-        noise = np.random.normal(0, 20, 144)
-        passengers = trend + seasonality + noise
-        
-        dataset = pandas.DataFrame({'Month': months, 'Passengers': passengers.astype(int)})
-        dataset = dataset.set_index('Month')
-    else:
-        # Read the proper columns if it's real data
-        if 'Passengers' in dataset.columns:
-            dataset = dataset[['Passengers']]
-        else:
-            dataset = dataset.iloc[:, 1:2]  # Use second column for passengers
-            
-except Exception as e:
-    # Fallback: create synthetic data if anything fails
-    print(f"Warning: Using synthetic data due to error: {e}")
-    np.random.seed(42)
-    months = pd.date_range(start='1949-01', periods=144, freq='M')
-    trend = np.linspace(100, 400, 144)
-    seasonality = 50 * np.sin(np.arange(144) * 2 * np.pi / 12)
-    noise = np.random.normal(0, 20, 144)
-    passengers = trend + seasonality + noise
-    
-    dataset = pandas.DataFrame({'Month': months, 'Passengers': passengers.astype(int)})
-    dataset = dataset.set_index('Month')
-
+dataset = pandas.read_csv('data/international-airline-passengers.csv', usecols=[1], engine='python')
 plt.plot(dataset)
 plt.show()
 
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -72,7 +24,7 @@ from sklearn.metrics import mean_squared_error
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # normalize the dataset
 scaler = MinMaxScaler(feature_range=(0, 1))
 dataset = scaler.fit_transform(dataset)
@@ -80,7 +32,7 @@ dataset = scaler.fit_transform(dataset)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 # split into train and test sets
 train_size = int(len(dataset) * 0.67)
 test_size = len(dataset) - train_size
@@ -90,7 +42,7 @@ print(len(train), len(test))
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # convert an array of values into a dataset matrix
 def create_dataset(dataset, look_back=1):
 	dataX, dataY = [], []
@@ -103,7 +55,7 @@ def create_dataset(dataset, look_back=1):
 #%%
 # --- [CELL 5]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # # reshape into X=t and Y=t+1
 # look_back = 12
@@ -156,10 +108,8 @@ testX, testY = create_dataset(test, look_back)
 trainX = np.reshape(trainX, (trainX.shape[0], 1, trainX.shape[1]))
 testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
 
-
 model = Sequential()
-model.add(LSTM(4, input_shape=(1, look_back),return_sequences=True))
-model.add(Dense(1))
+model.add(LSTM(4, input_shape=(1, look_back), return_sequences=True))
 model.add(LSTM(4))
 model.add(Dense(1))
 model.compile(loss='mean_squared_error', optimizer='adam')
@@ -181,11 +131,11 @@ print('Test Score: %.2f RMSE' % (testScore))
 
 trainPredictPlot = np.empty_like(dataset)
 trainPredictPlot[:, :] = np.nan
-trainPredictPlot[look_back:len(trainPredict)+look_back, :] = trainPredict
+trainPredictPlot[look_back:len(trainPredict)+look_back, :] = trainPredict[:, :1]
 
 testPredictPlot = np.empty_like(dataset)
 testPredictPlot[:, :] = np.nan
-testPredictPlot[len(trainPredict)+(look_back*2)+1:len(dataset)-1, :] = testPredict
+testPredictPlot[len(trainPredict)+(look_back*2)+1:len(dataset)-1, :] = testPredict[:, :1]
 
 plt.plot(scaler.inverse_transform(dataset))
 plt.plot(trainPredictPlot)

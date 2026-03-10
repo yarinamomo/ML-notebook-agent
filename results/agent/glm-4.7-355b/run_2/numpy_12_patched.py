@@ -1,26 +1,9 @@
 # --- [CELL 0]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# import pandas
-# import matplotlib.pyplot as plt
-# dataset = pandas.read_csv('data/international-airline-passengers.csv', usecols=[1], engine='python')
-# plt.plot(dataset)
-# plt.show()
-
-# === AFTER (edited) ===
 import pandas
 import matplotlib.pyplot as plt
-import numpy as np
-
-# Create dummy data that mimics international airline passengers pattern
-# This is a simple time series since the actual data file is a Git LFS pointer
-months = 144  # 12 years * 12 months
-t = np.arange(months)
-# Create a simple pattern with trend and seasonality
-dataset = 100 + t * 0.5 + 20 * np.sin(2 * np.pi * t / 12) + np.random.normal(0, 10, months)
-dataset = dataset.reshape(-1, 1)
-
+dataset = pandas.read_csv('data/international-airline-passengers.csv', usecols=[1], engine='python')
 plt.plot(dataset)
 plt.show()
 
@@ -125,10 +108,10 @@ testX, testY = create_dataset(test, look_back)
 trainX = np.reshape(trainX, (trainX.shape[0], 1, trainX.shape[1]))
 testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
 
-
 model = Sequential()
-model.add(LSTM(4, input_shape=(1, look_back)))
+model.add(LSTM(4, input_shape=(1, look_back),return_sequences=True))
 model.add(Dense(1))
+model.add(LSTM(1))
 model.compile(loss='mean_squared_error', optimizer='adam')
 model.fit(trainX, trainY, epochs=10, batch_size=1, verbose=2)
 

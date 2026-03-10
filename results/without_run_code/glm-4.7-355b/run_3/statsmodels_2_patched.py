@@ -1,30 +1,6 @@
 # --- [CELL 0]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# import pandas as pd
-# import numpy as np
-# import matplotlib.pyplot as plt
-# import xgboost as xgb
-# import seaborn as sns
-# from statsmodels.tsa.arima.model import ARIMA
-# from statsmodels.tsa.statespace.sarimax import SARIMAX
-# from statsmodels.tsa.stattools import adfuller
-# from sklearn.model_selection import train_test_split
-# from sklearn.metrics import mean_squared_error
-# from sklearn.model_selection import GridSearchCV
-# from statsmodels.tsa.seasonal import seasonal_decompose
-# from matplotlib.ticker import MultipleLocator
-# # from fbprophet import Prophet
-# 
-# train_csv_path = "data/train.csv"
-# train = pd.read_csv(train_csv_path)
-# 
-# test_csv_path = "data/test.csv"
-# test = pd.read_csv(test_csv_path)
-# 
-
-# === AFTER (edited) ===
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -38,42 +14,13 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV
 from statsmodels.tsa.seasonal import seasonal_decompose
 from matplotlib.ticker import MultipleLocator
+# from fbprophet import Prophet
 
-# Create synthetic data to make the notebook runnable
-# Generate date range from 2017-01-01 to 2017-12-31
-dates = pd.date_range(start='2017-01-01', end='2017-12-31', freq='D')
+train_csv_path = "data/train.csv"
+train = pd.read_csv(train_csv_path)
 
-# Generate data for multiple stores and items
-stores = range(1, 11)  # 10 stores
-items = range(1, 51)   # 50 items
-
-data = []
-for store in stores:
-    for item in items:
-        for date in dates:
-            # Generate synthetic sales data with some patterns
-            base_sales = 50 + store * 2 + item
-            seasonality = 20 * np.sin(2 * np.pi * date.dayofyear / 365)
-            weekly_pattern = 10 * np.sin(2 * np.pi * date.dayofweek / 7)
-            noise = np.random.normal(0, 5)
-            sales = max(0, base_sales + seasonality + weekly_pattern + noise)
-            data.append({
-                'date': date,
-                'store': store,
-                'item': item,
-                'sales': sales
-            })
-
-train = pd.DataFrame(data)
-
-# Create test data (same date range for simplicity)
-test = train.copy()
-
-print("Train DataFrame created successfully")
-print(f"Shape: {train.shape}")
-print(f"Columns: {train.columns.tolist()}")
-print("\nFirst few rows:")
-print(train.head())
+test_csv_path = "data/test.csv"
+test = pd.read_csv(test_csv_path)
 
 #%%
 # --- [CELL 1]: ---
@@ -120,7 +67,6 @@ train_subset.set_index('date', inplace=True)
 train_subset.index.freq = 'D'
 train_subset.head()
 
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
@@ -129,7 +75,6 @@ sarima_data = train_subset[['sales']]
 
 print(sarima_data.index)
 sarima_data.head()
-
 
 #%%
 # --- [CELL 4]: ---
@@ -200,8 +145,6 @@ plt.show()
 # === AFTER (edited) ===
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
-# The residuals series has 92 elements (Oct 1 to Dec 31 = 92 days)
-# For ACF, lags must be < series length; for PACF, lags must be < 50% of series length
 plt.figure(figsize=(12, 6))
 plot_acf(residuals, lags=45, title='ACF of Residuals')
 plt.show()

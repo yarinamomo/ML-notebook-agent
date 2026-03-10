@@ -23,41 +23,11 @@ print(os.listdir("data"))
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# data = pd.read_csv('data/fer2013.csv')
-# #check data shape
-# data.shape
-
-# === AFTER (edited) ===
-# Create mock data following the expected FER2013 dataset format
-# The real dataset should have 'emotion', 'pixels', and 'Usage' columns
-
-import numpy as np
-
-def create_fer_mock_data(n_samples_per_emotion=25):
-    """Create mock data following FER2013 format"""
-    data_list = []
-    emotions = {0: 'Angry', 1: 'Disgust', 2: 'Fear', 3: 'Happy', 4: 'Sad', 5: 'Surprise', 6: 'Neutral'}
-    
-    for emotion_val, emotion_name in emotions.items():
-        for _ in range(n_samples_per_emotion):
-            # Create random pixel values (48x48 = 2304 pixels)
-            pixels = ' '.join([str(np.random.randint(0, 255)) for _ in range(2304)])
-            data_list.append({
-                'emotion': emotion_val,
-                'pixels': pixels,
-                'Usage': np.random.choice(['Training', 'PublicTest', 'PrivateTest'])
-            })
-    
-    return pd.DataFrame(data_list)
-
-data = create_fer_mock_data(n_samples_per_emotion=25)
+data = pd.read_csv('data/fer2013.csv')
+#check data shape
 data.shape
-print("Columns:", data.columns.tolist())
-print("\nFirst few rows:")
-print(data[['emotion']].head(10))
 
 #%%
 # --- [CELL 2]: ---
@@ -77,7 +47,6 @@ data.drop(data[data['emotion'] == 1].index, inplace=True)
 
 # afficher la nouvelle forme du DataFrame
 print(data.shape)
-
 
 #%%
 # --- [CELL 3]: ---
@@ -115,7 +84,7 @@ emotion_counts
 #     plt.imshow(img[0])
 #     plt.title(label) # plt.title(img[1])
 # 
-# plt.show()  
+# plt.show()
 
 # === AFTER (edited) ===
 def row2image(row):
@@ -130,14 +99,13 @@ def row2image(row):
     return image, emotion
 
 plt.figure(0, figsize=(16,10))
-subplot_idx = 1
-for emotion_val in sorted(emotion_map.keys()):
-    face = data[data['emotion'] == emotion_val].iloc[0]
+emotion_list = [0, 2, 3, 4, 5, 6]
+for i, emotion_idx in enumerate(emotion_list, 1):
+    face = data[data['emotion'] == emotion_idx].iloc[0]
+
     img, label = row2image(face)
-    plt.subplot(2,4,subplot_idx)
+    plt.subplot(2,4,i)
     plt.imshow(img)
     plt.title(label)
-    subplot_idx += 1
 
-plt.tight_layout()
 plt.show()

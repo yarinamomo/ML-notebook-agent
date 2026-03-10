@@ -28,7 +28,6 @@ def show_tensor_images(image_tensor, num_images=25, size=(1, 28, 28)):
 # --- [CELL 1]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-
 class Generator(nn.Module):
     '''
     Generator Class
@@ -170,66 +169,31 @@ class Discriminator(nn.Module):
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# criterion = nn.BCEWithLogitsLoss()
-# z_dim = 64
-# display_step = 500
-# batch_size = 128
-# # A learning rate of 0.0002 works well on DCGAN
-# lr = 0.0002
-# 
-# beta_1 = 0.5 
-# beta_2 = 0.999
-# device = 'cpu' # 'cuda'
-# 
-# # You can tranform the image values to be between -1 and 1 (the range of the tanh activation)
-# train_transform = transforms.Compose([
-#     transforms.ToTensor(),
-#     transforms.Normalize((0.5,), (0.5,)),
-# ])
-# 
-# train_dataset = datasets.ImageFolder(root='data_small/eyes data', transform=train_transform)
-# dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
-# # dataloader = DataLoader(
-# #     MNIST('.', download=False, transform=transform),
-# #     batch_size=batch_size,
-# #     shuffle=True)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 criterion = nn.BCEWithLogitsLoss()
 z_dim = 64
 display_step = 500
 batch_size = 128
-
+# A learning rate of 0.0002 works well on DCGAN
 lr = 0.0002
 
-beta_1 = 0.5
+beta_1 = 0.5 
 beta_2 = 0.999
-device = 'cpu'
+device = 'cpu' # 'cuda'
 
-
+# You can tranform the image values to be between -1 and 1 (the range of the tanh activation)
 train_transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.5,), (0.5,)),
 ])
 
-def pil_loader(path):
-    from PIL import Image, UnidentifiedImageError
-    try:
-        with open(path, 'rb') as f:
-            img = Image.open(f)
-            return img.convert('RGB')
-    except (UnidentifiedImageError, OSError, IOError):
-        return None
-
-train_dataset = datasets.ImageFolder(root='data_small/eyes data', transform=train_transform, loader=lambda x: None if (img := pil_loader(x)) is None else img)
-# Filter out None entries from corrupted images
-train_dataset.samples = [(path, class_idx) for path, class_idx in train_dataset.samples if pil_loader(path) is not None]
-train_dataset.imgs = train_dataset.samples
-
+train_dataset = datasets.ImageFolder(root='data_small/eyes data', transform=train_transform)
 dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+# dataloader = DataLoader(
+#     MNIST('.', download=False, transform=transform),
+#     batch_size=batch_size,
+#     shuffle=True)
 
 #%%
 # --- [CELL 4]: ---
@@ -245,81 +209,24 @@ def show_batch(dl):
         show_images(images)
         break
 
-
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 6}
-show_batch(dataloader)
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# === BEFORE (original) ===
+# show_batch(dataloader)
 
-#%%
-# --- [CELL 6]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-gen = Generator(z_dim).to(device)
-gen_opt = torch.optim.Adam(gen.parameters(), lr=lr, betas=(beta_1, beta_2))
-disc = Discriminator().to(device) 
-disc_opt = torch.optim.Adam(disc.parameters(), lr=lr, betas=(beta_1, beta_2))
+# === AFTER (edited) ===
+def show_images(images):
+    # Resize all images to a consistent size (64x64)
+    resized_images = torch.nn.functional.interpolate(images, size=(64, 64), mode='bilinear', align_corners=False)
+    # Normalize from [-1, 1] to [0, 1] for proper display
+    resized_images = (resized_images + 1) / 2
+    fig, ax = plt.subplots(figsize=(20, 20))
+    ax.set_xticks([]); ax.set_yticks([])
+    ax.imshow(make_grid(resized_images.detach(), nrow=22).permute(1, 2, 0))
 
-# You initialize the weights to the normal distribution
-# with mean 0 and standard deviation 0.02
-def weights_init(m):
-    if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
-        torch.nn.init.normal_(m.weight, 0.0, 0.02)
-    if isinstance(m, nn.BatchNorm2d):
-        torch.nn.init.normal_(m.weight, 0.0, 0.02)
-        torch.nn.init.constant_(m.bias, 0)
-gen = gen.apply(weights_init)
-disc = disc.apply(weights_init)
-
-#%%
-# --- [CELL 7]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-n_epochs = 2 #20
-cur_step = 0
-mean_generator_loss = 0
-mean_discriminator_loss = 0
-for epoch in range(n_epochs):
-    # Dataloader returns the batches
-    for real, _ in tqdm(dataloader):
-        cur_batch_size = len(real)
-        real = real.to(device)
-
-        ## Update discriminator ##
-        disc_opt.zero_grad()
-        fake_noise = get_noise(cur_batch_size, z_dim, device=device)
-        fake = gen(fake_noise)
-        disc_fake_pred = disc(fake.detach())
-        disc_fake_loss = criterion(disc_fake_pred, torch.zeros_like(disc_fake_pred))
-        disc_real_pred = disc(real)
-        disc_real_loss = criterion(disc_real_pred, torch.ones_like(disc_real_pred))
-        disc_loss = (disc_fake_loss + disc_real_loss) / 2
-
-        # Keep track of the average discriminator loss
-        mean_discriminator_loss += disc_loss.item() / display_step
-        # Update gradients
-        disc_loss.backward(retain_graph=True)
-        # Update optimizer
-        disc_opt.step()
-
-        ## Update generator ##
-        gen_opt.zero_grad()
-        fake_noise_2 = get_noise(cur_batch_size, z_dim, device=device)
-        fake_2 = gen(fake_noise_2)
-        disc_fake_pred = disc(fake_2)
-        gen_loss = criterion(disc_fake_pred, torch.ones_like(disc_fake_pred))
-        gen_loss.backward()
-        gen_opt.step()
-
-        # Keep track of the average generator loss
-        mean_generator_loss += gen_loss.item() / display_step
-
-        ## Visualization code ##
-        if cur_step % display_step == 0 and cur_step > 0:
-            print(f"Step {cur_step}: Generator loss: {mean_generator_loss}, discriminator loss: {mean_discriminator_loss}")
-            show_tensor_images(fake)
-            show_tensor_images(real)
-            mean_generator_loss = 0
-            mean_discriminator_loss = 0
-        cur_step += 1
+def show_batch(dl):
+    for images, _ in dl:
+        show_images(images)
+        break

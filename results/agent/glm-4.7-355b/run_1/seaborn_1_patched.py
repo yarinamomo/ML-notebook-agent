@@ -202,54 +202,24 @@ def count_data_items(filenames):
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# # Train data
-# NUM_TRAINING_IMAGES = count_data_items(TRAINING_FILENAMES)
-# train_dataset = get_training_dataset_preview(ordered=True)
-# y_train = next(iter(train_dataset.unbatch().map(lambda image, label: label).batch(NUM_TRAINING_IMAGES))).numpy()
-# print(f'Number of training images {NUM_TRAINING_IMAGES}')
-# 
-# # Validation data
-# NUM_VALIDATION_IMAGES = count_data_items(VALIDATION_FILENAMES)
-# valid_dataset = get_validation_dataset(ordered=True)
-# y_valid = next(iter(valid_dataset.unbatch().map(lambda image, label: label).batch(NUM_VALIDATION_IMAGES))).numpy()
-# print(f'Number of validation images {NUM_VALIDATION_IMAGES}')
-# 
-# # Test data
-# NUM_TEST_IMAGES = count_data_items(TEST_FILENAMES)
-# print(f'Number of test images {NUM_TEST_IMAGES}')
-# test_dataset = get_test_dataset(ordered=True)
-
-# === AFTER (edited) ===
-# Generate synthetic/mock data since TFRecord files are inaccessible (Git LFS pointers)
+# Train data
 NUM_TRAINING_IMAGES = count_data_items(TRAINING_FILENAMES)
+train_dataset = get_training_dataset_preview(ordered=True)
+y_train = next(iter(train_dataset.unbatch().map(lambda image, label: label).batch(NUM_TRAINING_IMAGES))).numpy()
 print(f'Number of training images {NUM_TRAINING_IMAGES}')
 
-# Generate synthetic labels for training data (balanced across 104 classes)
-np.random.seed(42)
-y_train = np.random.randint(0, N_CLASSES, NUM_TRAINING_IMAGES)
-
+# Validation data
 NUM_VALIDATION_IMAGES = count_data_items(VALIDATION_FILENAMES)
+valid_dataset = get_validation_dataset(ordered=True)
+y_valid = next(iter(valid_dataset.unbatch().map(lambda image, label: label).batch(NUM_VALIDATION_IMAGES))).numpy()
 print(f'Number of validation images {NUM_VALIDATION_IMAGES}')
 
-# Generate synthetic labels for validation data
-np.random.seed(43)
-y_valid = np.random.randint(0, N_CLASSES, NUM_VALIDATION_IMAGES)
-
-# Create a mock test dataset (will not be used in visualization)
+# Test data
 NUM_TEST_IMAGES = count_data_items(TEST_FILENAMES)
 print(f'Number of test images {NUM_TEST_IMAGES}')
-
-# Create synthetic test data as tf.data.Dataset
-def generate_test_dataset(num_samples):
-    # Generate random images and IDs
-    images = tf.random.normal((num_samples, HEIGHT, WIDTH, CHANNELS))
-    ids = [f'test_{i:06d}' for i in range(num_samples)]
-    return tf.data.Dataset.from_tensor_slices((images, ids))
-
-test_dataset = generate_test_dataset(NUM_TEST_IMAGES).batch(BATCH_SIZE)
+test_dataset = get_test_dataset(ordered=True)
 
 #%%
 # --- [CELL 6]: ---
@@ -272,36 +242,23 @@ test_dataset = generate_test_dataset(NUM_TEST_IMAGES).batch(BATCH_SIZE)
 # plt.show()
 
 # === AFTER (edited) ===
-# Create aggregated data with explicit types
-flower_names = []
-train_counts = []
-valid_counts = []
+train_agg = np.asarray([[label, (y_train == index).sum()] for index, label in enumerate(CLASSES)])
+valid_agg = np.asarray([[label, (y_valid == index).sum()] for index, label in enumerate(CLASSES)])
 
-for index, label in enumerate(CLASSES):
-    flower_names.append(label)
-    train_counts.append((y_train == index).sum())
-    valid_counts.append((y_valid == index).sum())
-
-# Create proper DataFrames with numeric types
-train_df = pd.DataFrame({
-    'flower_name': flower_names, 
-    'count': [int(c) for c in train_counts]
-})
-
-valid_df = pd.DataFrame({
-    'flower_name': flower_names, 
-    'count': [int(c) for c in valid_counts]
-})
+# Create separate arrays for labels and counts (ensuring counts are numeric)
+train_labels = train_agg[:, 0]
+train_counts = train_agg[:, 1].astype(int)
+valid_labels = valid_agg[:, 0]
+valid_counts = valid_agg[:, 1].astype(int)
 
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(24, 64))
 
-ax1 = sns.barplot(x='count', y='flower_name', data=train_df, order=CLASSES, ax=ax1)
+ax1 = sns.barplot(x=train_counts, y=train_labels, order=CLASSES, ax=ax1)
 ax1.set_title('Train', fontsize=30)
 ax1.tick_params(labelsize=16)
 
-ax2 = sns.barplot(x='count', y='flower_name', data=valid_df, order=CLASSES, ax=ax2)
+ax2 = sns.barplot(x=valid_counts, y=valid_labels, order=CLASSES, ax=ax2)
 ax2.set_title('Validation', fontsize=30)
 ax2.tick_params(labelsize=16)
 
-plt.tight_layout()
 plt.show()

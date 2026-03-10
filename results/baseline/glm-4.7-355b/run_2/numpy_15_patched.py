@@ -19,53 +19,48 @@ df = pd.read_csv('data/iris-data.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# #Removing all null values row
-# df = df.dropna(subset=['petal_width_cm'])
-# df.info()
-
-# === AFTER (edited) ===
-df = df.dropna()
+#Removing all null values row
+df = df.dropna(subset=['petal_width_cm'])
 df.info()
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 df['class'].replace(["Iris-setossa","versicolor"], ["Iris-setosa","Iris-versicolor"], inplace=True)
 df['class'].value_counts()
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 final_df = df[df['class'] != 'Iris-virginica']
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 final_df.loc[final_df.sepal_length_cm < 1, ['sepal_length_cm']] = final_df['sepal_length_cm']*100
 final_df.hist(column = 'sepal_length_cm',bins=20, figsize=(10,5))
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 final_df = final_df.drop(final_df[(final_df['class'] == "Iris-setosa") & (final_df['sepal_width_cm'] < 2.5)].index)
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 final_df['class'].replace(["Iris-setosa","Iris-versicolor"], [1,0], inplace=True)
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 inp_df = final_df.drop(final_df.columns[[4]], axis=1)
 out_df = final_df.drop(final_df.columns[[0,1,2,3]], axis=1)
 #
@@ -77,7 +72,7 @@ X_train, X_test, y_train, y_test = train_test_split(inp_df, out_df, test_size=0.
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 X_tr_arr = X_train
 X_ts_arr = X_test
 y_tr_arr= y_train.values
@@ -85,17 +80,24 @@ y_ts_arr = y_test.values
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# === BEFORE (original) ===
+# def weightInitialization(n_features):
+#     w = np.zeros((1,n_features))
+#     b = 0
+#     return w,b
+
+# === AFTER (edited) ===
 def weightInitialization(n_features):
-    w = np.zeros((1,n_features))
+    w = np.zeros((n_features, 1))
     b = 0
     return w,b
 
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 def sigmoid_activation(result):
     final_result = 1/(1+np.exp(-result))
     return final_result
@@ -103,7 +105,7 @@ def sigmoid_activation(result):
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 def model_optimize(w, b, X, Y):
     m = X.shape[0]
     
@@ -120,12 +122,11 @@ def model_optimize(w, b, X, Y):
     grads = {"dw": dw, "db": db}
     
     return grads, cost
-    
 
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 def sigmoid(z):
     return 1 / (1 + np.exp(-z))
 
@@ -174,7 +175,7 @@ def model_train(X, Y, num_iterations, learning_rate):
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 def model_predict(w, b, X, Y, learning_rate, no_iterations):
     costs = []
     for i in range(no_iterations):
@@ -201,7 +202,7 @@ def model_predict(w, b, X, Y, learning_rate, no_iterations):
 #%%
 # --- [CELL 15]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
 def predict(final_pred, m):
     y_pred = np.zeros((1,m))
     for i in range(final_pred.shape[1]):
@@ -212,7 +213,7 @@ def predict(final_pred, m):
 #%%
 # --- [CELL 16]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
 #Get number of features
 n_features = X_tr_arr.shape[1]
 print('Number of Features', n_features)

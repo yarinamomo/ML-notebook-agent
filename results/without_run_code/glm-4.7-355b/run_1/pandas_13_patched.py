@@ -27,29 +27,11 @@ from sklearn.metrics import mean_absolute_error,mean_squared_error,r2_score
 
 import matplotlib.pyplot as plt
 
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/car data.csv')
-# df.head()
-
-# === AFTER (edited) ===
-# Create dummy dataset since the file is a Git LFS pointer
-data = {
-    'Car_Name': ['Maruti', 'Hyundai', 'Honda', 'Toyota', 'Ford', 'Maruti', 'Hyundai', 'Honda', 'Toyota', 'Ford'],
-    'Year': [2014, 2015, 2016, 2017, 2018, 2013, 2014, 2015, 2016, 2017],
-    'Selling_Price': [3.5, 4.5, 5.5, 6.5, 7.5, 3.0, 4.0, 5.0, 6.0, 7.0],
-    'Present_Price': [5.0, 6.0, 7.0, 8.0, 9.0, 4.5, 5.5, 6.5, 7.5, 8.5],
-    'Driven_kms': [25000, 20000, 15000, 10000, 5000, 30000, 25000, 20000, 15000, 10000],
-    'Fuel_Type': ['Petrol', 'Diesel', 'Petrol', 'Diesel', 'Petrol', 'Diesel', 'Petrol', 'Diesel', 'Petrol', 'Diesel'],
-    'Selling_type': ['Dealer', 'Individual', 'Dealer', 'Individual', 'Dealer', 'Individual', 'Dealer', 'Individual', 'Dealer', 'Individual'],
-    'Transmission': ['Manual', 'Automatic', 'Manual', 'Automatic', 'Manual', 'Automatic', 'Manual', 'Automatic', 'Manual', 'Automatic'],
-    'Owner': [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
-}
-df = pd.DataFrame(data)
+df = pd.read_csv('data/car data.csv')
 df.head()
 
 #%%
@@ -209,7 +191,7 @@ rfr_gs_y_predict = rfr_gs.predict(X_2_test)
 
 # === AFTER (edited) ===
 model_dict = {'X_train': [gbr, rfr],
-              'X_2_train': [gbr2, rfr2, gbr_gs, rfr_gs]}
+              'X_2_train': [gbr2, gbr_gs, rfr2, rfr_gs]}
 
 for key in model_dict:
     f_list = []
@@ -218,7 +200,7 @@ for key in model_dict:
         f_list.append(feature_importance)
 
     fearture_names = X_train.columns.tolist() if key == 'X_train' else X_2_train.columns.tolist()
-    f_index = ['gbr', 'rfr'] if key == 'X_train' else ['gbr2', 'rfr2', 'gbr_gs', 'rfr_gs']
+    f_index = ['gbr', 'rfr'] if key == 'X_train' else ['gbr2','gbr_gs','rfr2','rfr_gs']
 
     feature_df = pd.DataFrame(np.array(f_list), columns=fearture_names, index=f_index)
     display(feature_df)

@@ -39,7 +39,6 @@ for category_name in selected_categories:
         display(Image(filename=random_image_path))
         print("\n" + "="*30 + "\n")  # Separating images with a line
 
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
@@ -53,197 +52,80 @@ dataset = ImageFolder(directory_path, transform = transformations)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# import matplotlib.pyplot as plt # for reporducing and fixing purposes
-# import torch
-# 
-# def show_images(dataset, num_images=6):
-# 
-#     # Get random indices from the dataset
-#     random_indices = torch.randperm(len(dataset))[:num_images]
-# 
-#     # Create a subplot with the specified number of rows and columns
-#     rows = 1
-#     cols = num_images
-#     fig, axes = plt.subplots(rows, cols, figsize=(15, 3))
-# 
-#     for i, idx in enumerate(random_indices):
-#         # Get the image and label from the dataset
-#         image, label = dataset[idx]
-# 
-#         # Convert the PyTorch tensor to a NumPy array for visualization
-#         image_np = image.permute(1, 2, 0).numpy()
-# 
-#         # Display the image
-#         axes[i].imshow(image_np)
-#         axes[i].set_title(f"Label: {label}")
-# 
-#         # Remove x and y axis ticks
-#         axes[i].axis("off")
-# 
-#     plt.show()
-# 
-# # Call the helper function to display images from the transformed dataset
-# transformed = dataset # fix for reporducing and fixing purposes, undefined variable
-# show_images(transformed)
-
-# === AFTER (edited) ===
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt # for reporducing and fixing purposes
 import torch
 
 def show_images(dataset, num_images=6):
-    
+
+    # Get random indices from the dataset
+    random_indices = torch.randperm(len(dataset))[:num_images]
+
+    # Create a subplot with the specified number of rows and columns
     rows = 1
     cols = num_images
     fig, axes = plt.subplots(rows, cols, figsize=(15, 3))
-    
-    # Get random indices to try
-    all_indices = torch.randperm(len(dataset))
-    valid_images = []
-    valid_labels = []
-    
-    # Try to find num_images valid images
-    for idx in all_indices:
-        if len(valid_images) >= num_images:
-            break
-        try:
-            image, label = dataset[idx]
-            valid_images.append(image)
-            valid_labels.append(label)
-        except Exception as e:
-            # Skip corrupted images
-            continue
-    
-    # Display the valid images we found
-    for i in range(len(valid_images)):
-        image = valid_images[i]
-        label = valid_labels[i]
-        
+
+    for i, idx in enumerate(random_indices):
+        # Get the image and label from the dataset
+        image, label = dataset[idx]
+
+        # Convert the PyTorch tensor to a NumPy array for visualization
         image_np = image.permute(1, 2, 0).numpy()
-        
+
+        # Display the image
         axes[i].imshow(image_np)
         axes[i].set_title(f"Label: {label}")
+
+        # Remove x and y axis ticks
         axes[i].axis("off")
-    
+
     plt.show()
 
-
-transformed = dataset
+# Call the helper function to display images from the transformed dataset
+transformed = dataset # fix for reporducing and fixing purposes, undefined variable
 show_images(transformed)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# from torch.utils.data import random_split
-# 
-# class_mapping = transformed.class_to_idx
-# num_classes = len(class_mapping)
-# 
-# # Split the indices
-# train_size = 420 #12000
-# val_size = 150 #3000
-# test_size = 100# 620
-# 
-# train_indices, val_indices, test_indices = random_split(
-#     range(len(transformed)),
-#     [train_size, val_size, test_size]
-# )
-# 
-# # Create new datasets based on the split indices
-# train_ds = torch.utils.data.Subset(transformed, train_indices)
-# val_ds = torch.utils.data.Subset(transformed, val_indices)
-# test_ds = torch.utils.data.Subset(transformed, test_indices)
-# 
-# # Print lengths of datasets
-# print(len(train_ds), len(val_ds), len(test_ds))
-
-# === AFTER (edited) ===
 from torch.utils.data import random_split
-import torch
 
-class_mapping = dataset.class_to_idx
+class_mapping = transformed.class_to_idx
 num_classes = len(class_mapping)
 
-# Create dataset splits directly (without filtering)
-train_size = 420
-val_size = 150
-test_size = 100
+# Split the indices
+train_size = 420 #12000
+val_size = 150 #3000
+test_size = 100# 620
 
-# Use random indices to create splits
-all_indices = list(range(len(dataset)))
-random.shuffle(all_indices)
+train_indices, val_indices, test_indices = random_split(
+    range(len(transformed)),
+    [train_size, val_size, test_size]
+)
 
-train_indices = all_indices[:train_size]
-val_indices = all_indices[train_size:train_size+val_size]
-test_indices = all_indices[train_size+val_size:train_size+val_size+test_size]
+# Create new datasets based on the split indices
+train_ds = torch.utils.data.Subset(transformed, train_indices)
+val_ds = torch.utils.data.Subset(transformed, val_indices)
+test_ds = torch.utils.data.Subset(transformed, test_indices)
 
-# Create a wrapper class that safely handles corrupted images
-class SafeSubset(torch.utils.data.Dataset):
-    def __init__(self, dataset, indices):
-        self.dataset = dataset
-        # Pre-filter indices to only include valid images
-        self.valid_indices = []
-        for idx in indices:
-            try:
-                _ = dataset[idx]
-                self.valid_indices.append(idx)
-            except:
-                # Skip corrupted images
-                continue
-        print(f"Subset created with {len(self.valid_indices)} valid images (from {len(indices)} requested)")
-    
-    def __len__(self):
-        return len(self.valid_indices)
-    
-    def __getitem__(self, idx):
-        # Map local index to actual dataset index
-        actual_idx = self.valid_indices[idx]
-        return self.dataset[actual_idx]
-    
-    @property
-    def classes(self):
-        return self.dataset.classes
-    
-    @property
-    def class_to_idx(self):
-        return self.dataset.class_to_idx
-
-# Create safe subsets
-train_ds = SafeSubset(dataset, train_indices)
-val_ds = SafeSubset(dataset, val_indices)
-test_ds = SafeSubset(dataset, test_indices)
-
-print(f"Final dataset sizes - Train: {len(train_ds)}, Val: {len(val_ds)}, Test: {len(test_ds)}")
-
-# Update transformed for cells 6 and 7
-transformed = train_ds.dataset  # Use the original dataset for reference
+# Print lengths of datasets
+print(len(train_ds), len(val_ds), len(test_ds))
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# from torch.utils.data import DataLoader
-# 
-# batch_size = 25
-# # for reporducing and fixing purposes, change setting to cpu
-# # train_dl = DataLoader(train_ds, batch_size, shuffle = True, num_workers = 2, pin_memory = True)
-# # val_dl = DataLoader(val_ds, batch_size*2, num_workers = 4, pin_memory = True)
-# train_dl = DataLoader(train_ds, batch_size, shuffle = True, num_workers = 0, pin_memory = False)
-# val_dl = DataLoader(val_ds, batch_size*2, num_workers = 0, pin_memory = False)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 from torch.utils.data import DataLoader
 
 batch_size = 25
-
+# for reporducing and fixing purposes, change setting to cpu
+# train_dl = DataLoader(train_ds, batch_size, shuffle = True, num_workers = 2, pin_memory = True)
+# val_dl = DataLoader(val_ds, batch_size*2, num_workers = 4, pin_memory = True)
 train_dl = DataLoader(train_ds, batch_size, shuffle = True, num_workers = 0, pin_memory = False)
 val_dl = DataLoader(val_ds, batch_size*2, num_workers = 0, pin_memory = False)
-test_dl = DataLoader(test_ds, batch_size*2, num_workers = 0, pin_memory = False)
 
 #%%
 # --- [CELL 5]: ---
@@ -298,11 +180,10 @@ class ResNet(ImageClassificationBase):
 
 model = ResNet()
 
-
 #%%
 # --- [CELL 7]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # === BEFORE (original) ===
 # import torch
 # import torch.nn as nn
@@ -377,11 +258,10 @@ from torch.utils.data import DataLoader
 
 
 
+
+
 resnet_model = models.resnet18(pretrained=True)
 
-
-num_ftrs = resnet_model.fc.in_features
-resnet_model.fc = nn.Linear(num_ftrs, len(transformed.classes))
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(resnet_model.parameters(), lr=0.001, momentum=0.9)
@@ -391,43 +271,26 @@ num_epochs = 1
 
 for epoch in range(num_epochs):
     resnet_model.train()
-    batch_count = 0
-    for batch in train_dl:
-        try:
-            inputs, labels = batch
-            optimizer.zero_grad()
-            outputs = resnet_model(inputs)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            batch_count += 1
-        except Exception as e:
-            # Skip corrupted batches
-            print(f"Skipping corrupted batch: {e}")
-            continue
+    for inputs, labels in train_dl:
+        optimizer.zero_grad()
+        outputs = resnet_model(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
 
 
     resnet_model.eval()
     with torch.no_grad():
         correct = 0
         total = 0
-        for batch in val_dl:
-            try:
-                inputs, labels = batch
-                outputs = resnet_model(inputs)
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-            except Exception as e:
-                # Skip corrupted batches
-                print(f"Skipping corrupted val batch: {e}")
-                continue
+        for inputs, labels in val_dl:
+            outputs = resnet_model(inputs)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
 
-        if total > 0:
-            accuracy = correct / total
-            print(f'Epoch {epoch + 1}/{num_epochs}, Validation Accuracy: {accuracy:.4f}')
-        else:
-            print(f'Epoch {epoch + 1}/{num_epochs}, No valid validation batches')
+        accuracy = correct / total
+        print(f'Epoch {epoch + 1}/{num_epochs}, Validation Accuracy: {accuracy:.4f}')
 
 
 def evaluate(model, test_dl):
@@ -435,22 +298,16 @@ def evaluate(model, test_dl):
     with torch.no_grad():
         correct = 0
         total = 0
-        for batch in test_dl:
-            try:
-                inputs, labels = batch
-                outputs = model(inputs)
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-            except Exception as e:
-                print(f"Skipping corrupted test batch: {e}")
-                continue
+        for inputs, labels in test_dl:
 
-        if total > 0:
-            accuracy = correct / total
-            print(f'Test Accuracy: {accuracy:.4f}')
-        else:
-            print(f'No valid test batches')
+            outputs = model(inputs)
+
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+        accuracy = correct / total
+        print(f'Test Accuracy: {accuracy:.4f}')
 
 
 

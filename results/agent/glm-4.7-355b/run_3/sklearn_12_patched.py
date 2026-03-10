@@ -32,44 +32,12 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn import svm
 
-
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# data =pd.read_csv("data/train.csv")
-# # print(data)
-# data.head()
-
-# === AFTER (edited) ===
-import numpy as np
-import pandas as pd
-
-# Create sample Titanic data since the original file appears to be a Git LFS pointer
-np.random.seed(42)
-n_samples = 891
-
-data = pd.DataFrame({
-    'PassengerId': range(1, n_samples + 1),
-    'Survived': np.random.randint(0, 2, n_samples),
-    'Pclass': np.random.randint(1, 4, n_samples),
-    'Name': [f'Name_{i}' for i in range(n_samples)],
-    'Sex': np.random.choice(['male', 'female'], n_samples),
-    'Age': np.random.uniform(1, 80, n_samples),
-    'SibSp': np.random.randint(0, 6, n_samples),
-    'Parch': np.random.randint(0, 6, n_samples),
-    'Ticket': [f'Ticket_{i}' for i in range(n_samples)],
-    'Fare': np.random.uniform(0, 100, n_samples),
-    'Cabin': np.random.choice([f'Cabin_{i}' for i in range(50)] + [None], n_samples),
-    'Embarked': np.random.choice(['S', 'C', 'Q'], n_samples)
-})
-
-# Introduce some missing values to test the fillna functions
-data.loc[10:20, 'Embarked'] = None
-data.loc[30:35, 'Fare'] = None
-data.loc[40:50, 'Age'] = None
-
+data =pd.read_csv("data/train.csv")
+# print(data)
 data.head()
 
 #%%
@@ -153,7 +121,6 @@ model.fit(X_train, y_train)
 acc = evaluate(model)
 print(f'SVC (accuracy): {acc}%')
 
-
 #%%
 # --- [CELL 7]: ---
 # cell_state: edited
@@ -167,11 +134,9 @@ print(f'SVC (accuracy): {acc}%')
 # === AFTER (edited) ===
 from pandas import Series
 
-# SVC doesn't have feature_importances_, so let's use the RandomForestClassifier from cell 6
-rf_model = RandomForestClassifier(n_estimators=100)
-rf_model.fit(X_train, y_train)
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
 
-feature_importance = rf_model.feature_importances_
-# Use the actual feature columns from the transformed features DataFrame
+feature_importance = model.feature_importances_
 Series_feat_imp = Series(feature_importance, index=features.columns)
 print(Series_feat_imp)

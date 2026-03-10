@@ -29,47 +29,12 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# # read data
-# df = pd.read_csv('data/measures_v2.csv', 
-#                  usecols=[0,1,2,3,4,5,6,7,8,9,10,11])
-# df.head(10)
-
-# === AFTER (edited) ===
-import pandas as pd
-import numpy as np
-
-# Create synthetic data for motor speed prediction (since actual data is not available)
-np.random.seed(42)
-n_samples = 1000
-
-# Create features typical for motor speed prediction
-data = {
-    'ambient': np.random.normal(20, 5, n_samples),
-    'coolant': np.random.normal(20, 5, n_samples),
-    'u_d': np.random.normal(0, 300, n_samples),
-    'u_q': np.random.normal(0, 300, n_samples),
-    'i_d': np.random.normal(0, 50, n_samples),
-    'i_q': np.random.normal(0, 50, n_samples),
-    'stator_yoke': np.random.normal(50, 10, n_samples),
-    'stator_tooth': np.random.normal(50, 10, n_samples),
-    'stator_winding': np.random.normal(50, 10, n_samples),
-    'torque': np.random.normal(0, 50, n_samples),
-    'pm': np.random.normal(50, 10, n_samples)
-}
-
-# Create motor_speed as a function of other features + noise
-data['motor_speed'] = (data['torque'] * 2 + data['u_q'] * 0.5 + data['i_q'] * 3 + 
-                       np.random.normal(0, 10, n_samples))
-
-df = pd.DataFrame(data)
-print("Dataset shape:", df.shape)
-print("\nColumn names:")
-print(df.columns.tolist())
-print("\nFirst few rows:")
-print(df.head())
+# read data
+df = pd.read_csv('data/measures_v2.csv', 
+                 usecols=[0,1,2,3,4,5,6,7,8,9,10,11])
+df.head(10)
 
 #%%
 # --- [CELL 2]: ---
@@ -188,8 +153,7 @@ for fold, (train_idx, valid_idx) in enumerate(KFold(n_splits=n_splits, shuffle=T
 
     X_train_fold = X_train.iloc[train_idx]
     y_train_fold = y_train.iloc[train_idx]
-    X_valid = X_train.iloc[valid_idx]
-    y_valid = y_train.iloc[valid_idx]
+    X_valid, y_valid = X_train.iloc[valid_idx], y_train.iloc[valid_idx]
 
 
     model = XGBRegressor(**params)

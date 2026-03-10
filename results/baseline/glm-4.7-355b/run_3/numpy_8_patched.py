@@ -5,44 +5,38 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy.stats import chi2_contingency 
+from scipy.stats import chi2_contingency
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# app_train = pd.read_csv('data/application_train.csv.zip')
-# app_test=pd.read_csv('data/application_test.csv.zip')
-
-# === AFTER (edited) ===
-app_train = pd.read_csv('data/application_train.csv')
-app_test=pd.read_csv('data/application_test.csv')
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+app_train = pd.read_csv('data/application_train.csv.zip')
+app_test=pd.read_csv('data/application_test.csv.zip')
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 app_train.replace({'XNA': np.nan, 'XNP': np.nan, 'Unknown': np.nan}, inplace = True)
 app_test.replace({'XNA': np.nan, 'XNP': np.nan, 'Unknown': np.nan}, inplace = True)
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 app_test.drop(app_train.columns[app_train.isnull().mean()>0.4],axis=1, inplace=True)
-
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 app_train.drop(app_train.columns[app_train.isnull().mean()>0.4],axis=1, inplace=True)
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # Columns have less 14% NaN Values and categorical
 Cat_columns_lower_percentage_nan  = [i for i in app_train.columns[(((app_train.isnull().sum() / app_train.shape[0]) * 100) > 0) 
                                                                   & (((app_train.isnull().sum() / app_train.shape[0]) * 100) < 14)] 
@@ -56,7 +50,7 @@ num_columns_lower_percentage_nan  = [i for i in app_train.columns[(((app_train.i
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 for i in Cat_columns_lower_percentage_nan:
     app_test[i].fillna(app_train[i].mode()[0], inplace=True)
     app_train[i].fillna(app_train[i].mode()[0], inplace=True)
@@ -100,13 +94,12 @@ cont_cols = [col for col in all_numerical_cols if col != "TARGET" and col[:5]!='
 proper_days_empolyed_df = app_train
 proper_days_empolyed_df['YEARS_EMPLOYED'] = proper_days_empolyed_df['DAYS_EMPLOYED']/-365.25
 
-
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'not run'}
 app_train['DAYS_EMPLOYED'].replace({365243:np.nan},inplace=True) 
-app_test['DAYS_EMPLOYED'].replace({365243:np.nan},inplace=True) 
+app_test['DAYS_EMPLOYED'].replace({365243:np.nan},inplace=True)
 
 #%%
 # --- [CELL 13]: ---
@@ -115,13 +108,11 @@ app_test['DAYS_EMPLOYED'].replace({365243:np.nan},inplace=True)
 proper_days_empolyed_df = app_train
 proper_days_empolyed_df['YEARS_EMPLOYED'] = proper_days_empolyed_df['DAYS_EMPLOYED']/-365.25
 
-
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'not run'}
 app_train = app_train[app_train['AMT_INCOME_TOTAL'] != 117000000.0]
-
 
 #%%
 # --- [CELL 15]: ---
@@ -215,7 +206,6 @@ app_test['ORGANIZATION_TYPE'][(app_test['OCCUPATION_TYPE'] == 'Private service s
 app_train['ORGANIZATION_TYPE'][(app_train['OCCUPATION_TYPE'] == 'Security staff')] = app_train['ORGANIZATION_TYPE'][(app_train['OCCUPATION_TYPE'] == 'Security staff')].fillna('Security')
 app_test['ORGANIZATION_TYPE'][(app_test['OCCUPATION_TYPE'] == 'Security staff')] = app_test['ORGANIZATION_TYPE'][(app_test['OCCUPATION_TYPE'] == 'Security staff')].fillna('Security')
 
-
 #%%
 # --- [CELL 18]: ---
 # cell_state: unchanged
@@ -268,7 +258,6 @@ app_test['ORGANIZATION_TYPE'] = app_test['ORGANIZATION_TYPE'].replace(others, la
 # execution_status: {'status': 'not run'}
 app_train.drop(['YEARS_EMPLOYED'], axis = 1,inplace=True)
 
-
 #%%
 # --- [CELL 25]: ---
 # cell_state: unchanged
@@ -282,7 +271,7 @@ app_test = app_test.drop(columns=['CNT_FAM_MEMBERS','LIVE_REGION_NOT_WORK_REGION
 # execution_status: {'status': 'not run'}
 cols_to_remove = ['AMT_CREDIT', 'CNT_FAM_MEMBERS', 'REG_REGION_NOT_WORK_REGION', 'LIVE_REGION_NOT_WORK_REGION', 'OBS_60_CNT_SOCIAL_CIRCLE','SK_ID_CURR']
 cont_cols = list(set(cont_cols) - set(cols_to_remove))
-cont_cols 
+cont_cols
 
 #%%
 # --- [CELL 27]: ---
@@ -399,8 +388,6 @@ y_pred = lr.predict(X_test)
 score = lr.score(X_test, y_test)
 print(f"Accuracy: {score:.2f}")
 
-
-
 #%%
 # --- [CELL 34]: ---
 # cell_state: unchanged
@@ -423,16 +410,38 @@ def protected_log(x):
     else:
         return np.log(x)
 
-
 #%%
 # --- [CELL 35]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# import numpy as np
+# import pandas as pd
+# from deap import creator, base, tools, gp
+# # Определение функций и операций для генерации новых признаков
+# pset = gp.PrimitiveSet("MAIN", arity=2)
+# pset.addPrimitive(np.add, arity=2)
+# pset.addPrimitive(np.subtract, arity=2)
+# pset.addPrimitive(np.multiply, arity=2)
+# pset.addPrimitive(np.maximum, arity=2)
+# pset.addPrimitive(np.minimum, arity=2)
+# pset.addPrimitive(protected_division, arity=2)
+# pset.addPrimitive(protected_sqrt, arity=1)
+# pset.addPrimitive(protected_log, arity=1)
+# pset.addPrimitive(np.sin, arity=1)
+# pset.addPrimitive(np.cos, arity=1)
+# pset.addTerminal(0)
+# pset.addTerminal(1)
+
+# === AFTER (edited) ===
 import numpy as np
 import pandas as pd
 from deap import creator, base, tools, gp
-# Определение функций и операций для генерации новых признаков
-pset = gp.PrimitiveSet("MAIN", arity=2)
+
+# Get the number of columns from X_train
+n_args = X_train.shape[1]
+
+pset = gp.PrimitiveSet("MAIN", arity=n_args)
 pset.addPrimitive(np.add, arity=2)
 pset.addPrimitive(np.subtract, arity=2)
 pset.addPrimitive(np.multiply, arity=2)

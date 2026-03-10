@@ -59,9 +59,8 @@ print(class_names)
 #%%
 # --- [CELL 5]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # === BEFORE (original) ===
-# 
 # import matplotlib.pyplot as plt
 # 
 # plt.figure(figsize=(10, 10))
@@ -74,41 +73,11 @@ print(class_names)
 
 # === AFTER (edited) ===
 import matplotlib.pyplot as plt
-import tensorflow as tf
-
-# Add preprocessing to normalize images and handle edge cases
-def preprocess(image, label):
-    image = tf.cast(image, tf.float32) / 255.0
-    return image, label
-
-# Preprocess the datasets
-train_ds = train_ds.map(preprocess, num_parallel_calls=tf.data.AUTOTUNE)
-val_ds = val_ds.map(preprocess, num_parallel_calls=tf.data.AUTOTUNE)
-
-# Get class names (available on the original dataset object from image_dataset_from_directory)
-class_names = train_ds.class_names
-print(f"Number of classes: {len(class_names)}")
 
 plt.figure(figsize=(10, 10))
-try:
-    for images, labels in train_ds.take(1):
-        # Convert one-hot encoded labels to indices
-        label_indices = tf.argmax(labels, axis=1)
-        
-        # Use min of 6 and batch size
-        num_images = min(6, images.shape[0])
-        for i in range(num_images):
-            ax = plt.subplot(3, 3, i + 1)
-            # Convert normalized floats back to uint8 for display
-            img = (images[i].numpy() * 255).astype("uint8")
-            plt.imshow(img)
-            class_idx = label_indices[i].numpy()
-            if class_idx < len(class_names):
-                plt.title(class_names[class_idx])
-            else:
-                plt.title(f"Class {class_idx}")
-            plt.axis("off")
-except Exception as e:
-    print(f"Error during visualization: {e}")
-    # Try to show a simplified plot if full visualization fails
-    print("Dataset may contain some invalid image files.")
+for images, labels in train_ds.take(1):
+  for i in range(6):
+    ax = plt.subplot(3, 3, i + 1)
+    plt.imshow(images[i].numpy().astype("uint8"))
+    plt.title(class_names[np.argmax(labels[i])])
+    plt.axis("off")

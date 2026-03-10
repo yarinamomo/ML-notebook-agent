@@ -39,13 +39,13 @@ from keras import backend as K
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 size=75
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 def getListOfFiles(dirName):
     listOfFile = os.listdir(dirName)
     allFiles = list()
@@ -61,14 +61,14 @@ def getListOfFiles(dirName):
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 benign_images = getListOfFiles('data/augmented/benign')
 malignent_images = getListOfFiles('data/augmented/malignant')
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 data = pd.DataFrame(index=np.arange(0, len(benign_images)+len(malignent_images)), columns=["image", "target"])
 k=0
 
@@ -96,43 +96,18 @@ up_sampled['target'].value_counts()
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# train_image = []
-# y = []
-# 
-# for i in tqdm(range(up_sampled.shape[0])):
-#     img = tf.keras.utils.load_img(up_sampled['image'].iloc[i], target_size=(size,size,1), color_mode="grayscale")
-#     img = tf.keras.utils.img_to_array(img)
-#     img = img/255
-#     train_image.append(img)
-# 
-#         
-# X = np.array(train_image)
-# y = up_sampled.iloc[:,-1].values
-# X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, test_size=0.2)
-# X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, random_state=42, test_size=0.2 , shuffle=True)
-# 
-# Y_train = to_categorical(y_train, 2)
-# Y_test = to_categorical(y_test, 2)
-# Y_val = to_categorical(y_val, 2)
-# 
-# print(X_train.shape)
-# print(X_test.shape)
-# print(X_val.shape)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 train_image = []
 y = []
 
 for i in tqdm(range(up_sampled.shape[0])):
-    img = tf.keras.utils.load_img(up_sampled['image'].iloc[i], target_size=(size,size), color_mode="rgb")
+    img = tf.keras.utils.load_img(up_sampled['image'].iloc[i], target_size=(size,size,1), color_mode="grayscale")
     img = tf.keras.utils.img_to_array(img)
     img = img/255
     train_image.append(img)
 
-
+        
 X = np.array(train_image)
 y = up_sampled.iloc[:,-1].values
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, test_size=0.2)
@@ -149,7 +124,7 @@ print(X_val.shape)
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 def channel_shuffle(x, groups):
     """
     Channel shuffle operation as described in the ShuffleNet paper.
@@ -174,7 +149,7 @@ def channel_shuffle(x, groups):
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 def shuffle_unit(x, in_channels, out_channels, bottleneck_channels):
     # define residual
     res = x
@@ -213,7 +188,7 @@ def shuffle_unit(x, in_channels, out_channels, bottleneck_channels):
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 def GridSizeReductionBlock(inputs, filters):
     # Max pooling layer
     path1 = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), padding='same')(inputs)
@@ -231,21 +206,73 @@ def GridSizeReductionBlock(inputs, filters):
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-inputs = Input(shape=(size, size, 3))
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# === BEFORE (original) ===
+# inputs = Input(shape=(size, size, 3))
+# 
+# # initial layers
+# x = Conv2D(filters=64, kernel_size=(3, 3), strides=(2, 2), padding='same', use_bias=False)(inputs)
+# x = BatchNormalization()(x)
+# x = Activation('relu')(x)
+# 
+# x = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), padding='same')(x)
+# # shuffle units
+# #res = Conv2D(256, (1, 1), padding='same', use_bias=False, name='shortcut_conv')(x)
+# #res = BatchNormalization(name='shortcut_bn')(res)
+# 
+# # shuffle unit
+# x = shuffle_unit(x, in_channels=64, out_channels=256, bottleneck_channels=64)
+# x = shuffle_unit(x, in_channels=64, out_channels=256, bottleneck_channels=64)
+# x = shuffle_unit(x, in_channels=64, out_channels=256, bottleneck_channels=64)
+# 
+# x = GridSizeReductionBlock(x, filters=256)
+# 
+# x = shuffle_unit(x, in_channels=128, out_channels=512, bottleneck_channels=128)
+# x = shuffle_unit(x, in_channels=128, out_channels=512, bottleneck_channels=128)
+# x = shuffle_unit(x, in_channels=128, out_channels=512, bottleneck_channels=128)
+# x = shuffle_unit(x, in_channels=128, out_channels=512, bottleneck_channels=128)
+# x = GridSizeReductionBlock(x, filters=512)
+# 
+# x = shuffle_unit(x, in_channels=256, out_channels=1024, bottleneck_channels=256)
+# x = shuffle_unit(x, in_channels=256, out_channels=1024, bottleneck_channels=256)
+# x = shuffle_unit(x, in_channels=256, out_channels=1024, bottleneck_channels=256)
+# x = shuffle_unit(x, in_channels=256, out_channels=1024, bottleneck_channels=256)
+# x = shuffle_unit(x, in_channels=256, out_channels=1024, bottleneck_channels=256)
+# x = shuffle_unit(x, in_channels=256, out_channels=1024, bottleneck_channels=256)
+# x = GridSizeReductionBlock(x, filters=1024)
+# 
+# x = shuffle_unit(x, in_channels=512, out_channels=2048, bottleneck_channels=512)
+# x = shuffle_unit(x, in_channels=512, out_channels=2048, bottleneck_channels=512)
+# x = shuffle_unit(x, in_channels=512, out_channels=2048, bottleneck_channels=512)
+# x = GridSizeReductionBlock(x, filters=2048)
+# 
+# # add more shuffle units here...
+# 
+# 
+# 
+# 
+# # final layers
+# x = GlobalAveragePooling2D()(x)
+# x = Dense(units=2, activation='softmax')(x)
+# 
+# # create model
+# model = Model(inputs=inputs, outputs=x)
 
-# initial layers
+# === AFTER (edited) ===
+inputs = Input(shape=(size, size, 1))
+
+
 x = Conv2D(filters=64, kernel_size=(3, 3), strides=(2, 2), padding='same', use_bias=False)(inputs)
 x = BatchNormalization()(x)
 x = Activation('relu')(x)
 
 x = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), padding='same')(x)
-# shuffle units
-#res = Conv2D(256, (1, 1), padding='same', use_bias=False, name='shortcut_conv')(x)
-#res = BatchNormalization(name='shortcut_bn')(res)
 
-# shuffle unit
+
+
+
+
 x = shuffle_unit(x, in_channels=64, out_channels=256, bottleneck_channels=64)
 x = shuffle_unit(x, in_channels=64, out_channels=256, bottleneck_channels=64)
 x = shuffle_unit(x, in_channels=64, out_channels=256, bottleneck_channels=64)
@@ -271,29 +298,28 @@ x = shuffle_unit(x, in_channels=512, out_channels=2048, bottleneck_channels=512)
 x = shuffle_unit(x, in_channels=512, out_channels=2048, bottleneck_channels=512)
 x = GridSizeReductionBlock(x, filters=2048)
 
-# add more shuffle units here...
 
 
 
 
-# final layers
+
+
 x = GlobalAveragePooling2D()(x)
 x = Dense(units=2, activation='softmax')(x)
 
-# create model
-model = Model(inputs=inputs, outputs=x)
 
+model = Model(inputs=inputs, outputs=x)
 
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 model.compile(loss='binary_crossentropy', metrics=['accuracy'], optimizer='adam')
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 data_gen = ImageDataGenerator(
         zoom_range=1.2,  # set range for random zoom
         rotation_range = 90,
@@ -307,7 +333,7 @@ data_gen.fit(X_train)
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 history = model.fit(data_gen.flow(X_train,Y_train,
                                        batch_size=64, 
                                        seed=27,

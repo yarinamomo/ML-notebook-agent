@@ -19,16 +19,9 @@ data = pd.read_csv('data/data.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# data = data.drop(['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm'], axis=1)
-
-# === AFTER (edited) ===
-columns_to_drop = ['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm']
-# Only drop columns that exist in the dataframe
-columns_to_drop = [col for col in columns_to_drop if col in data.columns]
-data = data.drop(columns_to_drop, axis=1)
+data = data.drop(['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm'], axis=1)
 
 #%%
 # --- [CELL 3]: ---
@@ -43,34 +36,48 @@ for column in data.columns:
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 categorical_columns = ['WindGustDir', 'WindDir9am', 'WindDir3pm', 'RainToday']
 data = pd.get_dummies(data, columns=categorical_columns, drop_first=True)
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 X = data.drop('RainTomorrow', axis=1)
 y = data['RainTomorrow']
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# === BEFORE (original) ===
+# logreg = LogisticRegression(max_iter=1000)
+# 
+# scaler = StandardScaler()
+# X_train = scaler.fit_transform(X_train)
+# X_test = scaler.transform(X_test)
+# 
+# y_train = scaler.fit_transform(y_train)
+# y_test = scaler.transform(y_test)
+# 
+# logreg.fit(X_train, y_train)
+
+# === AFTER (edited) ===
 logreg = LogisticRegression(max_iter=1000)
 
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-y_train = scaler.fit_transform(y_train)
-y_test = scaler.transform(y_test)
+# Convert categorical target to numeric (Yes -> 1, No -> 0)
+y_train = y_train.map({'Yes': 1, 'No': 0})
+y_test = y_test.map({'Yes': 1, 'No': 0})
 
 logreg.fit(X_train, y_train)

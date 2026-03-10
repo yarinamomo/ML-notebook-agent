@@ -1,28 +1,31 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 df = pd.read_csv("data/SalaryData_Test(1).csv")
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # x = df.workclass.values.reshape(-1,1)
 # y = df.Salary.values.reshape(-1,1)
 
 # === AFTER (edited) ===
-x = df.YearsExperience.values.reshape(-1,1)
+from sklearn.preprocessing import LabelEncoder
+
+# Encode the categorical workclass column to numerical values
+label_encoder = LabelEncoder()
+x_encoded = label_encoder.fit_transform(df.workclass.values)
+x = x_encoded.reshape(-1,1)
 y = df.Salary.values.reshape(-1,1)
 
 #%%

@@ -23,41 +23,11 @@ print(os.listdir("data"))
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# data = pd.read_csv('data/fer2013.csv')
-# #check data shape
-# data.shape
-
-# === AFTER (edited) ===
 data = pd.read_csv('data/fer2013.csv')
-
-print("Data shape:", data.shape)
-print("\nColumns:", data.columns.tolist())
-
-# If the file is a Git LFS pointer (not actual data), create sample data
-if 'version https://git-lfs.github.com/spec/v1' in data.columns:
-    print("\nDetected Git LFS pointer file. Creating sample data...")
-    # Create sample data with the expected structure for fer2013 dataset
-    # Ensure we have enough samples for each emotion (0-6), including emotion 1 which will be removed
-    np.random.seed(42)
-    sample_data = []
-    for emotion in range(7):  # emotions 0-6
-        for _ in range(5):  # 5 samples per emotion
-            sample_data.append({
-                'emotion': emotion,
-                'pixels': ' '.join([str(np.random.randint(0, 255)) for _ in range(2304)]),
-                'Usage': 'Training'
-            })
-    data = pd.DataFrame(sample_data)
-    print("Sample data created with shape:", data.shape)
-    print("\nColumns:", data.columns.tolist())
-    print("\nFirst row:")
-    print(data.head(1))
-else:
-    print("\nFirst few rows:")
-    print(data.head())
+#check data shape
+data.shape
 
 #%%
 # --- [CELL 2]: ---
@@ -77,7 +47,6 @@ data.drop(data[data['emotion'] == 1].index, inplace=True)
 
 # afficher la nouvelle forme du DataFrame
 print(data.shape)
-
 
 #%%
 # --- [CELL 3]: ---
@@ -115,7 +84,7 @@ emotion_counts
 #     plt.imshow(img[0])
 #     plt.title(label) # plt.title(img[1])
 # 
-# plt.show()  
+# plt.show()
 
 # === AFTER (edited) ===
 def row2image(row):
@@ -130,17 +99,13 @@ def row2image(row):
     return image, emotion
 
 plt.figure(0, figsize=(16,10))
-# Get unique emotions that are present in the data (after filtering)
-available_emotions = sorted(data['emotion'].unique())
-for idx, emotion in enumerate(available_emotions):
-    if emotion not in emotion_map:
-        continue  # Skip emotions that are not in the map (like disgust/emotion 1 if not removed)
-    face = data[data['emotion'] == emotion].iloc[0]
-    
+# Get unique emotion values present in the data
+unique_emotions = sorted(data['emotion'].unique())
+for i, emotion_val in enumerate(unique_emotions):
+    face = data[data['emotion'] == emotion_val].iloc[0]
     img, label = row2image(face)
-    plt.subplot(2, 4, idx + 1)
-    plt.imshow(img[0])
+    plt.subplot(2,4,i+1)  # i+1 because subplot indices start at 1
+    plt.imshow(img)
     plt.title(label)
 
-plt.tight_layout()
 plt.show()

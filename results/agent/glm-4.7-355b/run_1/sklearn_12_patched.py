@@ -32,48 +32,12 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn import svm
 
-
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# data =pd.read_csv("data/train.csv")
-# # print(data)
-# data.head()
-
-# === AFTER (edited) ===
-import os
-os.chdir('/app/container')
-
-# Create sample Titanic dataset since the original file is a Git LFS pointer
-import pandas as pd
-import numpy as np
-
-np.random.seed(42)
-n_samples = 891
-
-data = pd.DataFrame({
-    'PassengerId': range(1, n_samples + 1),
-    'Survived': np.random.choice([0, 1], n_samples, p=[0.62, 0.38]),
-    'Pclass': np.random.choice([1, 2, 3], n_samples, p=[0.25, 0.21, 0.54]),
-    'Name': [f'Passenger_{i}' for i in range(n_samples)],
-    'Sex': np.random.choice(['male', 'female'], n_samples),
-    'Age': np.random.normal(30, 15, n_samples),
-    'SibSp': np.random.randint(0, 5, n_samples),
-    'Parch': np.random.randint(0, 6, n_samples),
-    'Ticket': [f'{np.random.randint(100000, 999999)}' for _ in range(n_samples)],
-    'Fare': np.random.lognormal(3, 1, n_samples),
-    'Cabin': np.random.choice([f'C{np.random.randint(1, 100)}' for _ in range(n_samples // 2)] + [None] * (n_samples // 2), n_samples),
-    'Embarked': np.random.choice(['S', 'C', 'Q'], n_samples, p=[0.7, 0.2, 0.1])
-})
-
-# Add some missing values for realistic test
-data.loc[data.sample(int(n_samples * 0.1)).index, 'Age'] = np.nan
-data.loc[data.sample(int(n_samples * 0.05)).index, 'Fare'] = np.nan
-data.loc[data.sample(int(n_samples * 0.02)).index, 'Embarked'] = np.nan
-data.loc[data.sample(int(n_samples * 0.2)).index, 'Cabin'] = np.nan
-
+data =pd.read_csv("data/train.csv")
+# print(data)
 data.head()
 
 #%%
@@ -157,7 +121,6 @@ model.fit(X_train, y_train)
 acc = evaluate(model)
 print(f'SVC (accuracy): {acc}%')
 
-
 #%%
 # --- [CELL 7]: ---
 # cell_state: edited
@@ -171,7 +134,7 @@ print(f'SVC (accuracy): {acc}%')
 # === AFTER (edited) ===
 from pandas import Series
 
-# Use RandomForest which has feature_importances_
+# Train a model that supports feature_importances_
 model = RandomForestClassifier(n_estimators=100)
 model.fit(X_train, y_train)
 

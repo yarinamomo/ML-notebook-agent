@@ -25,97 +25,42 @@ seed=42
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# #use this block later to read cvs hopefully :)
-# train_df=pd.read_csv("data_small/train.csv",index_col=0)
-# #
-# train_labels=train_df['label'].to_numpy()
-# train_labels=train_labels.reshape(train_labels.shape[0],1)
-# 
-# #vocab=train_df['label'].to_numpy()
-# train_df=train_df.drop(columns=['label', 'label_type']) #train_df=train_df.drop(columns=('label')) # for reproducing and fixing
-# test_df=pd.read_csv("data_small/test.csv",index_col=0)
-# #
-# test_labels=test_df['label'].to_numpy()
-# test_labels=test_labels.reshape(test_labels.shape[0],1)
-# 
-# test_df=test_df.drop(columns=('label'))
-# val_df = pd.read_csv("data_small/val.csv",index_col=0)
-# #
-# val_labels=val_df['label'].to_numpy()
-# val_labels=val_labels.reshape(val_labels.shape[0],1)
-# 
-# val_df = val_df.drop(columns=('label'))
-# vocab=np.append(train_labels,val_labels)
-# #print(vocab.shape)
-# vocab=np.unique(vocab)
-# vocab=vocab.reshape(vocab.shape[0],1)
-# print(vocab.shape)
-# oh = OneHotEncoder(sparse_output=False)
-# hot_vocab=oh.fit_transform(vocab)
-# train_df.shape,val_df.shape,test_df.shape
-# train_df
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+#use this block later to read cvs hopefully :)
 train_df=pd.read_csv("data_small/train.csv",index_col=0)
-
-# Print column names to see what's available
-print("train_df columns:", train_df.columns.tolist())
-print("train_df shape:", train_df.shape)
-
-# Try to find the label column - could be named differently
-# Common alternatives: 'label', 'Label', 'target', 'Target', 'class', 'class_label'
-label_col = None
-for col in train_df.columns:
-    if col.lower() in ['label', 'target', 'class']:
-        label_col = col
-        break
-
-if label_col is None:
-    # If no obvious label column, use the last column
-    label_col = train_df.columns[-1]
-    print(f"Using '{label_col}' as label column (last column)")
-
-print(f"Label column: {label_col}")
-
-train_labels=train_df[label_col].to_numpy()
+#
+train_labels=train_df['label'].to_numpy()
 train_labels=train_labels.reshape(train_labels.shape[0],1)
 
-# Check if label_type exists
-if 'label_type' in train_df.columns:
-    train_df=train_df.drop(columns=[label_col, 'label_type'])
-else:
-    train_df=train_df.drop(columns=[label_col])
-    
+#vocab=train_df['label'].to_numpy()
+train_df=train_df.drop(columns=['label', 'label_type']) #train_df=train_df.drop(columns=('label')) # for reproducing and fixing
 test_df=pd.read_csv("data_small/test.csv",index_col=0)
-print("test_df columns:", test_df.columns.tolist())
-
-test_labels=test_df[label_col].to_numpy()
+#
+test_labels=test_df['label'].to_numpy()
 test_labels=test_labels.reshape(test_labels.shape[0],1)
-test_df=test_df.drop(columns=label_col)
 
+test_df=test_df.drop(columns=('label'))
 val_df = pd.read_csv("data_small/val.csv",index_col=0)
-print("val_df columns:", val_df.columns.tolist())
-
-val_labels=val_df[label_col].to_numpy()
+#
+val_labels=val_df['label'].to_numpy()
 val_labels=val_labels.reshape(val_labels.shape[0],1)
-val_df = val_df.drop(columns=label_col)
 
+val_df = val_df.drop(columns=('label'))
 vocab=np.append(train_labels,val_labels)
+#print(vocab.shape)
 vocab=np.unique(vocab)
 vocab=vocab.reshape(vocab.shape[0],1)
 print(vocab.shape)
-
 oh = OneHotEncoder(sparse_output=False)
 hot_vocab=oh.fit_transform(vocab)
 train_df.shape,val_df.shape,test_df.shape
+train_df
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 train_arr=train_df.to_numpy()
 train_arr=torch.from_numpy(train_arr)
 test_arr=test_df.to_numpy()
@@ -147,7 +92,7 @@ test_labels=test_labels.to(torch.float32)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 class myDataset(Dataset):
     def __init__(self, array,labels):
         self.array = array.to(device)
@@ -170,20 +115,20 @@ class myDataset(Dataset):
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 customDataset=myDataset(train_arr,train_labels)
 train_dataloader = DataLoader(customDataset, batch_size=64,shuffle=True, num_workers=0)
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 #trial torch model
 class AnswerModel(torch.nn.Module):
 
@@ -224,50 +169,93 @@ print(model)
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-#1 epoch
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# === BEFORE (original) ===
+# #1 epoch
+# def run_model(model,dataloader, optimizer,train = True ):
+#     if train:
+#         model.train()
+#   
+#     pred = []
+#     True_labels = []
+#     loss = torch.nn.CrossEntropyLoss()
+#     #loss_aux = torch.nn.CrossEntropyLoss()
+#     total_loss = 0
+#     for (data, label) in dataloader: 
+#         
+#         data=data.to(device)
+#         label=label.to(device)
+#         #print("!!!!!!!!!!!!!!PLS!!!!!!!!!!!!!!!!")
+#         #print(next(model.parameters()).is_cuda)
+#         #print("!!!!!!!!!!!!!!!DATALOCATION!!!!!!!!!!!!!!!!!")
+#         #print(data.device)
+#         optimizer.zero_grad()
+#         output,out_aux = model(data)
+#         output=output.type(torch.FloatTensor).to(device)
+#         out_aux=out_aux.type(torch.FloatTensor).to(device)
+#         #print("output shape is,",output.shape)
+#         #print("label shape is,",label.shape)
+#    
+#         loss_ = loss(output, label).to(device)
+#         loss_aux=loss(out_aux,label).to(device)
+#         mod_loss = loss_+loss_aux 
+#         mod_loss.backward()
+#         total_loss+=mod_loss.item()
+#         
+#         optimizer.step()
+#         pred.append(output)
+#         True_labels.append(label)
+#         #print("total loss",total_loss)
+#         
+#     return pred ,True_labels, total_loss/len(dataloader)
+
+# === AFTER (edited) ===
 def run_model(model,dataloader, optimizer,train = True ):
     if train:
         model.train()
-  
+
     pred = []
     True_labels = []
     loss = torch.nn.CrossEntropyLoss()
-    #loss_aux = torch.nn.CrossEntropyLoss()
+
     total_loss = 0
-    for (data, label) in dataloader: 
-        
+    for (data, label) in dataloader:
+
         data=data.to(device)
         label=label.to(device)
-        #print("!!!!!!!!!!!!!!PLS!!!!!!!!!!!!!!!!")
-        #print(next(model.parameters()).is_cuda)
-        #print("!!!!!!!!!!!!!!!DATALOCATION!!!!!!!!!!!!!!!!!")
-        #print(data.device)
+
+
+
+
         optimizer.zero_grad()
         output,out_aux = model(data)
         output=output.type(torch.FloatTensor).to(device)
         out_aux=out_aux.type(torch.FloatTensor).to(device)
-        #print("output shape is,",output.shape)
-        #print("label shape is,",label.shape)
-   
-        loss_ = loss(output, label).to(device)
-        loss_aux=loss(out_aux,label).to(device)
-        mod_loss = loss_+loss_aux 
+
+
+
+        # Convert one-hot encoded labels to class indices for CrossEntropyLoss
+        label_indices = torch.argmax(label, dim=1)
+        out_aux_indices = torch.argmax(label, dim=1)
+        
+        loss_ = loss(output, label_indices).to(device)
+        loss_aux=loss(out_aux,out_aux_indices).to(device)
+        mod_loss = loss_+loss_aux
         mod_loss.backward()
         total_loss+=mod_loss.item()
-        
+
         optimizer.step()
         pred.append(output)
         True_labels.append(label)
-        #print("total loss",total_loss)
-        
+
+
     return pred ,True_labels, total_loss/len(dataloader)
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 epoch = 2 #150
 
 optimizer = torch.optim.Adam(model.parameters(), 0.001, weight_decay=.01)
@@ -291,4 +279,3 @@ for e in range(epoch):
     print("training accuracy is ",correct/len(pred)*1.0)
   # calculate acc, f1 score, recall ......
     print(loss)
-    

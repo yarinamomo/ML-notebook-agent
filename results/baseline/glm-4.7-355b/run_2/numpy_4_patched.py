@@ -40,45 +40,23 @@ test_datagen  = ImageDataGenerator(rescale = 1.0 / 255.0)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# train_dataset = train_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
-#                                                   target_size = (224,224),
-#                                                   class_mode = 'binary',
-#                                                   subset = 'training',
-#                                                   batch_size = 64)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 train_dataset = train_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
                                                   target_size = (224,224),
                                                   class_mode = 'binary',
                                                   subset = 'training',
-                                                  batch_size = 64,
-                                                  color_mode='rgb',
-                                                  interpolation='bilinear',
-                                                  shuffle=True)
+                                                  batch_size = 64)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# valid_dataset = valid_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
-#                                                   target_size = (224,224),
-#                                                   class_mode = 'binary',
-#                                                   subset = 'validation',
-#                                                   batch_size = 64)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 valid_dataset = valid_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
                                                   target_size = (224,224),
                                                   class_mode = 'binary',
                                                   subset = 'validation',
-                                                  batch_size = 64,
-                                                  color_mode='rgb',
-                                                  interpolation='bilinear',
-                                                  shuffle=False)
+                                                  batch_size = 64)
 
 #%%
 # --- [CELL 4]: ---
@@ -156,8 +134,7 @@ callback_list = [earlystopping, checkpoint]
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
-
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 model_history=model.fit(train_dataset,
                         validation_data=valid_dataset,
                         epochs = 1,
@@ -167,13 +144,29 @@ model_history=model.fit(train_dataset,
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 class_names = ['PNEUMONIA','NORMAL']
 
 #%%
 # --- [CELL 11]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 12}
+# === BEFORE (original) ===
+# from sklearn.metrics import classification_report, confusion_matrix
+# import seaborn as sns
+# 
+# prediction_classes = np.array([])
+# true_classes =  np.array([])
+# 
+# for x, y in valid_dataset:
+#   prediction_classes = np.concatenate([prediction_classes,
+#                        np.argmax(model.predict(x), axis = -1)])
+#   true_classes = np.concatenate([true_classes, np.argmax(y.numpy(), axis=-1)])
+# 
+# 
+# print(classification_report(true_classes, prediction_classes, target_names=class_names, digits=4))
+
+# === AFTER (edited) ===
 from sklearn.metrics import classification_report, confusion_matrix
 import seaborn as sns
 
@@ -182,8 +175,8 @@ true_classes =  np.array([])
 
 for x, y in valid_dataset:
   prediction_classes = np.concatenate([prediction_classes,
-                       np.argmax(model.predict(x), axis = -1)])
-  true_classes = np.concatenate([true_classes, np.argmax(y.numpy(), axis=-1)])
+                       (model.predict(x).flatten() > 0.5).astype(int)])
+  true_classes = np.concatenate([true_classes, y])
 
 
 print(classification_report(true_classes, prediction_classes, target_names=class_names, digits=4))

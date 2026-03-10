@@ -31,69 +31,31 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# #By Ranamalla Nithin Reddy https://www.kaggle.com/code/nithinreddy90/chatpgpt-prompts
-# 
-# from transformers import AutoTokenizer
-# 
-# df = pd.read_csv('data/train.csv')
-# 
-# tokenizer = AutoTokenizer.from_pretrained("gpt2")
-# 
-# # Preprocess the data
-# df.drop_duplicates(inplace=True)
-# df.dropna(subset=['output', 'instruction'], inplace=True)
-# 
-# # Tokenize prompts and actions
-# df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(x)))
-# df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(x)))
-# 
-# # Display the preprocessed and tokenized dataframe
-# print(df.head())
+#By Ranamalla Nithin Reddy https://www.kaggle.com/code/nithinreddy90/chatpgpt-prompts
 
-# === AFTER (edited) ===
 from transformers import AutoTokenizer
 
-# Create sample data with expected structure since the CSV file is a Git LFS pointer
-# This simulates an instruction-following dataset
-data = {
-    'instruction': [
-        'Write a poem about spring.',
-        'Explain quantum physics in simple terms.',
-        'Translate "Hello" to French.',
-        'What is the capital of France?',
-        'Write a short story about a robot.'
-    ],
-    'output': [
-        'Spring arrives with gentle breeze,\nFlowers bloom and trees at ease.\nBirds return from far away,\nWelcome to a brighter day.',
-        'Quantum physics is about tiny particles. They can be in multiple places at once. They affect each other instantly across distances. It\'s like magic but based on math.',
-        'Bonjour',
-        'Paris',
-        'Once there was a small robot named Beep. Beep lived in a factory but dreamed of the stars. One day, Beep built a rocket. With courage, Beep journeyed to Mars and made new friends among the rocks.'
-    ]
-}
-
-df = pd.DataFrame(data)
+df = pd.read_csv('data/train.csv')
 
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
-
+# Preprocess the data
 df.drop_duplicates(inplace=True)
 df.dropna(subset=['output', 'instruction'], inplace=True)
 
-
+# Tokenize prompts and actions
 df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(x)))
 df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(x)))
 
-
+# Display the preprocessed and tokenized dataframe
 print(df.head())
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # import pandas as pd
 # import torch
@@ -138,10 +100,9 @@ model_name = "gpt2"
 model = GPT2LMHeadModel.from_pretrained(model_name)
 tokenizer = GPT2Tokenizer.from_pretrained(model_name)
 
-# Fix: Set pad token to eos token since GPT2 doesn't have a pad token by default
+# Set pad_token to eos_token for GPT2 (which doesn't have a pad token by default)
 tokenizer.pad_token = tokenizer.eos_token
 tokenizer.pad_token_id = tokenizer.eos_token_id
-
 
 
 generated_responses = []
@@ -156,7 +117,7 @@ for index, row in df.iterrows():
             input_ids,
             max_length=input_ids.size(1) + 50,
             num_return_sequences=1,
-            pad_token_id=tokenizer.pad_token_id,
+            pad_token_id=tokenizer.eos_token_id,
             attention_mask=input_ids.ne(tokenizer.pad_token_id)
         )
 
@@ -165,8 +126,3 @@ for index, row in df.iterrows():
 
     response = tokenizer.decode(padded_output[0], skip_special_tokens=True)
     generated_responses.append(response)
-
-print("\nGenerated Responses:")
-for i, (instruction, response) in enumerate(zip(df['instruction'], generated_responses)):
-    print(f"\n{i+1}. Instruction: {instruction}")
-    print(f"   Response: {response}")

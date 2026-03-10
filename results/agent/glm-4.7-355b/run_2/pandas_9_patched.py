@@ -34,10 +34,5 @@ df = pd.read_csv("data/IMDb_All_Genres_etf_clean1.csv")
 # clean_df = clean_df[clean_df['Censor']!="(Banned)"]
 
 # === AFTER (edited) ===
-# Check if the expected columns exist, otherwise use empty dataframe
-if 'Total Gross (millions)' in df.columns and 'Censor' in df.columns:
-    clean_df = df[(df["Total Gross (millions)"]!="$0.00M") & (df["Total Gross (millions)"]!="Gross Unkown")].copy()
-    clean_df = clean_df[clean_df['Censor']!="(Banned)"]
-else:
-    # If the expected columns don't exist, use the dataframe as-is or create a copy
-    clean_df = df.copy()
+clean_df = df[(df["Total_Gross"]!="$0.00M") & (df["Total_Gross"]!="Gross Unkown")].copy()
+clean_df = clean_df[clean_df['Censor']!="(Banned)"]

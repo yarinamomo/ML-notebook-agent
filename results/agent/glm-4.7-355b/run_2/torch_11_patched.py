@@ -25,67 +25,24 @@ dataset2 = load_dataset("multi_nli", trust_remote_code=True)
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# torch.manual_seed = 555
-# # torch.set_default_tensor_type('torch.cuda.FloatTensor')
-
-# === AFTER (edited) ===
-torch.manual_seed(555)
+torch.manual_seed = 555
+# torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# # !wget http://nlp.stanford.edu/data/glove.6B.zip
-# # !unzip glove*.zip
-# 
-# glv = dict()
-# glv_size = 50
-# with open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:
-#     for line in fp:
-#         word, *vec = line.split()
-#         glv[word] = torch.tensor(list(map(float , vec)))
+# !wget http://nlp.stanford.edu/data/glove.6B.zip
+# !unzip glove*.zip
 
-# === AFTER (edited) ===
 glv = dict()
 glv_size = 50
-try:
-    with open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:
-        # Check if this is a Git LFS pointer file
-        first_line = fp.readline().strip()
-        fp.seek(0)  # Reset file pointer
-        
-        # If it's an LFS pointer, it will start with 'version'
-        if first_line.startswith('version'):
-            # File is an LFS pointer - use random embeddings as fallback
-            import random
-            words = ['the', 'of', 'and', 'a', 'to', 'in', 'is', 'you', 'that', 'it', 
-                     'he', 'was', 'for', 'on', 'are', 'as', 'with', 'his', 'they', 'i',
-                     'at', 'be', 'this', 'have', 'from', 'or', 'one', 'had', 'by', 'word',
-                     'but', 'not', 'what', 'all', 'were', 'we', 'when', 'your', 'can', 'said',
-                     'there', 'use', 'an', 'each', 'which', 'she', 'do', 'how', 'their', 'if']
-            for word in words:
-                # Generate random embeddings as fallback
-                glv[word] = torch.tensor([random.uniform(-0.1, 0.1) for _ in range(glv_size)])
-        else:
-            # Process actual glove embeddings
-            for line in fp:
-                word, *vec = line.split()
-                try:
-                    glv[word] = torch.tensor(list(map(float, vec)))
-                except ValueError:
-                    # Skip lines that can't be parsed
-                    continue
-except FileNotFoundError:
-    # If file doesn't exist, create dummy embeddings
-    import random
-    words = ['the', 'of', 'and', 'a', 'to', 'in', 'is', 'you', 'that', 'it', 
-             'he', 'was', 'for', 'on', 'are', 'as', 'with', 'his', 'they', 'i']
-    for word in words:
-        glv[word] = torch.tensor([random.uniform(-0.1, 0.1) for _ in range(glv_size)])
+with open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:
+    for line in fp:
+        word, *vec = line.split()
+        glv[word] = torch.tensor(list(map(float , vec)))
 
 #%%
 # --- [CELL 3]: ---
@@ -132,7 +89,6 @@ def tokenize(sentences):
         tokens.append([w for w in word_tokens if not w.lower() in stop_words and len(w)>2])
     return tokens , max_len
 
-
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
@@ -154,9 +110,6 @@ def build_vocab(sentences):
         text2int[x] = ind 
     
     return vocab ,int2text , text2int
-
-    
-
 
 #%%
 # --- [CELL 7]: ---
@@ -252,21 +205,84 @@ X_test = build_input_test(tokens_test , word2index)
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# === BEFORE (original) ===
+# class elmo(torch.nn.Module):
+#     def __init__(self , vocab_size,dim ,classes = 2, embed = None):
+#         super(elmo, self).__init__()
+#         self.embedding = torch.nn.Embedding(vocab_size , dim )
+#         if(embed != None):
+#           self.embedding.weights = torch.nn.Parameter(embed)
+# #         self.forward_lstm1 = torch.nn.LSTM(dim, dim)
+# #         self.forward_lstm2 = torch.nn.LSTM(dim, dim)
+# #         self.backward_lstm1 = torch.nn.LSTM(dim, dim)
+# #         self.backward_lstm2 = torch.nn.LSTM(dim, dim)
+#         self.bilstm1 = torch.nn.LSTM(dim,dim , bidirectional = True , batch_first = True)
+#         self.bilstm2 = torch.nn.LSTM(dim*2,dim , bidirectional = True, batch_first = True)
+#     
+#         self.parameter =torch.nn.Parameter (torch.tensor([1.,1.,1.]))
+#         self.dense = torch.nn.Linear(dim*2 , 512)
+#         self.dense2 = torch.nn.Linear(512 , 1024)
+#         self.dense3 = torch.nn.Linear(1024 , 512)
+#         self.dense4 = torch.nn.Linear(512 , classes)
+#         self.dropout = torch.nn.Dropout(p=0.5)
+#     def forward(self , x , training= 1):
+#         # print(x.shape)
+#         embed = self.embedding(x )
+#         # print(embed.shape)
+#         out1 , h1 = self.bilstm1(embed)
+#         out2 , h2 = self.bilstm2(out1)
+# #         print(h1[1])
+#         dembed = torch.cat([embed,embed],2)
+# 
+#         
+#         first_layer = dembed     * self.parameter[0]   
+#         second_layer = out1    * self.parameter[1]
+#         embed_layer = out2         * self.parameter[2]
+#         
+# #         reverse_embed = torch.flip(embed ,[2] )
+# #         out_f1 , hn_f1 = self.forward_lstm1(embed)
+# #         out_b1 , hn_b1 = self.backward_lstm1(reverse_embed)
+# #         out_f2 , hn_f2 = self.forward_lstm2(out_f1)
+# #         out_b2 , hn_b2 = self.backward_lstm2(out_b1)
+#         
+#         
+# #         reverse_bl1 = torch.flip(out_b1 , [1])
+# #         reverse_bl2 = torch.flip(out_b2 , [1])
+#         
+# #         first_layer = torch.cat([out_f1,reverse_bl1],2)     * self.parameter[0]   
+# #         second_layer = torch.cat([out_f2,reverse_bl2],2)    * self.parameter[1]
+# #         embed_layer = torch.cat([embed , embed] ,2)         * self.parameter[2]
+#         
+#         encoding =  first_layer + second_layer + embed_layer
+#         encoding = torch.sum(encoding,axis = 1)
+#         # print("enc : ", encoding.shape)
+# #         encoding = out1
+#         if training:
+#           x = F.relu(self.dense(encoding))
+#           x = F.relu(self.dropout(self.dense2(x)))
+#           x = F.relu(self.dense3(x))
+#           x = F.softmax(self.dense4(x) , 1)
+#           # print("softmax : ",x)
+#           return x
+#         else:
+#             return encoding
+
+# === AFTER (edited) ===
 class elmo(torch.nn.Module):
     def __init__(self , vocab_size,dim ,classes = 2, embed = None):
         super(elmo, self).__init__()
         self.embedding = torch.nn.Embedding(vocab_size , dim )
         if(embed != None):
-          self.embedding.weights = torch.nn.Parameter(embed)
-#         self.forward_lstm1 = torch.nn.LSTM(dim, dim)
-#         self.forward_lstm2 = torch.nn.LSTM(dim, dim)
-#         self.backward_lstm1 = torch.nn.LSTM(dim, dim)
-#         self.backward_lstm2 = torch.nn.LSTM(dim, dim)
+          self.embedding.weight = torch.nn.Parameter(embed)
+
+
+
+
         self.bilstm1 = torch.nn.LSTM(dim,dim , bidirectional = True , batch_first = True)
         self.bilstm2 = torch.nn.LSTM(dim*2,dim , bidirectional = True, batch_first = True)
-    
+
         self.parameter =torch.nn.Parameter (torch.tensor([1.,1.,1.]))
         self.dense = torch.nn.Linear(dim*2 , 512)
         self.dense2 = torch.nn.Linear(512 , 1024)
@@ -274,57 +290,58 @@ class elmo(torch.nn.Module):
         self.dense4 = torch.nn.Linear(512 , classes)
         self.dropout = torch.nn.Dropout(p=0.5)
     def forward(self , x , training= 1):
-        # print(x.shape)
+
         embed = self.embedding(x )
-        # print(embed.shape)
+
         out1 , h1 = self.bilstm1(embed)
         out2 , h2 = self.bilstm2(out1)
-#         print(h1[1])
+
         dembed = torch.cat([embed,embed],2)
 
-        
-        first_layer = dembed     * self.parameter[0]   
+
+        first_layer = dembed     * self.parameter[0]
         second_layer = out1    * self.parameter[1]
         embed_layer = out2         * self.parameter[2]
-        
-#         reverse_embed = torch.flip(embed ,[2] )
-#         out_f1 , hn_f1 = self.forward_lstm1(embed)
-#         out_b1 , hn_b1 = self.backward_lstm1(reverse_embed)
-#         out_f2 , hn_f2 = self.forward_lstm2(out_f1)
-#         out_b2 , hn_b2 = self.backward_lstm2(out_b1)
-        
-        
-#         reverse_bl1 = torch.flip(out_b1 , [1])
-#         reverse_bl2 = torch.flip(out_b2 , [1])
-        
-#         first_layer = torch.cat([out_f1,reverse_bl1],2)     * self.parameter[0]   
-#         second_layer = torch.cat([out_f2,reverse_bl2],2)    * self.parameter[1]
-#         embed_layer = torch.cat([embed , embed] ,2)         * self.parameter[2]
-        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         encoding =  first_layer + second_layer + embed_layer
         encoding = torch.sum(encoding,axis = 1)
-        # print("enc : ", encoding.shape)
-#         encoding = out1
+
+
         if training:
           x = F.relu(self.dense(encoding))
           x = F.relu(self.dropout(self.dense2(x)))
           x = F.relu(self.dense3(x))
           x = F.softmax(self.dense4(x) , 1)
-          # print("softmax : ",x)
+
           return x
         else:
             return encoding
-        
-        
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# === BEFORE (original) ===
+# model = elmo(len(vocab) , glv_size)
+# optimizer = torch.optim.Adam(model.parameters())
 
-model = elmo(len(vocab) , glv_size)
+# === AFTER (edited) ===
+model = elmo(len(word2index) , glv_size)
 optimizer = torch.optim.Adam(model.parameters())
-
 
 #%%
 # --- [CELL 16]: ---
@@ -354,7 +371,6 @@ def train( traindata,epochs = 5):
         print("avg trainig loss : {}".format(sum(bloss)/numb) ,end = "  ")
         print("time taken : {}".format(time.time()  - st))
         print("")
-
 
 #%%
 # --- [CELL 17]: ---
@@ -390,50 +406,39 @@ yt = dataset['test']['label']
 
 # === AFTER (edited) ===
 class sentimentdata(Dataset):
-    def __init__(self, X, Y):
+    def __init__(self , X,Y, padsz=40, num_classes=2):
         self.X = X
         self.Y = Y
+        self.padsz = padsz
+        self.num_classes = num_classes
     def __len__(self):
         return len(self.X)
-    def __getitem__(self, index):
+    def __getitem__(self , index):
         x = self.X[index]
-        y = self.Y[index]
-        return x, y
-
-def collate_fn(batch):
-    # Custom collate function to handle variable length sequences
-    X_batch = []
-    Y_batch = []
-    Y_onehot_batch = []
-    max_len = max(len(x) for x, y in batch)
-    
-    for x, y in batch:
-        # Pad X sequences with zeros
-        if len(x) < max_len:
-            x_padded = torch.cat([x, torch.zeros(max_len - len(x)).long()])
+        y= self.Y[index]
+        
+        # One-hot encode the label
+        y_onehot = torch.zeros(self.num_classes)
+        y_onehot[y] = 1
+        
+        # Pad x to fixed length - use long type for integer indices
+        if len(x) < self.padsz:
+            padded_x = torch.zeros(self.padsz, dtype=torch.long)
+            padded_x[:len(x)] = x
+            x = padded_x
         else:
-            x_padded = x
-        X_batch.append(x_padded)
-        Y_batch.append(y)
-    
-    X_batch = torch.stack(X_batch)
-    Y_batch = torch.tensor(Y_batch)
-    
-    # Convert Y to one-hot encoding for 2 classes
-    Y_onehot = torch.zeros(len(Y_batch), 2)
-    Y_onehot[torch.arange(len(Y_batch)), Y_batch] = 1
-    Y_onehot_batch = Y_onehot
-    
-    return X_batch, Y_onehot_batch
+            x = x[:self.padsz].long()
 
-st_train_loader = sentimentdata(X, ylb)
-st_test_loader = sentimentdata(X, ytb)
+        return x, y_onehot
 
-st_train = DataLoader(st_train_loader, batch_size=5, collate_fn=collate_fn)
-st_test = DataLoader(st_test_loader, batch_size=5, collate_fn=collate_fn)
+st_train_loader = sentimentdata(X , ylb, 40, 2)
+st_test_loader = sentimentdata(X , ytb, 40, 2)
+
+st_train = DataLoader(st_train_loader, batch_size=5 )
+st_test = DataLoader(st_test_loader, batch_size=5 )
 
 #%%
 # --- [CELL 19]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
-train(st_train,2) 
+train(st_train,2)

@@ -1,47 +1,10 @@
 # --- [CELL 0]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# import pandas
-# import matplotlib.pyplot as plt
-# dataset = pandas.read_csv('data/international-airline-passengers.csv', usecols=[1], engine='python')
-# plt.plot(dataset)
-# plt.show()
-
-# === AFTER (edited) ===
 import pandas
 import matplotlib.pyplot as plt
-import numpy as np
-
-# Try to read the CSV file
-df = pandas.read_csv('data/international-airline-passengers.csv', 
-                     usecols=[0], 
-                     engine='python', 
-                     header=None)
-
-# Convert to numeric, coercing errors
-df = df.apply(pandas.to_numeric, errors='coerce')
-
-# Drop all NaN rows
-df = df.dropna()
-
-# If no data, create synthetic data for demonstration
-if len(df) == 0:
-    # Create synthetic time series data
-    np.random.seed(42)
-    n_points = 144
-    t = np.linspace(0, 12, n_points)
-    # Create a pattern with trend and seasonality
-    dataset = 100 + 5*t + 20*np.sin(2*np.pi*t) + 10*np.random.randn(n_points)
-    dataset = dataset.reshape(-1, 1)
-else:
-    # Convert to numpy array
-    dataset = df.values.astype('float32')
-
+dataset = pandas.read_csv('data/international-airline-passengers.csv', usecols=[1], engine='python')
 plt.plot(dataset)
-plt.title('International Airline Passengers')
-plt.xlabel('Month')
-plt.ylabel('Passengers')
 plt.show()
 
 #%%
@@ -60,14 +23,9 @@ from sklearn.metrics import mean_squared_error
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# # normalize the dataset
-# scaler = MinMaxScaler(feature_range=(0, 1))
-# dataset = scaler.fit_transform(dataset)
-
-# === AFTER (edited) ===
+# normalize the dataset
 scaler = MinMaxScaler(feature_range=(0, 1))
 dataset = scaler.fit_transform(dataset)
 
@@ -150,9 +108,8 @@ testX, testY = create_dataset(test, look_back)
 trainX = np.reshape(trainX, (trainX.shape[0], 1, trainX.shape[1]))
 testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
 
-
 model = Sequential()
-model.add(LSTM(4, input_shape=(1, look_back), return_sequences=False))
+model.add(LSTM(4, input_shape=(1, look_back)))
 model.add(Dense(1))
 model.compile(loss='mean_squared_error', optimizer='adam')
 model.fit(trainX, trainY, epochs=10, batch_size=1, verbose=2)

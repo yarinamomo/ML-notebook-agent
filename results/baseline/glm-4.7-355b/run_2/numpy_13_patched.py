@@ -74,21 +74,17 @@ def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
             foldername = os.path.basename(dirname)
             full_path = os.path.join(dirname, filename)
 
-            try:
-                y, sr = librosa.load(full_path)
-                mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, fmax=fmax, fmin=fmin)
-                logam = librosa.power_to_db(mel)
-                data.append(logam)
-            except Exception as e:
-                print(f"Warning: Could not load {full_path}: {e}")
-                continue
+            y, sr = librosa.load(full_path)
+            mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, fmax=fmax, fmin=fmin)
+            logam = librosa.power_to_db(mel)
+            data.append(logam)
+            max_harm_length = max(max_harm_length, logam.shape[1])
 
-    if not data:
-        print("Warning: No audio files were successfully processed. Please check if:")
-        print("  1. The path '{0}' contains valid audio files".format(path))
-        print("  2. Audio backend libraries (soundfile or audioread) are available")
-        return np.array([])
-    
+    # Pad all spectrograms to the same maximum length
+    for i in range(len(data)):
+        pad_width = max_harm_length - data[i].shape[1]
+        data[i] = np.pad(data[i], ((0, 0), (0, pad_width)), mode='constant')
+
     data = np.array(data)
     return data
 

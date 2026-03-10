@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import numpy as np
 
 
@@ -251,7 +251,7 @@ class Dense:                                        # dense layer with softmax a
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 import tensorflow as tf
 import os
 import matplotlib.pyplot as plt
@@ -393,7 +393,7 @@ def to_gray(image_name):
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 import numpy as np
 import time
 
@@ -533,7 +533,7 @@ class Network:
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 dataset = load_cifar()
 
 # Access the data and labels
@@ -555,7 +555,7 @@ print("Test labels shape:", y_test.shape)
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # from keras.regularizers import l2
 # from keras.optimizers import SGD
@@ -855,12 +855,15 @@ if __name__ == '__main__':
     print('\n--- Processing the dataset ---')
     dataset = preprocess(dataset)
 
-    train_images = np.moveaxis(dataset['train_images'], 1, 3)
-    validation_images = np.moveaxis(dataset['validation_images'], 1, 3)
-    test_images = np.moveaxis(dataset['test_images'], 1, 3)
-    train_labels = to_categorical(dataset['train_labels'])
-    validation_labels = to_categorical(dataset['validation_labels'])
-    test_labels = to_categorical(dataset['test_labels'])
+    # Images are already in NHWC format (NumPy HWC), so we don't need to move axes
+    train_images = dataset['train_images']
+    validation_images = dataset['validation_images']
+    test_images = dataset['test_images']
+    
+    # Labels need to be squeezed from (N, 1) to (N,) for to_categorical
+    train_labels = to_categorical(dataset['train_labels'].squeeze())
+    validation_labels = to_categorical(dataset['validation_labels'].squeeze())
+    test_labels = to_categorical(dataset['test_labels'].squeeze())
 
     if os.path.isfile('model.h5'):
         print('\n--- Loading model ---')
@@ -877,6 +880,7 @@ if __name__ == '__main__':
         model.add(Flatten())
         model.add(Dense(256, name='fullyconnected', activation='relu', kernel_initializer='he_normal', kernel_regularizer=l2(lam)))
         model.add(Dense(10, name='dense', activation='softmax'))
+
 
     train(
         model,

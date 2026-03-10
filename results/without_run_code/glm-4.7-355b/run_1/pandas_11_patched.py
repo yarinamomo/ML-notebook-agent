@@ -1,8 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-
-
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 import tensorflow as tf
@@ -37,73 +35,29 @@ from sklearn.model_selection import KFold, StratifiedKFold
 import warnings
 warnings.filterwarnings("ignore")
 
-
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/creditcard.csv')
-# df.head()
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 df = pd.read_csv('data/creditcard.csv')
 df.head()
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# data_df = df.copy()
-# data_df['Hour'] = data_df['Time'].apply(lambda x: np.floor(x / 3600))
-# 
-# tmp = data_df.groupby(['Hour', 'Class'])['Amount'].aggregate(['min', 'max', 'count', 'sum', 'mean', 'median', 'var']).reset_index()
-# data_df_1 = pd.DataFrame(tmp)
-# data_df_1.columns = ['Hour', 'Class', 'Min', 'Max', 'Transactions', 'Sum', 'Mean', 'Median', 'Var']
-# data_df_1.head()
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 data_df = df.copy()
+data_df['Hour'] = data_df['Time'].apply(lambda x: np.floor(x / 3600))
 
-# Check if expected columns exist
-expected_cols = ['Time', 'Class', 'Amount']
-missing_cols = [col for col in expected_cols if col not in data_df.columns]
-
-if not missing_cols:
-    # Normal processing when all columns exist
-    data_df['Hour'] = data_df['Time'].apply(lambda x: np.floor(x / 3600))
-    tmp = data_df.groupby(['Hour', 'Class'])['Amount'].aggregate(['min', 'max', 'count', 'sum', 'mean', 'median', 'var']).reset_index()
-    data_df_1 = pd.DataFrame(tmp)
-    data_df_1.columns = ['Hour', 'Class', 'Min', 'Max', 'Transactions', 'Sum', 'Mean', 'Median', 'Var']
-elif 'Class' in data_df.columns and 'Amount' in data_df.columns:
-    # If we have Class and Amount but no Time
-    tmp = data_df.groupby(['Class'])['Amount'].aggregate(['min', 'max', 'count', 'sum', 'mean', 'median', 'var']).reset_index()
-    data_df_1 = pd.DataFrame(tmp)
-    data_df_1.columns = ['Class', 'Min', 'Max', 'Transactions', 'Sum', 'Mean', 'Median', 'Var']
-else:
-    # Create placeholder structure if key columns are missing
-    print(f"Warning: Expected columns not found. Missing: {missing_cols}")
-    print("Creating placeholder dataframe structure...")
-    data_df_1 = pd.DataFrame({
-        'Hour': [],
-        'Class': [],
-        'Min': [],
-        'Max': [],
-        'Transactions': [],
-        'Sum': [],
-        'Mean': [],
-        'Median': [],
-        'Var': []
-    })
-
+tmp = data_df.groupby(['Hour', 'Class'])['Amount'].aggregate(['min', 'max', 'count', 'sum', 'mean', 'median', 'var']).reset_index()
+data_df_1 = pd.DataFrame(tmp)
+data_df_1.columns = ['Hour', 'Class', 'Min', 'Max', 'Transactions', 'Sum', 'Mean', 'Median', 'Var']
 data_df_1.head()
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # === BEFORE (original) ===
 # var = data_df.columns.values
 # 
@@ -128,24 +82,20 @@ data_df_1.head()
 # === AFTER (edited) ===
 var = data_df.columns.values
 
-# Check if 'Class' column exists
-if 'Class' in df.columns:
-    i = 0
-    t0 = df.loc[df['Class'] == 0]
-    t1 = df.loc[df['Class'] == 1]
-    
-    sns.set_style('whitegrid')
-    plt.figure()
-    fig, ax = plt.subplots(8,4,figsize=(16,28))
-    
-    for feature in var:
-        i += 1
-        plt.subplot(8,4,i)
-        sns.kdeplot(t0[feature], bw=0.5,label="Class = 0");
-        sns.kdeplot(t1[feature], bw=0.5,label="Class = 1");
-        plt.xlabel(feature, fontsize=12)
-        locs, labels = plt.xticks()
-        plt.tick_params(axis='both', which='major', labelsize=12)
-    plt.show()
-else:
-    print("Warning: 'Class' column not found in dataframe. Skipping classification visualization.")
+i = 0
+t0 = data_df.loc[data_df['Class'] == 0]
+t1 = data_df.loc[data_df['Class'] == 1]
+
+sns.set_style('whitegrid')
+plt.figure()
+fig, ax = plt.subplots(8,4,figsize=(16,28))
+
+for feature in var:
+    i += 1
+    plt.subplot(8,4,i)
+    sns.kdeplot(t0[feature], bw=0.5,label="Class = 0");
+    sns.kdeplot(t1[feature], bw=0.5,label="Class = 1");
+    plt.xlabel(feature, fontsize=12)
+    locs, labels = plt.xticks()
+    plt.tick_params(axis='both', which='major', labelsize=12)
+plt.show();

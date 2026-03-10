@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
@@ -27,65 +27,57 @@ greeks_df = pd.read_csv('data/greeks_synthetic.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train_df = pd.merge(train_df, greeks_df, on="Id")
-
-# === AFTER (edited) ===
-# Check if DataFrames have the expected structure before merging
-if 'Id' in train_df.columns and 'Id' in greeks_df.columns:
-    train_df = pd.merge(train_df, greeks_df, on="Id")
-else:
-    print("Warning: 'Id' column not found in DataFrames. Skipping merge.")
-    print(f"train_df columns: {list(train_df.columns)}")
-    print(f"greeks_df columns: {list(greeks_df.columns)}")
+train_df = pd.merge(train_df, greeks_df, on="Id")
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# # Remove the first column
-# train_df = train_df.drop("Id", axis=1)
-# test_df = test_df.drop("Id", axis=1)
-
-# === AFTER (edited) ===
-# Remove the Id column if it exists
-if 'Id' in train_df.columns:
-    train_df = train_df.drop("Id", axis=1)
-if 'Id' in test_df.columns:
-    test_df = test_df.drop("Id", axis=1)
+# Remove the first column
+train_df = train_df.drop("Id", axis=1)
+test_df = test_df.drop("Id", axis=1)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# One-hot encoding
-encoder = OneHotEncoder(handle_unknown="ignore")
-train_df = pd.get_dummies(train_df, columns=list(train_df))
-test_df = pd.get_dummies(test_df, columns=list(test_df))
+# === BEFORE (original) ===
+# # One-hot encoding
+# encoder = OneHotEncoder(handle_unknown="ignore")
+# train_df = pd.get_dummies(train_df, columns=list(train_df))
+# test_df = pd.get_dummies(test_df, columns=list(test_df))
+
+# === AFTER (edited) ===
+# Identify categorical columns
+categorical_cols = train_df.select_dtypes(include=['object']).columns.tolist()
+print("Categorical columns:", categorical_cols)
+
+# Concatenate train and test to ensure consistent columns after encoding
+train_df['is_train'] = 1
+test_df['is_train'] = 0
+combined_df = pd.concat([train_df, test_df], axis=0, ignore_index=True)
+
+# Apply one-hot encoding to categorical columns only
+combined_df = pd.get_dummies(combined_df, columns=categorical_cols, drop_first=True)
+
+# Split back into train and test
+train_df = combined_df[combined_df['is_train'] == 1].copy()
+test_df = combined_df[combined_df['is_train'] == 0].copy()
+
+# Drop the is_train column
+train_df = train_df.drop('is_train', axis=1)
+test_df = test_df.drop('is_train', axis=1)
+
+print("Train shape after encoding:", train_df.shape)
+print("Test shape after encoding:", test_df.shape)
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# # Data processing
-# scaler = StandardScaler()
-# train_df = scaler.fit_transform(train_df)
-# test_df = scaler.transform(test_df)
-
-# === AFTER (edited) ===
-# Scale the data
+# Data processing
 scaler = StandardScaler()
-# Convert to numpy arrays to avoid feature name issues
-if hasattr(train_df, 'columns'):
-    train_array = train_df.values if hasattr(train_df, 'values') else train_df
-    test_array = test_df.values if hasattr(train_df, 'values') else test_df
-    train_df = scaler.fit_transform(train_array)
-    test_df = scaler.transform(test_array)
-else:
-    # Already are arrays
-    train_df = scaler.fit_transform(train_df)
-    test_df = scaler.transform(test_df)
+train_df = scaler.fit_transform(train_df)
+test_df = scaler.transform(test_df)

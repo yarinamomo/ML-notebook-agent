@@ -32,59 +32,11 @@ test_dir = data_dir + '/test'
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# # TODO: Define your transforms for the training, validation, and testing sets
-# 
-# # Define transforms
-# train_transforms = transforms.Compose([
-#     transforms.RandomResizedCrop(224),
-#     transforms.RandomHorizontalFlip(),
-#     transforms.ToTensor(),
-#     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-# ])
-# 
-# val_test_transforms = transforms.Compose([
-#     transforms.Resize(256),
-#     transforms.CenterCrop(224),
-#     transforms.ToTensor(),
-#     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) 
-# ])
-# # TODO: Load the datasets with ImageFolder
-# 
-# # Load datasets 
-# train_ds = datasets.ImageFolder(train_dir, train_transforms)
-# valid_ds = datasets.ImageFolder(valid_dir, val_test_transforms)
-# test_ds = datasets.ImageFolder(test_dir, val_test_transforms)
-# 
-# # TODO: Using the image datasets and the trainforms, define the dataloaders
-# 
-# # Create dataloaders
-# train_loader = torch.utils.data.DataLoader(train_ds, batch_size=64, shuffle=True)
-# valid_loader = torch.utils.data.DataLoader(valid_ds, batch_size=64)
-# test_loader = torch.utils.data.DataLoader(test_ds, batch_size=64)
+# TODO: Define your transforms for the training, validation, and testing sets
 
-# === AFTER (edited) ===
-# Custom image loader that skips corrupted files (LFS pointers)
-from PIL import Image
-
-def pil_loader_with_skip(path):
-    """
-    Custom image loader that skips files that cannot be opened/identified.
-    This handles LFS pointer files which are not actual images.
-    """
-    try:
-        with open(path, 'rb') as f:
-            img = Image.open(f)
-            return img.convert('RGB')
-    except Exception as e:
-        print(f"Skipping corrupted file: {path}")
-        # Return a placeholder image so the DataLoader doesn't crash
-        # Create a small random image as placeholder
-        return Image.new('RGB', (224, 224), color=(128, 128, 128))
-
-
+# Define transforms
 train_transforms = transforms.Compose([
     transforms.RandomResizedCrop(224),
     transforms.RandomHorizontalFlip(),
@@ -96,41 +48,28 @@ val_test_transforms = transforms.Compose([
     transforms.Resize(256),
     transforms.CenterCrop(224),
     transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) 
 ])
+# TODO: Load the datasets with ImageFolder
 
-# Use custom loader that skips corrupted files
-train_ds = datasets.ImageFolder(train_dir, train_transforms, loader=pil_loader_with_skip)
-valid_ds = datasets.ImageFolder(valid_dir, val_test_transforms, loader=pil_loader_with_skip)
-test_ds = datasets.ImageFolder(test_dir, val_test_transforms, loader=pil_loader_with_skip)
+# Load datasets 
+train_ds = datasets.ImageFolder(train_dir, train_transforms)
+valid_ds = datasets.ImageFolder(valid_dir, val_test_transforms)
+test_ds = datasets.ImageFolder(test_dir, val_test_transforms)
 
+# TODO: Using the image datasets and the trainforms, define the dataloaders
 
-
+# Create dataloaders
 train_loader = torch.utils.data.DataLoader(train_ds, batch_size=64, shuffle=True)
 valid_loader = torch.utils.data.DataLoader(valid_ds, batch_size=64)
 test_loader = torch.utils.data.DataLoader(test_ds, batch_size=64)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# with open('data_small/cat_to_name.json', 'r') as f:
-#     cat_to_name = json.load(f)
-
-# === AFTER (edited) ===
-# Try to load the category to name mapping, provide fallback if file is LFS pointer
-try:
-    with open('data_small/cat_to_name.json', 'r') as f:
-        cat_to_name = json.load(f)
-except (json.JSONDecodeError, ValueError):
-    # Fallback: create a mapping using the class numbers from the dataset
-    import os
-    train_dir = 'data_small/flower_data/train'
-    class_numbers = sorted([f for f in os.listdir(train_dir) if os.path.isdir(os.path.join(train_dir, f))])
-    # Map class numbers as integers to "Class X" format
-    cat_to_name = {int(num): f'Class {num}' for num in class_numbers}
-    print(f"Using fallback class mapping with {len(cat_to_name)} classes")
+with open('data_small/cat_to_name.json', 'r') as f:
+    cat_to_name = json.load(f)
 
 #%%
 # --- [CELL 4]: ---
@@ -409,66 +348,39 @@ def predict(image_path, model, topk=5):
 
 # === AFTER (edited) ===
 import matplotlib.pyplot as plt
+import random
 
 
 def display_image(image_path):
-    """Display an image, skipping if it's a corrupted/LFS pointer file"""
-    try:
-        img = process_image(image_path)
-        imshow(img)
-    except Exception as e:
-        print(f"Skipping corrupted image: {image_path}")
+    img = process_image(image_path)
+    imshow(img)
 
 model = load_checkpoint('checkpoint.pth')
 
-# Find a valid image to display
-import random
-valid_image_found = False
-test_image_path = None
+# Create a mapping from index to class name
+idx_to_class = {idx: class_name for class_name, idx in model.class_to_idx.items()}
 
-# Try up to 10 times to find a valid image
-for attempt in range(10):
-    random_idx = random.randint(0, len(test_ds.imgs) - 1)
-    test_image_path = test_ds.imgs[random_idx][0]
-    try:
-        # Try to open the image to see if it's valid
-        with Image.open(test_image_path) as img:
-            img.convert('RGB')
-        valid_image_found = True
-        break
-    except:
-        continue
 
-if valid_image_found:
+test_image_path = random.choice(test_ds.imgs)[0]
+display_image(test_image_path)
+
+probs, classes = predict(test_image_path, model)
+
+# Convert predicted indices to class names
+class_names = [cat_to_name[idx_to_class[cls]] for cls in classes]
+
+print("Probabilities:", probs)
+print("Classes:", class_names)
+
+
+for i in range(5):
+    test_image_path = random.choice(test_ds.imgs)[0]
     display_image(test_image_path)
+
     probs, classes = predict(test_image_path, model)
-    class_names = [cat_to_name[cls] for cls in classes]
+
+    # Convert predicted indices to class names
+    class_names = [cat_to_name[idx_to_class[cls]] for cls in classes]
+
     print("Probabilities:", probs)
     print("Classes:", class_names)
-else:
-    print("No valid images found in test set (all appear to be LFS pointers)")
-
-
-# Try to display up to 5 valid images
-for i in range(5):
-    valid_image_found = False
-    for attempt in range(10):
-        random_idx = random.randint(0, len(test_ds.imgs) - 1)
-        test_image_path = test_ds.imgs[random_idx][0]
-        try:
-            # Try to open the image to see if it's valid
-            with Image.open(test_image_path) as img:
-                img.convert('RGB')
-            valid_image_found = True
-            break
-        except:
-            continue
-    
-    if valid_image_found:
-        display_image(test_image_path)
-        probs, classes = predict(test_image_path, model)
-        class_names = [cat_to_name[cls] for cls in classes]
-        print("Probabilities:", probs)
-        print("Classes:", class_names)
-    else:
-        print("Could not find a valid image for iteration", i+1)

@@ -23,7 +23,6 @@ test_raw = pd.read_csv('data/test.csv')
 meal = pd.read_csv('data/meal_info.csv')
 centerinfo = pd.read_csv('data/fulfilment_center_info.csv')
 
-
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
@@ -97,7 +96,6 @@ weekly_cuisine_category.rename(columns={'category': 'weekly_cuisine_cat'}, inpla
 # weekly_cuisine_cat sütununu df veri çerçevesine ekleyin
 df = df.merge(weekly_cuisine_category, on=['week', 'cuisine'], how='left')
 df.head()
-
 
 #%%
 # --- [CELL 11]: ---
@@ -225,8 +223,6 @@ print("RMSE:", rmse)
 # --- [CELL 23]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 24}
-
-
 dft['new_discount_rate'] = (dft['base_price'] - dft['checkout_price']) / dft['base_price']
 
 #%%
@@ -247,7 +243,6 @@ weekly_cuisine_category.rename(columns={'category': 'weekly_cuisine_cat'}, inpla
 dft = dft.merge(weekly_cuisine_category, on=['week', 'cuisine'], how='left')
 dft.head()
 
-
 #%%
 # --- [CELL 26]: ---
 # cell_state: unchanged
@@ -266,8 +261,6 @@ dft.head()
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 28}
 dft=dft.drop("id",axis=1)
 
-
-
 #%%
 # --- [CELL 28]: ---
 # cell_state: unchanged
@@ -283,15 +276,9 @@ c
 
 #%%
 # --- [CELL 30]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 31}
-# === BEFORE (original) ===
-# dft_encoded = pd.get_dummies(dft[c], drop_first=True)
-# dft_encoded.head()
-
-# === AFTER (edited) ===
 dft_encoded = pd.get_dummies(dft[c], drop_first=True)
-dft_encoded = dft_encoded.drop("num_orders", axis=1)
 dft_encoded.head()
 
 #%%

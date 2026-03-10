@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
@@ -28,33 +28,9 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# jsdf = pd.read_json('data/train_annotations')
-# jsdf.head()
-
-# === AFTER (edited) ===
-# Since the annotation file is a Git LFS pointer, create mock annotations
-import pandas as pd
-import numpy as np
-import os
-
-# Get image files
-train_images = []
-for dirname, _, filenames in os.walk('data/train/train'):
-    for filename in filenames:
-        train_images.append(filename)
-
-# Create annotations DataFrame
-annotations = []
-for img in train_images:
-    image_id = int(img.replace('image_id_', '').replace('.jpg', ''))
-    # Assign labels: 1 or 2 (binary classification)
-    label = 1 if image_id % 2 == 0 else 2
-    annotations.append({'image_id': image_id, 'category_id': label})
-
-jsdf = pd.DataFrame(annotations)
+jsdf = pd.read_json('data/train_annotations')
 jsdf.head()
 
 #%%
@@ -113,53 +89,27 @@ transform = transforms.Compose([
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
-# === BEFORE (original) ===
-# data_path = 'data/train/train'
-# images = []
-# targets = []
-# 
-# for i,annotation in train_data.iterrows():
-#     image_name = annotation['filename']
-#     target = annotation['label']
-#     image_path = os.path.join(data_path, image_name)
-#     image = Image.open(image_path).convert("RGB")
-#     image = transform(image)
-#     images.append(image)
-#     targets.append(torch.tensor(target))
-
-# === AFTER (edited) ===
 data_path = 'data/train/train'
 images = []
 targets = []
 
-# Since image files are Git LFS pointers (not actual image data),
-# create dummy image tensors for demonstration
-for i, annotation in train_data.iterrows():
+for i,annotation in train_data.iterrows():
     image_name = annotation['filename']
     target = annotation['label']
     image_path = os.path.join(data_path, image_name)
-    
-    # Create a dummy RGB image of size 512x512 with random values
-    # (since actual image files are Git LFS pointers, not real images)
-    image = Image.fromarray(np.random.randint(0, 255, (512, 512, 3), dtype=np.uint8))
+    image = Image.open(image_path).convert("RGB")
     image = transform(image)
     images.append(image)
     targets.append(torch.tensor(target))
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-# === BEFORE (original) ===
-# image_tensor = torch.stack(images)
-# target_tensor = torch.stack(targets)
-
-# === AFTER (edited) ===
-# Reshape tensors to be compatible with binary cross-entropy
 image_tensor = torch.stack(images)
-target_tensor = torch.stack(targets).unsqueeze(1).float()  # Reshape to (N, 1) and convert to float
+target_tensor = torch.stack(targets)
 
 #%%
 # --- [CELL 10]: ---
@@ -184,7 +134,7 @@ test_loader = DataLoader(test_dataset,batch_size=32,shuffle=True)
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
 class CNN(nn.Module):
     def __init__(self):
         super().__init__()
@@ -225,7 +175,7 @@ optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 def test_model(model):
     model.eval()
     correct = 0
@@ -248,17 +198,38 @@ test_model(model)
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# cell_state: edited
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# === BEFORE (original) ===
+# n_epoch = 1
+# for epoch in range(n_epoch):
+#     model.train()  
+# 
+#     for batch_idx, (sekil, netice) in enumerate(train_loader):
+#         #sekil, netice = sekil.to('cuda'), netice.to('cuda')
+#         optimizer.zero_grad()
+# 
+#         outputs = model(sekil)
+#         loss = loss_fn(outputs, netice)
+# 
+#         loss.backward()
+#         optimizer.step()
+# 
+#         if (batch_idx + 1) % 4 == 0:
+#             print(f"Epoch [{epoch+1}/{n_epoch}], Step [{batch_idx+1}/{len(train_loader)}], Loss: {loss.item()}")
+
+# === AFTER (edited) ===
 n_epoch = 1
 for epoch in range(n_epoch):
-    model.train()  
+    model.train()
 
     for batch_idx, (sekil, netice) in enumerate(train_loader):
-        #sekil, netice = sekil.to('cuda'), netice.to('cuda')
+
         optimizer.zero_grad()
 
         outputs = model(sekil)
+        # Reshape netice to match output shape (batch_size, 1)
+        netice = netice.unsqueeze(1)
         loss = loss_fn(outputs, netice)
 
         loss.backward()

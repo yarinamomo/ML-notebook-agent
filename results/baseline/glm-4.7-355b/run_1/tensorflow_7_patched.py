@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from transformers import BertTokenizer, TFBertModel
 
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
@@ -41,22 +40,12 @@ print(tf.__version__)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# import pandas as pd
-# 
-# train = pd.read_csv("data/train.csv")
-# train = train[:8] # for faster reproducing and fixing purposes --- make a smaller dataset
-
-# === AFTER (edited) ===
 import pandas as pd
 
 train = pd.read_csv("data/train.csv")
-train = train[:8]
-print("Columns in dataset:", train.columns.tolist())
-print("First few rows:")
-print(train.head())
+train = train[:8] # for faster reproducing and fixing purposes --- make a smaller dataset
 
 #%%
 # --- [CELL 3]: ---
@@ -110,14 +99,34 @@ def bert_encode(hypotheses, premises, tokenizer):
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer)
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-max_len = 50
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# === BEFORE (original) ===
+# max_len = 50
+# from transformers import BertTokenizer, TFBertModel
+# 
+# 
+# def build_model():
+#     bert_encoder = TFBertModel.from_pretrained(model_name)
+#     input_word_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_word_ids")
+#     input_mask = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_mask")
+#     input_type_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_type_ids")
+#     
+#     embedding = bert_encoder([input_word_ids, input_mask, input_type_ids])[0]
+#     output = tf.keras.layers.Dense(3, activation='softmax')(embedding[:,0,:])
+#     
+#     model = tf.keras.Model(inputs=[input_word_ids, input_mask, input_type_ids], outputs=output)
+#     model.compile(tf.keras.optimizers.Adam(lr=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+#     
+#     return model
+
+# === AFTER (edited) ===
+max_len = 200
 from transformers import BertTokenizer, TFBertModel
 
 
@@ -126,19 +135,19 @@ def build_model():
     input_word_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_word_ids")
     input_mask = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_mask")
     input_type_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_type_ids")
-    
+
     embedding = bert_encoder([input_word_ids, input_mask, input_type_ids])[0]
     output = tf.keras.layers.Dense(3, activation='softmax')(embedding[:,0,:])
-    
+
     model = tf.keras.Model(inputs=[input_word_ids, input_mask, input_type_ids], outputs=output)
-    model.compile(tf.keras.optimizers.Adam(lr=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    
+    model.compile(tf.keras.optimizers.Adam(learning_rate=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
     return model
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 9}
 with strategy.scope():
     model = build_model()
     model.summary()

@@ -1,8 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-
-
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 import tensorflow as tf
@@ -37,24 +35,17 @@ from sklearn.model_selection import KFold, StratifiedKFold
 import warnings
 warnings.filterwarnings("ignore")
 
-
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/creditcard.csv')
-# df.head()
-
-# === AFTER (edited) ===
-df = pd.read_csv('creditcard.csv')
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+df = pd.read_csv('data/creditcard.csv')
 df.head()
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 data_df = df.copy()
 data_df['Hour'] = data_df['Time'].apply(lambda x: np.floor(x / 3600))
 
@@ -65,13 +56,35 @@ data_df_1.head()
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# === BEFORE (original) ===
+# var = data_df.columns.values
+# 
+# i = 0
+# t0 = df.loc[df['Class'] == 0]
+# t1 = df.loc[df['Class'] == 1]
+# 
+# sns.set_style('whitegrid')
+# plt.figure()
+# fig, ax = plt.subplots(8,4,figsize=(16,28))
+# 
+# for feature in var:
+#     i += 1
+#     plt.subplot(8,4,i)
+#     sns.kdeplot(t0[feature], bw=0.5,label="Class = 0");
+#     sns.kdeplot(t1[feature], bw=0.5,label="Class = 1");
+#     plt.xlabel(feature, fontsize=12)
+#     locs, labels = plt.xticks()
+#     plt.tick_params(axis='both', which='major', labelsize=12)
+# plt.show();
+
+# === AFTER (edited) ===
 var = data_df.columns.values
 
 i = 0
-t0 = df.loc[df['Class'] == 0]
-t1 = df.loc[df['Class'] == 1]
+t0 = data_df.loc[data_df['Class'] == 0]
+t1 = data_df.loc[data_df['Class'] == 1]
 
 sns.set_style('whitegrid')
 plt.figure()

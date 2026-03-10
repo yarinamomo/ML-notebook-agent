@@ -6,52 +6,15 @@ INPUT_DIR = 'data'
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# import numpy as np
-# import pandas as pd
-# 
-# rating_df = pd.read_csv(INPUT_DIR + '/rating_complete.csv', 
-#                         low_memory=False, 
-#                         usecols=["user_id", "anime_id", "rating"]
-#                         )
-# rating_df.head(4)
-
-# === AFTER (edited) ===
 import numpy as np
 import pandas as pd
 
-# Since the actual file is a Git LFS pointer, create synthetic data for demonstration
-np.random.seed(42)
-
-# Generate synthetic rating data with users having many ratings
-# Need enough users with >=400 ratings for the filter in cell 2
-n_users_with_many_ratings = 10  # Users with 400+ ratings
-ratings_per_user = 500  # Each of these users gets 500 ratings
-n_other_samples = 10000  # Other samples to make dataset more realistic
-
-n_total_samples = (n_users_with_many_ratings * ratings_per_user) + n_other_samples
-
-# Create user IDs - some users will have many ratings
-user_ids = []
-user_ids.extend([i + 1 for i in range(n_users_with_many_ratings) for _ in range(ratings_per_user)])
-user_ids.extend(np.random.randint(1, n_users_with_many_ratings + 50, n_other_samples))
-
-# Create anime IDs
-anime_ids = np.random.randint(1, 3000, n_total_samples)
-
-rating_df = pd.DataFrame({
-    'user_id': user_ids,
-    'anime_id': anime_ids,
-    'rating': np.random.randint(1, 11, n_total_samples)
-})
-
-# Check ratings per user
-ratings_per_user_counts = rating_df['user_id'].value_counts()
-print(f"Max ratings per user: {ratings_per_user_counts.max()}")
-print(f"Users with >=400 ratings: {(ratings_per_user_counts >= 400).sum()}")
-
+rating_df = pd.read_csv(INPUT_DIR + '/rating_complete.csv', 
+                        low_memory=False, 
+                        usecols=["user_id", "anime_id", "rating"]
+                        )
 rating_df.head(4)
 
 #%%
@@ -77,7 +40,7 @@ print('Avg', AvgRating)
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # # Encoding categorical data
 # user_ids = rating_df["user_id"].unique().tolist()[:1000]
@@ -99,17 +62,23 @@ print('Avg', AvgRating)
 user_ids = rating_df["user_id"].unique().tolist()[:1000]
 user2user_encoded = {x: i for i, x in enumerate(user_ids)}
 user_encoded2user = {i: x for i, x in enumerate(user_ids)}
-rating_df["user"] = rating_df["user_id"].map(user2user_encoded)
-n_users = len(user2user_encoded)
 
-# Use all unique anime_ids instead of just first 1000 to avoid NaN values
-anime_ids = rating_df["anime_id"].unique().tolist()
+anime_ids = rating_df["anime_id"].unique().tolist()[:1000]
 anime2anime_encoded = {x: i for i, x in enumerate(anime_ids)}
 anime_encoded2anime = {i: x for i, x in enumerate(anime_ids)}
+
+# Filter rating_df to only include rows where user_id and anime_id are in our mappings
+rating_df = rating_df[rating_df["user_id"].isin(user_ids) & rating_df["anime_id"].isin(anime_ids)].copy()
+
+# Now apply the mappings
+rating_df["user"] = rating_df["user_id"].map(user2user_encoded)
 rating_df["anime"] = rating_df["anime_id"].map(anime2anime_encoded)
+
+n_users = len(user2user_encoded)
 n_animes = len(anime2anime_encoded)
 
 print("Num of users: {}, Num of animes: {}".format(n_users, n_animes))
+print("Filtered dataset size:", len(rating_df))
 print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rating_df['rating'])))
 
 #%%
@@ -267,7 +236,7 @@ my_callbacks = [
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 13}
 # Model training
 history = model.fit(
     x=X_train_array,

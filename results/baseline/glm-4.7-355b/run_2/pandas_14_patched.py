@@ -18,29 +18,22 @@ print("El tamaño del dataset: {}".format(df.shape))
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# df = df.drop(['PassengerId', 'Name'], axis=1)
-# df.head(5)
-
-# === AFTER (edited) ===
-# Only drop columns that exist in the dataframe
-columns_to_drop = [col for col in ['PassengerId', 'Name'] if col in df.columns]
-df = df.drop(columns_to_drop, axis=1)
+df = df.drop(['PassengerId', 'Name'], axis=1)
 df.head(5)
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 df[['Age', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck','RoomService']] = df[['Age', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck','RoomService']].fillna(value=0)
 df.isnull().sum().sort_values(ascending=False)
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 from sklearn.preprocessing import LabelEncoder
 
 le = LabelEncoder()
@@ -57,7 +50,7 @@ print(df)
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # Convertir las columnas a enteros
 df["Age"] = df["Age"].astype(int)
 df["RoomService"] = df["RoomService"].astype(int)
@@ -70,23 +63,46 @@ df.dtypes
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-# Vemos la relación de cada variable con la variable Y
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# === BEFORE (original) ===
+# # Vemos la relación de cada variable con la variable Y
+# filas = 2
+# col = 5
+# 
+# nombres_col = df[["Cabin", "RoomService", "FoodCourt", "ShoppingMall", "Spa", "VRDeck"]]
+# y = df["Age"]
+# 
+# # N es la cantidad de datos con los que trabajaremos. Se usa más adelante, atención!!
+# N = 50
+# fig, axs = plt.subplots(filas, col, figsize=(25, 10))
+# 
+# for i in range(filas):
+#     for j in range(col):
+#         n = i * col + j
+#         if n < len(nombres_col):
+#             axs[i, j].set_title(nombres_col.columns[n])
+#             axs[i, j].scatter(df[nombres_col.columns[n]][:N], y[:N])
+# 
+# fig.tight_layout()
+# plt.show()
+
+# === AFTER (edited) ===
 filas = 2
 col = 5
 
 nombres_col = df[["Cabin", "RoomService", "FoodCourt", "ShoppingMall", "Spa", "VRDeck"]]
 y = df["Age"]
 
-# N es la cantidad de datos con los que trabajaremos. Se usa más adelante, atención!!
+
 N = 50
+filas = (len(nombres_col.columns) + col - 1) // col  # Calculate rows needed
 fig, axs = plt.subplots(filas, col, figsize=(25, 10))
 
 for i in range(filas):
     for j in range(col):
         n = i * col + j
-        if n < len(nombres_col):
+        if n < len(nombres_col.columns):
             axs[i, j].set_title(nombres_col.columns[n])
             axs[i, j].scatter(df[nombres_col.columns[n]][:N], y[:N])
 

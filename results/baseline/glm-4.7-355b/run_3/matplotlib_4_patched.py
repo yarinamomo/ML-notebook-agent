@@ -59,9 +59,8 @@ print(class_names)
 #%%
 # --- [CELL 5]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # === BEFORE (original) ===
-# 
 # import matplotlib.pyplot as plt
 # 
 # plt.figure(figsize=(10, 10))
@@ -75,45 +74,10 @@ print(class_names)
 # === AFTER (edited) ===
 import matplotlib.pyplot as plt
 
-# Filter function to skip corrupted images
-def is_valid_image(image, label):
-    # Try to decode and validate the image
-    decoded = tf.image.decode_image(tf.io.encode_jpeg(image), expand_animations=False)
-    return tf.ones([], dtype=tf.bool)
-
-# Preprocessing to handle corrupted images
-def preprocess_image(image, label):
-    # Ensure image is valid and in proper format
-    try:
-        return image, label
-    except:
-        return tf.zeros_like(image), label
-
-# Apply preprocessing to dataset
-train_ds_filtered = train_ds.map(lambda x, y: (x, y), num_parallel_calls=tf.data.AUTOTUNE)
-
 plt.figure(figsize=(10, 10))
-batch_count = 0
-for images, labels in train_ds_filtered:
-    # Skip to next batch if there are issues
-    valid_images = 0
-    for i in range(len(images)):
-        try:
-            img = images[i].numpy().astype("uint8")
-            if valid_images < 6:
-                ax = plt.subplot(3, 3, valid_images + 1)
-                plt.imshow(img)
-                # Get the class index from one-hot encoded labels
-                label_idx = tf.argmax(labels[i]).numpy()
-                plt.title(class_names[label_idx])
-                plt.axis("off")
-                valid_images += 1
-        except Exception as e:
-            continue
-    
-    if valid_images > 0:
-        break
-    
-    batch_count += 1
-    if batch_count > 10:
-        break
+for images, labels in train_ds.take(1):
+  for i in range(6):
+    ax = plt.subplot(3, 3, i + 1)
+    plt.imshow(images[i].numpy().astype("uint8"))
+    plt.title(class_names[np.argmax(labels[i])])
+    plt.axis("off")

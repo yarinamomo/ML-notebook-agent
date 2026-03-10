@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -10,47 +10,14 @@ sns.set(rc={'figure.figsize':(10, 8)}); # you can change this if needed
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/bank-additional-full.csv', sep=';')
-
-# === AFTER (edited) ===
-# Create synthetic data since the actual file is a Git LFS pointer
-import numpy as np
-
-# Synthetic data based on bank marketing dataset structure
-data = {
-    'age': np.random.randint(18, 95, 1000),
-    'job': np.random.choice(['admin.', 'technician', 'services', 'management', 'retired', 'blue-collar', 
-                             'entrepreneur', 'self-employed', 'housemaid', 'unemployed', 'student', 'unknown'], 1000),
-    'marital': np.random.choice(['married', 'single', 'divorced', 'unknown'], 1000),
-    'education': np.random.choice(['basic.4y', 'basic.6y', 'basic.9y', 'high.school', 'university.degree', 
-                                   'professional.course', 'illiterate', 'unknown'], 1000),
-    'default': np.random.choice(['no', 'yes', 'unknown'], 1000),
-    'housing': np.random.choice(['no', 'yes', 'unknown'], 1000),
-    'loan': np.random.choice(['no', 'yes', 'unknown'], 1000),
-    'contact': np.random.choice(['cellular', 'telephone'], 1000),
-    'month': np.random.choice(['mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'], 1000),
-    'day_of_week': np.random.choice(['mon', 'tue', 'wed', 'thu', 'fri'], 1000),
-    'poutcome': np.random.choice(['failure', 'nonexistent', 'success'], 1000),
-    'y': np.random.choice(['no', 'yes'], 1000)
-}
-
-df = pd.DataFrame(data)
-print(f"Created synthetic dataset with {len(df)} rows")
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+df = pd.read_csv('data/bank-additional-full.csv', sep=';')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-# === BEFORE (original) ===
-# df['y'] = df['y'].map({"no":0,"yes":1})
-# df['contact'] = df['contact'].map({"cellular":0,"telephone":1})
-# df1 = pd.get_dummies(df, columns=['job','marital','education','default','housing','loan','month','day_of_week','poutcome'])
-# df1.head(6).T
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 df['y'] = df['y'].map({"no":0,"yes":1})
 df['contact'] = df['contact'].map({"cellular":0,"telephone":1})
 df1 = pd.get_dummies(df, columns=['job','marital','education','default','housing','loan','month','day_of_week','poutcome'])
@@ -59,7 +26,7 @@ df1.head(6).T
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 from sklearn.model_selection import train_test_split
 X_train, X_valid, y_train, y_valid = train_test_split(df1.drop('y', axis=1),
                                                       df1['y'],
@@ -69,7 +36,7 @@ X_train, X_valid, y_train, y_valid = train_test_split(df1.drop('y', axis=1),
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 from sklearn.linear_model import LogisticRegression
 log_reg = LogisticRegression()
 log_reg.fit(X_train, y_train)
@@ -81,7 +48,7 @@ print(accuracy_score(y_valid, y_pred))
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 from sklearn.metrics import precision_score, recall_score, f1_score
 print('Precision:', precision_score(y_valid, y_pred))
 print('Recall:', recall_score(y_valid, y_pred))
@@ -90,7 +57,7 @@ print('F1 score:', f1_score(y_valid, y_pred))
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # === BEFORE (original) ===
 # #elasticnet
 # log_reg2 = LogisticRegression(max_iter=1000, solver='liblinear', penalty='elasticnet')
@@ -100,6 +67,9 @@ print('F1 score:', f1_score(y_valid, y_pred))
 # print('F1 score:', f1_score(y_valid, y_pred, average = "weighted"))
 
 # === AFTER (edited) ===
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import precision_score, recall_score, f1_score
+
 log_reg2 = LogisticRegression(max_iter=1000, solver='saga', penalty='elasticnet', l1_ratio=0.5)
 log_reg2.fit(X_train, y_train)
 y_pred = log_reg2.predict(X_valid)

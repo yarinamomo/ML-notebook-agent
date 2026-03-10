@@ -19,7 +19,6 @@ from sklearn.metrics import accuracy_score
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 train=pd.read_csv('data/train.csv')
 
-
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
@@ -31,7 +30,6 @@ test  = pd.read_csv('data/test.csv')
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 train=train.drop(columns=['id'])
-
 
 #%%
 # --- [CELL 4]: ---
@@ -53,4 +51,4 @@ train = train[train['ph']<7.1]
 # fig = sm.qqplot(train['gravity'],line=45,fit=True)
 
 # === AFTER (edited) ===
-fig = sm.qqplot(train['gravity'], line='q', fit=True)
+fig = sm.qqplot(train['gravity'],line='45',fit=True)

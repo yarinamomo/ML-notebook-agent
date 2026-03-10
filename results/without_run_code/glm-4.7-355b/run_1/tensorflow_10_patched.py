@@ -6,48 +6,12 @@ from transformers import TFAutoModel
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# import pandas as pd
-# import json
-# df_psytar = pd.read_csv("data/PsyTAR.csv")
-# df_psytar.head(5)
-
-# === AFTER (edited) ===
 import pandas as pd
 import json
-
-# Create a mock dataset with the expected columns since the actual data is not available
-# This is a sample dataset for demonstration purposes
-data = {
-    'sentences': [
-        'The patient experienced headaches after taking the medication.',
-        'Treatment was successful with no side effects.',
-        'Severe rash developed on the arms.',
-        'The patient recovered well.',
-        'Nausea and vomiting were reported.',
-        'No adverse reactions observed.',
-        'Patient developed allergic reaction.',
-        'Normal recovery period completed.',
-        'Dizziness and fatigue noted.',
-        'Treatment completed successfully.'
-    ],
-    'ADR': [1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
-}
-
-# Add more samples to create a balanced dataset
-for i in range(10):
-    data['sentences'].append(f'Sample sentence with adverse reaction number {i}.')
-    data['ADR'].append(1)
-    data['sentences'].append(f'Normal sample sentence number {i}.')
-    data['ADR'].append(0)
-
-df_psytar = pd.DataFrame(data)
-print("Columns:", df_psytar.columns.tolist())
-print("\nDataset shape:", df_psytar.shape)
-print("\nSample data:")
-print(df_psytar.head())
+df_psytar = pd.read_csv("data/PsyTAR.csv")
+df_psytar.head(5)
 
 #%%
 # --- [CELL 2]: ---
@@ -60,7 +24,7 @@ df=df_psytar
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
 df_1 = df[df['ADR']==1]
 df_0 = df[df['ADR']==0]
 
@@ -79,14 +43,14 @@ df = pd.concat([df_1,df_0])
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 from transformers import AutoTokenizer
 tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 def process_data(row):
 
     text = row['sentences']
@@ -107,7 +71,7 @@ def process_data(row):
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
 processed_data = []
 
 for i in range(len(df[:1000])):
@@ -115,10 +79,16 @@ for i in range(len(df[:1000])):
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-train_data = df["sentences"]
-train_labels = df['ADR']
+# === BEFORE (original) ===
+# train_data = df["sentences"]
+# train_labels = df['ADR']
+
+# === AFTER (edited) ===
+import numpy as np
+train_data = np.array([d['input_ids'] for d in processed_data], dtype=np.int32)
+train_labels = np.array([d['label'] for d in processed_data])
 
 #%%
 # --- [CELL 10]: ---
@@ -147,7 +117,7 @@ valid_hg = Dataset(pa.Table.from_pandas(valid_df))
 #%%
 # --- [CELL 12]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # class HuggingFaceLayer(tf.keras.layers.Layer):
 #     def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):
@@ -179,14 +149,13 @@ class HuggingFaceLayer(tf.keras.layers.Layer):
         super(HuggingFaceLayer, self).build(input_shape)
 
     def call(self, inputs):
-        # inputs should be a dictionary with 'input_ids', 'attention_mask', 'token_type_ids'
         outputs = self.model(inputs)
-        return outputs.last_hidden_state[:, 0, :]  # Return [CLS] token embedding
+        return outputs.last_hidden_state
 
 #%%
 # --- [CELL 13]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 15}
 # === BEFORE (original) ===
 # model_name = 'bert-base-uncased'
 # model = tf.keras.Sequential()
@@ -195,53 +164,16 @@ class HuggingFaceLayer(tf.keras.layers.Layer):
 
 # === AFTER (edited) ===
 model_name = 'bert-base-uncased'
-
-# Create input layers for BERT
-input_ids = tf.keras.layers.Input(shape=(128,), dtype=tf.int32, name='input_ids')
-attention_mask = tf.keras.layers.Input(shape=(128,), dtype=tf.int32, name='attention_mask')
-token_type_ids = tf.keras.layers.Input(shape=(128,), dtype=tf.int32, name='token_type_ids')
-
-# HuggingFace BERT layer
-huggingface_layer = HuggingFaceLayer(model_name=model_name)
-bert_output = huggingface_layer({
-    'input_ids': input_ids,
-    'attention_mask': attention_mask,
-    'token_type_ids': token_type_ids
-})
-
-# Dense layer for classification
-output = tf.keras.layers.Dense(1, activation='sigmoid')(bert_output)
-
-# Create the model
-model = tf.keras.Model(
-    inputs={
-        'input_ids': input_ids,
-        'attention_mask': attention_mask,
-        'token_type_ids': token_type_ids
-    },
-    outputs=output
-)
+model = tf.keras.Sequential([
+    tf.keras.layers.Input(shape=(128,), dtype=tf.int32, name='input_ids'),
+    HuggingFaceLayer(model_name=model_name),
+    tf.keras.layers.Dense(1, activation='sigmoid')
+])
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-# === BEFORE (original) ===
-# # Compile and train the model
-# model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-# model.fit(train_data, train_labels, epochs=10)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 15}
+# Compile and train the model
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-
-# Prepare training data in the correct format
-train_inputs = {
-    'input_ids': tf.convert_to_tensor(train_df['input_ids'].tolist()),
-    'attention_mask': tf.convert_to_tensor(train_df['attention_mask'].tolist()),
-    'token_type_ids': tf.convert_to_tensor(train_df['token_type_ids'].tolist())
-}
-
-train_labels_tensor = tf.convert_to_tensor(train_df['label'].tolist())
-
-# Train the model
-model.fit(train_inputs, train_labels_tensor, epochs=10)
+model.fit(train_data, train_labels, epochs=10)

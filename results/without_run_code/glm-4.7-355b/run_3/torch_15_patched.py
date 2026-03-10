@@ -28,34 +28,10 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# jsdf = pd.read_json('data/train_annotations')
-# jsdf.head()
-
-# === AFTER (edited) ===
-# The annotations file is a Git LFS pointer. We'll create mock annotations based on available images.
-# Get all image IDs from the train directory
-import os
-image_ids = []
-for dirname, _, filenames in os.walk('data/train/train'):
-    for filename in filenames:
-        if filename.endswith('.jpg'):
-            # Extract image_id from filename
-            image_id = filename.replace('image_id_', '').replace('.jpg', '')
-            image_ids.append(int(image_id))
-
-# Create mock annotations with random category_id (1 or 2)
-import random
-random.seed(42)
-data = {
-    'image_id': image_ids,
-    'category_id': [random.choice([1, 2]) for _ in image_ids]
-}
-jsdf = pd.DataFrame(data)
-print(f"Created mock annotations with {len(jsdf)} entries")
-print(jsdf.head())
+jsdf = pd.read_json('data/train_annotations')
+jsdf.head()
 
 #%%
 # --- [CELL 2]: ---
@@ -113,44 +89,33 @@ transform = transforms.Compose([
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
-# === BEFORE (original) ===
-# data_path = 'data/train/train'
-# images = []
-# targets = []
-# 
-# for i,annotation in train_data.iterrows():
-#     image_name = annotation['filename']
-#     target = annotation['label']
-#     image_path = os.path.join(data_path, image_name)
-#     image = Image.open(image_path).convert("RGB")
-#     image = transform(image)
-#     images.append(image)
-#     targets.append(torch.tensor(target))
-
-# === AFTER (edited) ===
 data_path = 'data/train/train'
 images = []
 targets = []
 
-# Create synthetic images since actual image files are Git LFS pointers
-for i, annotation in train_data.iterrows():
+for i,annotation in train_data.iterrows():
+    image_name = annotation['filename']
     target = annotation['label']
-    # Create a random RGB image of size 512x512 (transform will center crop to 512x512)
-    random_image = Image.fromarray((np.random.rand(513, 513, 3) * 255).astype(np.uint8))
-    image = transform(random_image)
+    image_path = os.path.join(data_path, image_name)
+    image = Image.open(image_path).convert("RGB")
+    image = transform(image)
     images.append(image)
     targets.append(torch.tensor(target))
 
-print(f"Created {len(images)} synthetic images with targets")
-
 #%%
 # --- [CELL 9]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# === BEFORE (original) ===
+# image_tensor = torch.stack(images)
+# target_tensor = torch.stack(targets)
+
+# === AFTER (edited) ===
 image_tensor = torch.stack(images)
 target_tensor = torch.stack(targets)
+target_tensor = target_tensor.unsqueeze(1).float()  # Reshape from [N] to [N, 1] and convert to float
 
 #%%
 # --- [CELL 10]: ---
@@ -239,38 +204,17 @@ test_model(model)
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
-# === BEFORE (original) ===
-# n_epoch = 1
-# for epoch in range(n_epoch):
-#     model.train()  
-# 
-#     for batch_idx, (sekil, netice) in enumerate(train_loader):
-#         #sekil, netice = sekil.to('cuda'), netice.to('cuda')
-#         optimizer.zero_grad()
-# 
-#         outputs = model(sekil)
-#         loss = loss_fn(outputs, netice)
-# 
-#         loss.backward()
-#         optimizer.step()
-# 
-#         if (batch_idx + 1) % 4 == 0:
-#             print(f"Epoch [{epoch+1}/{n_epoch}], Step [{batch_idx+1}/{len(train_loader)}], Loss: {loss.item()}")
-
-# === AFTER (edited) ===
 n_epoch = 1
 for epoch in range(n_epoch):
-    model.train()
+    model.train()  
 
     for batch_idx, (sekil, netice) in enumerate(train_loader):
-
+        #sekil, netice = sekil.to('cuda'), netice.to('cuda')
         optimizer.zero_grad()
 
         outputs = model(sekil)
-        # Reshape targets to match output shape [batch_size, 1]
-        netice = netice.unsqueeze(1).float()
         loss = loss_fn(outputs, netice)
 
         loss.backward()

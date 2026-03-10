@@ -65,35 +65,36 @@ import matplotlib.pyplot as plt
 # === AFTER (edited) ===
 path = "data_small/"
 def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
-
     data = []
-    labels = []
     max_harm_length = 0
 
     for dirname, _, filenames in os.walk(path):
         for filename in filenames:
             foldername = os.path.basename(dirname)
             full_path = os.path.join(dirname, filename)
-            
-            # Generate synthetic mel-spectrogram data to replace corrupted audio files
-            # This mimics the structure of the audio features we would normally extract
-            # Using random data with reasonable dimensions for demo purposes
-            logam = np.random.randn(n_mels, 128).astype(np.float32)
-            data.append(logam)
-            labels.append(foldername)
 
-    data = np.array(data)
-    labels = np.array(labels)
-    return data, labels
+            y, sr = librosa.load(full_path)
+            mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, fmax=fmax, fmin=fmin)
+            logam = librosa.power_to_db(mel)
+            data.append(logam)
+            
+            # Track the maximum length
+            if logam.shape[1] > max_harm_length:
+                max_harm_length = logam.shape[1]
+    
+    # Pad all arrays to the same length
+    padded_data = []
+    for arr in data:
+        # Calculate padding needed
+        pad_width = max_harm_length - arr.shape[1]
+        # Pad with zeros on the time axis (axis=1)
+        padded_arr = np.pad(arr, ((0, 0), (0, pad_width)), mode='constant')
+        padded_data.append(padded_arr)
+
+    return np.array(padded_data)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# NX = FeatureExtractor(path, n_mels = 10)
-
-# === AFTER (edited) ===
-data_all, labels_all = FeatureExtractor(path, n_mels = 10)
-print(f"Data shape: {data_all.shape}")
-print(f"Labels: {labels_all[:10]}")
+NX = FeatureExtractor(path, n_mels = 10)

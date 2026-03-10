@@ -18,64 +18,12 @@ from sklearn.metrics import accuracy_score
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# # load the data
-# train_df = pd.read_csv('data/train_synthetic.csv')
-# test_df = pd.read_csv('data/test_synthetic.csv')
-# greeks_df = pd.read_csv('data/greeks_synthetic.csv')
-
-# === AFTER (edited) ===
-# Generate synthetic data since the actual data files are Git LFS pointers
-np.random.seed(42)
-
-# Create synthetic train data with features and target
-train_df = pd.DataFrame({
-    'Id': [f'ID_{i}' for i in range(1000)],
-    'Feature_1': np.random.randn(1000),
-    'Feature_2': np.random.randn(1000),
-    'Feature_3': np.random.randn(1000),
-    'Feature_4': np.random.randn(1000),
-    'Feature_5': np.random.randn(1000),
-    'Feature_6': np.random.randn(1000),
-    'Feature_7': np.random.randn(1000),
-    'Feature_8': np.random.randn(1000),
-    'Feature_9': np.random.randn(1000),
-    'Feature_10': np.random.randn(1000),
-    'Class': np.random.randint(0, 2, 1000)
-})
-
-# Create synthetic test data
-test_df = pd.DataFrame({
-    'Id': [f'ID_{i}' for i in range(1000, 1500)],
-    'Feature_1': np.random.randn(500),
-    'Feature_2': np.random.randn(500),
-    'Feature_3': np.random.randn(500),
-    'Feature_4': np.random.randn(500),
-    'Feature_5': np.random.randn(500),
-    'Feature_6': np.random.randn(500),
-    'Feature_7': np.random.randn(500),
-    'Feature_8': np.random.randn(500),
-    'Feature_9': np.random.randn(500),
-    'Feature_10': np.random.randn(500),
-    'Class': np.random.randint(0, 2, 500)
-})
-
-# Create synthetic greeks data (metadata like Alpha, Beta, Gamma, Delta, Epsilon)
-greeks_df = pd.DataFrame({
-    'Id': [f'ID_{i}' for i in range(1000)],
-    'Alpha': np.random.choice(['A', 'B'], 1000),
-    'Beta': np.random.choice(['B', 'C'], 1000),
-    'Gamma': np.random.choice(['G', 'H', 'M'], 1000),
-    'Delta': np.random.choice(['A', 'B', 'D', 'N'], 1000),
-    'Epsilon': np.random.choice(['A', 'B', 'C'], 1000)
-})
-
-print("Synthetic data created successfully")
-print(f"train_df shape: {train_df.shape}")
-print(f"test_df shape: {test_df.shape}")
-print(f"greeks_df shape: {greeks_df.shape}")
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# load the data
+train_df = pd.read_csv('data/train_synthetic.csv')
+test_df = pd.read_csv('data/test_synthetic.csv')
+greeks_df = pd.read_csv('data/greeks_synthetic.csv')
 
 #%%
 # --- [CELL 2]: ---
@@ -85,26 +33,16 @@ train_df = pd.merge(train_df, greeks_df, on="Id")
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# # Remove the first column
-# train_df = train_df.drop("Id", axis=1)
-# test_df = test_df.drop("Id", axis=1)
-
-# === AFTER (edited) ===
-# Drop Id column after merge
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# Remove the first column
 train_df = train_df.drop("Id", axis=1)
 test_df = test_df.drop("Id", axis=1)
-
-print("After dropping Id column:")
-print(f"train_df shape: {train_df.shape}")
-print(f"test_df shape: {test_df.shape}")
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # # One-hot encoding
 # encoder = OneHotEncoder(handle_unknown="ignore")
@@ -112,26 +50,37 @@ print(f"test_df shape: {test_df.shape}")
 # test_df = pd.get_dummies(test_df, columns=list(test_df))
 
 # === AFTER (edited) ===
-# Identify numeric columns (excluding categorical and ID columns)
-numeric_cols = ['Feature_1', 'Feature_2', 'Feature_3', 'Feature_4', 'Feature_5', 
-                'Feature_6', 'Feature_7', 'Feature_8', 'Feature_9', 'Feature_10', 'Class']
+# Identify categorical columns (object type) that exist in both train and test
+train_cat_cols = train_df.select_dtypes(include=['object']).columns.tolist()
+test_cat_cols = test_df.select_dtypes(include=['object']).columns.tolist()
 
-# Display current train_df columns
-print("Columns after merge:", train_df.columns.tolist())
+# Keep only categorical columns that exist in both datasets
+common_categorical_cols = [col for col in train_cat_cols if col in test_cat_cols]
 
-# Apply StandardScaler to numeric columns only
-scaler = StandardScaler()
-train_df[numeric_cols] = scaler.fit_transform(train_df[numeric_cols])
-test_df[numeric_cols] = scaler.transform(test_df[numeric_cols])
+# One-hot encode only common categorical columns
+if common_categorical_cols:
+    encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+    
+    # Get encoded features for train
+    train_encoded = encoder.fit_transform(train_df[common_categorical_cols])
+    train_encoded_df = pd.DataFrame(train_encoded, columns=encoder.get_feature_names_out(common_categorical_cols), index=train_df.index)
+    
+    # Get encoded features for test
+    test_encoded = encoder.transform(test_df[common_categorical_cols])
+    test_encoded_df = pd.DataFrame(test_encoded, columns=encoder.get_feature_names_out(common_categorical_cols), index=test_df.index)
+    
+    # Drop original categorical columns and add encoded ones
+    train_df = pd.concat([train_df.drop(common_categorical_cols, axis=1), train_encoded_df], axis=1)
+    test_df = pd.concat([test_df.drop(common_categorical_cols, axis=1), test_encoded_df], axis=1)
 
-print("\nStandardization completed")
-print(f"train_df shape: {train_df.shape}")
-print(f"test_df shape: {test_df.shape}")
+# Drop any remaining categorical columns (those only in train or only in test)
+train_df = train_df.select_dtypes(exclude=['object'])
+test_df = test_df.select_dtypes(exclude=['object'])
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # === BEFORE (original) ===
 # # Data processing
 # scaler = StandardScaler()
@@ -139,5 +88,14 @@ print(f"test_df shape: {test_df.shape}")
 # test_df = scaler.transform(test_df)
 
 # === AFTER (edited) ===
-# Note: Scaling was already performed in the previous cell
-# This cell is intentionally left empty to avoid duplicate scaling
+# Find common columns between train and test dataframes
+common_cols = [col for col in train_df.columns if col in test_df.columns]
+
+# Scale only common columns
+scaler = StandardScaler()
+train_scaled = scaler.fit_transform(train_df[common_cols])
+test_scaled = scaler.transform(test_df[common_cols])
+
+# Convert back to DataFrame with column names
+train_df = pd.DataFrame(train_scaled, columns=common_cols)
+test_df = pd.DataFrame(test_scaled, columns=common_cols)

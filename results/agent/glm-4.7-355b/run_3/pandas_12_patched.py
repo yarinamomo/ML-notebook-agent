@@ -16,15 +16,9 @@ pd.set_option('display.float_format',lambda x : '%.2f' % x)
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df_ = pd.read_csv("data/dataset.csv", compression="gzip")
-# df = df_.copy()
-# df.head()
-
-# === AFTER (edited) ===
-df_ = pd.read_csv("data/dataset.csv")
+df_ = pd.read_csv("data/dataset.csv", compression="gzip")
 df = df_.copy()
 df.head()
 
@@ -132,59 +126,31 @@ df2=df.copy()
 
 #%%
 # --- [CELL 11]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
-# === BEFORE (original) ===
-# sc = MinMaxScaler((0, 1))
-# df2[num_cols] = sc.fit_transform(df2[num_cols])
-
-# === AFTER (edited) ===
 sc = MinMaxScaler((0, 1))
-if len(num_cols) > 0:
-    df2[num_cols] = sc.fit_transform(df2[num_cols])
+df2[num_cols] = sc.fit_transform(df2[num_cols])
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
-# === BEFORE (original) ===
-# kmeans = KMeans(n_clusters=30, n_init="auto").fit(df2[["TotalTime","Calories","SugarContent"]])
-
-# === AFTER (edited) ===
-if len(df2.columns) > 0 and "TotalTime" in df2.columns and "Calories" in df2.columns and "SugarContent" in df2.columns:
-    kmeans = KMeans(n_clusters=30, n_init="auto").fit(df2[["TotalTime","Calories","SugarContent"]])
-else:
-    kmeans = None
+kmeans = KMeans(n_clusters=30, n_init="auto").fit(df2[["TotalTime","Calories","SugarContent"]])
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
-# === BEFORE (original) ===
-# clusters_kmeans = kmeans.labels_
-# clusters_kmeans
-
-# === AFTER (edited) ===
-if kmeans is not None:
-    clusters_kmeans = kmeans.labels_
-    clusters_kmeans
-else:
-    clusters_kmeans = None
+clusters_kmeans = kmeans.labels_
+clusters_kmeans
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-# === BEFORE (original) ===
-# df["kmeans_cluster"] = clusters_kmeans
-# df["kmeans_cluster"]= df["kmeans_cluster"] + 1
-# df.head()
-
-# === AFTER (edited) ===
-if clusters_kmeans is not None:
-    df["kmeans_cluster"] = clusters_kmeans
-    df["kmeans_cluster"]= df["kmeans_cluster"] + 1
-    df.head()
+df["kmeans_cluster"] = clusters_kmeans
+df["kmeans_cluster"]= df["kmeans_cluster"] + 1
+df.head()
 
 #%%
 # --- [CELL 15]: ---
@@ -197,8 +163,7 @@ if clusters_kmeans is not None:
 #                                     4: ['count','mean','median', 'sum']})
 
 # === AFTER (edited) ===
-if len(df.columns) > 0 and "kmeans_cluster" in df.columns:
-    df.groupby('kmeans_cluster').agg({1: ['count','mean', 'median', 'sum'],
-                                        2: ['count','mean', 'median', 'sum'],
-                                        3: ['count','mean', 'median', 'sum'],
-                                        4: ['count','mean','median', 'sum']})
+df.groupby('kmeans_cluster').agg({'CookTime': ['count','mean', 'median', 'sum'],
+                                    'PrepTime': ['count','mean', 'median', 'sum'],
+                                    'TotalTime': ['count','mean', 'median', 'sum'],
+                                    'Calories': ['count','mean','median', 'sum']})

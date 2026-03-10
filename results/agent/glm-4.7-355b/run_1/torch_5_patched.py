@@ -26,91 +26,13 @@ import torch.nn.functional as F
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# def load_transform_images(images_path, presplit, train_split, test_split, val_split, batch_size, threads, mean, std):
-#     train_transform = transforms.Compose([
-#                                          #transforms.RandomRotation(degrees=15),
-#                                          #transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-#                                          #transforms.RandomResizedCrop((224,224)),
-#                                          transforms.Resize((224,224)),
-#                                          transforms.RandomHorizontalFlip(),
-#                                          transforms.ToTensor(),
-#                                          transforms.Normalize(torch.Tensor(mean),
-#                                                               torch.Tensor(std))])
-# 
-#     test_transform = transforms.Compose([
-#                                         transforms.Resize((224,224)),
-#                                         #transforms.CenterCrop((224,224)),
-#                                         transforms.ToTensor(),
-#                                         transforms.Normalize(torch.Tensor(mean),
-#                                                              torch.Tensor(std))])
-# 
-#     val_transform = transforms.Compose([
-#                                        transforms.Resize((224,224)),
-#                                        #transforms.CenterCrop((224,224)),
-#                                        transforms.ToTensor(),
-#                                        transforms.Normalize(torch.Tensor(mean),
-#                                                             torch.Tensor(std))])
-#     if presplit:
-#         try:
-#             training_set = datasets.ImageFolder(root=images_path+'/train', transform=train_transform)
-#             validation_set = datasets.ImageFolder(root=images_path+'/val', transform=val_transform)
-#         except FileNotFoundError:
-#             raise Exception('Not presplit into Training and Validation sets')
-#         try:
-#             testing_set = datasets.ImageFolder(root=images_path+'/test', transform=test_transform)
-#         except:
-#             testing_set = validation_set
-#         dataset = training_set
-#     else:
-#         dataset = datasets.ImageFolder(root=images_path, transform=train_transform)
-#         train_size = int(train_split * len(dataset))
-#         test_size = int(test_split * len(dataset))
-#         val_size = len(dataset) - train_size - test_size
-#         training_set, testing_set, validation_set = torch.utils.data.random_split(dataset, [train_size, test_size, val_size])
-# 
-#     training_set_loader = DataLoader(training_set, batch_size=batch_size, num_workers=threads, shuffle=True)
-#     validation_set_loader = DataLoader(validation_set, batch_size=batch_size, num_workers=threads, shuffle=True)
-#     testing_set_loader = DataLoader(testing_set, batch_size=batch_size, num_workers=threads, shuffle=False)
-# 
-#     return training_set_loader, testing_set_loader, validation_set_loader, dataset, training_set, testing_set, validation_set
-# 
-# images_path = 'data_small/images/Images/'
-# results_path = images_path+'_results'
-# presplit = False
-# train_split = 0.5
-# val_split = 0.25
-# test_split = 0.25
-# batch_size = 128
-# threads = 0
-# mean = [0.485, 0.456, 0.406]
-# std = [0.229, 0.224, 0.225]
-# 
-# training_set_loader, testing_set_loader, validation_set_loader, dataset, training_set, testing_set, validation_set = \
-#                   load_transform_images(images_path, presplit, train_split, test_split, val_split, batch_size, threads, mean, std)
-# 
-# 
-# 
-# class_names = dataset.classes
-# class_names = [classes[10:] for classes in class_names]
-# classes = ('Chihuahua', 'Japanese_spaniel', 'Maltese_dog', 'Pekinese', 'Shih-Tzu', 'Blenheim_spaniel', 'papillon', 'toy_terrier', 'Rhodesian_ridgeback', 'Afghan_hound', 'basset', 'beagle', 'bloodhound', 'bluetick', 'black-and-tan_coonhound', 'Walker_hound', 'English_foxhound', 'redbone', 'borzoi', 'Irish_wolfhound', 'Italian_greyhound', 'whippet', 'Ibizan_hound', 'Norwegian_elkhound', 'otterhound', 'Saluki', 'Scottish_deerhound', 'Weimaraner', 'Staffordshire_bullterrier', 'American_Staffordshire_terrier', 'Bedlington_terrier', 'Border_terrier', 'Kerry_blue_terrier', 'Irish_terrier', 'Norfolk_terrier', 'Norwich_terrier', 'Yorkshire_terrier', 'wire-haired_fox_terrier', 'Lakeland_terrier', 'Sealyham_terrier', 'Airedale', 'cairn', 'Australian_terrier', 'Dandie_Dinmont', 'Boston_bull', 'miniature_schnauzer', 'giant_schnauzer', 'standard_schnauzer', 'Scotch_terrier', 'Tibetan_terrier', 'silky_terrier', 'soft-coated_wheaten_terrier', 'West_Highland_white_terrier', 'Lhasa', 'flat-coated_retriever', 'curly-coated_retriever', 'golden_retriever', 'Labrador_retriever', 'Chesapeake_Bay_retriever', 'German_short-haired_pointer', 'vizsla', 'English_setter', 'Irish_setter', 'Gordon_setter', 'Brittany_spaniel', 'clumber', 'English_springer', 'Welsh_springer_spaniel', 'cocker_spaniel', 'Sussex_spaniel', 'Irish_water_spaniel', 'kuvasz', 'schipperke', 'groenendael', 'malinois', 'briard', 'kelpie', 'komondor', 'Old_English_sheepdog', 'Shetland_sheepdog', 'collie', 'Border_collie', 'Bouvier_des_Flandres', 'Rottweiler', 'German_shepherd', 'Doberman', 'miniature_pinscher', 'Greater_Swiss_Mountain_dog', 'Bernese_mountain_dog', 'Appenzeller', 'EntleBucher', 'boxer', 'bull_mastiff', 'Tibetan_mastiff', 'French_bulldog', 'Great_Dane', 'Saint_Bernard', 'Eskimo_dog', 'malamute', 'Siberian_husky', 'affenpinscher', 'basenji', 'pug', 'Leonberg', 'Newfoundland', 'Great_Pyrenees', 'Samoyed', 'Pomeranian', 'chow', 'keeshond', 'Brabancon_griffon', 'Pembroke', 'Cardigan', 'toy_poodle', 'miniature_poodle', 'standard_poodle', 'Mexican_hairless', 'dingo', 'dhole', 'African_hunting_dog')
-# print(class_names)
-
-# === AFTER (edited) ===
 def load_transform_images(images_path, presplit, train_split, test_split, val_split, batch_size, threads, mean, std):
-    import torch
-    import torchvision
-    import torchvision.transforms as transforms
-    import torch.utils.data
-    
-    batch_size = min(batch_size, 10)  # Reduce batch size for debugging
-    
     train_transform = transforms.Compose([
-
-
-
+                                         #transforms.RandomRotation(degrees=15),
+                                         #transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+                                         #transforms.RandomResizedCrop((224,224)),
                                          transforms.Resize((224,224)),
                                          transforms.RandomHorizontalFlip(),
                                          transforms.ToTensor(),
@@ -119,55 +41,30 @@ def load_transform_images(images_path, presplit, train_split, test_split, val_sp
 
     test_transform = transforms.Compose([
                                         transforms.Resize((224,224)),
-
+                                        #transforms.CenterCrop((224,224)),
                                         transforms.ToTensor(),
                                         transforms.Normalize(torch.Tensor(mean),
                                                              torch.Tensor(std))])
 
     val_transform = transforms.Compose([
                                        transforms.Resize((224,224)),
-
+                                       #transforms.CenterCrop((224,224)),
                                        transforms.ToTensor(),
                                        transforms.Normalize(torch.Tensor(mean),
                                                             torch.Tensor(std))])
-    
-    # Custom dataset wrapper that handles corrupted images during loading
-    class RobustImageFolder(torchvision.datasets.ImageFolder):
-        def __getitem__(self, index):
-            from PIL import Image, UnidentifiedImageError
-            from torchvision.transforms.functional import to_pil_image
-            
-            max_retries = 5
-            for attempt in range(max_retries):
-                try:
-                    path, target = self.samples[index]
-                    sample = self.loader(path)
-                    if self.transform is not None:
-                        sample = self.transform(sample)
-                    if self.target_transform is not None:
-                        target = self.target_transform(target)
-                    return sample, target
-                except (UnidentifiedImageError, IOError, OSError, RuntimeError) as e:
-                    # Try a different sample
-                    index = (index + 1) % len(self.samples)
-                    if attempt == max_retries - 1:
-                        # As last resort, return a blank image
-                        blank = torch.zeros(3, 224, 224)
-                        return blank, 0
-    
     if presplit:
         try:
-            training_set = RobustImageFolder(root=images_path+'/train', transform=train_transform)
-            validation_set = RobustImageFolder(root=images_path+'/val', transform=val_transform)
+            training_set = datasets.ImageFolder(root=images_path+'/train', transform=train_transform)
+            validation_set = datasets.ImageFolder(root=images_path+'/val', transform=val_transform)
         except FileNotFoundError:
             raise Exception('Not presplit into Training and Validation sets')
         try:
-            testing_set = RobustImageFolder(root=images_path+'/test', transform=test_transform)
+            testing_set = datasets.ImageFolder(root=images_path+'/test', transform=test_transform)
         except:
             testing_set = validation_set
         dataset = training_set
     else:
-        dataset = RobustImageFolder(root=images_path, transform=train_transform)
+        dataset = datasets.ImageFolder(root=images_path, transform=train_transform)
         train_size = int(train_split * len(dataset))
         test_size = int(test_split * len(dataset))
         val_size = len(dataset) - train_size - test_size
@@ -190,12 +87,14 @@ threads = 0
 mean = [0.485, 0.456, 0.406]
 std = [0.229, 0.224, 0.225]
 
-training_set_loader, testing_set_loader, validation_set_loader, dataset, training_set, testing_set, validation_set =                  load_transform_images(images_path, presplit, train_split, test_split, val_split, batch_size, threads, mean, std)
+training_set_loader, testing_set_loader, validation_set_loader, dataset, training_set, testing_set, validation_set = \
+                  load_transform_images(images_path, presplit, train_split, test_split, val_split, batch_size, threads, mean, std)
+
 
 
 class_names = dataset.classes
 class_names = [classes[10:] for classes in class_names]
-classes = ('Chihuahua', 'Japanese_spaniel', 'Maltese_dog', 'Pekinese', 'Shih-Tzu', 'Blenheim_spaniel', 'papillon', 'toy_terrier', 'Rhodesian_ridgeback', 'Afghan_hound', 'basset', 'beagle', 'bloodhound', 'bluetick', 'black-and-tan_coonhound', 'Walker_hound', 'English_foxhound', 'redbone', 'borzoi', 'Irish_wolfhound', 'Italian_greyhound', 'whippet', 'Ibizan_hound', 'Norwegian_elkhound', 'otterhound', 'Saluki', 'Scottish_deerhound', 'Weimaraner', 'Staffordshire_bullterrier', 'American_Stafffordshire_terrier', 'Bedlington_terrier', 'Border_terrier', 'Kerry_blue_terrier', 'Irish_terrier', 'Norfolk_terrier', 'Norwich_terrier', 'Yorkshire_terrier', 'wire-haired_fox_terrier', 'Lakeland_terrier', 'Sealyham_terrier', 'Airedale', 'cairn', 'Australian_terrier', 'Dandie_Dinmont', 'Boston_bull', 'miniature_schnauzer', 'giant_schnauzer', 'standard_schnauzer', 'Scotch_terrier', 'Tibetan_terrier', 'silky_terrier', 'soft-coated_wheaten_terrier', 'West_Highland_white_terrier', 'Lhasa', 'flat-coated_retriever', 'curly-coated_retriever', 'golden_retriever', 'Labrador_retriever', 'Chesapeake_Bay_retriever', 'German_short-haired_pointer', 'vizsla', 'English_setter', 'Irish_setter', 'Gordon_setter', 'Brittany_spaniel', 'clumber', 'English_springer', 'Welsh_springer_spaniel', 'cocker_spaniel', 'Sussex_spaniel', 'Irish_water_spaniel', 'kuvasz', 'schipperke', 'groenendael', 'malinois', 'briard', 'kelpie', 'komondor', 'Old_English_sheepdog', 'Shetland_sheepdog', 'collie', 'Border_collie', 'Bouvier_des_Flandres', 'Rottweiler', 'German_shepherd', 'Doberman', 'miniature_pinscher', 'Greater_Swiss_Mountain_dog', 'Bernese_mountain_dog', 'Appenzeller', 'EntleBucher', 'boxer', 'bull_mastiff', 'Tibetan_mastiff', 'French_bulldog', 'Great_Dane', 'Saint_Bernard', 'Eskimo_dog', 'malamute', 'Siberian_husky', 'affenpinscher', 'basenji', 'pug', 'Leonberg', 'Newfoundland', 'Great_Pyrenees', 'Samoyed', 'Pomeranian', 'chow', 'keeshond', 'Brabancon_griffon', 'Pembroke', 'Cardigan', 'toy_poodle', 'miniature_poodle', 'standard_poodle', 'Mexican_hairless', 'dingo', 'dhole', 'African_hunting_dog')
+classes = ('Chihuahua', 'Japanese_spaniel', 'Maltese_dog', 'Pekinese', 'Shih-Tzu', 'Blenheim_spaniel', 'papillon', 'toy_terrier', 'Rhodesian_ridgeback', 'Afghan_hound', 'basset', 'beagle', 'bloodhound', 'bluetick', 'black-and-tan_coonhound', 'Walker_hound', 'English_foxhound', 'redbone', 'borzoi', 'Irish_wolfhound', 'Italian_greyhound', 'whippet', 'Ibizan_hound', 'Norwegian_elkhound', 'otterhound', 'Saluki', 'Scottish_deerhound', 'Weimaraner', 'Staffordshire_bullterrier', 'American_Staffordshire_terrier', 'Bedlington_terrier', 'Border_terrier', 'Kerry_blue_terrier', 'Irish_terrier', 'Norfolk_terrier', 'Norwich_terrier', 'Yorkshire_terrier', 'wire-haired_fox_terrier', 'Lakeland_terrier', 'Sealyham_terrier', 'Airedale', 'cairn', 'Australian_terrier', 'Dandie_Dinmont', 'Boston_bull', 'miniature_schnauzer', 'giant_schnauzer', 'standard_schnauzer', 'Scotch_terrier', 'Tibetan_terrier', 'silky_terrier', 'soft-coated_wheaten_terrier', 'West_Highland_white_terrier', 'Lhasa', 'flat-coated_retriever', 'curly-coated_retriever', 'golden_retriever', 'Labrador_retriever', 'Chesapeake_Bay_retriever', 'German_short-haired_pointer', 'vizsla', 'English_setter', 'Irish_setter', 'Gordon_setter', 'Brittany_spaniel', 'clumber', 'English_springer', 'Welsh_springer_spaniel', 'cocker_spaniel', 'Sussex_spaniel', 'Irish_water_spaniel', 'kuvasz', 'schipperke', 'groenendael', 'malinois', 'briard', 'kelpie', 'komondor', 'Old_English_sheepdog', 'Shetland_sheepdog', 'collie', 'Border_collie', 'Bouvier_des_Flandres', 'Rottweiler', 'German_shepherd', 'Doberman', 'miniature_pinscher', 'Greater_Swiss_Mountain_dog', 'Bernese_mountain_dog', 'Appenzeller', 'EntleBucher', 'boxer', 'bull_mastiff', 'Tibetan_mastiff', 'French_bulldog', 'Great_Dane', 'Saint_Bernard', 'Eskimo_dog', 'malamute', 'Siberian_husky', 'affenpinscher', 'basenji', 'pug', 'Leonberg', 'Newfoundland', 'Great_Pyrenees', 'Samoyed', 'Pomeranian', 'chow', 'keeshond', 'Brabancon_griffon', 'Pembroke', 'Cardigan', 'toy_poodle', 'miniature_poodle', 'standard_poodle', 'Mexican_hairless', 'dingo', 'dhole', 'African_hunting_dog')
 print(class_names)
 
 #%%
@@ -246,7 +145,7 @@ import torch.nn.functional as F
 
 
 class Network(nn.Module):
-    def __init__(self, num_classes=120):
+    def __init__(self):
         super(Network, self).__init__()
 
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=12, kernel_size=5, stride=1, padding=1)
@@ -258,10 +157,7 @@ class Network(nn.Module):
         self.bn4 = nn.BatchNorm2d(24)
         self.conv5 = nn.Conv2d(in_channels=24, out_channels=24, kernel_size=5, stride=1, padding=1)
         self.bn5 = nn.BatchNorm2d(24)
-        self.pool2 = nn.MaxPool2d(2,2)
-        # Use AdaptiveAvgPool2d to ensure consistent output size
-        self.adaptive_pool = nn.AdaptiveAvgPool2d((10, 10))
-        self.fc1 = nn.Linear(24*10*10, num_classes)
+        self.fc1 = nn.Linear(24*106*106, 120)
 
     def forward(self, input):
         output = F.relu(self.bn1(self.conv1(input)))
@@ -269,9 +165,7 @@ class Network(nn.Module):
         output = self.pool(output)
         output = F.relu(self.bn4(self.conv4(output)))
         output = F.relu(self.bn5(self.conv5(output)))
-        output = self.pool2(output)
-        output = self.adaptive_pool(output)
-        output = output.view(-1, 24*10*10)
+        output = output.view(-1, 24*106*106)
         output = self.fc1(output)
 
         return output
@@ -425,7 +319,7 @@ def train(num_epochs):
 
             images = Variable(images.to(device))
 
-            classes = torch.tensor(classes)
+
             classes = Variable(classes.to(device))
 
 
@@ -459,45 +353,81 @@ def train(num_epochs):
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# === BEFORE (original) ===
+# import matplotlib.pyplot as plt
+# import numpy as np
+# 
+# # Function to show the images
+# def imageshow(img):
+#     img = img / 2 + 0.5     # unnormalize
+#     npimg = img.numpy()
+#     plt.imshow(np.transpose(npimg, (1, 2, 0)))
+#     plt.show()
+# 
+# 
+# # Function to test the model with a batch of images and show the labels predictions
+# def testBatch():
+#     # get batch of images from the test DataLoader  
+#     images, labels = next(iter(testing_set_loader)) # images, labels = next(iter(test_loader)) # fix for crash isolation reasons
+# 
+#     # show all images as one image grid
+#     imageshow(torchvision.utils.make_grid(images))
+#    
+#     # Show the real labels on the screen 
+#     print('Real labels: ', ' '.join('%5s' % classes[labels[j]] 
+#                                for j in range(batch_size)))
+#   
+#     # Let's see what if the model identifiers the  labels of those example
+#     outputs = model(images)
+#     
+#     # We got the probability for every 10 labels. The highest (max) probability should be correct label
+#     _, predicted = torch.max(outputs, 1)
+#     
+#     # Let's show the predicted labels on the screen to compare with the real ones
+#     print('Predicted: ', ' '.join('%5s' % classes[predicted[j]] 
+#                               for j in range(batch_size)))
+
+# === AFTER (edited) ===
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Function to show the images
+
 def imageshow(img):
-    img = img / 2 + 0.5     # unnormalize
+    img = img / 2 + 0.5
     npimg = img.numpy()
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
     plt.show()
 
 
-# Function to test the model with a batch of images and show the labels predictions
-def testBatch():
-    # get batch of images from the test DataLoader  
-    images, labels = next(iter(testing_set_loader)) # images, labels = next(iter(test_loader)) # fix for crash isolation reasons
 
-    # show all images as one image grid
+def testBatch():
+
+    images, labels = next(iter(testing_set_loader))
+
+
     imageshow(torchvision.utils.make_grid(images))
-   
-    # Show the real labels on the screen 
-    print('Real labels: ', ' '.join('%5s' % classes[labels[j]] 
-                               for j in range(batch_size)))
-  
-    # Let's see what if the model identifiers the  labels of those example
+
+
+    batch_size_actual = len(images)
+    print('Real labels: ', ' '.join('%5s' % classes[labels[j]]
+                               for j in range(batch_size_actual)))
+
+
     outputs = model(images)
-    
-    # We got the probability for every 10 labels. The highest (max) probability should be correct label
+
+
     _, predicted = torch.max(outputs, 1)
-    
-    # Let's show the predicted labels on the screen to compare with the real ones
-    print('Predicted: ', ' '.join('%5s' % classes[predicted[j]] 
-                              for j in range(batch_size)))
+
+
+    print('Predicted: ', ' '.join('%5s' % classes[predicted[j]]
+                              for j in range(batch_size_actual)))
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # === BEFORE (original) ===
 # if __name__ == "__main__":
 #     
@@ -527,6 +457,7 @@ if __name__ == "__main__":
     testAccuracy()
 
 
+    model = Network()
     path = "data_small/myFirstModel.pth"
     model.load_state_dict(torch.load(path))
 

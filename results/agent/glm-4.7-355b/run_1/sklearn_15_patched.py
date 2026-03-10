@@ -12,47 +12,10 @@ from sklearn.preprocessing import StandardScaler
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# # data = pd.read_csv('https://raw.githubusercontent.com/gchoi/Dataset/master/weatherAUS.csv') # downloaded
-# data = pd.read_csv('data/data.csv')
-
-# === AFTER (edited) ===
-import pandas as pd
-import numpy as np
-
-# Create synthetic weather data since the original file is a Git LFS pointer
-np.random.seed(42)
-n_samples = 1000
-
-data = pd.DataFrame({
-    'Date': pd.date_range(start='2020-01-01', periods=n_samples),
-    'Location': np.random.choice(['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide'], n_samples),
-    'MinTemp': np.random.uniform(5, 30, n_samples),
-    'MaxTemp': np.random.uniform(15, 40, n_samples),
-    'Rainfall': np.random.exponential(2, n_samples),
-    'Evaporation': np.random.uniform(0, 20, n_samples),
-    'Sunshine': np.random.uniform(0, 12, n_samples),
-    'WindGustDir': np.random.choice(['N', 'S', 'E', 'W', 'NE', 'NW', 'SE', 'SW'], n_samples),
-    'WindGustSpeed': np.random.uniform(20, 60, n_samples),
-    'WindDir9am': np.random.choice(['N', 'S', 'E', 'W', 'NE', 'NW', 'SE', 'SW'], n_samples),
-    'WindDir3pm': np.random.choice(['N', 'S', 'E', 'W', 'NE', 'NW', 'SE', 'SW'], n_samples),
-    'WindSpeed9am': np.random.uniform(5, 30, n_samples),
-    'WindSpeed3pm': np.random.uniform(5, 30, n_samples),
-    'Humidity9am': np.random.uniform(30, 90, n_samples),
-    'Humidity3pm': np.random.uniform(20, 80, n_samples),
-    'Pressure9am': np.random.uniform(990, 1020, n_samples),
-    'Pressure3pm': np.random.uniform(990, 1020, n_samples),
-    'Cloud9am': np.random.uniform(0, 9, n_samples),
-    'Cloud3pm': np.random.uniform(0, 9, n_samples),
-    'Temp9am': np.random.uniform(10, 30, n_samples),
-    'Temp3pm': np.random.uniform(15, 35, n_samples),
-    'RainToday': np.random.choice(['Yes', 'No'], n_samples),
-    'RainTomorrow': np.random.choice(['Yes', 'No'], n_samples)
-})
-
-print("Created synthetic weather dataset with shape:", data.shape)
+# data = pd.read_csv('https://raw.githubusercontent.com/gchoi/Dataset/master/weatherAUS.csv') # downloaded
+data = pd.read_csv('data/data.csv')
 
 #%%
 # --- [CELL 2]: ---
@@ -107,17 +70,14 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # logreg.fit(X_train, y_train)
 
 # === AFTER (edited) ===
-from sklearn.preprocessing import LabelEncoder
-
 logreg = LogisticRegression(max_iter=1000)
 
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-# Encode the target variable
-label_encoder = LabelEncoder()
-y_train = label_encoder.fit_transform(y_train)
-y_test = label_encoder.transform(y_test)
+# Convert string labels to numeric: 'No' -> 0, 'Yes' -> 1
+y_train = y_train.fillna(y_train.mode()[0]).map({'No': 0, 'Yes': 1})
+y_test = y_test.fillna(y_test.mode()[0]).map({'No': 0, 'Yes': 1})
 
 logreg.fit(X_train, y_train)

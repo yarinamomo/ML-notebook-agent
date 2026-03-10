@@ -11,18 +11,9 @@ import seaborn as sns
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df= pd.read_csv("data/iris.csv")
-
-# === AFTER (edited) ===
-from sklearn.datasets import load_iris
-
-# Load the iris dataset from sklearn
-iris = load_iris()
-df = pd.DataFrame(data=iris.data, columns=iris.feature_names)
-df['species'] = iris.target_names[iris.target]
+df= pd.read_csv("data/iris.csv")
 
 #%%
 # --- [CELL 2]: ---
@@ -62,7 +53,7 @@ y_pred = clf.predict(x_test)
 from sklearn import metrics
 confusion_matrix = metrics.confusion_matrix(y_test , y_pred)
 
-cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix , display_labels=['setosa', 'versicolor', 'virginica'])
+cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix)
 
 cm_display.plot()
 plt.show()

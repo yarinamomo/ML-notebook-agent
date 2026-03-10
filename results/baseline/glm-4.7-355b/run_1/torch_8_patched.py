@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
@@ -25,14 +25,14 @@ import cv2
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 import os 
 os.listdir('data_small/dataset/train')
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 def takeFileName(filedir): # remove just file name from directory and return
     # filename = np.array(filedir.split('/'))[-1].split('.')[0] # take out the name, isolate the jpeg, then return the name
     filename = np.array(filedir.split('/'))[-1] # take out the name, then return the name
@@ -42,14 +42,14 @@ def takeFileName(filedir): # remove just file name from directory and return
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 train_path_watermarked_images = 'data_small/dataset/train/watermark/'
 train_path_nonwatermarked_images = 'data_small/dataset/train/no_watermark/'
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 tp_watermarked = np.array([]) # array with watermarked image names
 tp_nonwatermarked = np.array([]) # array with nonwatermarked image names
 
@@ -64,7 +64,7 @@ for root, dirs, files in os.walk(train_path_nonwatermarked_images, topdown=True)
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 output_array_wm = []
 
 for i in tp_watermarked:
@@ -75,7 +75,7 @@ for i in tp_watermarked:
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 output_array_nwm = []
 
 for i in tp_nonwatermarked:
@@ -85,61 +85,46 @@ for i in tp_nonwatermarked:
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# === BEFORE (original) ===
-# # dimension to resize to 
-# width = 196 # only certain dimensions work due to UpSampling (196x196 works, 148x148 works)
-# height = 196
-# dim = (width, height) # set the dimensions
-# def createPixelArr(files):
-#     data = []
-#     for image in files:
-#         try: # take each image and use imread to get the pixel values in a matrix 
-#             img_arr = cv2.imread(image, cv2.IMREAD_COLOR)
-#             img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
-#             resized_arr = cv2.resize(img_arr, (width, height)) # rescale the image so every image is of the same dimension
-#             data.append(resized_arr) # add the matrix of pixel values 
-#         except Exception as e:
-#             print(e) # some error thrown in imread or resize
-#     return np.array(data)
-
-# === AFTER (edited) ===
-width = 196
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+# dimension to resize to 
+width = 196 # only certain dimensions work due to UpSampling (196x196 works, 148x148 works)
 height = 196
-dim = (width, height)
+dim = (width, height) # set the dimensions
 def createPixelArr(files):
     data = []
     for image in files:
-        try:
+        try: # take each image and use imread to get the pixel values in a matrix 
             img_arr = cv2.imread(image, cv2.IMREAD_COLOR)
-            # Check if image was loaded successfully
-            if img_arr is None:
-                print(f"Warning: Failed to load image {image}")
-                continue
-                
             img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
-            resized_arr = cv2.resize(img_arr, (width, height))
-            data.append(resized_arr)
+            resized_arr = cv2.resize(img_arr, (width, height)) # rescale the image so every image is of the same dimension
+            data.append(resized_arr) # add the matrix of pixel values 
         except Exception as e:
-            print(f"Error processing {image}: {e}")
-    
-    result = np.array(data)
-    print(f"Successfully loaded {len(result)} out of {len(files)} images")
-    return result
+            print(e) # some error thrown in imread or resize
+    return np.array(data)
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'not run'}
 train_wms_pixVals = createPixelArr(out_array_wm[:90]) # 1000
 train_nwms_pixVals = createPixelArr(out_array_nwm[:90]) # 1000
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
-X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1) 
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1)
+
+# === AFTER (edited) ===
+labels_wms = np.ones(len(train_wms_pixVals))
+labels_nwms = np.zeros(len(train_nwms_pixVals))
+
+X = np.concatenate([train_wms_pixVals, train_nwms_pixVals], axis=0)
+y = np.concatenate([labels_wms, labels_nwms], axis=0)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
 
 #%%
 # --- [CELL 10]: ---
@@ -268,7 +253,6 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
 
     model.load_state_dict(best_model_wts)
     return model, train_acc_history, val_acc_history
-
 
 #%%
 # --- [CELL 13]: ---

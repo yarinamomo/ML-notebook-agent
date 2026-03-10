@@ -73,17 +73,9 @@ test_ds = tf.keras.utils.image_dataset_from_directory(
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# base_model = tf.keras.applications.ResNet50(weights = 'imagenet', include_top = False, input_shape = (224,224,3))
-
-# === AFTER (edited) ===
-base_model = tf.keras.applications.ResNet50(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-
-# Verify base_model was created successfully
-if 'base_model' not in locals():
-    raise RuntimeError("Failed to create base_model. Check TensorFlow installation and network connectivity.")
+base_model = tf.keras.applications.ResNet50(weights = 'imagenet', include_top = False, input_shape = (224,224,3))
 
 #%%
 # --- [CELL 6]: ---
@@ -123,7 +115,7 @@ model.compile(
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 history = model.fit(
     train_ds,
     validation_data=val_ds,
@@ -144,7 +136,7 @@ history = model.fit(
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 results = model.evaluate(test_ds, verbose=0)
 print("    Test Loss: {:.5f}".format(results[0]))
 print("Test Accuracy: {:.2f}%".format(results[1] * 100))
@@ -152,17 +144,28 @@ print("Test Accuracy: {:.2f}%".format(results[1] * 100))
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 predictions = (model.predict(test_ds) >= 0.5)
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# === BEFORE (original) ===
+# predictions = np.array([])
+# labels =  np.array([])
+# for x, y in test_ds:
+#   predictions = np.concatenate([predictions, model.predict_classes(x)])
+#   labels = np.concatenate([labels, np.argmax(y.numpy(), axis=-1)])
+# 
+# tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()
+
+# === AFTER (edited) ===
 predictions = np.array([])
 labels =  np.array([])
 for x, y in test_ds:
-  predictions = np.concatenate([predictions, model.predict_classes(x)])
-  labels = np.concatenate([labels, np.argmax(y.numpy(), axis=-1)])
+  pred = (model.predict(x) >= 0.5).astype(int)
+  predictions = np.concatenate([predictions, pred.flatten()])
+  labels = np.concatenate([labels, y.numpy().flatten()])
 
 tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()

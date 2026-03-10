@@ -31,57 +31,31 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# #By Ranamalla Nithin Reddy https://www.kaggle.com/code/nithinreddy90/chatpgpt-prompts
-# 
-# from transformers import AutoTokenizer
-# 
-# df = pd.read_csv('data/train.csv')
-# 
-# tokenizer = AutoTokenizer.from_pretrained("gpt2")
-# 
-# # Preprocess the data
-# df.drop_duplicates(inplace=True)
-# df.dropna(subset=['output', 'instruction'], inplace=True)
-# 
-# # Tokenize prompts and actions
-# df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(x)))
-# df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(x)))
-# 
-# # Display the preprocessed and tokenized dataframe
-# print(df.head())
+#By Ranamalla Nithin Reddy https://www.kaggle.com/code/nithinreddy90/chatpgpt-prompts
 
-# === AFTER (edited) ===
 from transformers import AutoTokenizer
 
 df = pd.read_csv('data/train.csv')
 
-print("Columns in DataFrame:", df.columns.tolist())
-print("\nDataFrame shape:", df.shape)
-print("\nFirst few rows:")
-print(df.head())
-
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
+# Preprocess the data
 df.drop_duplicates(inplace=True)
+df.dropna(subset=['output', 'instruction'], inplace=True)
 
-# Check if the columns exist before trying to dropna
-if 'output' in df.columns and 'instruction' in df.columns:
-    df.dropna(subset=['output', 'instruction'], inplace=True)
-    df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(str(x))))
-    df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(str(x))))
-else:
-    print("\nWarning: 'output' and/or 'instruction' columns not found in DataFrame")
-    print("Skipping tokenization step")
+# Tokenize prompts and actions
+df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(x)))
+df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(x)))
 
+# Display the preprocessed and tokenized dataframe
 print(df.head())
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # import pandas as pd
 # import torch
@@ -126,33 +100,29 @@ model_name = "gpt2"
 model = GPT2LMHeadModel.from_pretrained(model_name)
 tokenizer = GPT2Tokenizer.from_pretrained(model_name)
 
-
-# Check if the required columns exist in the DataFrame
-if 'instruction' in df.columns:
-    generated_responses = []
-
-    for index, row in df.iterrows():
-        prompt = row['instruction']
-        input_ids = tokenizer.encode(prompt, return_tensors="pt")
+# Set pad token for GPT2 (it doesn't have one by default)
+tokenizer.pad_token = tokenizer.eos_token
+tokenizer.pad_token_id = tokenizer.eos_token_id
 
 
-        with torch.no_grad():
-            output = model.generate(
-                input_ids,
-                max_length=input_ids.size(1) + 50,
-                num_return_sequences=1,
-                pad_token_id=tokenizer.eos_token_id,
-                attention_mask=input_ids.ne(tokenizer.pad_token_id)
-            )
+generated_responses = []
+
+for index, row in df.iterrows():
+    prompt = row['instruction']
+    input_ids = tokenizer.encode(prompt, return_tensors="pt")
 
 
-        padded_output = output[:, input_ids.size(1):]
+    with torch.no_grad():
+        output = model.generate(
+            input_ids,
+            max_length=input_ids.size(1) + 50,
+            num_return_sequences=1,
+            pad_token_id=tokenizer.eos_token_id,
+            attention_mask=input_ids.ne(tokenizer.pad_token_id)
+        )
 
-        response = tokenizer.decode(padded_output[0], skip_special_tokens=True)
-        generated_responses.append(response)
 
-    print("Generated responses:", generated_responses[:5] if len(generated_responses) > 5 else generated_responses)
-else:
-    print("Warning: 'instruction' column not found in DataFrame")
-    print("Skipping model generation loop")
-    print("The CSV file appears to be a Git LFS pointer file, not actual training data.")
+    padded_output = output[:, input_ids.size(1):]
+
+    response = tokenizer.decode(padded_output[0], skip_special_tokens=True)
+    generated_responses.append(response)

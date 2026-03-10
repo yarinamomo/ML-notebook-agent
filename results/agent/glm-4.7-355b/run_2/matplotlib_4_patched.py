@@ -61,7 +61,6 @@ print(class_names)
 # cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # === BEFORE (original) ===
-# 
 # import matplotlib.pyplot as plt
 # 
 # plt.figure(figsize=(10, 10))
@@ -76,17 +75,9 @@ print(class_names)
 import matplotlib.pyplot as plt
 
 plt.figure(figsize=(10, 10))
-try:
-  for images, labels in train_ds.take(1):
-    for i in range(6):
-      ax = plt.subplot(3, 3, i + 1)
-      plt.imshow(images[i].numpy().astype("uint8"))
-      plt.title(class_names[tf.argmax(labels[i]).numpy()])
-      plt.axis("off")
-  plt.show()
-except Exception as e:
-  print(f"Warning: Could not visualize sample images:")
-  print(f"  {type(e).__name__}: {e}")
-  print("\nThis is likely because the dataset contains Git LFS pointer files instead of actual images.")
-  print("The training process may still work if the image loader can parse these files during training.")
-  plt.close()
+for images, labels in train_ds.take(1):
+  for i in range(6):
+    ax = plt.subplot(3, 3, i + 1)
+    plt.imshow(images[i].numpy().astype("uint8"))
+    plt.title(class_names[np.argmax(labels[i])])
+    plt.axis("off")

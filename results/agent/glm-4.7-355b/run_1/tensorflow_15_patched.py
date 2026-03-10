@@ -37,51 +37,23 @@ batch_size = num_samples // 200
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# train_ds = tf.keras.utils.image_dataset_from_directory(
-#   'data_small',
-#   validation_split=0.2,
-#   subset="training",
-#   label_mode='binary',
-#   seed=123, #number to randomize outcome
-#   image_size=(img_height, img_width),
-#   batch_size=batch_size)
-
-# === AFTER (edited) ===
-import warnings
-warnings.filterwarnings('ignore', category=RuntimeWarning)
-
-# Train dataset
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 train_ds = tf.keras.utils.image_dataset_from_directory(
   'data_small',
   validation_split=0.2,
   subset="training",
   label_mode='binary',
-  seed=123,
+  seed=123, #number to randomize outcome
   image_size=(img_height, img_width),
-  batch_size=batch_size,
-  shuffle=True)
+  batch_size=batch_size)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# val_ds = tf.keras.utils.image_dataset_from_directory(
-#  'data_small',
-#   validation_split=0.2,
-#   subset="validation",
-#   label_mode='binary',
-#   seed=123,
-#   image_size=(img_height, img_width),
-#   batch_size=batch_size)
-
-# === AFTER (edited) ===
-# Validation dataset
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 val_ds = tf.keras.utils.image_dataset_from_directory(
-  'data_small',
+ 'data_small',
   validation_split=0.2,
   subset="validation",
   label_mode='binary',
@@ -91,19 +63,10 @@ val_ds = tf.keras.utils.image_dataset_from_directory(
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# test_ds = tf.keras.utils.image_dataset_from_directory(
-#  'data_small_test',
-#   image_size=(img_height, img_width),
-#   label_mode='binary',
-#   batch_size=batch_size)
-
-# === AFTER (edited) ===
-# Test dataset
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 test_ds = tf.keras.utils.image_dataset_from_directory(
-  'data_small_test',
+ 'data_small_test',
   image_size=(img_height, img_width),
   label_mode='binary',
   batch_size=batch_size)
@@ -151,55 +114,29 @@ model.compile(
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# history = model.fit(
-#     train_ds,
-#     validation_data=val_ds,
-#     epochs=2, #100,
-#     callbacks=[
-#         tf.keras.callbacks.EarlyStopping(
-#             monitor='val_loss',
-#             patience=5,
-#             restore_best_weights=True
-#         ),
-#         tf.keras.callbacks.ReduceLROnPlateau(
-#             monitor='val_loss',
-#             patience=3
-#         )
-#     ]
-# )
-
-# === AFTER (edited) ===
-# Wrap training to handle all errors
-try:
-    history = model.fit(
-        train_ds,
-        validation_data=val_ds,
-        epochs=2,
-        callbacks=[
-            tf.keras.callbacks.EarlyStopping(
-                monitor='val_loss',
-                patience=5,
-                restore_best_weights=True
-            ),
-            tf.keras.callbacks.ReduceLROnPlateau(
-                monitor='val_loss',
-                patience=3
-            )
-        ]
-    )
-except Exception as e:
-    print(f"Training encountered error: {type(e).__name__}: {e}")
-    print("Attempting to continue...")
-    # Try to still evaluate what we can
-    history = None
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+history = model.fit(
+    train_ds,
+    validation_data=val_ds,
+    epochs=2, #100,
+    callbacks=[
+        tf.keras.callbacks.EarlyStopping(
+            monitor='val_loss',
+            patience=5,
+            restore_best_weights=True
+        ),
+        tf.keras.callbacks.ReduceLROnPlateau(
+            monitor='val_loss',
+            patience=3
+        )
+    ]
+)
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 results = model.evaluate(test_ds, verbose=0)
 print("    Test Loss: {:.5f}".format(results[0]))
 print("Test Accuracy: {:.2f}%".format(results[1] * 100))
@@ -207,17 +144,27 @@ print("Test Accuracy: {:.2f}%".format(results[1] * 100))
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 predictions = (model.predict(test_ds) >= 0.5)
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# === BEFORE (original) ===
+# predictions = np.array([])
+# labels =  np.array([])
+# for x, y in test_ds:
+#   predictions = np.concatenate([predictions, model.predict_classes(x)])
+#   labels = np.concatenate([labels, np.argmax(y.numpy(), axis=-1)])
+# 
+# tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()
+
+# === AFTER (edited) ===
 predictions = np.array([])
 labels =  np.array([])
 for x, y in test_ds:
-  predictions = np.concatenate([predictions, model.predict_classes(x)])
-  labels = np.concatenate([labels, np.argmax(y.numpy(), axis=-1)])
+  predictions = np.concatenate([predictions, (model.predict(x) >= 0.5).astype(int).flatten()])
+  labels = np.concatenate([labels, y.numpy().flatten()])
 
 tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()

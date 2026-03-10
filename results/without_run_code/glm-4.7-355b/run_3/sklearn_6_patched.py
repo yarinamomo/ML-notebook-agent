@@ -44,70 +44,71 @@ test_ds = pd.read_csv("data/test.csv")
 # train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 # === AFTER (edited) ===
-train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True, errors='ignore')
+train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2', 
+                'MSZoning', 'Utilities', 'BsmtFullBath', 'BsmtHalfBath', 'Functional'], 
+               axis = 1, inplace = True)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# for column in train_ds:
-#     null_count = train_ds[column].isnull().sum()
-#     if null_count > 1:
-#         print(f"Dropping column {column} with {null_count} missing values.")
-#         train_ds.drop(column, axis = 1, inplace = True)
-
-# === AFTER (edited) ===
 for column in train_ds:
     null_count = train_ds[column].isnull().sum()
-    if null_count > 1 and column != 'SalePrice':
+    if null_count > 1:
         print(f"Dropping column {column} with {null_count} missing values.")
         train_ds.drop(column, axis = 1, inplace = True)
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# === BEFORE (original) ===
+# le = LabelEncoder()
+# string_columns = train_ds.select_dtypes(include = ['object']).columns
+# for column in string_columns:
+#     train_ds[column] = le.fit_transform(train_ds[column])
+
+# === AFTER (edited) ===
 le = LabelEncoder()
 string_columns = train_ds.select_dtypes(include = ['object']).columns
 for column in string_columns:
     train_ds[column] = le.fit_transform(train_ds[column])
 
+# Fill remaining NaN values in numeric columns with median
+for column in train_ds.select_dtypes(include = ['number']).columns:
+    if train_ds[column].isnull().sum() > 0:
+        train_ds[column] = train_ds[column].fillna(train_ds[column].median())
+
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# X = train_ds.drop(['SalePrice'], axis = 1)
-# y = train_ds['SalePrice']
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 X = train_ds.drop(['SalePrice'], axis = 1)
 y = train_ds['SalePrice']
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 42)
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 from sklearn.ensemble import RandomForestRegressor
 FReg = RandomForestRegressor(n_estimators = 100, random_state = 42)
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 FReg.fit(X_train, y_train)
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 y_pred = FReg.predict(X_test)
 mse = mean_squared_error(y_test, y_pred)
 r2 = r2_score(y_test, y_pred)
@@ -117,14 +118,22 @@ print(f'MSE: {mse}')
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 test_ds_ids = test_ds['Id'] # fix for crash isolation purpose
 test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# === BEFORE (original) ===
+# for column in test_ds:
+#     null_count = test_ds[column].isnull().sum()
+#     if null_count > 1:
+#         print(f"Dropping column {column} with {null_count} missing values.")
+#         test_ds.drop(column, axis = 1, inplace = True)
+
+# === AFTER (edited) ===
 for column in test_ds:
     null_count = test_ds[column].isnull().sum()
     if null_count > 1:
@@ -133,17 +142,29 @@ for column in test_ds:
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# === BEFORE (original) ===
+# le = LabelEncoder()
+# string_columns = test_ds.select_dtypes(include = ['object']).columns
+# for column in string_columns:
+#     test_ds[column] = le.fit_transform(test_ds[column])
+
+# === AFTER (edited) ===
 le = LabelEncoder()
 string_columns = test_ds.select_dtypes(include = ['object']).columns
 for column in string_columns:
     test_ds[column] = le.fit_transform(test_ds[column])
 
+# Fill remaining NaN values in numeric columns with median
+for column in test_ds.select_dtypes(include = ['number']).columns:
+    if test_ds[column].isnull().sum() > 0:
+        test_ds[column] = test_ds[column].fillna(test_ds[column].median())
+
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 predictions = FReg.predict(test_ds)
 submissions_df = pd.DataFrame({
     "ID" : test_ds_ids, # test_data['ID'], # fix for crash isolation purpose

@@ -29,46 +29,12 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# # read data
-# df = pd.read_csv('data/measures_v2.csv', 
-#                  usecols=[0,1,2,3,4,5,6,7,8,9,10,11])
-# df.head(10)
-
-# === AFTER (edited) ===
-# Create synthetic data since the actual file is a Git LFS pointer
-import numpy as np
-
-# Create a synthetic dataset for motor speed prediction
-np.random.seed(42)
-n_samples = 10000
-
-# Features: ambient, coolant, u_d, u_q, i_d, i_q, pm, stator_yoke, stator_tooth, stator_winding, torque
-feature_names = ['ambient', 'coolant', 'u_d', 'u_q', 'i_d', 'i_q', 'pm', 'stator_yoke', 
-                 'stator_tooth', 'stator_winding', 'torque', 'motor_speed']
-
-# Generate synthetic data
-data = {}
-data['ambient'] = np.random.uniform(20, 80, n_samples)
-data['coolant'] = np.random.uniform(20, 80, n_samples)
-data['u_d'] = np.random.uniform(-500, 500, n_samples)
-data['u_q'] = np.random.uniform(-500, 500, n_samples)
-data['i_d'] = np.random.uniform(-200, 200, n_samples)
-data['i_q'] = np.random.uniform(-200, 200, n_samples)
-data['pm'] = np.random.uniform(50, 100, n_samples)
-data['stator_yoke'] = np.random.uniform(50, 100, n_samples)
-data['stator_tooth'] = np.random.uniform(50, 100, n_samples)
-data['stator_winding'] = np.random.uniform(50, 100, n_samples)
-data['torque'] = np.random.uniform(0, 3, n_samples)
-data['motor_speed'] = np.random.uniform(1000, 4000, n_samples)
-
-df = pd.DataFrame(data)
-print(f"DataFrame shape: {df.shape}")
-print(f"\nDataFrame columns: {df.columns.tolist()}")
-print(f"\nFirst 5 rows:")
-df.head(5)
+# read data
+df = pd.read_csv('data/measures_v2.csv', 
+                 usecols=[0,1,2,3,4,5,6,7,8,9,10,11])
+df.head(10)
 
 #%%
 # --- [CELL 2]: ---
@@ -178,29 +144,34 @@ params['tree_method'] = 'hist'
 params['predictor'] = 'predictor'
 params['n_jobs'] = 4
 
+
+
 n_splits = 10
 test_preds = None
 kf_rmse = []
+for fold, (train_idx, valid_idx) in enumerate(KFold(n_splits=n_splits, shuffle=True).split(X_train,y_train)):
 
-for fold, (train_idx, valid_idx) in enumerate(KFold(n_splits=n_splits, shuffle=True).split(X_train, y_train)):
-    # Fetch the train-validation indices using iloc for proper indexing
-    X_fold_train, y_fold_train = X_train.iloc[train_idx], y_train.iloc[train_idx]
-    X_fold_valid, y_fold_valid = X_train.iloc[valid_idx], y_train.iloc[valid_idx]
+    X_tr, y_tr = X_train.iloc[train_idx], y_train.iloc[train_idx]
+    X_val, y_val = X_train.iloc[valid_idx], y_train.iloc[valid_idx]
+
 
     model = XGBRegressor(**params)
-    model.fit(X_fold_train, y_fold_train,
-            eval_set=[(X_fold_valid, y_fold_valid)],
+    model.fit(X_tr, y_tr,
+            eval_set=[(X_val, y_val)],
             eval_metric='rmse', verbose=False)
 
-    valid_pred = model.predict(X_fold_valid)
 
-    rmse = np.sqrt(mean_squared_error(y_fold_valid, valid_pred))
+    valid_pred = model.predict(X_val)
+
+    rmse = np.sqrt(mean_squared_error(y_val, valid_pred))
     print(f'Fold {fold+1}/{n_splits} RMSE: {rmse:.4f}')
     kf_rmse.append(rmse)
+
 
     if test_preds is None:
         test_preds = model.predict(X_test)
     else:
+
         test_preds += model.predict(X_test)
 
 test_preds /= n_splits

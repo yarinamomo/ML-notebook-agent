@@ -66,17 +66,10 @@ test_loader = torch.utils.data.DataLoader(test_ds, batch_size=64)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# with open('data_small/cat_to_name.json', 'r') as f:
-#     cat_to_name = json.load(f)
-
-# === AFTER (edited) ===
-# Create a simple mapping from class numbers to names
-# Since the original cat_to_name.json is a Git LFS pointer and doesn't contain actual data,
-# we'll create a basic mapping using class numbers
-cat_to_name = {str(i): f'Class_{i}' for i in range(1, 103)}
+with open('data_small/cat_to_name.json', 'r') as f:
+    cat_to_name = json.load(f)
 
 #%%
 # --- [CELL 4]: ---
@@ -355,7 +348,6 @@ def predict(image_path, model, topk=5):
 
 # === AFTER (edited) ===
 import matplotlib.pyplot as plt
-import random
 
 
 def display_image(image_path):
@@ -364,17 +356,15 @@ def display_image(image_path):
 
 model = load_checkpoint('checkpoint.pth')
 
-# Create inverse mapping from index to class name
+# Create inverse mapping from model indices to class folder names
 idx_to_class = {v: k for k, v in model.class_to_idx.items()}
 
-
-# Randomly select a test image and get its path
-test_image_path = random.choice(test_ds.imgs)[0]
+test_image_path = test_ds.imgs[np.random.choice(len(test_ds.imgs))][0]
 display_image(test_image_path)
 
 probs, classes = predict(test_image_path, model)
 
-# Convert predicted indices to class labels using idx_to_class, then to names
+# Convert model indices to class folder names, then to flower names
 class_names = [cat_to_name[idx_to_class[cls]] for cls in classes]
 
 print("Probabilities:", probs)
@@ -382,11 +372,12 @@ print("Classes:", class_names)
 
 
 for i in range(5):
-    test_image_path = random.choice(test_ds.imgs)[0]
+    test_image_path = test_ds.imgs[np.random.choice(len(test_ds.imgs))][0]
     display_image(test_image_path)
 
     probs, classes = predict(test_image_path, model)
 
     class_names = [cat_to_name[idx_to_class[cls]] for cls in classes]
+
     print("Probabilities:", probs)
     print("Classes:", class_names)

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 from sklearn.metrics import r2_score,mean_squared_error
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
@@ -16,70 +16,17 @@ warnings.filterwarnings('ignore')
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# train_raw = pd.read_csv('data/train.csv')
-# test_raw = pd.read_csv('data/test.csv')
-# meal = pd.read_csv('data/meal_info.csv')
-# centerinfo = pd.read_csv('data/fulfilment_center_info.csv')
-
-# === AFTER (edited) ===
-# Create sample data since actual data files are Git LFS pointers
-import numpy as np
-
-# Create sample meal info data
-meal = pd.DataFrame({
-    'meal_id': range(1, 51),
-    'category': np.random.choice(['Beverages', 'Food'], 50),
-    'cuisine': np.random.choice(['Italian', 'Thai', 'Continental'], 50)
-})
-
-# Create sample fulfillment center info data
-centerinfo = pd.DataFrame({
-    'center_id': range(1, 100),
-    'city_code': np.random.randint(100, 200, 99),
-    'region_code': np.random.randint(1, 10, 99),
-    'center_type': np.random.choice(['TYPE_A', 'TYPE_B', 'TYPE_C'], 99)
-})
-
-# Create sample training data
-np.random.seed(42)
-n_train = 1000
-train_raw = pd.DataFrame({
-    'id': range(1, n_train + 1),
-    'center_id': np.random.randint(1, 100, n_train),
-    'meal_id': np.random.randint(1, 51, n_train),
-    'checkout_price': np.random.uniform(100, 500, n_train),
-    'base_price': np.random.uniform(100, 500, n_train),
-    'num_orders': np.random.randint(10, 20000, n_train),
-    'emailer_for_promotion': np.random.randint(0, 2, n_train),
-    'homepage_featured': np.random.randint(0, 2, n_train),
-    'week': np.random.randint(1, 146, n_train)
-})
-
-# Create sample test data
-n_test = 200
-test_raw = pd.DataFrame({
-    'id': range(n_train + 1, n_train + n_test + 1),
-    'center_id': np.random.randint(1, 100, n_test),
-    'meal_id': np.random.randint(1, 51, n_test),
-    'checkout_price': np.random.uniform(100, 500, n_test),
-    'base_price': np.random.uniform(100, 500, n_test),
-    'emailer_for_promotion': np.random.randint(0, 2, n_test),
-    'homepage_featured': np.random.randint(0, 2, n_test),
-    'week': np.random.randint(1, 146, n_test)
-})
-
-print(f"train_raw shape: {train_raw.shape}")
-print(f"meal shape: {meal.shape}")
-print(f"centerinfo shape: {centerinfo.shape}")
-print(f"test_raw shape: {test_raw.shape}")
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+train_raw = pd.read_csv('data/train.csv')
+test_raw = pd.read_csv('data/test.csv')
+meal = pd.read_csv('data/meal_info.csv')
+centerinfo = pd.read_csv('data/fulfilment_center_info.csv')
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'not run'}
 train = pd.merge(train_raw, meal, on="meal_id", how="left")
 df = pd.merge(train, centerinfo, on="center_id", how="left")
 print("Shape of train data : ", df.shape)
@@ -88,7 +35,7 @@ df.head()
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'not run'}
 test_raw = pd.merge(test_raw, meal, on="meal_id", how="left")
 dft = pd.merge(test_raw, centerinfo, on="center_id", how="left")
 print("Shape of train data : ", dft.shape)
@@ -97,14 +44,14 @@ dft.head()
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'not run'}
 col_names=['center_id','meal_id','category','cuisine','city_code','region_code','center_type','emailer_for_promotion','homepage_featured', 'week']
 dft[col_names] = dft[col_names].astype('category')
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'not run'}
 col_names=['center_id','meal_id','category','cuisine','city_code','region_code','center_type','emailer_for_promotion','homepage_featured', 'week']
 df[col_names] = df[col_names].astype('category')
 
@@ -113,14 +60,14 @@ print("Train Datatype\n",df.dtypes)
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'not run'}
 df = df[df['num_orders'] <= 20000];
 df=df.drop("id",  axis=1)
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'not run'}
 if 'id' in df.columns:
     df = df.drop('id', axis=1)
 df.head()
@@ -128,20 +75,20 @@ df.head()
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'not run'}
 df['new_discount_rate'] = (df['base_price'] - df['checkout_price']) / df['base_price']
 df.head()
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'not run'}
 df=df.drop("checkout_price",axis=1)
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# execution_status: {'status': 'not run'}
 #Her haftada her bir mutfak türünden kaç farklı yemek sunulduğunu hesaplar
 weekly_cuisine_category = df.groupby(['week', 'cuisine'])['category'].nunique().reset_index()
 weekly_cuisine_category.rename(columns={'category': 'weekly_cuisine_cat'}, inplace=True)
@@ -150,11 +97,10 @@ weekly_cuisine_category.rename(columns={'category': 'weekly_cuisine_cat'}, inpla
 df = df.merge(weekly_cuisine_category, on=['week', 'cuisine'], how='left')
 df.head()
 
-
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'not run'}
 #Her kategoride her bir mutfak türünün base_price'ını hesaplar.
 cat_cuisine_price = df.groupby(['category', 'cuisine'])['base_price'].nunique().reset_index()
 cat_cuisine_price.rename(columns={'base_price': 'cat_cuisine_price'}, inplace=True)
@@ -166,38 +112,38 @@ df.head()
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# execution_status: {'status': 'not run'}
 df['week'] = df['week'].astype(int)
 
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
+# execution_status: {'status': 'not run'}
 df_train=df[df.week<=119]
 
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
+# execution_status: {'status': 'not run'}
 df_test=df[df.week>119]
 
 #%%
 # --- [CELL 15]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 21}
+# execution_status: {'status': 'not run'}
 df_train=df_train.drop("week",axis=1)
 df_test=df_test.drop("week",axis=1)
 
 #%%
 # --- [CELL 16]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 22}
+# execution_status: {'status': 'not run'}
 b=list(df_train.columns)
 
 #%%
 # --- [CELL 17]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 23}
+# execution_status: {'status': 'not run'}
 df_encoded = pd.get_dummies(df_train[b], drop_first=True)
 
 df_encoded.head()
@@ -205,34 +151,34 @@ df_encoded.head()
 #%%
 # --- [CELL 18]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 24}
+# execution_status: {'status': 'not run'}
 df_test_encoded=pd.get_dummies(df_test[b], drop_first=True)
 df_test_encoded.head()
 
 #%%
 # --- [CELL 19]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 25}
+# execution_status: {'status': 'not run'}
 X = df_encoded.drop("num_orders", axis=1)##X_train
 y = df_encoded["num_orders"]##y_train
 
 #%%
 # --- [CELL 20]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 26}
+# execution_status: {'status': 'not run'}
 w=df_test_encoded.drop("num_orders", axis=1)##X_test
 z=df_test_encoded["num_orders"]#y_test
 
 #%%
 # --- [CELL 21]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 27}
+# execution_status: {'status': 'not run'}
 from sklearn.preprocessing import StandardScaler
 
 #%%
 # --- [CELL 22]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 28}
+# execution_status: {'status': 'not run'}
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import r2_score, mean_squared_error
@@ -276,15 +222,13 @@ print("RMSE:", rmse)
 #%%
 # --- [CELL 23]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 29}
-
-
+# execution_status: {'status': 'not run'}
 dft['new_discount_rate'] = (dft['base_price'] - dft['checkout_price']) / dft['base_price']
 
 #%%
 # --- [CELL 24]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 30}
+# execution_status: {'status': 'not run'}
 dft=dft.drop("checkout_price",axis=1)
 
 #%%
@@ -298,7 +242,6 @@ weekly_cuisine_category.rename(columns={'category': 'weekly_cuisine_cat'}, inpla
 # weekly_cuisine_cat sütununu df veri çerçevesine ekleyin
 dft = dft.merge(weekly_cuisine_category, on=['week', 'cuisine'], how='left')
 dft.head()
-
 
 #%%
 # --- [CELL 26]: ---
@@ -317,8 +260,6 @@ dft.head()
 # cell_state: unchanged
 # execution_status: {'status': 'not run'}
 dft=dft.drop("id",axis=1)
-
-
 
 #%%
 # --- [CELL 28]: ---
@@ -342,6 +283,10 @@ dft_encoded.head()
 
 #%%
 # --- [CELL 31]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-final_pred = DTRmodel.predict(dft_encoded)
+# cell_state: edited
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# === BEFORE (original) ===
+# final_pred = DTRmodel.predict(dft_encoded)
+
+# === AFTER (edited) ===
+final_pred = best_estimator.predict(dft_encoded)

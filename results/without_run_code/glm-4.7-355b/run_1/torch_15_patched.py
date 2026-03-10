@@ -28,34 +28,9 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# jsdf = pd.read_json('data/train_annotations')
-# jsdf.head()
-
-# === AFTER (edited) ===
-# Since annotation files are Git LFS pointers, create dummy annotations
-# Generate random class labels (0 and 1) for existing images
-
-# First, get the available image IDs from the files we found
-import os
-image_ids = []
-for filename in os.listdir('data/train/train'):
-    if filename.startswith('image_id_'):
-        # Extract ID from filename like "image_id_123.jpg"
-        image_id = filename.replace('image_id_', '').replace('.jpg', '')
-        image_ids.append(int(image_id))
-
-# Create annotations dataframe with random labels
-import random
-random.seed(42)  # For reproducibility
-jsdf = pd.DataFrame({
-    'image_id': image_ids,
-    'category_id': [random.choice([1, 2]) for _ in range(len(image_ids))]  # Labels 1 or 2
-})
-
-print(f"Created {len(jsdf)} dummy annotations")
+jsdf = pd.read_json('data/train_annotations')
 jsdf.head()
 
 #%%
@@ -114,40 +89,20 @@ transform = transforms.Compose([
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
-# === BEFORE (original) ===
-# data_path = 'data/train/train'
-# images = []
-# targets = []
-# 
-# for i,annotation in train_data.iterrows():
-#     image_name = annotation['filename']
-#     target = annotation['label']
-#     image_path = os.path.join(data_path, image_name)
-#     image = Image.open(image_path).convert("RGB")
-#     image = transform(image)
-#     images.append(image)
-#     targets.append(torch.tensor(target))
-
-# === AFTER (edited) ===
-# Create dummy image tensors since images are Git LFS pointers
 data_path = 'data/train/train'
 images = []
 targets = []
 
-# Create dummy images for testing
-num_samples = len(train_data)
-for i in range(num_samples):
-    # Create dummy RGB image with shape (3, 512, 512)
-    # Using random values for testing purposes
-    dummy_image = torch.randn(3, 512, 512)
-    images.append(dummy_image)
-    
-    target = train_data.iloc[i]['label']
-    targets.append(torch.tensor(target, dtype=torch.float32))
-
-print(f"Created {len(images)} dummy images")
+for i,annotation in train_data.iterrows():
+    image_name = annotation['filename']
+    target = annotation['label']
+    image_path = os.path.join(data_path, image_name)
+    image = Image.open(image_path).convert("RGB")
+    image = transform(image)
+    images.append(image)
+    targets.append(torch.tensor(target))
 
 #%%
 # --- [CELL 9]: ---
@@ -265,16 +220,19 @@ test_model(model)
 
 # === AFTER (edited) ===
 n_epoch = 1
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = model.to(device)
+
 for epoch in range(n_epoch):
     model.train()
 
     for batch_idx, (sekil, netice) in enumerate(train_loader):
+        sekil, netice = sekil.to(device), netice.to(device)
+        netice = netice.view(-1, 1).float()  # Reshape to match output [batch_size, 1]
 
         optimizer.zero_grad()
 
         outputs = model(sekil)
-        # Reshape targets to match output shape (batch_size, 1)
-        netice = netice.view(-1, 1)
         loss = loss_fn(outputs, netice)
 
         loss.backward()

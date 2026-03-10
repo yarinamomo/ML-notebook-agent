@@ -10,149 +10,118 @@ from matplotlib import pyplot as plt
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
-# === BEFORE (original) ===
-# import pathlib
-# data_dir = 'data/web_scraped_small'
-# data_dir = pathlib.Path(data_dir).with_suffix('')
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 import pathlib
-import os
-from PIL import Image
-import numpy as np
-import shutil
-
 data_dir = 'data/web_scraped_small'
 data_dir = pathlib.Path(data_dir).with_suffix('')
 
-# Create a clean directory structure
-clean_data_dir = pathlib.Path('data/web_scraped_small_clean')
-clean_data_dir.mkdir(exist_ok=True)
-
-# For each class directory, create a synthetic image
-for class_dir in data_dir.iterdir():
-    if class_dir.is_dir():
-        clean_class_dir = clean_data_dir / class_dir.name
-        clean_class_dir.mkdir(exist_ok=True)
-        
-        # Count how many files were in the original class
-        original_files = list(class_dir.glob('*.jpg'))
-        
-        # Create the same number of synthetic images
-        for i, img_file in enumerate(original_files):
-            try:
-                # Try to load original image
-                img = Image.open(img_file)
-                img.close()
-                # Copy if valid
-                shutil.copy(img_file, clean_class_dir / img_file.name)
-            except:
-                # If corrupted, create a synthetic image
-                # Create a random color image 180x180
-                synthetic_img = Image.fromarray(
-                    np.random.randint(0, 255, (180, 180, 3), dtype=np.uint8)
-                )
-                synthetic_img.save(clean_class_dir / img_file.name)
-
-print(f"Clean data directory created: {clean_data_dir}")
-print("Created synthetic images for corrupted files")
-
-# Update data_dir to point to clean data
-data_dir = clean_data_dir
-
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
-# === BEFORE (original) ===
-# image_count = len(list(data_dir.glob('*/*.jpg')))
-# image_count
-
-# === AFTER (edited) ===
-import pathlib
-
-# Count images in the original dataset
-original_dir = pathlib.Path('data/web_scraped_small')
-original_count = len(list(original_dir.glob('*/*.jpg')))
-print(f"Original dataset image count: {original_count}")
-
-# Count images in the cleaned dataset
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 image_count = len(list(data_dir.glob('*/*.jpg')))
-print(f"Clean dataset image count: {image_count}")
-
-# List classes
-if image_count > 0:
-    classes = [d.name for d in data_dir.iterdir() if d.is_dir()]
-    print(f"Classes: {classes}")
-else:
-    print("Warning: No valid images found in the dataset!")
-    print("This is expected if all source images are corrupted.")
+image_count
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# import PIL
-# princess = list(data_dir.glob('princess/*'))
-# PIL.Image.open(str(princess[1]))
-
-# === AFTER (edited) ===
 import PIL
-from pathlib import Path
-
-# List the files in the princess directory (originally for previewing)
 princess = list(data_dir.glob('princess/*'))
-print(f"Found {len(princess)} files in princess directory")
-print(f"First few files: {princess[:3]}")
-
-# Note: The image files appear to be corrupted or placeholder files.
-# TensorFlow's image_dataset_from_directory will handle invalid files during training.
+PIL.Image.open(str(princess[1]))
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# image_height, image_width = PIL.Image.open(str(princess[1])).size
-# batch_size,epochs = 64,10
-
-# === AFTER (edited) ===
-# Set default image dimensions (since image files are corrupted)
-image_height, image_width = 180, 180
-batch_size, epochs = 64, 10
-print(f"Image dimensions: {image_height}x{image_width}")
-print(f"Batch size: {batch_size}, Epochs: {epochs}")
+image_height, image_width = PIL.Image.open(str(princess[1])).size
+batch_size,epochs = 64,10
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-train_ds = tf.keras.utils.image_dataset_from_directory(
-    data_dir,
-    validation_split=0.2,
-    subset='training',
-    image_size=(image_height, image_width),
-    seed = 1,
-    shuffle=True,
-    batch_size=batch_size
-)
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# train_ds = tf.keras.utils.image_dataset_from_directory(
+#     data_dir,
+#     validation_split=0.2,
+#     subset='training',
+#     image_size=(image_height, image_width),
+#     seed = 1,
+#     shuffle=True,
+#     batch_size=batch_size
+# )
+
+# === AFTER (edited) ===
+def load_and_decode_image(path, label):
+    img = tf.io.read_file(path)
+    img = tf.io.decode_image(img, channels=3, expand_animations=False)
+    img = tf.image.resize(img, [image_height, image_width])
+    img.set_shape([None, None, 3])
+    img = tf.cast(img, tf.float32) / 255.0
+    img = tf.image.resize_with_crop_or_pad(img, image_height, image_width)
+    img.set_shape([image_height, image_width, 3])
+    return img, label
+
+def get_class_names():
+    class_names = sorted(item.name for item in data_dir.glob('*/') if item.is_dir())
+    return class_names
+
+all_file_paths = []
+all_labels = []
+class_names = sorted(item.name for item in data_dir.glob('*/') if item.is_dir())
+
+for i, class_name in enumerate(class_names):
+    class_path = data_dir / class_name
+    for img_path in class_path.glob('*.jpg'):
+        all_file_paths.append(str(img_path))
+        all_labels.append(i)
+
+valid_indices = []
+for i, path in enumerate(all_file_paths):
+    try:
+        img_bytes = tf.io.read_file(path)
+        decoded = tf.io.decode_image(img_bytes, channels=3, expand_animations=False)
+        valid_indices.append(i)
+    except:
+        pass
+
+print(f"Valid images: {len(valid_indices)} out of {len(all_file_paths)}")
+
+valid_file_paths = [all_file_paths[i] for i in valid_indices]
+valid_labels = [all_labels[i] for i in valid_indices]
+
+full_ds = tf.data.Dataset.from_tensor_slices((valid_file_paths, valid_labels))
+full_ds = full_ds.map(load_and_decode_image, num_parallel_calls=tf.data.AUTOTUNE)
+
+train_size = int(0.8 * len(valid_file_paths))
+val_size = len(valid_file_paths) - train_size
+
+full_ds = full_ds.shuffle(buffer_size=len(valid_file_paths), seed=42)
+train_ds = full_ds.take(train_size).batch(batch_size).cache().prefetch(tf.data.AUTOTUNE)
+val_ds = full_ds.skip(train_size).batch(batch_size).cache().prefetch(tf.data.AUTOTUNE)
+
+print(f"Training samples: {train_size}, Validation samples: {val_size}")
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-val_ds = tf.keras.utils.image_dataset_from_directory(
-    data_dir,
-    validation_split=0.2,
-    subset='validation',
-    image_size=(image_height, image_width),
-    seed = 1,
-    shuffle=True,
-    batch_size=batch_size
-)
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# val_ds = tf.keras.utils.image_dataset_from_directory(
+#     data_dir,
+#     validation_split=0.2,
+#     subset='validation',
+#     image_size=(image_height, image_width),
+#     seed = 1,
+#     shuffle=True,
+#     batch_size=batch_size
+# )
+
+# === AFTER (edited) ===
+# Validation dataset already created in cell 5
+pass
 
 #%%
 # --- [CELL 7]: ---
@@ -162,15 +131,26 @@ normalization_layer = layers.Rescaling(1./255)
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# from tensorflow import keras
+# data_augmentation = keras.Sequential(
+#   [
+#     layers.RandomFlip("horizontal",
+#                       input_shape=(image_height,
+#                                   image_width,
+#                                   3)),
+#     layers.RandomRotation(0.1),
+#     layers.RandomZoom(0.1),
+#   ]
+# )
+
+# === AFTER (edited) ===
 from tensorflow import keras
 data_augmentation = keras.Sequential(
   [
-    layers.RandomFlip("horizontal",
-                      input_shape=(image_height,
-                                  image_width,
-                                  3)),
+    layers.RandomFlip("horizontal"),
     layers.RandomRotation(0.1),
     layers.RandomZoom(0.1),
   ]
@@ -178,16 +158,44 @@ data_augmentation = keras.Sequential(
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-num_of_classes = len(train_ds.class_names)
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# num_of_classes = len(train_ds.class_names)
+# num_of_classes
+
+# === AFTER (edited) ===
+def get_class_names():
+    class_names = sorted(item.name for item in data_dir.glob('*/') if item.is_dir())
+    return class_names
+
+class_names = get_class_names()
+num_of_classes = len(class_names)
 num_of_classes
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# model = Sequential([
+#   data_augmentation,
+#   normalization_layer,
+#   layers.Conv2D(16, 3, padding='same', activation='relu'),
+#   layers.MaxPooling2D(),
+#   layers.Conv2D(32, 3, padding='same', activation='relu'),
+#   layers.MaxPooling2D(),
+#   layers.Conv2D(64, 3, padding='same', activation='relu'),
+#   layers.MaxPooling2D(),
+#   layers.Dropout(0.2),
+#   layers.Flatten(),
+#   layers.Dense(128, activation='relu'),
+#   layers.Dense(num_of_classes, name="outputs")
+# ])
+
+# === AFTER (edited) ===
 model = Sequential([
+  layers.Input(shape=(image_height, image_width, 3)),
   data_augmentation,
   normalization_layer,
   layers.Conv2D(16, 3, padding='same', activation='relu'),
@@ -210,6 +218,10 @@ model.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentro
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 13}
-history = model.fit(train_ds,validation_data=val_ds, epochs=1)
+# === BEFORE (original) ===
+# history = model.fit(train_ds,validation_data=val_ds, epochs=1)
+
+# === AFTER (edited) ===
+history = model.fit(train_ds, validation_data=val_ds, epochs=1)

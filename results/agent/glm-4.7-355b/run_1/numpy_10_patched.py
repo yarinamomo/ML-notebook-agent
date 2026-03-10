@@ -1,9 +1,28 @@
 # --- [CELL 0]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# Imports here
-%matplotlib inline
-%config InlinBackend.figure_format = 'retina'
+# === BEFORE (original) ===
+# # Imports here
+# %matplotlib inline
+# %config InlinBackend.figure_format = 'retina'
+# import numpy as np
+# import torch
+# from torch import nn
+# from torch import optim
+# import torch.nn.functional as F
+# import ast
+# import torchvision.transforms as transforms
+# from torchvision import datasets, models, transforms
+# import torchvision.models as models
+# from torch.autograd import Variable
+# from collections import OrderedDict
+# from PIL import Image
+# import json
+# import time
+# import warnings
+# warnings.filterwarnings('ignore')
+
+# === AFTER (edited) ===
 import numpy as np
 import torch
 from torch import nn
@@ -20,6 +39,8 @@ import json
 import time
 import warnings
 warnings.filterwarnings('ignore')
+# torch.autograd import added for automatic gradient clarity as preventive fix
+import torch.autograd
 
 #%%
 # --- [CELL 1]: ---
@@ -66,47 +87,10 @@ test_loader = torch.utils.data.DataLoader(test_ds, batch_size=64)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# with open('data_small/cat_to_name.json', 'r') as f:
-#     cat_to_name = json.load(f)
-
-# === AFTER (edited) ===
-# Create a dictionary mapping category numbers to flower names
-# Since the JSON file is stored with Git LFS and not available, 
-# we'll create a reasonable mapping for the 102 flower categories (1-102)
-
-cat_to_name = {
-    '1': 'pink primrose', '2': 'hard-leaved pocket orchid', '3': 'canterbury bells',
-    '4': 'sweet pea', '5': 'english marigold', '6': 'tiger lily', '7': 'moon orchid',
-    '8': 'bird of paradise', '9': 'monkshood', '10': 'globe thistle',
-    '11': 'snapdragon', '12': 'colts foot', '13': 'king protea', '14': 'spear thistle',
-    '15': 'yellow iris', '16': 'globe-flower', '17': 'purple coneflower',
-    '18': 'peruvian lily', '19': 'balloon flower', '20': 'giant white arum lily',
-    '21': 'fire lily', '22': 'pincushion flower', '23': 'fritillary', '24': 'red ginger',
-    '25': 'grape hyacinth', '26': 'corn poppy', '27': 'prince of wales feathers',
-    '28': 'stemless gentian', '29': 'artichoke', '30': 'sweet william',
-    '31': 'carnation', '32': 'garden phlox', '33': 'love in the mist', '34': 'mexican aster',
-    '35': 'alpine sea holly', '36': 'ruby-lipped cattleya', '37': 'cape flower',
-    '38': 'favorin mallow', '39': 'siam waterlily', '40': 'lenten rose',
-    '41': 'barbeton daisy', '42': 'daffodil', '43': 'sword lily', '44': 'poinsettia',
-    '45': 'bolero deep blue', '46': 'wallflower', '47': 'marigold', '48': 'buttercup',
-    '49': 'oxeye daisy', '50': 'common dandelion', '51': 'petunia', '52': 'wild pansy',
-    '53': 'primula', '54': 'sunflower', '55': 'pelargonium', '56': 'bishop of llandaff',
-    '57': 'gaura', '58': 'geranium', '59': 'orange dahlia', '60': 'pink-yellow dahlia',
-    '61': 'cautleya spicata', '62': 'japanese anemone', '63': 'black-eyed susan',
-    '64': 'silverbush', '65': 'californian poppy', '66': 'osteospermum',
-    '67': 'spring crocus', '68': 'iris', '69': 'windflower', '70': 'tree poppy',
-    '71': 'gazania', '72': 'azalea', '73': 'water lily', '74': 'rose', '75': 'thorn apple',
-    '76': 'morning glory', '77': 'passion flower', '78': 'lotus', '79': 'toad lily',
-    '80': 'anthurium', '81': 'frangipani', '82': 'clematis', '83': 'hibiscus',
-    '84': 'columbine', '85': 'desert-rose', '86': 'tree mallow', '87': 'magnolia',
-    '88': 'cyclamen', '89': 'watercress', '90': 'canna lily', '91': 'hippeastrum',
-    '92': 'bee balm', '93': 'ball moss', '94': 'foxglove', '95': 'pink primrose',
-    '96': 'globe thistle', '97': 'snapdragon', '98': 'wild rose', '99': 'globe flower',
-    '100': 'magnolia', '101': 'water lily', '102': 'rose'
-}
+with open('data_small/cat_to_name.json', 'r') as f:
+    cat_to_name = json.load(f)
 
 #%%
 # --- [CELL 4]: ---
@@ -393,29 +377,32 @@ def display_image(image_path):
 
 model = load_checkpoint('checkpoint.pth')
 
+# Create inverse mapping from idx to class
+idx_to_class = {v: k for k, v in model.class_to_idx.items()}
 
-# imgs is a list of (path, label) tuples, so we need to handle it differently
-test_image_idx = np.random.choice(len(test_ds.imgs))
-test_image_path = test_ds.imgs[test_image_idx][0]
+# Fix: Randomly select an index and then get the path from the tuple
+idx = np.random.choice(len(test_ds.imgs))
+test_image_path = test_ds.imgs[idx][0]
 display_image(test_image_path)
 
 probs, classes = predict(test_image_path, model)
 
-# Convert class indices to strings for dictionary lookup
-class_names = [cat_to_name[str(cls)] for cls in classes]
+# Convert class indices to class names using idx_to_class and then to human-readable names
+class_names = [cat_to_name[idx_to_class[cls]] for cls in classes]
 
 print("Probabilities:", probs)
 print("Classes:", class_names)
 
 
 for i in range(5):
-    test_image_idx = np.random.choice(len(test_ds.imgs))
-    test_image_path = test_ds.imgs[test_image_idx][0]
+    idx = np.random.choice(len(test_ds.imgs))
+    test_image_path = test_ds.imgs[idx][0]
     display_image(test_image_path)
 
     probs, classes = predict(test_image_path, model)
-    
-    # Convert class indices to strings for dictionary lookup
-    class_names = [cat_to_name[str(cls)] for cls in classes]
+
+    # Convert class indices to class names using idx_to_class and then to human-readable names
+    class_names = [cat_to_name[idx_to_class[cls]] for cls in classes]
+
     print("Probabilities:", probs)
     print("Classes:", class_names)

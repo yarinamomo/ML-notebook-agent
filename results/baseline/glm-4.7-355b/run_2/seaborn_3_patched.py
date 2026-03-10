@@ -30,47 +30,23 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.width', None)
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
 
-
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# train = pd.read_csv("data/train.csv")
-# test = pd.read_csv("data/test.csv")
-# 
-# # ignore_index=True kullanarak index sıfırdan başlayacak şekilde birleştirme yapın
-# df = pd.concat([train, test], ignore_index=True)
-# 
-# selected_list = ["GarageArea", "LotArea", "LotFrontage", "OverallQual", "PoolArea", "MSSubClass", "YearBuilt", "GrLivArea",
-#                  "BedroomAbvGr", "LowQualFinSF", "TotRmsAbvGrd", "Id", "SalePrice"]
-# 
-# # Id ve SalePrice'ı seçili sütunlara ekleyin
-# df = df[selected_list]
-# 
-# # "index" sütununu düşürmeye gerek yok
-# df.head()
-# df.shape
-# df.isnull().sum()
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 train = pd.read_csv("data/train.csv")
 test = pd.read_csv("data/test.csv")
 
-
+# ignore_index=True kullanarak index sıfırdan başlayacak şekilde birleştirme yapın
 df = pd.concat([train, test], ignore_index=True)
-
 
 selected_list = ["GarageArea", "LotArea", "LotFrontage", "OverallQual", "PoolArea", "MSSubClass", "YearBuilt", "GrLivArea",
                  "BedroomAbvGr", "LowQualFinSF", "TotRmsAbvGrd", "Id", "SalePrice"]
 
-# Only select columns that actually exist in the dataframe
-selected_list = [col for col in selected_list if col in df.columns]
-
+# Id ve SalePrice'ı seçili sütunlara ekleyin
 df = df[selected_list]
 
-
+# "index" sütununu düşürmeye gerek yok
 df.head()
 df.shape
 df.isnull().sum()
@@ -78,7 +54,7 @@ df.isnull().sum()
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 def grab_col_names(dataframe, cat_th=10, car_th=25):
     """
     grab_col_names for given dataframe
@@ -119,11 +95,35 @@ def grab_col_names(dataframe, cat_th=10, car_th=25):
 
 cat_cols, cat_but_car, num_cols = grab_col_names(df)
 
-
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# === BEFORE (original) ===
+# def num_summary(dataframe, numerical_col, plot=False):
+#     quantiles = [0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99]
+#     print(dataframe[numerical_col].describe(quantiles).T)
+# 
+#     if plot:
+#         dataframe[numerical_col].hist(bins=50)
+#         plt.xlabel(numerical_col)
+#         plt.title(numerical_col)
+#         plt.show(block=True)
+# 
+#     print("#####################################")
+# 
+# 
+# for col in num_cols:
+#     num_summary(df, col, True)
+# 
+# for col in num_cols:
+#     sns.barplot(col,df)
+# 
+# for col in num_cols:
+#     sns.boxplot(data=df, x=col)
+#     plt.show(block=True)
+
+# === AFTER (edited) ===
 def num_summary(dataframe, numerical_col, plot=False):
     quantiles = [0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99]
     print(dataframe[numerical_col].describe(quantiles).T)
@@ -141,7 +141,8 @@ for col in num_cols:
     num_summary(df, col, True)
 
 for col in num_cols:
-    sns.barplot(col,df)
+    sns.histplot(df[col])
+    plt.show()
 
 for col in num_cols:
     sns.boxplot(data=df, x=col)

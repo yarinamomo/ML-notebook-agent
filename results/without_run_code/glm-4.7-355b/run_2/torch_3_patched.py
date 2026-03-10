@@ -1,31 +1,31 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 from transformers import AutoModel,AutoConfig,AutoTokenizer,AutoModelForMultipleChoice
 
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 MODEL_NAME = 'microsoft/deberta-v2-xlarge'
 MODEL_NAME_CHOICE = 'vinai/phobert-base'
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 from  transformers.modeling_outputs import MultipleChoiceModelOutput
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 from torch import nn
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # class CustomModelMultichoice(nn.Module):
 #     def __init__(self,config,num_choice):
@@ -44,7 +44,6 @@ from torch import nn
 #             loss_func = nn.NLLLoss()
 #             loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))
 #         return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states= None,attentions =None)
-#             
 
 # === AFTER (edited) ===
 class CustomModelMultichoice(nn.Module):
@@ -63,12 +62,12 @@ class CustomModelMultichoice(nn.Module):
         if labels is not None:
             loss_func = nn.NLLLoss()
             loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))
-        return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states= None,attentions =None)
+        return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states = None,attentions =None)
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 config = AutoConfig.from_pretrained(MODEL_NAME_CHOICE)
 
 CustomModel = CustomModelMultichoice(config,3)
@@ -76,34 +75,32 @@ CustomModel = CustomModelMultichoice(config,3)
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 prompt = "Bác Hồ là người nước nào ?."
 candidate1 = "Việt Nam"
 candidate2 = "Mỹ"
 candidate3 = 'Việt Nam'
 
-
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'not run'}
 from transformers import AutoTokenizer
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_CHOICE)
 inputs = tokenizer([[prompt, candidate1], [prompt, candidate2],[prompt, candidate3]], return_tensors="pt", padding=True)
 
-
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'not run'}
 import torch
 labels = torch.tensor(0).unsqueeze(0)
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'not run'}
 inputs['input_ids'] = inputs['input_ids'].unsqueeze(0)
 inputs['token_type_ids'] = inputs['token_type_ids'].unsqueeze(0)
 inputs['attention_mask'] = inputs['attention_mask'].unsqueeze(0)
@@ -111,18 +108,18 @@ inputs['attention_mask'] = inputs['attention_mask'].unsqueeze(0)
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'not run'}
 CustomModel.eval()
 
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'not run'}
 target = torch.tensor([[1, 0, 1]])
 target
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'not run'}
 out = CustomModel(**inputs,labels = target)

@@ -40,7 +40,4 @@ print("No of columns after dropping high missing value column: ",len(train.colum
 # test=test.drop(['Alley','PoolQC','Fence','MiscFeature','Id'],axis=1)
 
 # === AFTER (edited) ===
-# Only drop columns that exist in the dataframe
-cols_to_drop = ['Alley','PoolQC','Fence','MiscFeature','Id']
-existing_cols = [col for col in cols_to_drop if col in test.columns]
-test = test.drop(existing_cols, axis=1)
+test=test.drop(['Id'],axis=1)

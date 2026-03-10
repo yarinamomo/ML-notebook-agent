@@ -64,17 +64,6 @@ import matplotlib.pyplot as plt
 
 # === AFTER (edited) ===
 path = "data_small/"
-
-def is_valid_wav(filepath):
-    """Check if a file is a valid WAV file by checking its header."""
-    try:
-        with open(filepath, 'rb') as f:
-            header = f.read(4)
-            # WAV files should start with "RIFF" or be a recognized audio format
-            return len(header) >= 4 and (header.startswith(b'RIFF') or header.startswith(b'FORM'))
-    except:
-        return False
-
 def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
 
     data = []
@@ -85,17 +74,26 @@ def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
             foldername = os.path.basename(dirname)
             full_path = os.path.join(dirname, filename)
 
-            # Skip invalid audio files (e.g., Git LFS pointer files)
-            if not is_valid_wav(full_path):
-                print(f"Warning: Skipping invalid audio file: {filename}")
-                continue
-
             y, sr = librosa.load(full_path)
             mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, fmax=fmax, fmin=fmin)
             logam = librosa.power_to_db(mel)
             data.append(logam)
+            
+            # Track the maximum length
+            if logam.shape[1] > max_harm_length:
+                max_harm_length = logam.shape[1]
 
-    data = np.array(data)
+    # Pad all arrays to the same length
+    padded_data = []
+    for arr in data:
+        if arr.shape[1] < max_harm_length:
+            # Pad with zeros
+            padded = np.pad(arr, ((0, 0), (0, max_harm_length - arr.shape[1])), mode='constant')
+            padded_data.append(padded)
+        else:
+            padded_data.append(arr)
+    
+    data = np.array(padded_data)
     return data
 
 #%%

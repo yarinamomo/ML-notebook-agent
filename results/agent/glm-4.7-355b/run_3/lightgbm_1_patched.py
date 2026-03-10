@@ -35,72 +35,20 @@ from pandas.plotting import scatter_matrix
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train_full = pd.read_csv("data/train.csv", index_col=conf.index)
-# test_full = pd.read_csv("data/test.csv", index_col=conf.index)
-# train = train_full.copy()
-# test = test_full.copy()
-# if conf.load_original:
-#     print("Load external data...")
-#     original = pd.read_csv('data/WineQT.csv', index_col=conf.index)
-#     if conf.only_positive:
-#         train = pd.concat([original[original[conf.target] == 1], train_full], ignore_index=True)
-#     else:
-#         train = pd.concat([original, train_full])
-#         #train = train.drop(columns=['Id']).reset_index()
-# train.info()
-
-# === AFTER (edited) ===
-import numpy as np
-import pandas as pd
-from sklearn.datasets import make_regression
-
-# Create synthetic wine quality training data with expected columns
-np.random.seed(conf.random)
-n_train = 1000
-n_test = 500
-
-# Define column names found in Wine Quality dataset
-columns = ['fixed acidity', 'volatile acidity', 'citric acid', 'residual sugar', 
-           'chlorides', 'free sulfur dioxide', 'total sulfur dioxide', 'density', 
-           'pH', 'sulphates', 'alcohol', 'quality']
-
-# Generate training data
-train_data = np.random.rand(n_train, 12)
-train_data[:, -1] = np.random.randint(3, 9, n_train)  # quality between 3-8
-train_full = pd.DataFrame(train_data, columns=columns)
-train_full['Id'] = range(1, n_train + 1)
-train_full = train_full.set_index('Id')
-
-# Generate test data
-test_data = np.random.rand(n_test, 12)
-test_data[:, -1] = np.random.randint(3, 9, n_test)  # quality between 3-8
-test_full = pd.DataFrame(test_data, columns=columns)
-test_full['Id'] = range(1, n_test + 1)
-test_full = test_full.set_index('Id')
-
-# Make copies
+train_full = pd.read_csv("data/train.csv", index_col=conf.index)
+test_full = pd.read_csv("data/test.csv", index_col=conf.index)
 train = train_full.copy()
 test = test_full.copy()
-
-# Load original data ( WineQT.csv)
 if conf.load_original:
     print("Load external data...")
-    # Create synthetic WineQT data
-    n_original = 500
-    original_data = np.random.rand(n_original, 12)
-    original_data[:, -1] = np.random.randint(3, 9, n_original)  # quality between 3-8
-    original = pd.DataFrame(original_data, columns=columns)
-    original['Id'] = range(1, n_original + 1)
-    original = original.set_index('Id')
-    
+    original = pd.read_csv('data/WineQT.csv', index_col=conf.index)
     if conf.only_positive:
         train = pd.concat([original[original[conf.target] == 1], train_full], ignore_index=True)
     else:
         train = pd.concat([original, train_full])
-
+        #train = train.drop(columns=['Id']).reset_index()
 train.info()
 
 #%%
@@ -145,13 +93,12 @@ fe(test2)
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 features1 = train2[train2.quality==3].columns.to_list()[0:11] 
 features2 = train2[train2.quality==3].columns.to_list()[12:15]
-features = features1 + features2 
+features = features1 + features2
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
-
 train2 = train2.drop(columns=['residual sugar', 'chlorides', 'free sulfur dioxide', 'pH'])
 test2 = test2.drop(columns=['residual sugar', 'chlorides', 'free sulfur dioxide', 'pH'])
 
@@ -192,83 +139,56 @@ df_TSNE_te = df_TSNE_te.set_index('Id')
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
-# === BEFORE (original) ===
-# df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
-# df_TSNE = pd.concat([df_tmp,train[conf.target]], axis=1)
-# 
-# df_TSNE = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
-# 
-# groups = df_TSNE.groupby(conf.target)
-# 
-# #https://stackoverflow.com/questions/21654635/scatter-plots-in-pandas-pyplot-how-to-plot-by-category
-# fig, ax = plt.subplots(figsize=(12, 12))
-# ax.margins(0.05) # Optional, just adds 5% padding to the autoscaling
-# for name, group in groups:
-#     ax.plot(group.tsne1, group.tsne2, marker='o', linestyle='', ms=12, label=name)
-# ax.legend()
-# #plt.xlim(-75, -80)
-# #plt.ylim(-5, 5)
-# 
-# plt.show()
-
-# === AFTER (edited) ===
 df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
 df_TSNE = pd.concat([df_tmp,train[conf.target]], axis=1)
 
-# Don't filter by quality - we need all rows for concatenation later
-# df_TSNE = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
+df_TSNE = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
 
 groups = df_TSNE.groupby(conf.target)
 
-
+#https://stackoverflow.com/questions/21654635/scatter-plots-in-pandas-pyplot-how-to-plot-by-category
 fig, ax = plt.subplots(figsize=(12, 12))
-ax.margins(0.05)
+ax.margins(0.05) # Optional, just adds 5% padding to the autoscaling
 for name, group in groups:
     ax.plot(group.tsne1, group.tsne2, marker='o', linestyle='', ms=12, label=name)
 ax.legend()
-
-
+#plt.xlim(-75, -80)
+#plt.ylim(-5, 5)
 
 plt.show()
 
 #%%
 # --- [CELL 16]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
-df_tmp = train2.drop(columns=['quality'])
-train3 = pd.concat([df_tmp, df_TSNE], axis=1)
-test3 = pd.concat([test2, df_TSNE_te], axis=1)
+# === BEFORE (original) ===
+# df_tmp = train2.drop(columns=['quality'])
+# train3 = pd.concat([df_tmp, df_TSNE], axis=1)
+# test3 = pd.concat([test2, df_TSNE_te], axis=1)
 
+# === AFTER (edited) ===
+# Recreate df_TSNE with all rows (not filtered to only quality 4 and 7)
+df_tmp = train2.drop(columns=['quality'])
+df_tsne_all = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
+df_TSNE = pd.concat([df_tsne_all, train[conf.target]], axis=1)
+
+# Now concatenate to create train3 with all rows
+train3 = pd.concat([df_tmp, df_tsne_all], axis=1)
+train3['quality'] = train2['quality'].values
+test3 = pd.concat([test2, df_TSNE_te], axis=1)
 
 #%%
 # --- [CELL 17]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
-# === BEFORE (original) ===
-# from sklearn.metrics import cohen_kappa_score
-# from sklearn.model_selection import StratifiedKFold
-# 
-# from lightgbm.sklearn import LGBMClassifier
-# from catboost import CatBoostClassifier
-# 
-# from lightgbm import LGBMRegressor
-# import scipy as sp
-# from functools import partial
-# 
-# import optuna
-# import warnings
-# warnings.filterwarnings('ignore')
-
-# === AFTER (edited) ===
 from sklearn.metrics import cohen_kappa_score
 from sklearn.model_selection import StratifiedKFold
 
 from lightgbm.sklearn import LGBMClassifier
 from catboost import CatBoostClassifier
 
-import lightgbm as lgb
 from lightgbm import LGBMRegressor
 import scipy as sp
 from functools import partial
@@ -283,7 +203,6 @@ warnings.filterwarnings('ignore')
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
 y = train3[conf.target]
 X = train3.drop([conf.target], axis=1)
-
 
 #%%
 # --- [CELL 19]: ---
@@ -314,9 +233,10 @@ X = train3.drop([conf.target], axis=1)
 #         score = cohen_kappa_score(y_valid,  preds_valid, weights = "quadratic")
 #         scores.append(score)
 #     return np.mean(scores)
-#     
 
 # === AFTER (edited) ===
+import lightgbm as lgb
+
 scores =[]
 
 def find_out_params_model(trial):
@@ -333,7 +253,7 @@ def find_out_params_model(trial):
         my_model.fit(
             X_train, y_train,
             eval_set= [(X_valid,y_valid)],
-            callbacks=[lgb.early_stopping(stopping_rounds=50, verbose=False)]
+            callbacks=[lgb.early_stopping(stopping_rounds=50), lgb.log_evaluation(period=-1)]
         )
 
         preds_valid = my_model.predict(X_valid)

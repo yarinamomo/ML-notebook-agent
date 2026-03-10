@@ -10,51 +10,10 @@ sns.set(style='whitegrid')
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train=pd.read_csv('data/train.csv')
-# test=pd.read_csv('data/train.csv')
-
-# === AFTER (edited) ===
-# Create sample data matching the expected structure
-import numpy as np
-import pandas as pd
-
-np.random.seed(42)
-n_samples = 1000
-
-train = pd.DataFrame({
-    'id': range(n_samples),
-    'Gender': np.random.choice(['Female', 'Male'], n_samples),
-    'Age': np.random.randint(20, 80, n_samples),
-    'Driving_License': np.random.choice([0, 1], n_samples, p=[0.01, 0.99]),
-    'Region_Code': np.random.randint(0, 52, n_samples),
-    'Previously_Insured': np.random.choice([0, 1], n_samples),
-    'Vehicle_Age': np.random.choice(['< 1 Year', '1-2 Year', '> 2 Years'], n_samples),
-    'Vehicle_Damage': np.random.choice(['Yes', 'No'], n_samples),
-    'Annual_Premium': np.random.uniform(2000, 80000, n_samples),
-    'Policy_Sales_Channel': np.random.randint(1, 161, n_samples),
-    'Vintage': np.random.randint(10, 300, n_samples),
-    'Response': np.random.choice([0, 1], n_samples, p=[0.87, 0.13])
-})
-
-test = pd.DataFrame({
-    'id': range(n_samples, n_samples + 500),
-    'Gender': np.random.choice(['Female', 'Male'], 500),
-    'Age': np.random.randint(20, 80, 500),
-    'Driving_License': np.random.choice([0, 1], 500, p=[0.01, 0.99]),
-    'Region_Code': np.random.randint(0, 52, 500),
-    'Previously_Insured': np.random.choice([0, 1], 500),
-    'Vehicle_Age': np.random.choice(['< 1 Year', '1-2 Year', '> 2 Years'], 500),
-    'Vehicle_Damage': np.random.choice(['Yes', 'No'], 500),
-    'Annual_Premium': np.random.uniform(2000, 80000, 500),
-    'Policy_Sales_Channel': np.random.randint(1, 161, 500),
-    'Vintage': np.random.randint(10, 300, 500)
-})
-
-print(f"Train shape: {train.shape}")
-print(f"Test shape: {test.shape}")
+train=pd.read_csv('data/train.csv')
+test=pd.read_csv('data/train.csv')
 
 #%%
 # --- [CELL 2]: ---
@@ -157,10 +116,16 @@ test=test.drop('id',axis=1)
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-# didn't work in original one also
+# === BEFORE (original) ===
+# # didn't work in original one also
+# 
+# for column in cat_feat:
+#     x_train[column] = x_train[column].astype('int')
+#     x_test[column] = x_test[column].astype('int')
 
+# === AFTER (edited) ===
 for column in cat_feat:
-    x_train[column] = x_train[column].astype('int')
-    x_test[column] = x_test[column].astype('int')
+    x_train[column] = x_train[column].astype('float').astype('int')
+    x_test[column] = x_test[column].astype('float').astype('int')

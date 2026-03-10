@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # === BEFORE (original) ===
 # import torch
 # import torchvision
@@ -60,19 +60,30 @@ from torch.utils.data import DataLoader
 
 
 transform = transforms.Compose([
-    transforms.ToTensor()
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
 
-trainset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='train', download=True, transform=transform)
-testset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='val', download=True, transform=transform)
+trainset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='train', download=False, transform=transform)
+testset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='val', download=False, transform=transform)
 
 
-trainloader = DataLoader(trainset, batch_size=4, shuffle=True, num_workers=2)
-testloader = DataLoader(testset, batch_size=4, shuffle=False, num_workers=2)
+def collate_fn(batch):
+    # Custom collate function that returns list instead of stacking (since images have different sizes)
+    images = []
+    annotations = []
+    for image, annotation in batch:
+        images.append(image)
+        annotations.append(annotation)
+    return images, annotations
 
 
-model = fasterrcnn_resnet50_fpn(pretrained=True)
+trainloader = DataLoader(trainset, batch_size=4, shuffle=True, num_workers=0, collate_fn=collate_fn)
+testloader = DataLoader(testset, batch_size=4, shuffle=False, num_workers=0, collate_fn=collate_fn)
+
+
+model = fasterrcnn_resnet50_fpn(weights='FasterRCNN_ResNet50_FPN_Weights.DEFAULT')
 
 
 num_classes = 21
@@ -83,14 +94,44 @@ model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCN
 optimizer = torch.optim.SGD(model.parameters(), lr=0.005, momentum=0.9, weight_decay=0.0005)
 
 
+model.train()
 num_epochs = 1
 for epoch in range(num_epochs):
-    for i, data in enumerate(trainloader, 0):
-        inputs, labels = data
+    for i, (inputs, targets) in enumerate(trainloader, 0):
         optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = sum(v for v in outputs.values() if isinstance(v, torch.Tensor))
-        loss.backward()
+        
+        # Process each image individually since they have different sizes
+        for input_img, target in zip(inputs, targets):
+            # Skip if no objects in image
+            if len(target['annotation']['object']) == 0:
+                continue
+            
+            # Extract bounding boxes and labels from annotation
+            objects = target['annotation']['object']
+            boxes = []
+            labels = []
+            for obj in objects:
+                if isinstance(obj, dict):
+                    xmin = float(obj['bndbox']['xmin'])
+                    ymin = float(obj['bndbox']['ymin'])
+                    xmax = float(obj['bndbox']['xmax'])
+                    ymax = float(obj['bndbox']['ymax'])
+                    label = obj['name']
+                    boxes.append([xmin, ymin, xmax, ymax])
+                    labels.append(label)
+            
+            if len(boxes) > 0:
+                # Prepare target in format expected by Faster R-CNN
+                processed_target = {
+                    'boxes': torch.tensor(boxes, dtype=torch.float32),
+                    'labels': torch.tensor([labels.index(l) if l in labels else 0 for l in labels], dtype=torch.int64)
+                }
+                
+                # Forward pass with target to get loss
+                losses = model([input_img], [processed_target])
+                loss = sum(loss for loss in losses.values())
+                loss.backward()
+
         optimizer.step()
 
         if i % 2000 == 1999:

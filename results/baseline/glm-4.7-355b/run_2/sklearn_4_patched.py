@@ -76,223 +76,64 @@ class DataframeFunctionTransformer():
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# class ml_support():
-#     def __init__(self):
-#         self.df = pd.read_csv("data/credit_risk_dataset.csv", encoding='latin')
-#         self.output_var = 'loan_status'
-#         self.num_cols = ['person_age','person_income','loan_amnt','loan_percent_income','cb_person_cred_hist_length']
-#         self.cat_cols = ['person_home_ownership','loan_intent','loan_grade','cb_person_default_on_file','higher_salary','home_owner','long_working','lower_loan_requirement','higher_loan_requirement']
-#         # These are columns without feature engineering
-#         self.cols_wofeature = [col for col in self.df.columns if col != self.output_var ]
-#         # These are coluns after feature engineering
-#         self.cols_wfeature = ['person_age','person_income','loan_amnt','loan_percent_income','cb_person_cred_hist_length','person_home_ownership','loan_intent','loan_grade','cb_person_default_on_file','higher_salary','home_owner','long_working','lower_loan_requirement','higher_loan_requirement']
-#         self.X = self.df[self.cols_wofeature]
-#         #Output variable
-#         self.y = self.df[self.output_var]
-#         self.random_state = 42
-#     
-#     def drop_duplicate(self):
-#         
-#         self.df.drop_duplicates(inplace=True)
-#         return self.df
-#     
-#     def get_train_test_data(self):
-#         
-#         #Split traininig and testing set
-#         X_train, X_test , y_train, y_test = train_test_split(self.X,self.y,test_size=0.2,
-#                                                              random_state = self.random_state, shuffle=True, stratify=self.df[self.output_var])
-#         return X_train, X_test , y_train, y_test
-#     
-#     def get_column_transformer(self,is_estimator, iterative_Estimator, is_TreeBased=False):
-#         
-#         #Pipineline created for munging numerical columns
-#         num_pipeline_steps = []
-#         iterative_imputer = IterativeImputer()
-#         if is_estimator:
-#             iterative_imputer = IterativeImputer(estimator=iterative_Estimator)
-#         
-#         num_pipeline_steps.append(('num_missing',iterative_imputer))
-#         
-#         if not is_TreeBased:
-#             num_pipeline_steps.append(('num_smoothening',PowerTransformer()))
-#         
-#         num_pipeline = Pipeline(num_pipeline_steps)
-#         
-#         #Pipineline created for categorical column encoding
-#         cat_pipeline = Pipeline([
-#             ('cat_encoding',OneHotEncoder(sparse=False,drop='if_binary',handle_unknown='ignore'))
-#         ])
-#         
-#         # Column Transformer is created which will call pipelines
-#         ct = ColumnTransformer([
-#             ('num_munging',num_pipeline,self.num_cols),
-#             ('cat_munging',cat_pipeline,self.cat_cols)
-#         ])
-#         return ct
-#     
-#     def get_final_pipeline(self,regression_model,columntransformer, feature_engieered):
-#     
-#         X_train, X_test , y_train, y_test  = self.get_train_test_data()
-#         features_pipeline = [feature_engieered]
-#         features_pipeline.append(("selector", SelectColumnsTransformer(self.cols_wfeature)))
-#         features_pipeline.append(('munging',columntransformer))
-#         features_pipeline.append(('model',regression_model))
-#         finalized_pipeline = Pipeline(features_pipeline)
-#         return finalized_pipeline;
-#     
-#     def predit_with_pipeline(self,pipeline,X_train,X_test,y_train):
-#         pipeline.fit(X_train,y_train)
-#         preds = pipeline.predict(X_test)
-#         return preds
-#     
-#     def get_best_params(self,pipeline,params):
-#     
-#         rscv = RandomizedSearchCV(pipeline, params, scoring='balanced_accuracy',
-#                               n_jobs=-1, n_iter=4, cv=5, random_state=self.random_state, verbose=3)
-#         rscv.fit(self.X,self.y)
-#         return rscv.best_params_
-# 
-#     def get_best_params_gcv(self,pipeline,params):
-#     
-#         rscv = GridSearchCV(pipeline, params, scoring='balanced_accuracy',
-#                               n_jobs=-1, cv=5, verbose=3)
-#         rscv.fit(self.X,self.y)
-#         return rscv.best_params_
-#     
-#     def plot_confusion_matrix(self,y_test, preds, finalized_pipeline):
-#     
-#         cm = confusion_matrix(y_test, preds, labels=finalized_pipeline.classes_)
-#         disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels= finalized_pipeline.classes_)
-#         disp.plot();
-#         plt.show();
-#         
-#     def update_performance_matrics(self,model_info,df):
-#         
-#         filter_con =  df["Model_Name"] == model_info['Model_Name']
-#         if ((filter_con)).any():
-#             df.loc[filter_con, 'Score'] = model_info['Score']
-#         else:
-#             df = df.append(model_info, ignore_index=True)
-#         return df
-#     
-#     def plot_learning_curves(self,estimator):
-#         """
-#         Don't forget to change the scoring and plot labels
-#         based on the metric that you are using.
-#         """
-#         train_sizes, train_scores, test_scores = learning_curve(
-#             estimator=estimator,
-#             X=self.X,
-#             y=self.y,
-#             train_sizes=np.linspace(0.1, 1.0, 5),
-#             cv=5,
-#             scoring="balanced_accuracy",
-#             random_state=self.random_state,
-#             n_jobs=-1
-#         )
-#         train_mean = np.mean(train_scores, axis=1)
-#         test_mean = np.mean(test_scores, axis=1)
-#         fig = go.Figure()
-#         fig.add_trace(
-#             go.Scatter(
-#                 x=train_sizes,
-#                 y=train_mean,
-#                 name="Training Accuracy",
-#                 mode="lines",
-#                 line=dict(color="blue"),
-#             )
-#         )
-#         fig.add_trace(
-#             go.Scatter(
-#                 x=train_sizes,
-#                 y=test_mean,
-#                 name="Validation Accuracy",
-#                 mode="lines",
-#                 line=dict(color="green"),
-#             )
-#         )
-#         fig.update_layout(
-#             title="Learning Curves",
-#             xaxis_title="Number of training examples",
-#             yaxis_title="Balenced Accuracy",
-#         )
-#         fig.show()
-
-# === AFTER (edited) ===
 class ml_support():
     def __init__(self):
-        # Find the CSV file in /kaggle/input directory
-        csv_path = None
-        for dirname, _, filenames in os.walk('/kaggle/input'):
-            for filename in filenames:
-                if filename.endswith('.csv'):
-                    csv_path = os.path.join(dirname, filename)
-                    break
-            if csv_path:
-                break
-        
-        # Use the found path or fall back to the default
-        if csv_path:
-            self.df = pd.read_csv(csv_path, encoding='latin')
-        else:
-            self.df = pd.read_csv("data/credit_risk_dataset.csv", encoding='latin')
-        
+        self.df = pd.read_csv("data/credit_risk_dataset.csv", encoding='latin')
         self.output_var = 'loan_status'
         self.num_cols = ['person_age','person_income','loan_amnt','loan_percent_income','cb_person_cred_hist_length']
         self.cat_cols = ['person_home_ownership','loan_intent','loan_grade','cb_person_default_on_file','higher_salary','home_owner','long_working','lower_loan_requirement','higher_loan_requirement']
-
+        # These are columns without feature engineering
         self.cols_wofeature = [col for col in self.df.columns if col != self.output_var ]
-
+        # These are coluns after feature engineering
         self.cols_wfeature = ['person_age','person_income','loan_amnt','loan_percent_income','cb_person_cred_hist_length','person_home_ownership','loan_intent','loan_grade','cb_person_default_on_file','higher_salary','home_owner','long_working','lower_loan_requirement','higher_loan_requirement']
         self.X = self.df[self.cols_wofeature]
-
+        #Output variable
         self.y = self.df[self.output_var]
         self.random_state = 42
-
+    
     def drop_duplicate(self):
-
+        
         self.df.drop_duplicates(inplace=True)
         return self.df
-
+    
     def get_train_test_data(self):
-
-
+        
+        #Split traininig and testing set
         X_train, X_test , y_train, y_test = train_test_split(self.X,self.y,test_size=0.2,
                                                              random_state = self.random_state, shuffle=True, stratify=self.df[self.output_var])
         return X_train, X_test , y_train, y_test
-
+    
     def get_column_transformer(self,is_estimator, iterative_Estimator, is_TreeBased=False):
-
-
+        
+        #Pipineline created for munging numerical columns
         num_pipeline_steps = []
         iterative_imputer = IterativeImputer()
         if is_estimator:
             iterative_imputer = IterativeImputer(estimator=iterative_Estimator)
-
+        
         num_pipeline_steps.append(('num_missing',iterative_imputer))
-
+        
         if not is_TreeBased:
             num_pipeline_steps.append(('num_smoothening',PowerTransformer()))
-
+        
         num_pipeline = Pipeline(num_pipeline_steps)
-
-
+        
+        #Pipineline created for categorical column encoding
         cat_pipeline = Pipeline([
             ('cat_encoding',OneHotEncoder(sparse=False,drop='if_binary',handle_unknown='ignore'))
         ])
-
-
+        
+        # Column Transformer is created which will call pipelines
         ct = ColumnTransformer([
             ('num_munging',num_pipeline,self.num_cols),
             ('cat_munging',cat_pipeline,self.cat_cols)
         ])
         return ct
-
+    
     def get_final_pipeline(self,regression_model,columntransformer, feature_engieered):
-
+    
         X_train, X_test , y_train, y_test  = self.get_train_test_data()
         features_pipeline = [feature_engieered]
         features_pipeline.append(("selector", SelectColumnsTransformer(self.cols_wfeature)))
@@ -300,42 +141,42 @@ class ml_support():
         features_pipeline.append(('model',regression_model))
         finalized_pipeline = Pipeline(features_pipeline)
         return finalized_pipeline;
-
+    
     def predit_with_pipeline(self,pipeline,X_train,X_test,y_train):
         pipeline.fit(X_train,y_train)
         preds = pipeline.predict(X_test)
         return preds
-
+    
     def get_best_params(self,pipeline,params):
-
+    
         rscv = RandomizedSearchCV(pipeline, params, scoring='balanced_accuracy',
                               n_jobs=-1, n_iter=4, cv=5, random_state=self.random_state, verbose=3)
         rscv.fit(self.X,self.y)
         return rscv.best_params_
 
     def get_best_params_gcv(self,pipeline,params):
-
+    
         rscv = GridSearchCV(pipeline, params, scoring='balanced_accuracy',
                               n_jobs=-1, cv=5, verbose=3)
         rscv.fit(self.X,self.y)
         return rscv.best_params_
-
+    
     def plot_confusion_matrix(self,y_test, preds, finalized_pipeline):
-
+    
         cm = confusion_matrix(y_test, preds, labels=finalized_pipeline.classes_)
         disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels= finalized_pipeline.classes_)
         disp.plot();
         plt.show();
-
+        
     def update_performance_matrics(self,model_info,df):
-
+        
         filter_con =  df["Model_Name"] == model_info['Model_Name']
         if ((filter_con)).any():
             df.loc[filter_con, 'Score'] = model_info['Score']
         else:
             df = df.append(model_info, ignore_index=True)
         return df
-
+    
     def plot_learning_curves(self,estimator):
         """
         Don't forget to change the scoring and plot labels
@@ -450,18 +291,32 @@ feature_engieered = ("FeatureEngineering_add_features", DataframeFunctionTransfo
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 8}
-# %%time
-# Adaboost (Boosting of multiple Decision Trees)
-from sklearn.ensemble import AdaBoostRegressor
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# === BEFORE (original) ===
+# # %%time
+# # Adaboost (Boosting of multiple Decision Trees)
+# from sklearn.ensemble import AdaBoostRegressor
+# ml_support_obj = ml_support()
+# best_decision_tree_model = RandomForestClassifier(random_state = 42,n_estimators=1200,
+#                                           min_samples_split=5, min_samples_leaf = 1,
+#                                           max_features = 'auto', max_depth = None,
+#                                           bootstrap =True
+#                                          )
+# regression_model = AdaBoostRegressor()
+# ct = ml_support_obj.get_column_transformer(False, "", True)
+# X_train, X_test , y_train, y_test = ml_support_obj.get_train_test_data()
+# finalized_pipeline = ml_support_obj.get_final_pipeline(regression_model,ct,feature_engieered)
+
+# === AFTER (edited) ===
+from sklearn.ensemble import AdaBoostClassifier
 ml_support_obj = ml_support()
 best_decision_tree_model = RandomForestClassifier(random_state = 42,n_estimators=1200,
                                           min_samples_split=5, min_samples_leaf = 1,
                                           max_features = 'auto', max_depth = None,
                                           bootstrap =True
                                          )
-regression_model = AdaBoostRegressor()
+regression_model = AdaBoostClassifier()
 ct = ml_support_obj.get_column_transformer(False, "", True)
 X_train, X_test , y_train, y_test = ml_support_obj.get_train_test_data()
 finalized_pipeline = ml_support_obj.get_final_pipeline(regression_model,ct,feature_engieered)
@@ -469,12 +324,12 @@ finalized_pipeline = ml_support_obj.get_final_pipeline(regression_model,ct,featu
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 # %%time
 preds = ml_support_obj.predit_with_pipeline(finalized_pipeline,X_train,X_test,y_train)
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 print("Balenced Accuracy Score : {0}".format(balanced_accuracy_score(y_test, preds)))

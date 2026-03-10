@@ -1,8 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-
-
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 import tensorflow as tf
@@ -37,8 +35,6 @@ from sklearn.model_selection import KFold, StratifiedKFold
 import warnings
 warnings.filterwarnings("ignore")
 
-
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
@@ -48,35 +44,10 @@ df.head()
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# data_df = df.copy()
-# data_df['Hour'] = data_df['Time'].apply(lambda x: np.floor(x / 3600))
-# 
-# tmp = data_df.groupby(['Hour', 'Class'])['Amount'].aggregate(['min', 'max', 'count', 'sum', 'mean', 'median', 'var']).reset_index()
-# data_df_1 = pd.DataFrame(tmp)
-# data_df_1.columns = ['Hour', 'Class', 'Min', 'Max', 'Transactions', 'Sum', 'Mean', 'Median', 'Var']
-# data_df_1.head()
-
-# === AFTER (edited) ===
 data_df = df.copy()
-
-# Check if required columns exist; if not, create sample data for demonstration
-# This handles the case where the data is not properly loaded
-if 'Time' in data_df.columns:
-    data_df['Hour'] = data_df['Time'].apply(lambda x: np.floor(x / 3600))
-else:
-    # Create placeholder Hour column
-    data_df['Hour'] = np.random.randint(0, 24, size=len(data_df))
-
-if 'Class' not in data_df.columns:
-    # Create placeholder Class column (0 = legitimate, 1 = fraud)
-    data_df['Class'] = np.random.choice([0, 1], size=len(data_df), p=[0.99, 0.01])
-
-if 'Amount' not in data_df.columns:
-    # Create placeholder Amount column
-    data_df['Amount'] = np.random.uniform(0, 500, size=len(data_df))
+data_df['Hour'] = data_df['Time'].apply(lambda x: np.floor(x / 3600))
 
 tmp = data_df.groupby(['Hour', 'Class'])['Amount'].aggregate(['min', 'max', 'count', 'sum', 'mean', 'median', 'var']).reset_index()
 data_df_1 = pd.DataFrame(tmp)
@@ -109,10 +80,9 @@ data_df_1.head()
 # plt.show();
 
 # === AFTER (edited) ===
-# Only select numeric columns for KDE plots
-var = data_df.select_dtypes(include=[np.number]).columns.values
+var = data_df.columns.values
 
-# Use data_df instead of df since df doesn't have the required columns
+i = 0
 t0 = data_df.loc[data_df['Class'] == 0]
 t1 = data_df.loc[data_df['Class'] == 1]
 
@@ -120,7 +90,6 @@ sns.set_style('whitegrid')
 plt.figure()
 fig, ax = plt.subplots(8,4,figsize=(16,28))
 
-i = 0
 for feature in var:
     i += 1
     plt.subplot(8,4,i)

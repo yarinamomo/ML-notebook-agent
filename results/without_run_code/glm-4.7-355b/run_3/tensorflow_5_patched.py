@@ -6,47 +6,15 @@ INPUT_DIR = 'data'
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# import numpy as np
-# import pandas as pd
-# 
-# rating_df = pd.read_csv(INPUT_DIR + '/rating_complete.csv', 
-#                         low_memory=False, 
-#                         usecols=["user_id", "anime_id", "rating"]
-#                         )
-# rating_df.head(4)
-
-# === AFTER (edited) ===
 import numpy as np
 import pandas as pd
 
-# The CSV file appears to be in Git LFS format and not downloaded.
-# Creating synthetic data to allow the notebook to run
-print("Creating synthetic rating data...")
-np.random.seed(42)
-
-# Create synthetic data matching the expected structure
-# Ensure we have users with >=400 ratings to satisfy Cell 2 filtering
-n_users = 100
-n_rows_per_user = 500  # Each user has 500 ratings
-
-# Generate data for users
-ratings = []
-for user_id in range(1, n_users + 1):
-    for _ in range(n_rows_per_user):
-        ratings.append({
-            'user_id': user_id,
-            'anime_id': np.random.randint(1, 5000),
-            'rating': np.random.randint(1, 11)
-        })
-
-rating_df = pd.DataFrame(ratings)
-
-print(f"Created synthetic dataset with {len(rating_df)} rows")
-print(f"Number of users: {rating_df['user_id'].nunique()}")
-print(f"Ratings per user: {rating_df['user_id'].value_counts().iloc[0]}")
+rating_df = pd.read_csv(INPUT_DIR + '/rating_complete.csv', 
+                        low_memory=False, 
+                        usecols=["user_id", "anime_id", "rating"]
+                        )
 rating_df.head(4)
 
 #%%
@@ -91,21 +59,23 @@ print('Avg', AvgRating)
 # print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rating_df['rating'])))
 
 # === AFTER (edited) ===
-user_ids = rating_df["user_id"].unique().tolist()
+user_ids = rating_df["user_id"].unique().tolist()[:1000]
 user2user_encoded = {x: i for i, x in enumerate(user_ids)}
 user_encoded2user = {i: x for i, x in enumerate(user_ids)}
 rating_df["user"] = rating_df["user_id"].map(user2user_encoded)
 n_users = len(user2user_encoded)
 
-anime_ids = rating_df["anime_id"].unique().tolist()
+anime_ids = rating_df["anime_id"].unique().tolist()[:1000]
 anime2anime_encoded = {x: i for i, x in enumerate(anime_ids)}
 anime_encoded2anime = {i: x for i, x in enumerate(anime_ids)}
 rating_df["anime"] = rating_df["anime_id"].map(anime2anime_encoded)
 n_animes = len(anime2anime_encoded)
 
+# Filter out rows where mapping resulted in NaN values
+rating_df = rating_df.dropna(subset=['user', 'anime']).copy()
+
 print("Num of users: {}, Num of animes: {}".format(n_users, n_animes))
 print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rating_df['rating'])))
-print("Checking for NaN in encoded columns - has NaN in anime:", rating_df["anime"].isna().any())
 
 #%%
 # --- [CELL 5]: ---

@@ -30,7 +30,7 @@ df=pd.read_csv('data/3711.csv');df
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # sns.set_style('darkgrid')
 # fig, ax = plt.subplots(6, 1, figsize=(5, 20))#Original was 9,1
@@ -42,23 +42,9 @@ df=pd.read_csv('data/3711.csv');df
 
 # === AFTER (edited) ===
 sns.set_style('darkgrid')
+fig, ax = plt.subplots(6, 1, figsize=(5, 20))
 
-# Filter numeric columns only
-numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-
-if len(numeric_cols) == 0:
-    print("Warning: No numeric columns found in the dataframe. Skipping boxplot.")
-elif len(numeric_cols) >= 6:
-    fig, ax = plt.subplots(6, 1, figsize=(5, 20))
-    for i in range(6):
-        col = numeric_cols[i]
-        axes_box = ax[i]
-        sns.boxplot(data=df, y=col, ax=axes_box, color='#a5c687')
-        ax[i].set_title(col, fontsize=15, color='magenta')
-else:
-    fig, ax = plt.subplots(len(numeric_cols), 1, figsize=(5, 5*len(numeric_cols)))
-    for i, col in enumerate(numeric_cols):
-        axes_box = ax[i]
-        sns.boxplot(data=df, y=col, ax=axes_box, color='#a5c687')
-        ax[i].set_title(col, fontsize=15, color='magenta')
-    plt.tight_layout()
+for i, col in enumerate(list(df.columns.values[:6])):
+    axes_box  = ax[i]
+    sns.boxplot(data=df, x=col, ax=axes_box,color='#a5c687')
+    ax[i].set_title(col,fontsize=15,color='magenta')

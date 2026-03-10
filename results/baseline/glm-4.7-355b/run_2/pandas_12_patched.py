@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import datetime as dt
 import numpy as np
 import pandas as pd
@@ -16,15 +16,9 @@ pd.set_option('display.float_format',lambda x : '%.2f' % x)
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# df_ = pd.read_csv("data/dataset.csv", compression="gzip")
-# df = df_.copy()
-# df.head()
-
-# === AFTER (edited) ===
-df_ = pd.read_csv("data/dataset.csv")
+df_ = pd.read_csv("data/dataset.csv", compression="gzip")
 df = df_.copy()
 df.head()
 
@@ -160,9 +154,15 @@ df.head()
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# df.groupby('kmeans_cluster').agg({1: ['count','mean', 'median', 'sum'],
+#                                     2: ['count','mean', 'median', 'sum'],
+#                                     3: ['count','mean', 'median', 'sum'],
+#                                     4: ['count','mean','median', 'sum']})
+
+# === AFTER (edited) ===
 df.groupby('kmeans_cluster').agg({1: ['count','mean', 'median', 'sum'],
                                     2: ['count','mean', 'median', 'sum'],
-                                    3: ['count','mean', 'median', 'sum'],
-                                    4: ['count','mean','median', 'sum']})
+                                    3: ['count','mean', 'median', 'sum']})

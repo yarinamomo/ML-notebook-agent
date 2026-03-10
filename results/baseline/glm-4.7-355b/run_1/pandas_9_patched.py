@@ -34,43 +34,30 @@ df = pd.read_csv("data/IMDb_All_Genres_etf_clean1.csv")
 # clean_df = clean_df[clean_df['Censor']!="(Banned)"]
 
 # === AFTER (edited) ===
-# First, let's see what columns actually exist in the dataframe
-print("Available columns:")
+# First, let's see what the actual column names are
+print("Column names in the DataFrame:")
 print(df.columns.tolist())
 
-# Check for the specific column we're looking for
-# It might have a different name or extra whitespace
+# Now try to find columns that might be related to gross
 print("\nColumns containing 'Gross':")
-for col in df.columns:
-    if 'Gross' in str(col):
-        print(f"'{col}'")
+gross_cols = [col for col in df.columns if 'Gross' in col or 'gross' in col]
+print(gross_cols)
 
-# Now let's filter using the actual column names (assuming there might be whitespace or similar)
-# Using a more flexible approach to find and use the correct column name
-gross_col = None
-for col in df.columns:
-    if 'Total Gross' in str(col):
-        gross_col = col
-        break
+# Check for Censor column too
+print("\nColumns containing 'Censor':")
+censor_cols = [col for col in df.columns if 'Censor' in col or 'censor' in col]
+print(censor_cols)
 
-if gross_col:
-    print(f"\nUsing column: '{gross_col}'")
-    clean_df = df[(df[gross_col] != "$0.00M") & (df[gross_col] != "Gross Unkown")].copy()
-    
-    # Check for Censor column
-    censor_col = None
-    for col in df.columns:
-        if 'Censor' in str(col):
-            censor_col = col
-            break
-    
-    if censor_col:
-        print(f"Using censor column: '{censor_col}'")
-        clean_df = clean_df[clean_df[censor_col] != "(Banned)"]
-    else:
-        print("Warning: Censor column not found")
-else:
-    print("Error: Could not find a column containing 'Total Gross'")
-    clean_df = df.copy()
+# Now apply the filters with the correct column names
+# Based on the column names printed above, adjust the filtering accordingly
+clean_df = df.copy()
 
-print(f"\nFiltered dataframe shape: {clean_df.shape}")
+# Filter out rows with "$0.00M" or "Gross Unkown" in the Total Gross column
+if 'Total Gross (millions)' in df.columns:
+    clean_df = clean_df[(clean_df["Total Gross (millions)"]!="$0.00M") & (clean_df["Total Gross (millions)"]!="Gross Unkown")]
+
+# Filter out rows with "(Banned)" in the Censor column
+if 'Censor' in df.columns:
+    clean_df = clean_df[clean_df['Censor']!="(Banned)"]
+
+print(f"\nFiltered dataset shape: {clean_df.shape}")

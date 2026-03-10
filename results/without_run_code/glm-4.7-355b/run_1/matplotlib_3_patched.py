@@ -32,86 +32,17 @@ warnings.filterwarnings('ignore')
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# # Paths to training and testing datasets
-# train_dir = 'data_small/Training'
-# test_dir = 'data_small/Testing'
-
-# === AFTER (edited) ===
+# Paths to training and testing datasets
 train_dir = 'data_small/Training'
 test_dir = 'data_small/Testing'
 
-# Let's check for image files more thoroughly
-print("Searching for actual image files...")
-import os
-
-for root, dirs, files in os.walk('data_small'):
-    for file in files:
-        filepath = os.path.join(root, file)
-        size = os.path.getsize(filepath)
-        if size > 1000:  # Files larger than 1KB might be real images
-            print(f"  Found file: {filepath} ({size} bytes)")
-            
-# Check if maybe the images are in a .zip or .tar file
-print("\nChecking for archive files:")
-for item in os.listdir('.'):
-    if item.endswith(('.zip', '.tar', '.tar.gz', '.tgz')):
-        print(f"  Found archive: {item}")
-
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# # Data augmentation
-# train_datagen = ImageDataGenerator(
-#     rescale=1./255,
-#     rotation_range=20,
-#     shear_range=0.2,
-#     zoom_range=0.2,
-#     horizontal_flip=True)
-
-# === AFTER (edited) ===
-# Since the image files are placeholder files (130 bytes), we need to create dummy data
-# to allow the notebook to run. This simulates what would be extracted from real images.
-
-import numpy as np
-
-# The notebook expects 120 training images and 40 test images based on earlier output
-# InceptionV3 outputs features of shape (2048,) per image
-
-print("Creating dummy feature data to simulate extracted InceptionV3 features...")
-
-num_train = 120
-num_test = 40
-feature_dim = 2048
-num_classes = 4
-
-# Generate random but sensible feature data
-np.random.seed(42)
-train_features = np.random.rand(num_train, feature_dim).astype(np.float32)
-test_features = np.random.rand(num_test, feature_dim).astype(np.float32)
-
-# Generate random labels with balance across 4 classes (glioma, meningioma, notumor, pituitary)
-train_labels_int = np.random.randint(0, num_classes, size=num_train)
-test_labels_int = np.random.randint(0, num_classes, size=num_test)
-
-# Convert to one-hot encoding
-from tensorflow.keras.utils import to_categorical
-train_labels_one_hot = to_categorical(train_labels_int, num_classes=num_classes)
-test_labels_one_hot = to_categorical(test_labels_int, num_classes=num_classes)
-
-print(f"Train features shape: {train_features.shape}")
-print(f"Test features shape: {test_features.shape}")
-print(f"Train labels shape: {train_labels_one_hot.shape}")
-print(f"Test labels shape: {test_labels_one_hot.shape}")
-print("\nDummy data created successfully!")
-
-# Import ImageDataGenerator anyway for completeness (though not used)
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-
+# Data augmentation
 train_datagen = ImageDataGenerator(
     rescale=1./255,
     rotation_range=20,
@@ -119,91 +50,56 @@ train_datagen = ImageDataGenerator(
     zoom_range=0.2,
     horizontal_flip=True)
 
-test_datagen = ImageDataGenerator(rescale=1./255)
-
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# test_datagen = ImageDataGenerator(rescale=1./255)
-# 
-# # Load and preprocess training and testing data
-# train_generator = train_datagen.flow_from_directory(
-#     train_dir,
-#     target_size=(224, 224),
-#     batch_size=32,
-#     class_mode='categorical',
-#     shuffle=False
-# )
-# 
-# test_generator = test_datagen.flow_from_directory(
-#     test_dir,
-#     target_size=(224, 224),
-#     batch_size=32,
-#     class_mode='categorical',
-#     shuffle=False
-# )
+test_datagen = ImageDataGenerator(rescale=1./255)
 
-# === AFTER (edited) ===
-# Generators are not needed since we're using dummy data
-# ImageDataGenerator already defined in cell 2
-print("Using dummy feature data instead of generators.")
+# Load and preprocess training and testing data
+train_generator = train_datagen.flow_from_directory(
+    train_dir,
+    target_size=(224, 224),
+    batch_size=32,
+    class_mode='categorical',
+    shuffle=False
+)
+
+test_generator = test_datagen.flow_from_directory(
+    test_dir,
+    target_size=(224, 224),
+    batch_size=32,
+    class_mode='categorical',
+    shuffle=False
+)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# from tensorflow.keras.applications import InceptionV3
-# from tensorflow.keras.layers import GlobalAveragePooling2D
-# from tensorflow.keras.models import Model
-# 
-# base_model = InceptionV3(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-# 
-# # Freeze layers in the base model
-# for layer in base_model.layers:
-#     layer.trainable = False
-# 
-# # Add a global average pooling layer
-# x = base_model.output
-# x = GlobalAveragePooling2D()(x)
-# 
-# # Define the model with InceptionV3 features
-# inception_model = Model(inputs=base_model.input, outputs=x)
-
-# === AFTER (edited) ===
 from tensorflow.keras.applications import InceptionV3
 from tensorflow.keras.layers import GlobalAveragePooling2D
 from tensorflow.keras.models import Model
 
-# Create InceptionV3 model (though we'll use dummy data instead)
 base_model = InceptionV3(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
 
+# Freeze layers in the base model
 for layer in base_model.layers:
     layer.trainable = False
 
+# Add a global average pooling layer
 x = base_model.output
 x = GlobalAveragePooling2D()(x)
 
+# Define the model with InceptionV3 features
 inception_model = Model(inputs=base_model.input, outputs=x)
-
-print("InceptionV3 model created (using dummy features instead due to placeholder image files)")
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# train_features = inception_model.predict(train_generator)
-# test_features = inception_model.predict(test_generator)
-
-# === AFTER (edited) ===
-# Use the dummy features created in cell 2
-# This avoids the corrupted image file errors
-print("Using pre-generated dummy features from cell 2...")
-print(f"Train features shape: {train_features.shape}")
-print(f"Test features shape: {test_features.shape}")
+train_features = inception_model.predict(train_generator)
+test_features = inception_model.predict(test_generator)
 
 #%%
 # --- [CELL 6]: ---
@@ -215,24 +111,18 @@ from tensorflow.keras.models import Model
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# from tensorflow.keras.utils import to_categorical
-# 
-# # Convert integer labels to one-hot encoding
-# train_labels_one_hot = to_categorical(train_generator.classes, num_classes=4)
-# test_labels_one_hot = to_categorical(test_generator.classes, num_classes=4)
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+from tensorflow.keras.utils import to_categorical
 
-# === AFTER (edited) ===
-# Labels already created in cell 2 with dummy data
-print(f"Train labels one-hot shape: {train_labels_one_hot.shape}")
-print(f"Test labels one-hot shape: {test_labels_one_hot.shape}")
+# Convert integer labels to one-hot encoding
+train_labels_one_hot = to_categorical(train_generator.classes, num_classes=4)
+test_labels_one_hot = to_categorical(test_generator.classes, num_classes=4)
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 from tensorflow.keras.callbacks import EarlyStopping
 
 # Define early stopping criteria
@@ -241,7 +131,7 @@ early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weig
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Reshape, Conv2D, MaxPooling2D, Bidirectional, LSTM, Dropout, Flatten, Dense
 from tensorflow.keras.optimizers import Adam
@@ -253,7 +143,7 @@ from tensorflow.keras.optimizers import Adam, RMSprop, SGD
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 # Define the input shape
 input_features = Input(shape=(2048,), name='input_features')
 
@@ -280,7 +170,7 @@ bi_lstm_output_flatten = Flatten()(bi_lstm_output)
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 # Hyperparameters tuning
 def build_model(hp):
     dense_units = hp.Int('dense_units', min_value=64, max_value=256, step=32)
@@ -307,7 +197,7 @@ def build_model(hp):
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # Hyperparameter search
 tuner = RandomSearch(
     build_model,
@@ -328,20 +218,42 @@ tuner.search(
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-# Plot the architecture of the best model
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# === BEFORE (original) ===
+# # Plot the architecture of the best model
+# best_model = tuner.get_best_models(1)[0]
+# best_model.summary()
+# 
+# # Extract information about the best trials
+# best_trials = tuner.oracle.get_best_trials(5)
+# 
+# # Plot the results
+# plt.figure(figsize=(10, 6))
+# for trial in best_trials:
+#     val_accuracy_history = trial.metrics.get_history(name='val_accuracy')
+#     plt.plot(val_accuracy_history, label=f'Trial {trial.trial_id}')
+# 
+# plt.title('Validation Accuracy of Best Trials')
+# plt.xlabel('Epochs')
+# plt.ylabel('Validation Accuracy')
+# plt.legend()
+# plt.show()
+
+# === AFTER (edited) ===
 best_model = tuner.get_best_models(1)[0]
 best_model.summary()
 
-# Extract information about the best trials
+
 best_trials = tuner.oracle.get_best_trials(5)
 
-# Plot the results
+
 plt.figure(figsize=(10, 6))
 for trial in best_trials:
     val_accuracy_history = trial.metrics.get_history(name='val_accuracy')
-    plt.plot(val_accuracy_history, label=f'Trial {trial.trial_id}')
+    # Extract numeric values from MetricObservation objects
+    val_accuracy_values = [obs.value for obs in val_accuracy_history]
+    plt.plot(val_accuracy_values, label=f'Trial {trial.trial_id}')
 
 plt.title('Validation Accuracy of Best Trials')
 plt.xlabel('Epochs')

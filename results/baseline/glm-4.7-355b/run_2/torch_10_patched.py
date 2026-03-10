@@ -147,39 +147,22 @@ from torch.nn import Conv2d,MaxPool2d,Flatten,Linear
 
 train_data_path = 'data_small/101/train'
 test_data_path = 'data_small/101/val'
-
-# Custom dataset that handles corrupted images
-class SafeImageFolder(torchvision.datasets.ImageFolder):
-    def __getitem__(self, index):
-        # Try to get a valid sample
-        max_attempts = len(self.samples)
-        attempts = 0
-        while attempts < max_attempts:
-            try:
-                return super().__getitem__(index)
-            except Exception as e:
-                # Skip this index and try the next one
-                index = (index + 1) % len(self.samples)
-                attempts += 1
-        # If all else fails, return a zero tensor
-        return torch.zeros(3, 227, 227), 0
-
 transform = transforms.Compose([
     transforms.Resize((227,227)),
     transforms.ToTensor(),
 ])
 
-train_data = SafeImageFolder(root=train_data_path, transform=transform)
-test_data = SafeImageFolder(root=test_data_path, transform=transform)
+train_data=torchvision.datasets.ImageFolder(root = train_data_path,transform = transform)
+test_data = torchvision.datasets.ImageFolder(root = test_data_path,transform = transform)
 
 
 train_dataloader = DataLoader(dataset = train_data,batch_size=64,shuffle=True,drop_last=False)
 test_dataloader = DataLoader(dataset = test_data,batch_size=64,shuffle=True,drop_last=False)
 
 
-class module(nn.Module):
+class AlexNet(nn.Module):
     def __init__(self):
-        super(module,self).__init__()
+        super(AlexNet,self).__init__()
         self.conv1 = Conv2d(3,96,11,stride = 4)
         self.relu1 = ReLU()
         self.maxpool1 = MaxPool2d(3,stride = 2)
@@ -218,7 +201,7 @@ class module(nn.Module):
         return x
 
 
-module = module()
+module = AlexNet()
 if torch.cuda.is_available():
     module = module.cuda()
 
@@ -276,25 +259,12 @@ for i in range(epoch):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# train_data_path = 'data_small/101/train'
-# train_data=torchvision.datasets.ImageFolder(root = train_data_path,transform=transforms)
-# train_dataloader = DataLoader(dataset = train_data,batch_size=64,shuffle=True,drop_last=False)
-# for data in train_dataloader:#训练步骤
-#     imgs,targets = data
-#     if torch.cuda.is_available():
-#         imgs = imgs.cuda()
-#         targets = targets.cuda()
-#     outputs = module(imgs)
-#     loss = loss_fn(outputs,targets)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 train_data_path = 'data_small/101/train'
-train_data = SafeImageFolder(root = train_data_path, transform=transform)
-train_dataloader = DataLoader(dataset = train_data, batch_size=64, shuffle=True, drop_last=False)
-for data in train_dataloader:
+train_data=torchvision.datasets.ImageFolder(root = train_data_path,transform=transforms)
+train_dataloader = DataLoader(dataset = train_data,batch_size=64,shuffle=True,drop_last=False)
+for data in train_dataloader:#训练步骤
     imgs,targets = data
     if torch.cuda.is_available():
         imgs = imgs.cuda()

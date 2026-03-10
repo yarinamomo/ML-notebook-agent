@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 try:
   # This command only in Colab.
   %tensorflow_version 2.x
@@ -23,8 +23,7 @@ import matplotlib.pyplot as plt
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-
+# execution_status: {'status': 'not run'}
 PATH = 'data_small/cats_and_dogs'
 
 # Get number of files in each directory. The train and validation directories
@@ -50,7 +49,7 @@ IMG_WIDTH = 150
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # 3
 
 train_image_generator = ImageDataGenerator(rescale = 1./255)
@@ -79,30 +78,9 @@ test_data_gen  = test_image_generator.flow_from_directory(
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# # 4
-# def plotImages(images_arr, probabilities = False):
-#     fig, axes = plt.subplots(len(images_arr), 1, figsize=(5,len(images_arr) * 3))
-#     if probabilities is False:
-#       for img, ax in zip( images_arr, axes):
-#           ax.imshow(img)
-#           ax.axis('off')
-#     else:
-#       for img, probability, ax in zip( images_arr, probabilities, axes):
-#           ax.imshow(img)
-#           ax.axis('off')
-#           if probability > 0.5:
-#               ax.set_title("%.2f" % (probability*100) + "% dog")
-#           else:
-#               ax.set_title("%.2f" % ((1-probability)*100) + "% cat")
-#     plt.show()
-# 
-# sample_training_images, _ = next(train_data_gen)
-# plotImages(sample_training_images[:5])
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+# 4
 def plotImages(images_arr, probabilities = False):
     fig, axes = plt.subplots(len(images_arr), 1, figsize=(5,len(images_arr) * 3))
     if probabilities is False:
@@ -119,25 +97,13 @@ def plotImages(images_arr, probabilities = False):
               ax.set_title("%.2f" % ((1-probability)*100) + "% cat")
     plt.show()
 
-# Try to get a valid batch, skip problematic ones
-max_attempts = 10
-sample_training_images = None
-for attempt in range(max_attempts):
-    try:
-        sample_training_images, _ = next(train_data_gen)
-        break
-    except Exception:
-        continue
-
-if sample_training_images is not None:
-    plotImages(sample_training_images[:5])
-else:
-    print("Could not retrieve valid training images after multiple attempts.")
+sample_training_images, _ = next(train_data_gen)
+plotImages(sample_training_images[:5])
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # 5
 train_image_generator = ImageDataGenerator(
     rescale=1./255,
@@ -151,47 +117,24 @@ train_image_generator = ImageDataGenerator(
     channel_shift_range=0.2, # Add channel shift augmentation
 )
 
-
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# # 6
-# train_data_gen = train_image_generator.flow_from_directory(batch_size=batch_size,
-#                                                      directory=train_dir,
-#                                                      target_size=(IMG_HEIGHT, IMG_WIDTH),
-#                                                      class_mode='binary')
-# 
-# augmented_images = [train_data_gen[0][0][0] for i in range(5)]
-# 
-# plotImages(augmented_images)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+# 6
 train_data_gen = train_image_generator.flow_from_directory(batch_size=batch_size,
                                                      directory=train_dir,
                                                      target_size=(IMG_HEIGHT, IMG_WIDTH),
                                                      class_mode='binary')
 
-# Add error handling for augmented images
-max_attempts = 10
-augmented_images = []
-for attempt in range(max_attempts):
-    try:
-        augmented_images = [train_data_gen[0][0][0] for i in range(5)]
-        break
-    except Exception:
-        continue
+augmented_images = [train_data_gen[0][0][0] for i in range(5)]
 
-if augmented_images:
-    plotImages(augmented_images)
-else:
-    print("Could not retrieve valid augmented images after multiple attempts.")
+plotImages(augmented_images)
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 # 7
 from tensorflow.keras.optimizers import Adam
 model = Sequential()
@@ -214,42 +157,27 @@ model.compile(optimizer=optimizer,
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# === BEFORE (original) ===
-# # 8
-# history = model.fit(
-#     train_data_gen,
-#     validation_data=val_data_gen,
-#     epochs= 2 #30
-# )
-
-# === AFTER (edited) ===
-# Wrap model.fit with error handling to skip problematic batches
-try:
-    history = model.fit(
-        train_data_gen,
-        validation_data=val_data_gen,
-        epochs= 2
-    )
-except Exception as e:
-    print(f"Error during training: {e}")
-    history = None
-    print("Training skipped due to data issues")
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+# 8
+history = model.fit(
+    train_data_gen,
+    validation_data=val_data_gen,
+    epochs= 2 #30
+)
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'not run'}
 model.save("train.h5")
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # model.load ("train.h5")
 
 # === AFTER (edited) ===
-# Proper way to load a saved Keras model
 model = tf.keras.models.load_model("train.h5")

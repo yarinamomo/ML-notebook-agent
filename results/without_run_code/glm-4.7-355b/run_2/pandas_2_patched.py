@@ -9,15 +9,10 @@ import missingno
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train_df = pd.read_csv("data/train.csv",index_col='Id')
-# test_df = pd.read_csv("data/test.csv",index_col='Id')
-
-# === AFTER (edited) ===
-train_df = pd.read_csv("data/train.csv")
-test_df = pd.read_csv("data/test.csv")
+train_df = pd.read_csv("data/train.csv",index_col='Id')
+test_df = pd.read_csv("data/test.csv",index_col='Id')
 
 #%%
 # --- [CELL 2]: ---
@@ -32,7 +27,7 @@ missingvalue
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # cat=[] 
 # num=[]
@@ -59,4 +54,4 @@ for b in data.dtypes:
         num.append(x[a])
     a=a+1
 
-    data.drop(['LotFrontage','Alley','FireplaceQu','PoolQC','Fence', 'MiscFeature'], axis=1, inplace=True, errors='ignore')
+data.drop(['LotFrontage','Alley','FireplaceQu','PoolQC','Fence', 'MiscFeature'], axis=1, inplace=True)

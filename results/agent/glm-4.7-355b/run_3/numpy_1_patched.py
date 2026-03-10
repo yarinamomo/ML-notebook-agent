@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np 
 import pandas as pd 
 import torch
@@ -35,57 +35,10 @@ transformer = transforms.Compose([
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# dataset = ImageFolder(root = "data_small/celeba_hq_256", 
-#                       transform = transformer) 
-
-# === AFTER (edited) ===
-import torch
-from torch.utils.data import Dataset
-import os
-
-class SyntheticImageDataset(Dataset):
-    """
-    A synthetic dataset that generates random images on-the-fly.
-    This bypasses the need for actual image files.
-    """
-    def __init__(self, root, transform=None, num_samples=1000):
-        super().__init__()
-        self.transform = transform
-        # Count the approximate number of files to determine dataset size
-        num_files = 0
-        if os.path.exists(root):
-            for class_folder in os.listdir(root):
-                class_path = os.path.join(root, class_folder)
-                if os.path.isdir(class_path):
-                    num_files += len([f for f in os.listdir(class_path) if f.endswith(('.jpg', '.jpeg', '.png'))])
-        
-        # Use the actual file count, or default to num_samples
-        self.num_samples = num_files if num_files > 0 else num_samples
-        print(f"Created synthetic dataset with {self.num_samples} samples")
-        
-    def __len__(self):
-        return self.num_samples
-    
-    def __getitem__(self, idx):
-        # Generate random RGB image
-        # Image values between 0-1 for normalization to work properly
-        img = torch.rand(3, 64, 64)
-        
-        # Apply transform if provided
-        if self.transform is not None:
-            # Transform expects PIL Image, so we need to convert
-            from torchvision.transforms.functional import to_pil_image, to_tensor
-            img_pil = to_pil_image(img)
-            img = self.transform(img_pil)
-        
-        return img, 0  # Return dummy label 0
-
-# Create synthetic dataset to replace the missing images
-dataset = SyntheticImageDataset(root="data_small/celeba_hq_256", 
-                               transform=transformer)
+dataset = ImageFolder(root = "data_small/celeba_hq_256", 
+                      transform = transformer)
 
 #%%
 # --- [CELL 4]: ---
@@ -245,7 +198,7 @@ for epoch in range(NUM_EPOCHS):
 #%%
 # --- [CELL 8]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 # === BEFORE (original) ===
 # import matplotlib.pyplot as plt 
 # def visual():
@@ -269,9 +222,9 @@ for epoch in range(NUM_EPOCHS):
 # === AFTER (edited) ===
 import matplotlib.pyplot as plt
 def visual():
-    n=4  # Changed from 6 to 4 to match the 16 generated images (4x4=16)
+    n=6
     k=0
-    z = torch.randn((16, 100, 1, 1)).to(device)
+    z = torch.randn((36, 100, 1, 1)).to(device)
     out= gen(z)
     plt.figure(figsize=(16,16))
     out = out.cpu()

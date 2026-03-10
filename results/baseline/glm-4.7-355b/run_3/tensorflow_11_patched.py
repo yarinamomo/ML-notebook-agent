@@ -66,26 +66,15 @@ train_df, test_df = train_test_split(image_df, train_size=0.9, shuffle=True, ran
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# train_generator = tf.keras.preprocessing.image.ImageDataGenerator(
-#     preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input,
-#     validation_split=0.2
-# )
-# 
-# test_generator = tf.keras.preprocessing.image.ImageDataGenerator(
-#     preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input
-# )
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 train_generator = tf.keras.preprocessing.image.ImageDataGenerator(
-    preprocessing_function=tf.keras.applications.efficientnet.preprocess_input,
+    preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input,
     validation_split=0.2
 )
 
 test_generator = tf.keras.preprocessing.image.ImageDataGenerator(
-    preprocessing_function=tf.keras.applications.efficientnet.preprocess_input
+    preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input
 )
 
 #%%
@@ -131,25 +120,46 @@ test_images = test_generator.flow_from_dataframe(
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# === BEFORE (original) ===
+# def create_model(input_shape=(224, 224, 3)):
+#     
+#     inputs = Input(input_shape)
+#     base_model = EfficientNetB1(input_shape=input_shape, include_top=False, classes=5)
+#     
+#     x = base_model(inputs)
+#     
+#     x = GlobalAveragePooling2D()(x)
+# #     x = Dropout(0.1)(x)
+#     
+#     x = Dense(56, activation='relu')(x)
+#     x = Dropout(0.1)(x)
+#     
+#     outputs = Dense(5, activation='sigmoid')(x)
+#     
+#     model = Model(inputs, outputs)
+#     
+#     return model
+
+# === AFTER (edited) ===
 def create_model(input_shape=(224, 224, 3)):
-    
+
     inputs = Input(input_shape)
     base_model = EfficientNetB1(input_shape=input_shape, include_top=False, classes=5)
-    
+
     x = base_model(inputs)
-    
+
     x = GlobalAveragePooling2D()(x)
-#     x = Dropout(0.1)(x)
-    
+
+
     x = Dense(56, activation='relu')(x)
     x = Dropout(0.1)(x)
-    
-    outputs = Dense(5, activation='sigmoid')(x)
-    
+
+    outputs = Dense(2, activation='sigmoid')(x)
+
     model = Model(inputs, outputs)
-    
+
     return model
 
 #%%
@@ -187,7 +197,7 @@ callbacks = [
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 history = model.fit(
     train_images,
     validation_data=val_images,

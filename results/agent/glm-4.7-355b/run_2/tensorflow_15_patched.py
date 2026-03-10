@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -37,25 +37,14 @@ batch_size = num_samples // 200
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train_ds = tf.keras.utils.image_dataset_from_directory(
-#   'data_small',
-#   validation_split=0.2,
-#   subset="training",
-#   label_mode='binary',
-#   seed=123, #number to randomize outcome
-#   image_size=(img_height, img_width),
-#   batch_size=batch_size)
-
-# === AFTER (edited) ===
 train_ds = tf.keras.utils.image_dataset_from_directory(
   'data_small',
   validation_split=0.2,
   subset="training",
   label_mode='binary',
-  seed=123,
+  seed=123, #number to randomize outcome
   image_size=(img_height, img_width),
   batch_size=batch_size)
 
@@ -126,7 +115,7 @@ model.compile(
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 history = model.fit(
     train_ds,
     validation_data=val_ds,
@@ -147,7 +136,7 @@ history = model.fit(
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 results = model.evaluate(test_ds, verbose=0)
 print("    Test Loss: {:.5f}".format(results[0]))
 print("Test Accuracy: {:.2f}%".format(results[1] * 100))
@@ -155,17 +144,27 @@ print("Test Accuracy: {:.2f}%".format(results[1] * 100))
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 predictions = (model.predict(test_ds) >= 0.5)
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# === BEFORE (original) ===
+# predictions = np.array([])
+# labels =  np.array([])
+# for x, y in test_ds:
+#   predictions = np.concatenate([predictions, model.predict_classes(x)])
+#   labels = np.concatenate([labels, np.argmax(y.numpy(), axis=-1)])
+# 
+# tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()
+
+# === AFTER (edited) ===
 predictions = np.array([])
 labels =  np.array([])
 for x, y in test_ds:
-  predictions = np.concatenate([predictions, model.predict_classes(x)])
-  labels = np.concatenate([labels, np.argmax(y.numpy(), axis=-1)])
+  predictions = np.concatenate([predictions, (model.predict(x) >= 0.5).astype(int).flatten()])
+  labels = np.concatenate([labels, y.numpy().flatten()])
 
 tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()

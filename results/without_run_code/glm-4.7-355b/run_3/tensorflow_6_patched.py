@@ -44,67 +44,26 @@ import tensorflow as tf
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train = pd.read_csv("data/train.csv")
-# test = pd.read_csv("data/test.csv")
-
-# === AFTER (edited) ===
-# Load MNIST data directly from keras.datasets since the CSV files are Git LFS pointers
-from keras.datasets import mnist
-
-# Load the data
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
-
-# Convert to pandas DataFrames to maintain backward compatibility with the rest of the notebook
-import pandas as pd
-
-# Flatten the image data and combine with labels for train data
-train_flat = x_train.reshape(x_train.shape[0], -1)
-train = pd.DataFrame(train_flat)
-train['label'] = y_train
-
-# Flatten the image data for test data (no labels in test set)
-test_flat = x_test.reshape(x_test.shape[0], -1)
-test = pd.DataFrame(test_flat)
-
-print("Train shape:", train.shape)
-print("Test shape:", test.shape)
+train = pd.read_csv("data/train.csv")
+test = pd.read_csv("data/test.csv")
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# Y_train = train["label"]#得到训练集标签
-# 
-# # Drop 'label' column
-# X_train = train.drop(labels = ["label"],axis = 1) #得到训练集特征列
-# 
-# # free some space
-# del train #删除train变量
-# 
-# g = sns.countplot(Y_train)#画图，统计数量
-# 
-# Y_train.value_counts()#计算每个值的数量
-
-# === AFTER (edited) ===
-# Check the columns in the train dataframe
-print("Columns in train:", train.columns.tolist())
-print("\nFirst few rows:")
-print(train.head())
-
-Y_train = train["label"]  #得到训练集标签
+Y_train = train["label"]#得到训练集标签
 
 # Drop 'label' column
-X_train = train.drop(labels = ["label"],axis = 1)
+X_train = train.drop(labels = ["label"],axis = 1) #得到训练集特征列
 
-del train
+# free some space
+del train #删除train变量
 
-g = sns.countplot(Y_train)
+g = sns.countplot(Y_train)#画图，统计数量
 
-Y_train.value_counts()
+Y_train.value_counts()#计算每个值的数量
 
 #%%
 # --- [CELL 4]: ---
@@ -135,7 +94,6 @@ Y_train = to_categorical(Y_train, num_classes = 10)
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 random_seed = 2
 X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size = 0.1, random_state=random_seed)
-
 
 #%%
 # --- [CELL 8]: ---

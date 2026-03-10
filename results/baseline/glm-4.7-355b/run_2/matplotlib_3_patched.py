@@ -96,71 +96,15 @@ inception_model = Model(inputs=base_model.input, outputs=x)
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# train_features = inception_model.predict(train_generator)
-# test_features = inception_model.predict(test_generator)
-
-# === AFTER (edited) ===
-# Collect features from all batches, handling any corrupted images
-train_features_list = []
-train_labels_list = []
-
-for batch_images, batch_labels in train_generator:
-    try:
-        features = inception_model.predict(batch_images, verbose=0)
-        train_features_list.append(features)
-        train_labels_list.append(batch_labels)
-    except Exception as e:
-        print(f"Skipping a batch due to error: {e}")
-        continue
-    
-    # Stop after all batches are processed
-    if len(train_features_list) * train_generator.batch_size >= len(train_generator.labels):
-        break
-
-# Concatenate all batches
-if train_features_list:
-    train_features = np.concatenate(train_features_list, axis=0)
-    train_labels_one_hot = np.concatenate(train_labels_list, axis=0)[:len(train_features)]
-else:
-    train_features = np.array([])
-    train_labels_one_hot = np.array([])
-
-
-# Same process for test set
-test_features_list = []
-test_labels_list = []
-
-for batch_images, batch_labels in test_generator:
-    try:
-        features = inception_model.predict(batch_images, verbose=0)
-        test_features_list.append(features)
-        test_labels_list.append(batch_labels)
-    except Exception as e:
-        print(f"Skipping a batch due to error: {e}")
-        continue
-    
-    # Stop after all batches are processed
-    if len(test_features_list) * test_generator.batch_size >= len(test_generator.labels):
-        break
-
-# Concatenate all batches
-if test_features_list:
-    test_features = np.concatenate(test_features_list, axis=0)
-    test_labels_one_hot = np.concatenate(test_labels_list, axis=0)[:len(test_features)]
-else:
-    test_features = np.array([])
-    test_labels_one_hot = np.array([])
-
-print(f"Train features shape: {train_features.shape}")
-print(f"Test features shape: {test_features.shape}")
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+train_features = inception_model.predict(train_generator)
+test_features = inception_model.predict(test_generator)
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 from keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Reshape
 from keras.layers import Bidirectional, LSTM # fix for reproducing and fixing purposes
 from tensorflow.keras.models import Model
@@ -168,7 +112,7 @@ from tensorflow.keras.models import Model
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 from tensorflow.keras.utils import to_categorical
 
 # Convert integer labels to one-hot encoding
@@ -178,7 +122,7 @@ test_labels_one_hot = to_categorical(test_generator.classes, num_classes=4)
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 from tensorflow.keras.callbacks import EarlyStopping
 
 # Define early stopping criteria
@@ -187,7 +131,7 @@ early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weig
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Reshape, Conv2D, MaxPooling2D, Bidirectional, LSTM, Dropout, Flatten, Dense
 from tensorflow.keras.optimizers import Adam
@@ -199,7 +143,7 @@ from tensorflow.keras.optimizers import Adam, RMSprop, SGD
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 # Define the input shape
 input_features = Input(shape=(2048,), name='input_features')
 
@@ -226,7 +170,7 @@ bi_lstm_output_flatten = Flatten()(bi_lstm_output)
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 # Hyperparameters tuning
 def build_model(hp):
     dense_units = hp.Int('dense_units', min_value=64, max_value=256, step=32)
@@ -253,7 +197,7 @@ def build_model(hp):
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # Hyperparameter search
 tuner = RandomSearch(
     build_model,
@@ -274,19 +218,39 @@ tuner.search(
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-# Plot the architecture of the best model
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# === BEFORE (original) ===
+# # Plot the architecture of the best model
+# best_model = tuner.get_best_models(1)[0]
+# best_model.summary()
+# 
+# # Extract information about the best trials
+# best_trials = tuner.oracle.get_best_trials(5)
+# 
+# # Plot the results
+# plt.figure(figsize=(10, 6))
+# for trial in best_trials:
+#     val_accuracy_history = trial.metrics.get_history(name='val_accuracy')
+#     plt.plot(val_accuracy_history, label=f'Trial {trial.trial_id}')
+# 
+# plt.title('Validation Accuracy of Best Trials')
+# plt.xlabel('Epochs')
+# plt.ylabel('Validation Accuracy')
+# plt.legend()
+# plt.show()
+
+# === AFTER (edited) ===
 best_model = tuner.get_best_models(1)[0]
 best_model.summary()
 
-# Extract information about the best trials
+
 best_trials = tuner.oracle.get_best_trials(5)
 
-# Plot the results
+
 plt.figure(figsize=(10, 6))
 for trial in best_trials:
-    val_accuracy_history = trial.metrics.get_history(name='val_accuracy')
+    val_accuracy_history = [obs.value for obs in trial.metrics.get_history(name='val_accuracy')]
     plt.plot(val_accuracy_history, label=f'Trial {trial.trial_id}')
 
 plt.title('Validation Accuracy of Best Trials')

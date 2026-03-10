@@ -26,104 +26,38 @@ path="data/For_modeling.csv.zip"
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# data = pd.read_csv(path, 
-#                   dtype={
-#                       'Duration': 'int8',
-#                       'Distance': 'int8',
-#                       'PLong': 'float32',
-#                       'PLatd': 'float32',
-#                       'DLong': 'float32',
-#                       'Haversine':'float32',
-#                       'Pmonth':'int8',
-#                       'Pday':'int8',
-#                       'Phour':'int8',
-#                       'Pmin':'int8',
-#                       'PDweek':'int8',
-#                       'Dmonth':'int8',
-#                       'Dday':'int8',
-#                       'Dhour':'int8',
-#                       'Dmin':'int8',
-#                       'DDweek':'int8',
-#                       'Temp':'float32',
-#                       'Precip':'float32',
-#                       'Wind':'float32',
-#                       'Solar':'float32',
-#                       'Snow':'float32',
-#                       'GroundTemp':'float32',
-#                       'Dust':'float32'
-#                   },index_col=0
-#                   
-#                   ).sample(frac=1)
-# 
-# #checking for data
-# data.head(25)
+data = pd.read_csv(path, 
+                  dtype={
+                      'Duration': 'int8',
+                      'Distance': 'int8',
+                      'PLong': 'float32',
+                      'PLatd': 'float32',
+                      'DLong': 'float32',
+                      'Haversine':'float32',
+                      'Pmonth':'int8',
+                      'Pday':'int8',
+                      'Phour':'int8',
+                      'Pmin':'int8',
+                      'PDweek':'int8',
+                      'Dmonth':'int8',
+                      'Dday':'int8',
+                      'Dhour':'int8',
+                      'Dmin':'int8',
+                      'DDweek':'int8',
+                      'Temp':'float32',
+                      'Precip':'float32',
+                      'Wind':'float32',
+                      'Solar':'float32',
+                      'Snow':'float32',
+                      'GroundTemp':'float32',
+                      'Dust':'float32'
+                  },index_col=0
+                  
+                  ).sample(frac=1)
 
-# === AFTER (edited) ===
-# Try to read the actual data file
-try:
-    data = pd.read_csv(path,
-                      dtype={
-                          'Duration': 'int8',
-                          'Distance': 'int8',
-                          'PLong': 'float32',
-                          'PLatd': 'float32',
-                          'DLong': 'float32',
-                          'Haversine':'float32',
-                          'Pmonth':'int8',
-                          'Pday':'int8',
-                          'Phour':'int8',
-                          'Pmin':'int8',
-                          'PDweek':'int8',
-                          'Dmonth':'int8',
-                          'Dday':'int8',
-                          'Dhour':'int8',
-                          'Dmin':'int8',
-                          'DDweek':'int8',
-                          'Temp':'float32',
-                          'Precip':'float32',
-                          'Wind':'float32',
-                          'Solar':'float32',
-                          'Snow':'float32',
-                          'GroundTemp':'float32',
-                          'Dust':'float32'
-                      },index_col=0
-                      ).sample(frac=1)
-except Exception as e:
-    print(f"Error reading data file: {e}")
-    print("Using sample data instead...")
-    # Create sample data matching the expected schema
-    np.random.seed(42)
-    n_samples = 1000
-    data = pd.DataFrame({
-        'Duration': np.random.randint(1, 100, n_samples, dtype='int8'),
-        'Distance': np.random.randint(1, 50, n_samples, dtype='int8'),
-        'PLong': np.random.uniform(-80, -70, n_samples).astype('float32'),
-        'PLatd': np.random.uniform(40, 45, n_samples).astype('float32'),
-        'DLong': np.random.uniform(-80, -70, n_samples).astype('float32'),
-        'Haversine': np.random.uniform(0.1, 20, n_samples).astype('float32'),
-        'Pmonth': np.random.randint(1, 13, n_samples, dtype='int8'),
-        'Pday': np.random.randint(1, 32, n_samples, dtype='int8'),
-        'Phour': np.random.randint(0, 24, n_samples, dtype='int8'),
-        'Pmin': np.random.randint(0, 60, n_samples, dtype='int8'),
-        'PDweek': np.random.randint(0, 7, n_samples, dtype='int8'),
-        'Dmonth': np.random.randint(1, 13, n_samples, dtype='int8'),
-        'Dday': np.random.randint(1, 32, n_samples, dtype='int8'),
-        'Dhour': np.random.randint(0, 24, n_samples, dtype='int8'),
-        'Dmin': np.random.randint(0, 60, n_samples, dtype='int8'),
-        'DDweek': np.random.randint(0, 7, n_samples, dtype='int8'),
-        'Temp': np.random.uniform(-5, 35, n_samples).astype('float32'),
-        'Precip': np.random.uniform(0, 10, n_samples).astype('float32'),
-        'Wind': np.random.uniform(0, 30, n_samples).astype('float32'),
-        'Solar': np.random.uniform(0, 1000, n_samples).astype('float32'),
-        'Snow': np.random.uniform(0, 20, n_samples).astype('float32'),
-        'GroundTemp': np.random.uniform(-5, 40, n_samples).astype('float32'),
-        'Dust': np.random.uniform(0, 5, n_samples).astype('float32')
-    })
-    data = data.sample(frac=1)
-
+#checking for data
 data.head(25)
 
 #%%
@@ -150,7 +84,6 @@ data= data[data['Haversine']!=0].reset_index().drop(columns=['index'])
 
 data["Distance"]=data['Distance'].apply(lambda x:abs(x))
 data[data['Distance']<0].shape
-    
 
 #%%
 # --- [CELL 6]: ---
@@ -182,14 +115,10 @@ data[data['Distance']==0].shape
 # plt.show()
 
 # === AFTER (edited) ===
-# Convert the 'PDweek' column to a day of the week name
-# Make a copy of the column as categorical
-data['PDweek'] = pd.Categorical(data['PDweek'], categories=range(7), ordered=True)
-data['PDweek'] = data['PDweek'].cat.rename_categories(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
+data['DayOfWeek'] = pd.Categorical(data['PDweek'], categories=range(7), ordered=True)
+data['DayOfWeek'] = data['DayOfWeek'].cat.rename_categories(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
 
-# Calculate the average trip duration for each day of the week
-average_duration = data.groupby('PDweek')['Duration'].mean()
-
+average_duration = data.groupby('DayOfWeek')['Duration'].mean()
 
 plt.plot(average_duration.index, average_duration.values)
 plt.xlabel('Day of Week')

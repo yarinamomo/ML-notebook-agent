@@ -13,61 +13,16 @@ import tensorflow.keras.backend as K
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# # Define VGG_FACE_MODEL architecture
-# model = Sequential()
-# model.add(ZeroPadding2D((1,1),input_shape=(224,224, 3)))
-# model.add(Convolution2D(64, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(64, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))	
-# model.add(Convolution2D(128, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(128, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(Convolution2D(4096, (7, 7), activation='relu'))
-# model.add(Dropout(0.5))
-# model.add(Convolution2D(4096, (1, 1), activation='relu'))
-# model.add(Dropout(0.5))
-# model.add(Convolution2D(2622, (1, 1)))
-# model.add(Flatten())
-# model.add(Activation('softmax'))
-# 
-# # Load VGG Face model weights
-# model.load_weights('data/vgg_face_weights.h5')
-
-# === AFTER (edited) ===
+# Define VGG_FACE_MODEL architecture
 model = Sequential()
 model.add(ZeroPadding2D((1,1),input_shape=(224,224, 3)))
 model.add(Convolution2D(64, (3, 3), activation='relu'))
 model.add(ZeroPadding2D((1,1)))
 model.add(Convolution2D(64, (3, 3), activation='relu'))
 model.add(MaxPooling2D((2,2), strides=(2,2)))
-model.add(ZeroPadding2D((1,1)))
+model.add(ZeroPadding2D((1,1)))	
 model.add(Convolution2D(128, (3, 3), activation='relu'))
 model.add(ZeroPadding2D((1,1)))
 model.add(Convolution2D(128, (3, 3), activation='relu'))
@@ -101,8 +56,8 @@ model.add(Convolution2D(2622, (1, 1)))
 model.add(Flatten())
 model.add(Activation('softmax'))
 
-
-# model.load_weights('data/vgg_face_weights.h5')
+# Load VGG Face model weights
+model.load_weights('data/vgg_face_weights.h5')
 
 #%%
 # --- [CELL 2]: ---
@@ -192,41 +147,26 @@ train_generator = train_datagen.flow_from_directory(
 
 base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
 
+# Add classification layers
+x = Flatten()(base_model.output)
+x = Dense(512, activation='relu')(x)
+predictions = Dense(7, activation='softmax')(x)
 
-for layer in base_model.layers:
+base_model = Model(inputs=base_model.input, outputs=predictions)
+
+# Freeze the VGG16 layers, keep the new layers trainable
+for layer in base_model.layers[:-2]:
     layer.trainable = False
 
 
-# Add custom classification layers
-x = base_model.output
-x = Flatten()(x)
-x = Dense(512, activation='relu')(x)
-x = Dropout(0.5)(x)
-predictions = Dense(7, activation='softmax')(x)
-
-model = Model(inputs=base_model.input, outputs=predictions)
+base_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+base_model.fit(
+    train_generator,
+    steps_per_epoch=len(train_generator),
+    epochs=10,
+)
 
 
-# base_model.load_weights('data/vgg_face_weights.h5')
-
-
-# Wrap fit in try-except to handle potential data errors
-try:
-    model.fit(
-        train_generator,
-        steps_per_epoch=len(train_generator),
-        epochs=10,
-    )
-except Exception as e:
-    print(f"Training encountered an error: {e}")
-    print("Model compiled successfully but training was interrupted.")
-
-
-try:
-    model.save('data/updated_vgg_face_weights.h5')
-    print("Model saved successfully.")
-except Exception as e:
-    print(f"Warning: Could not save model: {e}")
+base_model.save('data/updated_vgg_face_weights.h5')

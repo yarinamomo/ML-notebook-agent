@@ -23,54 +23,34 @@ df=df_psytar
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# df_1 = df[df['ADR']==1]
-# df_0 = df[df['ADR']==0]
-
-# === AFTER (edited) ===
-# Check if 'ADR' column exists, otherwise use alternative columns
-if 'ADR' not in df.columns:
-    print(f"Available columns: {df.columns.tolist()}")
-    # Try common alternative column names
-    if 'adr' in df.columns:
-        df['ADR'] = df['adr']
-    elif 'label' in df.columns:
-        df['ADR'] = df['label']
-    else:
-        # Create a dummy ADR column for demonstration: use the first column as text, random labels
-        print("'ADR' column not found. Creating a binary label column.")
-        # Random binary labels for demonstration
-        import numpy as np
-        df['ADR'] = np.random.randint(0, 2, size=len(df))
-
 df_1 = df[df['ADR']==1]
 df_0 = df[df['ADR']==0]
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 df_0 = df_0.sample(df_1.shape[0])
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 df = pd.concat([df_1,df_0])
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 from transformers import AutoTokenizer
 tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 def process_data(row):
 
     text = row['sentences']
@@ -91,7 +71,7 @@ def process_data(row):
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 processed_data = []
 
 for i in range(len(df[:1000])):
@@ -100,14 +80,14 @@ for i in range(len(df[:1000])):
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 train_data = df["sentences"]
 train_labels = df['ADR']
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 from sklearn.model_selection import train_test_split
 
 new_df = pd.DataFrame(processed_data)
@@ -121,7 +101,7 @@ train_df, valid_df = train_test_split(
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 import pyarrow as pa
 from datasets import Dataset
 
@@ -130,28 +110,44 @@ valid_hg = Dataset(pa.Table.from_pandas(valid_df))
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# === BEFORE (original) ===
+# class HuggingFaceLayer(tf.keras.layers.Layer):
+#     def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):
+#         super(HuggingFaceLayer, self).__init__(**kwargs)
+#         self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)
+#         self.trainable = trainable
+# 
+#     def build(self, input_shape):
+#         self.model.built = True
+#         if not self.trainable:
+#             self.model.trainable = False
+#         super(HuggingFaceLayer, self).build(input_shape)
+# 
+#     def call(self, inputs, **kwargs):
+#         outputs = self.model(inputs, **kwargs)
+#         return outputs
+
+# === AFTER (edited) ===
 class HuggingFaceLayer(tf.keras.layers.Layer):
     def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):
         super(HuggingFaceLayer, self).__init__(**kwargs)
         self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)
-        self.trainable = trainable
+        self.model.trainable = trainable
 
     def build(self, input_shape):
         self.model.built = True
-        if not self.trainable:
-            self.model.trainable = False
         super(HuggingFaceLayer, self).build(input_shape)
 
-    def call(self, inputs, **kwargs):
-        outputs = self.model(inputs, **kwargs)
-        return outputs
+    def call(self, inputs):
+        outputs = self.model(inputs)
+        return outputs.pooler_output
 
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 model_name = 'bert-base-uncased'
 model = tf.keras.Sequential()
 model.add(HuggingFaceLayer(model_name=model_name))
@@ -160,7 +156,7 @@ model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 15}
 # Compile and train the model
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 model.fit(train_data, train_labels, epochs=10)

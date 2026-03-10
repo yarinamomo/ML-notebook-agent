@@ -13,23 +13,9 @@ from sklearn.metrics import accuracy_score
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/iris-data.csv')
-
-# === AFTER (edited) ===
-# Load iris data from sklearn since the CSV file appears to be corrupted
-from sklearn.datasets import load_iris
-
-iris = load_iris()
-df = pd.DataFrame(data=iris.data, columns=['sepal_length_cm', 'sepal_width_cm', 'petal_length_cm', 'petal_width_cm'])
-
-# Use the class names that match the notebook's expectations
-df['class'] = ['Iris-setosa' if i == 0 else 'Iris-versicolor' if i == 1 else 'Iris-virginica' for i in iris.target]
-
-print("Dataset loaded successfully with columns:", df.columns.tolist())
-print(df.head())
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+df = pd.read_csv('data/iris-data.csv')
 
 #%%
 # --- [CELL 2]: ---
@@ -106,7 +92,7 @@ y_ts_arr = y_test.values
 def weightInitialization(n_features):
     w = np.zeros((n_features, 1))
     b = 0
-    return w,b
+    return w, b
 
 #%%
 # --- [CELL 11]: ---
@@ -136,7 +122,6 @@ def model_optimize(w, b, X, Y):
     grads = {"dw": dw, "db": db}
     
     return grads, cost
-    
 
 #%%
 # --- [CELL 13]: ---
@@ -228,7 +213,7 @@ def predict(final_pred, m):
 #%%
 # --- [CELL 16]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
 #Get number of features
 n_features = X_tr_arr.shape[1]
 print('Number of Features', n_features)

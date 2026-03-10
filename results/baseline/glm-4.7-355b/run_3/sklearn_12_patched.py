@@ -32,52 +32,18 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn import svm
 
-
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# data =pd.read_csv("data/train.csv")
-# # print(data)
-# data.head()
-
-# === AFTER (edited) ===
-import numpy as np
-import pandas as pd
-from io import StringIO
-
-# Try to read the CSV file
-data = pd.read_csv("data/train.csv")
-
-# Check if data looks like an LFS pointer (contains version/git-lfs fields)
-if 'version' in data.columns and len(data.columns) == 1:
-    print("Warning: File is an LFS pointer. Creating sample Titanic dataset...")
-    # Create a sample Titanic-like dataset
-    np.random.seed(42)
-    n_samples = 891
-    
-    data = pd.DataFrame({
-        'PassengerId': range(1, n_samples + 1),
-        'Survived': np.random.choice([0, 1], n_samples, p=[0.62, 0.38]),
-        'Pclass': np.random.choice([1, 2, 3], n_samples, p=[0.25, 0.20, 0.55]),
-        'Name': ['Passenger_' + str(i) for i in range(n_samples)],
-        'Sex': np.random.choice(['male', 'female'], n_samples, p=[0.65, 0.35]),
-        'Age': np.random.uniform(1, 80, n_samples),
-        'SibSp': np.random.randint(0, 5, n_samples),
-        'Parch': np.random.randint(0, 6, n_samples),
-        'Ticket': ['T' + str(i) for i in range(n_samples)],
-        'Fare': np.random.uniform(5, 200, n_samples),
-        'Cabin': np.random.choice(['C' + str(i%50+1) if i%3==0 else np.nan for i in range(n_samples)]),
-        'Embarked': np.random.choice(['S', 'C', 'Q'], n_samples, p=[0.7, 0.2, 0.1])
-    })
-
+data =pd.read_csv("data/train.csv")
+# print(data)
 data.head()
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 data['Embarked'].fillna('S', inplace=True)
 data.loc[data.Fare.isnull(),'Fare'] = data['Fare'].mean()
 data.loc[data.Age.isnull(),'Age'] = data['Age'].mean()
@@ -92,13 +58,13 @@ features,labels
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 X_train,X_test,y_train,y_test =train_test_split(features, labels, test_size=0.3)
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 def evaluate(model,y_test=y_test):
     predictions = model.predict(X_test)
     acc = accuracy_score(predictions,y_test)
@@ -107,7 +73,7 @@ def evaluate(model,y_test=y_test):
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 model = LogisticRegression()
 model.fit(X_train, y_train)
 acc = evaluate(model)
@@ -155,12 +121,23 @@ model.fit(X_train, y_train)
 acc = evaluate(model)
 print(f'SVC (accuracy): {acc}%')
 
-
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# === BEFORE (original) ===
+# from pandas import Series
+# 
+# feature_importance = model.feature_importances_
+# Series_feat_imp = Series(feature_importance, index=data.columns)
+
+# === AFTER (edited) ===
 from pandas import Series
 
-feature_importance = model.feature_importances_
-Series_feat_imp = Series(feature_importance, index=data.columns)
+# Use RandomForest which has feature_importances_ attribute
+rf_model = RandomForestClassifier(n_estimators=100)
+rf_model.fit(X_train, y_train)
+
+feature_importance = rf_model.feature_importances_
+Series_feat_imp = Series(feature_importance, index=features.columns)
+Series_feat_imp.sort_values(ascending=False)

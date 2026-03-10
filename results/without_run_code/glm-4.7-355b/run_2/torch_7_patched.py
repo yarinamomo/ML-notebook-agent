@@ -271,9 +271,26 @@ display(dog_image)
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
-# Preprocess torch image
+# === BEFORE (original) ===
+# # Preprocess torch image
+# from torchvision import transforms
+# from PIL import Image
+# 
+# preprocess = transforms.Compose([
+#     transforms.Resize(256),
+#     transforms.CenterCrop(224),
+#     transforms.ToTensor(),
+#     transforms.Normalize(
+#     mean=[0.485, 0.456, 0.406],
+#     std=[0.229, 0.224, 0.225]
+# )])
+# torch_img = Image.open("dog.jpg")
+# torch_img = preprocess(dog_image)
+# torch_img = torch.unsqueeze(torch_img, 0)
+
+# === AFTER (edited) ===
 from torchvision import transforms
 from PIL import Image
 
@@ -282,13 +299,13 @@ preprocess = transforms.Compose([
     transforms.CenterCrop(224),
     transforms.ToTensor(),
     transforms.Normalize(
-    mean=[0.485, 0.456, 0.406],
-    std=[0.229, 0.224, 0.225]
-)])
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+])
 torch_img = Image.open("dog.jpg")
-torch_img = preprocess(dog_image)
+torch_img = preprocess(torch_img)
 torch_img = torch.unsqueeze(torch_img, 0)
-
 
 #%%
 # --- [CELL 9]: ---

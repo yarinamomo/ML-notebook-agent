@@ -1,8 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-
-
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 import tensorflow as tf
@@ -37,32 +35,11 @@ from sklearn.model_selection import KFold, StratifiedKFold
 import warnings
 warnings.filterwarnings("ignore")
 
-
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/creditcard.csv')
-# df.head()
-
-# === AFTER (edited) ===
-# Create synthetic data that mimics credit card dataset structure since the original is a Git LFS pointer
-np.random.seed(42)
-n_samples = 1000
-
-# Generate V1-V28 features (PCA transformed)
-v_features = {}
-for i in range(1, 29):
-    v_features[f'V{i}'] = np.random.normal(0, 1, n_samples)
-
-# Generate Time, Amount, and Class columns
-time = np.random.uniform(0, 172800, n_samples)  # 2 days in seconds
-amount = np.random.exponential(100, n_samples)
-class_ = np.random.binomial(1, 0.01, n_samples)  # 1% fraud
-
-df = pd.DataFrame({**v_features, 'Time': time, 'Amount': amount, 'Class': class_})
+df = pd.read_csv('data/creditcard.csv')
 df.head()
 
 #%%
@@ -103,7 +80,7 @@ data_df_1.head()
 # plt.show();
 
 # === AFTER (edited) ===
-var = df.columns.values  # Use original df columns (not data_df which has 'Hour')
+var = [c for c in df.columns.values if c not in ['Hour', 'Class']]
 
 i = 0
 t0 = df.loc[df['Class'] == 0]

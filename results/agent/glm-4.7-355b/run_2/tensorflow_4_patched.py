@@ -177,24 +177,22 @@ train_labels = []
 real_images = []
 forged_images = []
 
-for per in os.listdir(train_dir):
+for per in sorted(os.listdir(train_dir)):
     for data in glob.glob(train_dir+'/'+per+'/*.*'):
 
         train_data_names.append(data)
 
-        if per[-1]=='g':
+        if '_forg' in per:
             img = cv2.imread(data)
-            if img is not None:
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                img = cv2.resize(img, (SIZE,SIZE))
-                forged_images.append([img])
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            img = cv2.resize(img, (SIZE,SIZE))
+            forged_images.append(img)
 
         else:
             img = cv2.imread(data)
-            if img is not None:
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                img = cv2.resize(img, (SIZE,SIZE))
-                real_images.append([img])
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            img = cv2.resize(img, (SIZE,SIZE))
+            real_images.append(img)
 
 
 
@@ -205,42 +203,29 @@ print("number of real_images",len(real_images))
 test_data = []
 test_labels = []
 
-for per in os.listdir(test_dir):
+real_images_test = []
+forged_images_test = []
+
+for per in sorted(os.listdir(test_dir)):
     for data in glob.glob(test_dir+'/'+per+'/*.*'):
         test_data_names.append(data)
 
-        if per[-1]=='g':
+        if '_forg' in per:
             img = cv2.imread(data)
-            if img is not None:
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                img = cv2.resize(img, (SIZE,SIZE))
-                forged_images.append([img])
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            img = cv2.resize(img, (SIZE,SIZE))
+            forged_images_test.append(img)
 
         else:
             img = cv2.imread(data)
-            if img is not None:
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                img = cv2.resize(img, (SIZE,SIZE))
-                real_images.append([img])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            img = cv2.resize(img, (SIZE,SIZE))
+            real_images_test.append(img)
 
 real_images = np.array(real_images)
 forged_images = np.array(forged_images)
+real_images_test = np.array(real_images_test)
+forged_images_test = np.array(forged_images_test)
 
 
 real_labels = np.zeros((real_images.shape[0], 1))
@@ -251,52 +236,30 @@ print("number of forged_images",len(forged_images))
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# # Categorical labels
-# # print(train_labels.shape)
-# # train_labels = to_categorical(train_labels)
-# # print(train_data.shape)
-# # Reshaping
-# # train_data = train_data.reshape(-1, SIZE, 2)
-# # test_data = test_data.reshape(-1, SIZE, 3)
-# # print(train_data.shape[0])
-# # print(test_data.shape[0])
-# # train_data = train_data.reshape((train_data.shape[0], train_data.shape[1], train_data.shape[2] * 1))
-# # test_data = test_data.reshape((test_data.shape[0], test_data.shape[1], test_data.shape[2] * 1))
-# # print(train_data.shape)
-# # print(test_data.shape)
-# 
-# # Concatenate the real and forged images and labels
-# images = np.concatenate((real_images, forged_images))
-# labels = np.concatenate((real_labels, forged_labels))
-# 
-# # Split the data into training and validation sets
-# train_data, test_data, train_labels, test_labels = train_test_split(images, labels, test_size=0.2, random_state=42)
+# Categorical labels
+# print(train_labels.shape)
+# train_labels = to_categorical(train_labels)
+# print(train_data.shape)
+# Reshaping
+# train_data = train_data.reshape(-1, SIZE, 2)
+# test_data = test_data.reshape(-1, SIZE, 3)
+# print(train_data.shape[0])
+# print(test_data.shape[0])
+# train_data = train_data.reshape((train_data.shape[0], train_data.shape[1], train_data.shape[2] * 1))
+# test_data = test_data.reshape((test_data.shape[0], test_data.shape[1], test_data.shape[2] * 1))
 # print(train_data.shape)
 # print(test_data.shape)
 
-# === AFTER (edited) ===
+# Concatenate the real and forged images and labels
 images = np.concatenate((real_images, forged_images))
 labels = np.concatenate((real_labels, forged_labels))
 
-# Check if we have data to split
-if len(images) > 0:
-    train_data, test_data, train_labels, test_labels = train_test_split(images, labels, test_size=0.2, random_state=42)
-    print(train_data.shape)
-    print(test_data.shape)
-else:
-    # Create dummy data if no images were loaded
-    print("Warning: No images loaded. Creating dummy data for demonstration.")
-    # LSTM expects shape: (n_samples, time_steps, features)
-    # For 224x224 images, we can treat as 224 time steps with 224 features each
-    train_data = np.random.rand(10, 224, 224).astype('float32')
-    test_data = np.random.rand(2, 224, 224).astype('float32')
-    train_labels = np.random.randint(0, 2, (10,))
-    test_labels = np.random.randint(0, 2, (2,))
-    print(f"train_data shape (dummy): {train_data.shape}")
-    print(f"test_data shape (dummy): {test_data.shape}")
+# Split the data into training and validation sets
+train_data, test_data, train_labels, test_labels = train_test_split(images, labels, test_size=0.2, random_state=42)
+print(train_data.shape)
+print(test_data.shape)
 
 #%%
 # --- [CELL 5]: ---

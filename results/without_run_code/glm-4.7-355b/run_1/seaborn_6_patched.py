@@ -13,13 +13,9 @@ from sklearn.tree import DecisionTreeClassifier
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv("data/penguins.csv")
-
-# === AFTER (edited) ===
-df = sns.load_dataset("penguins")
+df = pd.read_csv("data/penguins.csv")
 
 #%%
 # --- [CELL 2]: ---
@@ -29,16 +25,9 @@ df=df.dropna()
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
-
-# === AFTER (edited) ===
-if "sex" in df.columns:
-    df["sex"] = df["sex"].map({"male": 0, "female": 1})
-else:
-    print("Column 'sex' not found in dataframe")
+df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
 
 #%%
 # --- [CELL 4]: ---
@@ -48,4 +37,4 @@ else:
 # sns.violinplot(df, x='species')
 
 # === AFTER (edited) ===
-sns.violinplot(data=df, x='species', y='flipper_length_mm')
+sns.violinplot(df, x='species', y='bill_length_mm')

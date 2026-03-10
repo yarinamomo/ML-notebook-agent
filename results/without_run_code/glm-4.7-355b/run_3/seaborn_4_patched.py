@@ -32,23 +32,13 @@ df.head()
 # plt.tight_layout(pad=0.5, w_pad=0.7, h_pad=5.0)
 
 # === AFTER (edited) ===
-# Get only numeric columns for boxplot
-numeric_df = df.select_dtypes(include=[np.number])
-numeric_cols = numeric_df.columns.tolist()
+# Calculate the number of rows needed based on number of columns
+n_cols = 7
+n_rows = (len(df.columns) + n_cols - 1) // n_cols  # Ceiling division
 
-# Calculate appropriate subplot dimensions based on number of numeric columns
-n_cols = len(numeric_cols)
-ncols = 7
-nrows = max(1, (n_cols + ncols - 1) // ncols)  # Ceiling division
-
-fig, ax = plt.subplots(ncols=ncols, nrows=nrows, figsize=(20, nrows * 5))
+fig, ax = plt.subplots(ncols=n_cols, nrows=n_rows, figsize=(20, 10))
 ax = ax.flatten()
 
-for i, col in enumerate(numeric_cols):
-    sns.boxplot(y=col, data=numeric_df, ax=ax[i])
-
-# Hide any unused subplots
-for i in range(n_cols, len(ax)):
-    ax[i].set_visible(False)
-
+for index, col in enumerate(df.columns):
+    sns.boxplot(y=col, data=df, ax=ax[index])
 plt.tight_layout(pad=0.5, w_pad=0.7, h_pad=5.0)

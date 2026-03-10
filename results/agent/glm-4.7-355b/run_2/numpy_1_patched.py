@@ -35,39 +35,10 @@ transformer = transforms.Compose([
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# dataset = ImageFolder(root = "data_small/celeba_hq_256", 
-#                       transform = transformer) 
-
-# === AFTER (edited) ===
-import torch
-from torch.utils.data import Dataset, DataLoader
-import numpy as np
-
-class MockImageDataset(Dataset):
-    """Generate synthetic images for training when real images are not available"""
-    def __init__(self, num_samples=1000, img_channels=3, img_size=64):
-        self.num_samples = num_samples
-        self.img_channels = img_channels
-        self.img_size = img_size
-    
-    def __len__(self):
-        return self.num_samples
-    
-    def __getitem__(self, idx):
-        # Generate random synthetic image
-        img = torch.randn(self.img_channels, self.img_size, self.img_size)
-        # Normalize to match the expected range after transforms ([-1, 1])
-        # Generate random target (fake class label)
-        target = idx % 2  # Just alternating between 0 and 1
-        return img, target
-
-# Create mock dataset with enough samples for training
-num_samples = 1000
-dataset = MockImageDataset(num_samples=num_samples, img_channels=num_channels, img_size=img_size)
-print(f"Created mock dataset with {len(dataset)} synthetic images")
+dataset = ImageFolder(root = "data_small/celeba_hq_256", 
+                      transform = transformer)
 
 #%%
 # --- [CELL 4]: ---
@@ -250,13 +221,10 @@ for epoch in range(NUM_EPOCHS):
 
 # === AFTER (edited) ===
 import matplotlib.pyplot as plt
-import torch
-import numpy as np
-
 def visual():
-    n=4  # Changed from 6 to 4 since we generate 16 images (4x4 grid)
+    n=6
     k=0
-    z = torch.randn((16, 100, 1, 1)).to(device)
+    z = torch.randn((n*n, 100, 1, 1)).to(device)
     out= gen(z)
     plt.figure(figsize=(16,16))
     out = out.cpu()

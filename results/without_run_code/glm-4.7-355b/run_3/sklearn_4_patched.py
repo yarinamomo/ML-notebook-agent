@@ -310,47 +310,12 @@ feature_engieered = ("FeatureEngineering_add_features", DataframeFunctionTransfo
 
 # === AFTER (edited) ===
 from sklearn.ensemble import AdaBoostClassifier
-import numpy as np
-
-# Create synthetic credit risk data since the original CSV is a Git LFS pointer file
-np.random.seed(42)
-n_samples = 10000
-
-synthetic_data = {
-    'person_age': np.random.randint(18, 80, n_samples),
-    'person_income': np.random.randint(20000, 150000, n_samples),
-    'person_emp_length': np.random.uniform(0, 30, n_samples),
-    'loan_amnt': np.random.randint(1000, 40000, n_samples),
-    'loan_intent': np.random.choice(['education', 'medical', 'venture', 'home_improvement', 'debt_consolidation', 'personal'], n_samples),
-    'loan_grade': np.random.choice(['A', 'B', 'C', 'D', 'E', 'F', 'G'], n_samples),
-    'loan_percent_income': np.random.uniform(0, 1, n_samples),
-    'cb_person_default_on_file': np.random.choice(['Y', 'N'], n_samples),
-    'cb_person_cred_hist_length': np.random.randint(1, 30, n_samples),
-    'person_home_ownership': np.random.choice(['RENT', 'MORTGAGE', 'OWN', 'OTHER'], n_samples),
-    'loan_status': np.random.randint(0, 2, n_samples)  # Binary target variable (0 or 1)
-}
-
-df = pd.DataFrame(synthetic_data)
-
-# Create the data directory if it doesn't exist
-import os
-os.makedirs('data', exist_ok=True)
-
-# Save the synthetic data
-df.to_csv('data/credit_risk_dataset.csv', index=False)
-print("Synthetic credit risk data created and saved to 'data/credit_risk_dataset.csv'")
-print("\nColumns in dataset:")
-print(df.columns.tolist())
-print("\nFirst few rows:")
-print(df.head())
-
 ml_support_obj = ml_support()
 best_decision_tree_model = RandomForestClassifier(random_state = 42,n_estimators=1200,
                                           min_samples_split=5, min_samples_leaf = 1,
                                           max_features = 'auto', max_depth = None,
                                           bootstrap =True
                                          )
-# Changed from AdaBoostRegressor to AdaBoostClassifier for this classification task
 regression_model = AdaBoostClassifier()
 ct = ml_support_obj.get_column_transformer(False, "", True)
 X_train, X_test , y_train, y_test = ml_support_obj.get_train_test_data()

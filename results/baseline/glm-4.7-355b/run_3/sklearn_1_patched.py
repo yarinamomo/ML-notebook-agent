@@ -13,7 +13,6 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.layers import Dense, Input, Dropout, Flatten, Conv2D
 
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
@@ -31,42 +30,38 @@ valid_datagen = ImageDataGenerator(rescale = 1./255,
 test_datagen = ImageDataGenerator(rescale = 1./255,
                                          validation_split = 0.2)
 
-
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 train_dataset=train_datagen.flow_from_directory(directory='data_small/train',
                                                target_size=(48,48),
                                                class_mode='categorical',
                                                subset='training',
                                                batch_size=64)
 
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 valid_dataset=valid_datagen.flow_from_directory(directory='data_small/test',
                                                target_size=(48,48),
                                                class_mode='categorical',
                                                batch_size=64)
 
-
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 test_dataset=test_datagen.flow_from_directory(directory='data_small/test',
                                                target_size=(48,48),
                                                class_mode='categorical',
                                                batch_size=64)
 
-
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 train_datagen = ImageDataGenerator(
     # Other parameters...
     rotation_range=20,  # Example: Add rotation for augmentation
@@ -76,7 +71,7 @@ train_datagen = ImageDataGenerator(
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 # the fxies here are for reproducing purposes
 from tensorflow.keras.layers import BatchNormalization, Activation, MaxPooling2D
 from tensorflow.keras.layers import SeparableConv2D
@@ -240,11 +235,10 @@ outputs = Dense(7, activation='softmax')(x)
 model = Model(inputs=inputs, outputs=outputs)
 model.summary()
 
-
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'not run'}
 def f1_score(y_true,y_pred):
     true_positives=K.sum(K.round(K.clip(y_true*y_pred,0,1)))
     possible_positives=K.sum(K.round(K.clip(y_true,0,1)))
@@ -254,11 +248,10 @@ def f1_score(y_true,y_pred):
     f1_val=2*(precision*recall)/(precision+recall+K.epsilon())
     return f1_val
 
-
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'not run'}
 METRICS=[
     tf.keras.metrics.BinaryAccuracy(name='accuracy'),
     tf.keras.metrics.Precision(name='precision'),
@@ -266,7 +259,6 @@ METRICS=[
     tf.keras.metrics.AUC(name='auc'),
       f1_score,
 ]
-
 
 #%%
 # --- [CELL 9]: ---

@@ -5,151 +5,14 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy.stats import chi2_contingency 
+from scipy.stats import chi2_contingency
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# app_train = pd.read_csv('data/application_train.csv.zip')
-# app_test=pd.read_csv('data/application_test.csv.zip')
-
-# === AFTER (edited) ===
-# Create synthetic data for the notebook (original data files are Git LFS pointers and not available)
-import pandas as pd
-import numpy as np
-
-def create_sample_data(n_samples, has_target=True):
-    np.random.seed(42)
-    data = {
-        'SK_ID_CURR': range(100000, 100000 + n_samples),
-        'TARGET': np.random.randint(0, 2, n_samples) if has_target else [0]*n_samples,
-        'NAME_CONTRACT_TYPE': np.random.choice(['Cash loans', 'Revolving loans'], n_samples),
-        'CODE_GENDER': np.random.choice(['M', 'F', 'XNA'], n_samples),
-        'FLAG_OWN_CAR': np.random.choice(['Y', 'N'], n_samples),
-        'FLAG_OWN_REALTY': np.random.choice(['Y', 'N'], n_samples),
-        'CNT_CHILDREN': np.random.randint(0, 5, n_samples),
-        'AMT_INCOME_TOTAL': np.random.uniform(50000, 1000000, n_samples),
-        'AMT_CREDIT': np.random.uniform(50000, 2000000, n_samples),
-        'AMT_ANNUITY': np.random.uniform(5000, 100000, n_samples),
-        'AMT_GOODS_PRICE': np.random.uniform(50000, 2000000, n_samples),
-        'NAME_TYPE_SUITE': np.random.choice(['Unaccompanied', 'Family', 'Spouse', 'Children', 'Other_A', 'Other_B', 'Group of people'], n_samples),
-        'NAME_INCOME_TYPE': np.random.choice(['Working', 'State servant', 'Commercial associate', 'Pensioner', 'Unemployed', 'Student', 'Maternity leave'], n_samples),
-        'NAME_EDUCATION_TYPE': np.random.choice(['Secondary / secondary special', 'Higher education', 'Incomplete higher', 'Lower secondary', 'Academic degree'], n_samples),
-        'NAME_FAMILY_STATUS': np.random.choice(['Single', 'Married', 'Widow', 'Separated'], n_samples),
-        'NAME_HOUSING_TYPE': np.random.choice(['House / apartment', 'Rented apartment'], n_samples),
-        'REGION_POPULATION_RELATIVE': np.random.uniform(0, 0.1, n_samples),
-        'DAYS_BIRTH': np.random.uniform(-25000, -7000, n_samples),
-        'DAYS_EMPLOYED': np.random.choice([365243] + list(np.random.uniform(-15000, -500, n_samples)), n_samples),
-        'DAYS_REGISTRATION': np.random.uniform(-20000, -1000, n_samples),
-        'DAYS_ID_PUBLISH': np.random.uniform(-10000, -1000, n_samples),
-        'OWN_CAR_AGE': np.random.uniform(0, 50, n_samples),
-        'FLAG_MOBIL': np.random.randint(0, 2, n_samples),
-        'FLAG_EMP_PHONE': np.random.randint(0, 2, n_samples),
-        'FLAG_WORK_PHONE': np.random.randint(0, 2, n_samples),
-        'FLAG_CONT_MOBILE': np.random.randint(0, 2, n_samples),
-        'FLAG_PHONE': np.random.randint(0, 2, n_samples),
-        'FLAG_EMAIL': np.random.randint(0, 2, n_samples),
-        'OCCUPATION_TYPE': np.random.choice(['Laborers', 'Core staff', 'Managers', 'Drivers', 'Accountants', 'Medicine staff', np.nan], n_samples),
-        'CNT_FAM_MEMBERS': np.random.randint(1, 8, n_samples),
-        'REGION_RATING_CLIENT': np.random.randint(1, 4, n_samples),
-        'REGION_RATING_CLIENT_W_CITY': np.random.randint(1, 4, n_samples),
-        'WEEKDAY_APPR_PROCESS_START': np.random.choice(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'], n_samples),
-        'HOUR_APPR_PROCESS_START': np.random.randint(0, 24, n_samples),
-        'REG_REGION_NOT_LIVE_REGION': np.random.randint(0, 2, n_samples),
-        'REG_REGION_NOT_WORK_REGION': np.random.randint(0, 2, n_samples),
-        'LIVE_REGION_NOT_WORK_REGION': np.random.randint(0, 2, n_samples),
-        'REG_CITY_NOT_LIVE_CITY': np.random.randint(0, 2, n_samples),
-        'REG_CITY_NOT_WORK_CITY': np.random.randint(0, 2, n_samples),
-        'LIVE_CITY_NOT_WORK_CITY': np.random.randint(0, 2, n_samples),
-        'ORGANIZATION_TYPE': np.random.choice(['Business Entity Type 3', 'Self-employed', 'Medicine', 'Security', 'Other'], n_samples),
-        'EXT_SOURCE_1': np.random.uniform(0, 1, n_samples),
-        'EXT_SOURCE_2': np.random.uniform(0, 1, n_samples),
-        'EXT_SOURCE_3': np.random.uniform(0, 1, n_samples),
-        'APARTMENTS_AVG': np.random.uniform(0, 1, n_samples),
-        'BASEMENTAREA_AVG': np.random.uniform(0, 1, n_samples),
-        'YEARS_BEGINEXPLUATATION_AVG': np.random.uniform(0, 1, n_samples),
-        'YEARS_BUILD_AVG': np.random.uniform(0, 1, n_samples),
-        'COMMONAREA_AVG': np.random.uniform(0, 1, n_samples),
-        'ELEVATORS_AVG': np.random.uniform(0, 1, n_samples),
-        'ENTRANCES_AVG': np.random.uniform(0, 1, n_samples),
-        'FLOORSMAX_AVG': np.random.uniform(0, 1, n_samples),
-        'FLOORSMIN_AVG': np.random.uniform(0, 1, n_samples),
-        'LANDAREA_AVG': np.random.uniform(0, 1, n_samples),
-        'LIVINGAPARTMENTS_AVG': np.random.uniform(0, 1, n_samples),
-        'LIVINGAREA_AVG': np.random.uniform(0, 1, n_samples),
-        'NONLIVINGAPARTMENTS_AVG': np.random.uniform(0, 1, n_samples),
-        'NONLIVINGAREA_AVG': np.random.uniform(0, 1, n_samples),
-        'APARTMENTS_MODE': np.random.uniform(0, 1, n_samples),
-        'BASEMENTAREA_MODE': np.random.uniform(0, 1, n_samples),
-        'YEARS_BEGINEXPLUATATION_MODE': np.random.uniform(0, 1, n_samples),
-        'YEARS_BUILD_MODE': np.random.uniform(0, 1, n_samples),
-        'COMMONAREA_MODE': np.random.uniform(0, 1, n_samples),
-        'ELEVATORS_MODE': np.random.uniform(0, 1, n_samples),
-        'ENTRANCES_MODE': np.random.uniform(0, 1, n_samples),
-        'FLOORSMAX_MODE': np.random.uniform(0, 1, n_samples),
-        'FLOORSMIN_MODE': np.random.uniform(0, 1, n_samples),
-        'LANDAREA_MODE': np.random.uniform(0, 1, n_samples),
-        'LIVINGAPARTMENTS_MODE': np.random.uniform(0, 1, n_samples),
-        'LIVINGAREA_MODE': np.random.uniform(0, 1, n_samples),
-        'NONLIVINGAPARTMENTS_MODE': np.random.uniform(0, 1, n_samples),
-        'NONLIVINGAREA_MODE': np.random.uniform(0, 1, n_samples),
-        'APARTMENTS_MEDI': np.random.uniform(0, 1, n_samples),
-        'BASEMENTAREA_MEDI': np.random.uniform(0, 1, n_samples),
-        'YEARS_BEGINEXPLUATATION_MEDI': np.random.uniform(0, 1, n_samples),
-        'YEARS_BUILD_MEDI': np.random.uniform(0, 1, n_samples),
-        'COMMONAREA_MEDI': np.random.uniform(0, 1, n_samples),
-        'ELEVATORS_MEDI': np.random.uniform(0, 1, n_samples),
-        'ENTRANCES_MEDI': np.random.uniform(0, 1, n_samples),
-        'FLOORSMAX_MEDI': np.random.uniform(0, 1, n_samples),
-        'FLOORSMIN_MEDI': np.random.uniform(0, 1, n_samples),
-        'LANDAREA_MEDI': np.random.uniform(0, 1, n_samples),
-        'LIVINGAPARTMENTS_MEDI': np.random.uniform(0, 1, n_samples),
-        'LIVINGAREA_MEDI': np.random.uniform(0, 1, n_samples),
-        'NONLIVINGAPARTMENTS_MEDI': np.random.uniform(0, 1, n_samples),
-        'NONLIVINGAREA_MEDI': np.random.uniform(0, 1, n_samples),
-        'FONDKAPREMONT_MODE': np.random.choice(['reg oper account', 'reg oper spec account', 'not specified'], n_samples),
-        'HOUSETYPE_MODE': np.random.choice(['block of flats', 'specific'], n_samples),
-        'TOTALAREA_MODE': np.random.uniform(0, 1, n_samples),
-        'WALLSMATERIAL_MODE': np.random.choice(['Stone, brick', 'Block', 'Wooden'], n_samples),
-        'EMERGENCYSTATE_MODE': np.random.choice(['No', 'Yes'], n_samples),
-        'OBS_30_CNT_SOCIAL_CIRCLE': np.random.randint(0, 5, n_samples),
-        'DEF_30_CNT_SOCIAL_CIRCLE': np.random.randint(0, 5, n_samples),
-        'OBS_60_CNT_SOCIAL_CIRCLE': np.random.randint(0, 5, n_samples),
-        'DEF_60_CNT_SOCIAL_CIRCLE': np.random.randint(0, 5, n_samples),
-        'DAYS_LAST_PHONE_CHANGE': np.random.uniform(-5000, 0, n_samples),
-        'FLAG_DOCUMENT_2': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_3': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_4': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_5': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_6': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_7': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_8': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_9': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_10': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_11': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_12': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_13': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_14': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_15': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_16': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_17': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_18': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_19': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_20': np.random.randint(0, 2, n_samples),
-        'FLAG_DOCUMENT_21': np.random.randint(0, 2, n_samples),
-        'AMT_REQ_CREDIT_BUREAU_HOUR': np.random.randint(0, 3, n_samples),
-        'AMT_REQ_CREDIT_BUREAU_DAY': np.random.randint(0, 5, n_samples),
-        'AMT_REQ_CREDIT_BUREAU_WEEK': np.random.randint(0, 8, n_samples),
-        'AMT_REQ_CREDIT_BUREAU_MON': np.random.randint(0, 10, n_samples),
-        'AMT_REQ_CREDIT_BUREAU_QRT': np.random.randint(0, 10, n_samples),
-        'AMT_REQ_CREDIT_BUREAU_YEAR': np.random.randint(0, 10, n_samples),
-    }
-    return pd.DataFrame(data)
-
-app_train = create_sample_data(1000, has_target=True)
-app_test = create_sample_data(200, has_target=False)
+app_train = pd.read_csv('data/application_train.csv.zip')
+app_test=pd.read_csv('data/application_test.csv.zip')
 
 #%%
 # --- [CELL 2]: ---
@@ -163,7 +26,6 @@ app_test.replace({'XNA': np.nan, 'XNP': np.nan, 'Unknown': np.nan}, inplace = Tr
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 app_test.drop(app_train.columns[app_train.isnull().mean()>0.4],axis=1, inplace=True)
-
 
 #%%
 # --- [CELL 4]: ---
@@ -232,13 +94,12 @@ cont_cols = [col for col in all_numerical_cols if col != "TARGET" and col[:5]!='
 proper_days_empolyed_df = app_train
 proper_days_empolyed_df['YEARS_EMPLOYED'] = proper_days_empolyed_df['DAYS_EMPLOYED']/-365.25
 
-
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 app_train['DAYS_EMPLOYED'].replace({365243:np.nan},inplace=True) 
-app_test['DAYS_EMPLOYED'].replace({365243:np.nan},inplace=True) 
+app_test['DAYS_EMPLOYED'].replace({365243:np.nan},inplace=True)
 
 #%%
 # --- [CELL 13]: ---
@@ -247,13 +108,11 @@ app_test['DAYS_EMPLOYED'].replace({365243:np.nan},inplace=True)
 proper_days_empolyed_df = app_train
 proper_days_empolyed_df['YEARS_EMPLOYED'] = proper_days_empolyed_df['DAYS_EMPLOYED']/-365.25
 
-
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 app_train = app_train[app_train['AMT_INCOME_TOTAL'] != 117000000.0]
-
 
 #%%
 # --- [CELL 15]: ---
@@ -347,7 +206,6 @@ app_test['ORGANIZATION_TYPE'][(app_test['OCCUPATION_TYPE'] == 'Private service s
 app_train['ORGANIZATION_TYPE'][(app_train['OCCUPATION_TYPE'] == 'Security staff')] = app_train['ORGANIZATION_TYPE'][(app_train['OCCUPATION_TYPE'] == 'Security staff')].fillna('Security')
 app_test['ORGANIZATION_TYPE'][(app_test['OCCUPATION_TYPE'] == 'Security staff')] = app_test['ORGANIZATION_TYPE'][(app_test['OCCUPATION_TYPE'] == 'Security staff')].fillna('Security')
 
-
 #%%
 # --- [CELL 18]: ---
 # cell_state: unchanged
@@ -400,7 +258,6 @@ app_test['ORGANIZATION_TYPE'] = app_test['ORGANIZATION_TYPE'].replace(others, la
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 25}
 app_train.drop(['YEARS_EMPLOYED'], axis = 1,inplace=True)
 
-
 #%%
 # --- [CELL 25]: ---
 # cell_state: unchanged
@@ -414,7 +271,7 @@ app_test = app_test.drop(columns=['CNT_FAM_MEMBERS','LIVE_REGION_NOT_WORK_REGION
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 27}
 cols_to_remove = ['AMT_CREDIT', 'CNT_FAM_MEMBERS', 'REG_REGION_NOT_WORK_REGION', 'LIVE_REGION_NOT_WORK_REGION', 'OBS_60_CNT_SOCIAL_CIRCLE','SK_ID_CURR']
 cont_cols = list(set(cont_cols) - set(cols_to_remove))
-cont_cols 
+cont_cols
 
 #%%
 # --- [CELL 27]: ---
@@ -490,50 +347,8 @@ app_test[cat_col.columns] = enc.transform(app_test[cat_col.columns])
 
 #%%
 # --- [CELL 33]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 34}
-# === BEFORE (original) ===
-# import pandas as pd
-# from sklearn.model_selection import train_test_split
-# from sklearn.preprocessing import StandardScaler
-# from sklearn.linear_model import LogisticRegression
-# from imblearn.over_sampling import RandomOverSampler
-# from imblearn.under_sampling import RandomUnderSampler
-# from imblearn.pipeline import Pipeline
-# 
-# # Выделение целевой переменной и признаков
-# y = app_train['TARGET']
-# X = app_train.drop(['TARGET', 'SK_ID_CURR'], axis=1)
-# 
-# # Предобработка данных
-# X = pd.get_dummies(X, dummy_na=True)
-# 
-# # Разделение данных на обучающую и тестовую выборки
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-# 
-# # Масштабирование признаков
-# scaler = StandardScaler()
-# X_train = scaler.fit_transform(X_train)
-# X_test = scaler.transform(X_test)
-# 
-# # Балансировка классов
-# over_sampler = RandomOverSampler(sampling_strategy=0.5, random_state=42)
-# under_sampler = RandomUnderSampler(sampling_strategy=0.5, random_state=42)
-# steps = [('o', over_sampler), ('u', under_sampler)]
-# pipeline = Pipeline(steps=steps)
-# X_train, y_train = pipeline.fit_resample(X_train, y_train)
-# 
-# # Создание и обучение модели логистической регрессии
-# lr = LogisticRegression(random_state=42, max_iter=1000)
-# lr.fit(X_train, y_train)
-# 
-# # Оценка качества модели
-# y_pred = lr.predict(X_test)
-# score = lr.score(X_test, y_test)
-# print(f"Accuracy: {score:.2f}")
-# 
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 40}
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -542,34 +357,33 @@ from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.pipeline import Pipeline
 
-
+# Выделение целевой переменной и признаков
 y = app_train['TARGET']
 X = app_train.drop(['TARGET', 'SK_ID_CURR'], axis=1)
 
-
+# Предобработка данных
 X = pd.get_dummies(X, dummy_na=True)
 
-
+# Разделение данных на обучающую и тестовую выборки
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-
+# Масштабирование признаков
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-
-# Use 'auto' for sampling_strategy to let the samplers determine appropriate ratios
-over_sampler = RandomOverSampler(sampling_strategy='auto', random_state=42)
-under_sampler = RandomUnderSampler(sampling_strategy='auto', random_state=42)
+# Балансировка классов
+over_sampler = RandomOverSampler(sampling_strategy=0.5, random_state=42)
+under_sampler = RandomUnderSampler(sampling_strategy=0.5, random_state=42)
 steps = [('o', over_sampler), ('u', under_sampler)]
 pipeline = Pipeline(steps=steps)
 X_train, y_train = pipeline.fit_resample(X_train, y_train)
 
-
+# Создание и обучение модели логистической регрессии
 lr = LogisticRegression(random_state=42, max_iter=1000)
 lr.fit(X_train, y_train)
 
-
+# Оценка качества модели
 y_pred = lr.predict(X_test)
 score = lr.score(X_test, y_test)
 print(f"Accuracy: {score:.2f}")
@@ -596,36 +410,15 @@ def protected_log(x):
     else:
         return np.log(x)
 
-
 #%%
 # --- [CELL 35]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 36}
-# === BEFORE (original) ===
-# import numpy as np
-# import pandas as pd
-# from deap import creator, base, tools, gp
-# # Определение функций и операций для генерации новых признаков
-# pset = gp.PrimitiveSet("MAIN", arity=2)
-# pset.addPrimitive(np.add, arity=2)
-# pset.addPrimitive(np.subtract, arity=2)
-# pset.addPrimitive(np.multiply, arity=2)
-# pset.addPrimitive(np.maximum, arity=2)
-# pset.addPrimitive(np.minimum, arity=2)
-# pset.addPrimitive(protected_division, arity=2)
-# pset.addPrimitive(protected_sqrt, arity=1)
-# pset.addPrimitive(protected_log, arity=1)
-# pset.addPrimitive(np.sin, arity=1)
-# pset.addPrimitive(np.cos, arity=1)
-# pset.addTerminal(0)
-# pset.addTerminal(1)
-
-# === AFTER (edited) ===
 import numpy as np
 import pandas as pd
 from deap import creator, base, tools, gp
-
-pset = gp.PrimitiveSet("MAIN", arity=X_train.shape[1])
+# Определение функций и операций для генерации новых признаков
+pset = gp.PrimitiveSet("MAIN", arity=2)
 pset.addPrimitive(np.add, arity=2)
 pset.addPrimitive(np.subtract, arity=2)
 pset.addPrimitive(np.multiply, arity=2)
@@ -642,7 +435,7 @@ pset.addTerminal(1)
 #%%
 # --- [CELL 36]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 37}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 45}
 # === BEFORE (original) ===
 # # Определение функции преобразования ГП структуры в вектор признаков
 # def transform_gp_structure(individual, X):
@@ -663,9 +456,7 @@ pset.addTerminal(1)
 # === AFTER (edited) ===
 def transform_gp_structure(individual, X):
     expr = gp.compile(individual, pset)
-    result = np.array([expr(*row) for row in X])
-    # Reshape to 2D array (n_samples, 1) to satisfy sklearn's requirements
-    return result.reshape(-1, 1)
+    return np.array([expr(row[0], row[1]) for row in X]).reshape(-1, 1)
 
 
 def evaluate_fitness(individual):
@@ -703,7 +494,7 @@ toolbox.register("select", tools.selTournament, tournsize=3)
 #%%
 # --- [CELL 38]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 39}
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 46}
 import random # fix missing import and vars for crash isolation purposes
 crossover_prob = 0.5
 mutation_prob = 0.5

@@ -129,7 +129,6 @@ filepath_weights_M2 = "data_small/best_weights_M2-{epoch:02d}-{val_accuracy:.4f}
 checkpoint_V19 = ModelCheckpoint(filepath_weights_V19, monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
 checkpoint_M2 = ModelCheckpoint(filepath_weights_M2, monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
 
-
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
@@ -257,5 +256,5 @@ print(y_pred_classes)
 y_pred = ensemble_model.predict(test_generator)
 y_pred_classes = np.argmax(y_pred, axis=1)
 
-# test_generator.classes already returns integer class labels, not one-hot encoded
+
 y_true_classes = test_generator.classes

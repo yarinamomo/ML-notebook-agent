@@ -32,12 +32,11 @@ df.head()
 # plt.tight_layout(pad=0.5, w_pad=0.7, h_pad=5.0)
 
 # === AFTER (edited) ===
-fig, ax = plt.subplots(ncols=7, nrows=2, figsize=(20, 10))
+fig, ax = plt.subplots(ncols=7, nrows=3, figsize=(20, 10))
 index = 0
 ax = ax.flatten()
 
-# Only plot numeric columns
-for col, value in df.select_dtypes(include=[np.number]).items():
+for col, value in df.items():
     sns.boxplot(y=col, data=df, ax=ax[index])
     index += 1
 plt.tight_layout(pad=0.5, w_pad=0.7, h_pad=5.0)

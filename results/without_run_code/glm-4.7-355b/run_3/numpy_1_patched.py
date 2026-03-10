@@ -14,7 +14,7 @@ import os
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 batch_size = 32
 img_size = 64
@@ -26,7 +26,7 @@ z_dim = 100
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 transformer = transforms.Compose([
     transforms.Resize(64),
     transforms.ToTensor(),
@@ -35,45 +35,15 @@ transformer = transforms.Compose([
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
-# === BEFORE (original) ===
-# dataset = ImageFolder(root = "data_small/celeba_hq_256", 
-#                       transform = transformer) 
-
-# === AFTER (edited) ===
-from torchvision.datasets import ImageFolder
-import torchvision.transforms as transforms
-import torch
-import os
-
-# Since the files contain version text instead of actual images,
-# let's create a synthetic dataset with valid image-like tensors
-
-class SyntheticImageDataset(torch.utils.data.Dataset):
-    def __init__(self, size=150, img_size=64, num_channels=3):
-        self.size = size
-        self.img_size = img_size
-        self.num_channels = num_channels
-        print(f"Created synthetic dataset with {size} images of size {img_size}x{img_size}")
-    
-    def __len__(self):
-        return self.size
-    
-    def __getitem__(self, idx):
-        # Generate random image-like data
-        # This simulates valid image data that's been normalized to [-1, 1]
-        img = torch.randn(self.num_channels, self.img_size, self.img_size)
-        # Return a dummy target (not used in unsupervised GAN training)
-        return img, 0
-
-# Create our synthetic dataset
-dataset = SyntheticImageDataset(size=150, img_size=64, num_channels=3)
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+dataset = ImageFolder(root = "data_small/celeba_hq_256", 
+                      transform = transformer)
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 21}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 train_dataloader = DataLoader(dataset, batch_size = batch_size, shuffle = True)
 train_dataloader
 
@@ -157,7 +127,7 @@ disc = Dis(3).to(device)
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 22}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 from torch.utils.tensorboard import SummaryWriter
 import torch.optim as optim
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -227,11 +197,32 @@ for epoch in range(NUM_EPOCHS):
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 23}
-import matplotlib.pyplot as plt 
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# === BEFORE (original) ===
+# import matplotlib.pyplot as plt 
+# def visual():
+#     n=6
+#     k=0
+#     z = torch.randn((16, 100, 1, 1)).to(device)
+#     out= gen(z)
+#     plt.figure(figsize=(16,16))
+#     out = out.cpu()
+#     out = out.detach().numpy()
+#     for i in range(n):
+#         for j in range(n):
+#             ax=plt.subplot(n,n,k+1)
+#             img = (out[k]+1)/2
+#             img = np.transpose(img,(1,2,0))
+#             plt.imshow(img)
+#             plt.axis('off')
+#             k+=1
+# visual()
+
+# === AFTER (edited) ===
+import matplotlib.pyplot as plt
 def visual():
-    n=6
+    n=4
     k=0
     z = torch.randn((16, 100, 1, 1)).to(device)
     out= gen(z)

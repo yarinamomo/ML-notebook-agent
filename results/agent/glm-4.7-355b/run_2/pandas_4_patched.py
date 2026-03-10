@@ -23,46 +23,10 @@ print(os.listdir("data"))
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# data = pd.read_csv('data/fer2013.csv')
-# #check data shape
-# data.shape
-
-# === AFTER (edited) ===
-# FER2013 dataset structure (using mock data since original file is Git LFS pointer)
-# Columns: emotion, pixels, Usage
-# emotion: 0=Angry, 1=Disgust, 2=Fear, 3=Happy, 4=Sad, 5=Surprise, 6=Neutral
-
-import numpy as np
-import pandas as pd
-
-# Create mock data similar to FER2013 structure
-np.random.seed(42)
-n_samples = 100
-
-# Generate random emotions (excluding disgust for now)
-emotions = np.random.choice([0, 2, 3, 4, 5, 6], n_samples)
-# Add some disgust samples (emotion=1)
-disgust_samples = np.repeat(1, 5)
-emotions = np.concatenate([emotions, disgust_samples])
-np.random.shuffle(emotions)
-
-# Generate random pixel values (48x48 = 2304 pixels)
-pixels = []
-for _ in range(len(emotions)):
-    pixel_string = ' '.join([str(np.random.randint(0, 255)) for _ in range(2304)])
-    pixels.append(pixel_string)
-
-usage = np.random.choice(['Training', 'PublicTest', 'PrivateTest'], len(emotions))
-
-data = pd.DataFrame({
-    'emotion': emotions,
-    'pixels': pixels,
-    'Usage': usage
-})
-
+data = pd.read_csv('data/fer2013.csv')
+#check data shape
 data.shape
 
 #%%
@@ -83,7 +47,6 @@ data.drop(data[data['emotion'] == 1].index, inplace=True)
 
 # afficher la nouvelle forme du DataFrame
 print(data.shape)
-
 
 #%%
 # --- [CELL 3]: ---
@@ -121,7 +84,7 @@ emotion_counts
 #     plt.imshow(img[0])
 #     plt.title(label) # plt.title(img[1])
 # 
-# plt.show()  
+# plt.show()
 
 # === AFTER (edited) ===
 def row2image(row):
@@ -136,18 +99,13 @@ def row2image(row):
     return image, emotion
 
 plt.figure(0, figsize=(16,10))
-# Get unique emotions that exist in the data
-unique_emotions = sorted(data['emotion'].unique())
-subplot_idx = 1
+# Iterate through available emotions from the emotion_map
+for i, emotion_id in enumerate(emotion_map.keys()):
+    face = data[data['emotion'] == emotion_id].iloc[0]
 
-for emotion_idx in unique_emotions:
-    face_data = data[data['emotion'] == emotion_idx]
-    if len(face_data) > 0:
-        face = face_data.iloc[0]
-        img, label = row2image(face)
-        plt.subplot(2, 4, subplot_idx)
-        plt.imshow(img, cmap='gray')
-        plt.title(label)
-        subplot_idx += 1
+    img, label = row2image(face)
+    plt.subplot(2,3,i+1)
+    plt.imshow(img)
+    plt.title(label)
 
 plt.show()

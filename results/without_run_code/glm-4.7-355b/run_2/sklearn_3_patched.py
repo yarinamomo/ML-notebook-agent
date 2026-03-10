@@ -27,36 +27,22 @@ greeks_df = pd.read_csv('data/greeks_synthetic.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train_df = pd.merge(train_df, greeks_df, on="Id")
-
-# === AFTER (edited) ===
-if "Id" in train_df.columns and "Id" in greeks_df.columns:
-    train_df = pd.merge(train_df, greeks_df, on="Id")
-else:
-    print("Warning: 'Id' column not found. Skipping merge.")
+train_df = pd.merge(train_df, greeks_df, on="Id")
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# # Remove the first column
-# train_df = train_df.drop("Id", axis=1)
-# test_df = test_df.drop("Id", axis=1)
-
-# === AFTER (edited) ===
-if "Id" in train_df.columns:
-    train_df = train_df.drop("Id", axis=1)
-if "Id" in test_df.columns:
-    test_df = test_df.drop("Id", axis=1)
+# Remove the first column
+train_df = train_df.drop("Id", axis=1)
+test_df = test_df.drop("Id", axis=1)
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # # One-hot encoding
 # encoder = OneHotEncoder(handle_unknown="ignore")
@@ -64,35 +50,37 @@ if "Id" in test_df.columns:
 # test_df = pd.get_dummies(test_df, columns=list(test_df))
 
 # === AFTER (edited) ===
-# One-hot encoding for categorical columns
-train_df = pd.get_dummies(train_df)
-test_df = pd.get_dummies(test_df)
+# Identify categorical columns that exist in BOTH train and test
+categorical_cols = []
+for col in train_df.columns:
+    if col in test_df.columns and train_df[col].dtype == 'object':
+        categorical_cols.append(col)
+
+# Only one-hot encode categorical columns if they exist in both datasets
+if categorical_cols:
+    train_df = pd.get_dummies(train_df, columns=categorical_cols)
+    test_df = pd.get_dummies(test_df, columns=categorical_cols)
+    
+    # Align columns between train and test
+    train_columns = set(train_df.columns)
+    test_columns = set(test_df.columns)
+    
+    # Add missing columns to test set with 0 values
+    for col in train_columns - test_columns:
+        test_df[col] = 0
+    
+    # Remove columns from test that aren't in train
+    for col in test_columns - train_columns:
+        test_df = test_df.drop(col, axis=1)
+    
+    # Ensure same column order
+    test_df = test_df[train_df.columns]
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# # Data processing
-# scaler = StandardScaler()
-# train_df = scaler.fit_transform(train_df)
-# test_df = scaler.transform(test_df)
-
-# === AFTER (edited) ===
-# Align columns between train and test after one-hot encoding
-train_cols = set(train_df.columns)
-test_cols = set(test_df.columns)
-
-# Add missing columns to each dataframe
-for col in train_cols - test_cols:
-    test_df[col] = 0
-for col in test_cols - train_cols:
-    train_df[col] = 0
-
-# Ensure same column order
-test_df = test_df[train_df.columns]
-
-# Scale the data
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+# Data processing
 scaler = StandardScaler()
 train_df = scaler.fit_transform(train_df)
 test_df = scaler.transform(test_df)

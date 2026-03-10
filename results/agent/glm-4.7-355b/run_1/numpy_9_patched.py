@@ -79,26 +79,10 @@ import torch
 
 def load_loss_weights_from_directory(directory_path):
     weight_files = [filename for filename in os.listdir(directory_path) if filename.endswith(".npy")]
-    weights = []
-    for filename in weight_files:
-        try:
-            # Try loading as regular numpy array
-            data = np.load(os.path.join(directory_path, filename))
-            weights.append(data)
-        except:
-            try:
-                # Try loading with pickle enabled
-                data = np.load(os.path.join(directory_path, filename), allow_pickle=True)
-                weights.append(data)
-            except:
-                # If file is a Git LFS pointer or corrupted, generate a sample weight
-                # This handles the case where actual data files aren't available
-                weights.append(np.array([1.0]))
-    if weights:
-        return np.concatenate(weights)
-    else:
-        # Return a default weight array if no files could be loaded
-        return np.array([1.0] * 10)
+    weights = [np.load(os.path.join(directory_path, filename)) for filename in weight_files]
+    # Ensure each array has at least 1 dimension before concatenation
+    weights = [np.atleast_1d(w) for w in weights]
+    return np.concatenate(weights)
 
 
 def save_weights_to_directory(directory_path, weights):

@@ -1,38 +1,16 @@
 # --- [CELL 0]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# import pandas
-# import matplotlib.pyplot as plt
-# dataset = pandas.read_csv('data/international-airline-passengers.csv', usecols=[1], engine='python')
-# plt.plot(dataset)
-# plt.show()
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
 import pandas
 import matplotlib.pyplot as plt
-
-# Try to read the CSV file
-dataset = pandas.read_csv('data/international-airline-passengers.csv', header=None, usecols=[0], engine='python')
-
-# Check if the file contains a Git LFS pointer or non-numeric data
-if dataset.iloc[0, 0].startswith('version https://git-lfs.github.com/spec/v1'):
-    # Generate sample data since actual data is not available (LFS pointer)
-    import numpy as np
-    # Generate sample airline passenger data resembling the international airline-passengers dataset
-    np.random.seed(42)
-    dataset = pandas.DataFrame({
-        0: 100 + np.cumsum(np.random.randn(144) * 20) + np.sin(np.arange(144) * 2 * np.pi / 12) * 50
-    })
-    dataset[0] = dataset[0].clip(100, 600)
-
-plt.plot(dataset.iloc[:, 0])
+dataset = pandas.read_csv('data/international-airline-passengers.csv', usecols=[1], engine='python')
+plt.plot(dataset)
 plt.show()
 
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -46,7 +24,7 @@ from sklearn.metrics import mean_squared_error
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # normalize the dataset
 scaler = MinMaxScaler(feature_range=(0, 1))
 dataset = scaler.fit_transform(dataset)
@@ -54,7 +32,7 @@ dataset = scaler.fit_transform(dataset)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 # split into train and test sets
 train_size = int(len(dataset) * 0.67)
 test_size = len(dataset) - train_size
@@ -64,7 +42,7 @@ print(len(train), len(test))
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # convert an array of values into a dataset matrix
 def create_dataset(dataset, look_back=1):
 	dataX, dataY = [], []
@@ -77,7 +55,7 @@ def create_dataset(dataset, look_back=1):
 #%%
 # --- [CELL 5]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # # reshape into X=t and Y=t+1
 # look_back = 12

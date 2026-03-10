@@ -21,41 +21,32 @@ import time
 import pickle
 
 dataset = load_dataset("sst", "default", trust_remote_code=True)
-dataset2 = load_dataset("multi_nli", trust_remote_code=True)
+dataset2 = load_dataset("multi_nli")
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-torch.manual_seed = 555
-# torch.set_default_tensor_type('torch.cuda.FloatTensor')
+# === BEFORE (original) ===
+# torch.manual_seed = 555
+# # torch.set_default_tensor_type('torch.cuda.FloatTensor')
+
+# === AFTER (edited) ===
+torch.manual_seed(555)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# # !wget http://nlp.stanford.edu/data/glove.6B.zip
-# # !unzip glove*.zip
-# 
-# glv = dict()
-# glv_size = 50
-# with open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:
-#     for line in fp:
-#         word, *vec = line.split()
-#         glv[word] = torch.tensor(list(map(float , vec)))
+# !wget http://nlp.stanford.edu/data/glove.6B.zip
+# !unzip glove*.zip
 
-# === AFTER (edited) ===
 glv = dict()
 glv_size = 50
 with open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:
     for line in fp:
         word, *vec = line.split()
-        try:
-            glv[word] = torch.tensor(list(map(float , vec)))
-        except ValueError:
-            # Skip lines that can't be converted to float (e.g., git-lfs pointer lines)
-            continue
+        glv[word] = torch.tensor(list(map(float , vec)))
 
 #%%
 # --- [CELL 3]: ---
@@ -102,7 +93,6 @@ def tokenize(sentences):
         tokens.append([w for w in word_tokens if not w.lower() in stop_words and len(w)>2])
     return tokens , max_len
 
-
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
@@ -124,9 +114,6 @@ def build_vocab(sentences):
         text2int[x] = ind 
     
     return vocab ,int2text , text2int
-
-    
-
 
 #%%
 # --- [CELL 7]: ---
@@ -284,17 +271,18 @@ class elmo(torch.nn.Module):
           return x
         else:
             return encoding
-        
-        
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# === BEFORE (original) ===
+# model = elmo(len(vocab) , glv_size)
+# optimizer = torch.optim.Adam(model.parameters())
 
-model = elmo(len(vocab) , glv_size)
+# === AFTER (edited) ===
+model = elmo(len(word2index), glv_size)
 optimizer = torch.optim.Adam(model.parameters())
-
 
 #%%
 # --- [CELL 16]: ---
@@ -324,7 +312,6 @@ def train( traindata,epochs = 5):
         print("avg trainig loss : {}".format(sum(bloss)/numb) ,end = "  ")
         print("time taken : {}".format(time.time()  - st))
         print("")
-
 
 #%%
 # --- [CELL 17]: ---
@@ -360,40 +347,37 @@ yt = dataset['test']['label']
 
 # === AFTER (edited) ===
 class sentimentdata(Dataset):
-    def __init__(self , X,Y, maxlen=40):
+    def __init__(self , X,Y, padsz, num_classes=2):
         self.X = X
         self.Y = Y
-        self.maxlen = maxlen
+        self.mx = padsz
+        self.num_classes = num_classes
     def __len__(self):
         return len(self.X)
     def __getitem__(self , index):
-        x = self.X[index]
-        y = self.Y[index]
-        
-        # Pad x to maxlen
-        if len(x) < self.maxlen:
-            x = torch.cat([x, torch.zeros(self.maxlen - len(x))])
-        else:
-            x = x[:self.maxlen]
-        
-        # Ensure x is long type for embedding layer
-        x = x.long()
-        
-        # Convert scalar label to one-hot format
-        if y == 0:
-            y = torch.tensor([1.0, 0.0])
-        else:
-            y = torch.tensor([0.0, 1.0])
-        
-        return x, y
+        _x = self.X[index]
+        _y = self.Y[index]
+        dif = self.mx - len(_x)
+        if dif > 0:
+            a = torch.zeros(self.mx)
+            a[:len(_x)] = _x
+            _x = a
+        # Convert label to one-hot encoding
+        y_one_hot = torch.zeros(self.num_classes)
+        y_one_hot[_y] = 1
+        return _x.long(), y_one_hot.long()
+st_train_loader = sentimentdata(X ,ylb, 40)
+st_test_loader = sentimentdata(X ,ytb, 40)
 
-st_train_loader = sentimentdata(X ,ylb, maxlen=40)
-st_test_loader = sentimentdata(X ,ytb, maxlen=40)
 st_train = DataLoader(st_train_loader, batch_size=5 )
-st_test = DataLoader(st_test_loader, batch_size=5 )
+st_test= DataLoader(st_test_loader, batch_size=5 )
 
 #%%
 # --- [CELL 19]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
-train(st_train,2) 
+# cell_state: edited
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 21}
+# === BEFORE (original) ===
+# train(st_train,2)
+
+# === AFTER (edited) ===
+train(st_train,1)

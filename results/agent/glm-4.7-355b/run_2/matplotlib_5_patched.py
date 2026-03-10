@@ -8,27 +8,10 @@ import matplotlib.pyplot as plt
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# file_path = 'data/diabetes.csv'
-# data = pd.read_csv(file_path)
-# X = data[['Glucose','BloodPressure','Insulin']].values
-
-# === AFTER (edited) ===
 file_path = 'data/diabetes.csv'
-
-# Since the actual data file is a Git LFS pointer, create synthetic data
-np.random.seed(42)
-n_samples = 768
-
-# Generate synthetic data resembling diabetes dataset features
-data = pd.DataFrame({
-    'Glucose': np.random.normal(120, 30, n_samples).clip(0, 200),
-    'BloodPressure': np.random.normal(70, 15, n_samples).clip(0, 120),
-    'Insulin': np.random.normal(80, 100, n_samples).clip(0, 300)
-})
-
+data = pd.read_csv(file_path)
 X = data[['Glucose','BloodPressure','Insulin']].values
 
 #%%
@@ -70,20 +53,12 @@ centriods = kmeans.cluster_centers_
 # plt.show()
 
 # === AFTER (edited) ===
-from mpl_toolkits.mplot3d import Axes3D
-
 fig = plt.figure(figsize=(10, 8))
 ax = fig.add_subplot(111, projection='3d')
-
-# Plot the data points
-scatter = ax.scatter(X[:,0], X[:,1], X[:,2], c=labels, cmap='viridis', s=50)
-
-# Plot the centroids
-ax.scatter(centriods[:,0], centriods[:,1], centriods[:,2], marker='X', s=200, c='red', label='Centroids')
-
+ax.scatter(X[:,0], X[:,1], X[:,2], c=labels, cmap='viridis')
+ax.scatter(centriods[:,0], centriods[:,1], centriods[:,2], marker='X', s=200, c='red')
 ax.set_title("K-Means Clustering")
 ax.set_xlabel("Glucose")
 ax.set_ylabel("BloodPressure")
 ax.set_zlabel("Insulin")
-plt.legend()
 plt.show()

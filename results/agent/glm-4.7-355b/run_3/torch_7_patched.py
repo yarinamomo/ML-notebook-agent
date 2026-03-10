@@ -106,7 +106,7 @@ class GoogLeNet(nn.Module):
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # class Inception(nn.Module):
 #     def __init__(
@@ -289,7 +289,6 @@ torch_img = Image.open("dog.jpg")
 torch_img = preprocess(dog_image)
 torch_img = torch.unsqueeze(torch_img, 0)
 
-
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
@@ -299,5 +298,5 @@ torch_googlenet_re.eval()
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 torch_googlenet_re(torch_img)

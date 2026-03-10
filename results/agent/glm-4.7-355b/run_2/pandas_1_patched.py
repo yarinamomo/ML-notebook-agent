@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 import os
 import numpy as np
 import pandas as pd
@@ -20,84 +20,50 @@ pd.set_option('display.max_columns',200)
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 #Loading the data
 path="data/For_modeling.csv.zip"
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# data = pd.read_csv(path, 
-#                   dtype={
-#                       'Duration': 'int8',
-#                       'Distance': 'int8',
-#                       'PLong': 'float32',
-#                       'PLatd': 'float32',
-#                       'DLong': 'float32',
-#                       'Haversine':'float32',
-#                       'Pmonth':'int8',
-#                       'Pday':'int8',
-#                       'Phour':'int8',
-#                       'Pmin':'int8',
-#                       'PDweek':'int8',
-#                       'Dmonth':'int8',
-#                       'Dday':'int8',
-#                       'Dhour':'int8',
-#                       'Dmin':'int8',
-#                       'DDweek':'int8',
-#                       'Temp':'float32',
-#                       'Precip':'float32',
-#                       'Wind':'float32',
-#                       'Solar':'float32',
-#                       'Snow':'float32',
-#                       'GroundTemp':'float32',
-#                       'Dust':'float32'
-#                   },index_col=0
-#                   
-#                   ).sample(frac=1)
-# 
-# #checking for data
-# data.head(25)
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+data = pd.read_csv(path, 
+                  dtype={
+                      'Duration': 'int8',
+                      'Distance': 'int8',
+                      'PLong': 'float32',
+                      'PLatd': 'float32',
+                      'DLong': 'float32',
+                      'Haversine':'float32',
+                      'Pmonth':'int8',
+                      'Pday':'int8',
+                      'Phour':'int8',
+                      'Pmin':'int8',
+                      'PDweek':'int8',
+                      'Dmonth':'int8',
+                      'Dday':'int8',
+                      'Dhour':'int8',
+                      'Dmin':'int8',
+                      'DDweek':'int8',
+                      'Temp':'float32',
+                      'Precip':'float32',
+                      'Wind':'float32',
+                      'Solar':'float32',
+                      'Snow':'float32',
+                      'GroundTemp':'float32',
+                      'Dust':'float32'
+                  },index_col=0
+                  
+                  ).sample(frac=1)
 
-# === AFTER (edited) ===
-# Generate sample data since the actual file is not available (Git LFS pointer)
-np.random.seed(42)
-n_samples = 1000
-
-data = pd.DataFrame({
-    'Duration': np.random.randint(1, 60, n_samples).astype('int8'),
-    'Distance': np.random.randint(1, 20, n_samples).astype('int8'),
-    'PLong': np.random.uniform(-74.3, -73.7, n_samples).astype('float32'),
-    'PLatd': np.random.uniform(40.5, 40.9, n_samples).astype('float32'),
-    'DLong': np.random.uniform(-74.3, -73.7, n_samples).astype('float32'),
-    'Haversine': np.random.uniform(0.5, 20, n_samples).astype('float32'),
-    'Pmonth': np.random.randint(1, 13, n_samples).astype('int8'),
-    'Pday': np.random.randint(1, 32, n_samples).astype('int8'),
-    'Phour': np.random.randint(0, 24, n_samples).astype('int8'),
-    'Pmin': np.random.randint(0, 60, n_samples).astype('int8'),
-    'PDweek': np.random.randint(0, 7, n_samples).astype('int8'),
-    'Dmonth': np.random.randint(1, 13, n_samples).astype('int8'),
-    'Dday': np.random.randint(1, 32, n_samples).astype('int8'),
-    'Dhour': np.random.randint(0, 24, n_samples).astype('int8'),
-    'Dmin': np.random.randint(0, 60, n_samples).astype('int8'),
-    'DDweek': np.random.randint(0, 7, n_samples).astype('int8'),
-    'Temp': np.random.uniform(-5, 35, n_samples).astype('float32'),
-    'Precip': np.random.uniform(0, 50, n_samples).astype('float32'),
-    'Wind': np.random.uniform(0, 30, n_samples).astype('float32'),
-    'Solar': np.random.uniform(0, 1000, n_samples).astype('float32'),
-    'Snow': np.random.uniform(0, 50, n_samples).astype('float32'),
-    'GroundTemp': np.random.uniform(0, 40, n_samples).astype('float32'),
-    'Dust': np.random.uniform(0, 100, n_samples).astype('float32')
-}).sample(frac=1)
-
+#checking for data
 data.head(25)
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 #Resetting index
 data = data.reset_index().drop(columns=['index'])
 data.head(25)
@@ -105,7 +71,7 @@ data.head(25)
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 #Dropping value with haversine ==0
 data= data[data['Haversine']!=0].reset_index().drop(columns=['index'])
 #data.shape
@@ -113,17 +79,16 @@ data= data[data['Haversine']!=0].reset_index().drop(columns=['index'])
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 #transforming all the negative distance to posiive distances
 
 data["Distance"]=data['Distance'].apply(lambda x:abs(x))
 data[data['Distance']<0].shape
-    
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 #Dropping values with diatance is zero, that indicate trip was never occured or error in recordings or something
 data = data[data['Distance']!=0].reset_index().drop(columns=['index'])
 data[data['Distance']==0].shape
@@ -131,7 +96,7 @@ data[data['Distance']==0].shape
 #%%
 # --- [CELL 7]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 # === BEFORE (original) ===
 # #Average Trip Duration by Day of Week
 # # Convert the 'PDweek' column to a day of the week name
@@ -150,18 +115,18 @@ data[data['Distance']==0].shape
 # plt.show()
 
 # === AFTER (edited) ===
-# Convert the 'PDweek' column to a categorical dtype with day names
+# Convert 'PDweek' to a Series with categorical dtype
 day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-data['DayOfWeek'] = pd.Categorical.from_codes(
-    codes=data['PDweek'], 
-    categories=range(7), 
-    ordered=True
-)
-data['DayOfWeek'] = data['DayOfWeek'].cat.rename_categories(day_names)
+data1 = data['PDweek'].astype('category')
+data1 = data1.cat.rename_categories(day_names)
+
+# Add the day names as a column to the data DataFrame
+data['DayOfWeek'] = data1
 
 # Calculate the average trip duration for each day of the week
 average_duration = data.groupby('DayOfWeek')['Duration'].mean()
 
+# Plot the results
 plt.plot(average_duration.index, average_duration.values)
 plt.xlabel('Day of Week')
 plt.ylabel('Average Duration')

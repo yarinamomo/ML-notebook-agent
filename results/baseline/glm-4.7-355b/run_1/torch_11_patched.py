@@ -1,39 +1,27 @@
 # --- [CELL 0]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# from datasets import load_dataset
-# import torch
-# import torch.nn.functional as F
-# import numpy as np
-# import time 
-# import pickle
-# 
-# dataset = load_dataset("sst", "default")
-# dataset2 = load_dataset("multi_nli")
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 from datasets import load_dataset
 import torch
 import torch.nn.functional as F
 import numpy as np
-import time
+import time 
 import pickle
 
-dataset = load_dataset("sst", "default", trust_remote_code=True)
+dataset = load_dataset("sst", "default")
 dataset2 = load_dataset("multi_nli")
 
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 torch.manual_seed = 555
 # torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # !wget http://nlp.stanford.edu/data/glove.6B.zip
 # !unzip glove*.zip
 
@@ -89,7 +77,6 @@ def tokenize(sentences):
         tokens.append([w for w in word_tokens if not w.lower() in stop_words and len(w)>2])
     return tokens , max_len
 
-
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
@@ -111,9 +98,6 @@ def build_vocab(sentences):
         text2int[x] = ind 
     
     return vocab ,int2text , text2int
-
-    
-
 
 #%%
 # --- [CELL 7]: ---
@@ -163,10 +147,34 @@ X,Y = build_input(tokens , word2index,text2int)
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
-from torch.utils.data import Dataset, DataLoader
-class  data(Dataset):
+# === BEFORE (original) ===
+# from torch.utils.data import Dataset, DataLoader
+# class  data(Dataset):
+#     def __init__(self , X,Y,vs , padsz):
+#         self.X = X
+#         self.Y = Y
+#         self.vocab_size = vs
+#         self.mx = padsz
+#     def __len__(self):
+#         return len(self.X)
+#     def __getitem__(self , index):
+#         dif = len(self.mx - self.X[index] )
+#         _x = self.X[index]
+#         _y = self.Y[index]
+#         if dif > 0:
+#             a = torch.zeros(self.mx)
+#             b = torch.zeros(self.mx)
+#             a[:len(_x)] = _x
+#             b[:len(_y)] = _y
+#             _x = a
+#             _y = torch.zeros( ( self.mx, self.vocab_size))
+#             _y [torch.arange(self.mx),b.long()] =1
+#         return _x.long() , _y.long()
+
+# === AFTER (edited) ===
+class data(Dataset):
     def __init__(self , X,Y,vs , padsz):
         self.X = X
         self.Y = Y
@@ -175,17 +183,16 @@ class  data(Dataset):
     def __len__(self):
         return len(self.X)
     def __getitem__(self , index):
-        dif = len(self.mx - self.X[index] )
+        dif = self.mx - len(self.X[index])
         _x = self.X[index]
         _y = self.Y[index]
-        if dif > 0:
-            a = torch.zeros(self.mx)
-            b = torch.zeros(self.mx)
-            a[:len(_x)] = _x
-            b[:len(_y)] = _y
-            _x = a
-            _y = torch.zeros( ( self.mx, self.vocab_size))
-            _y [torch.arange(self.mx),b.long()] =1
+        a = torch.zeros(self.mx)
+        b = torch.zeros(self.mx)
+        a[:len(_x)] = _x
+        b[:len(_y)] = _y
+        _x = a
+        _y = torch.zeros((self.mx, self.vocab_size))
+        _y[torch.arange(self.mx), b.long()] = 1
         return _x.long() , _y.long()
 
 #%%
@@ -271,17 +278,13 @@ class elmo(torch.nn.Module):
           return x
         else:
             return encoding
-        
-        
 
 #%%
 # --- [CELL 15]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'not run'}
-
 model = elmo(len(vocab) , glv_size)
 optimizer = torch.optim.Adam(model.parameters())
-
 
 #%%
 # --- [CELL 16]: ---
@@ -311,7 +314,6 @@ def train( traindata,epochs = 5):
         print("avg trainig loss : {}".format(sum(bloss)/numb) ,end = "  ")
         print("time taken : {}".format(time.time()  - st))
         print("")
-
 
 #%%
 # --- [CELL 17]: ---
@@ -344,9 +346,8 @@ st_test_loader = sentimentdata(X ,ytb)
 st_train = DataLoader(st_train_loader, batch_size=5 )
 st_test= DataLoader(st_test_loader, batch_size=5 )
 
-
 #%%
 # --- [CELL 19]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'not run'}
-train(st_train,2) 
+train(st_train,2)

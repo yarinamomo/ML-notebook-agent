@@ -27,62 +27,8 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# train_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
-#                                    zoom_range = 0.4,
-#                                    validation_split = 0.2)
-# 
-# valid_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
-#                                    validation_split = 0.2)
-# 
-# test_datagen  = ImageDataGenerator(rescale = 1.0 / 255.0)
-
-# === AFTER (edited) ===
-import os
-import shutil
-from PIL import Image, UnidentifiedImageError
-
-# Function to check if an image file is valid
-def is_valid_image(file_path):
-    try:
-        with Image.open(file_path) as img:
-            img.verify()  # Verify it's a valid image
-            img.load()    # Try to load the image data
-        return True
-    except (UnidentifiedImageError, IOError, OSError):
-        return False
-
-# Function to copy only valid images to a new directory
-def create_clean_dataset(source_dir, target_dir):
-    if os.path.exists(target_dir):
-        shutil.rmtree(target_dir)
-    
-    for class_name in os.listdir(source_dir):
-        class_path = os.path.join(source_dir, class_name)
-        if not os.path.isdir(class_path):
-            continue
-        
-        target_class_path = os.path.join(target_dir, class_name)
-        os.makedirs(target_class_path, exist_ok=True)
-        
-        valid_count = 0
-        total_count = 0
-        
-        for filename in os.listdir(class_path):
-            total_count += 1
-            file_path = os.path.join(class_path, filename)
-            
-            if is_valid_image(file_path):
-                # Copy valid image to target directory
-                shutil.copy2(file_path, os.path.join(target_class_path, filename))
-                valid_count += 1
-            else:
-                print(f"Skipping corrupted file: {file_path}")
-        
-        print(f"Copied {valid_count}/{total_count} valid images for class {class_name}")
-
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 train_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
                                    zoom_range = 0.4,
                                    validation_split = 0.2)
@@ -188,8 +134,7 @@ callback_list = [earlystopping, checkpoint]
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
-
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 model_history=model.fit(train_dataset,
                         validation_data=valid_dataset,
                         epochs = 1,
@@ -199,13 +144,29 @@ model_history=model.fit(train_dataset,
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 class_names = ['PNEUMONIA','NORMAL']
 
 #%%
 # --- [CELL 11]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 12}
+# === BEFORE (original) ===
+# from sklearn.metrics import classification_report, confusion_matrix
+# import seaborn as sns
+# 
+# prediction_classes = np.array([])
+# true_classes =  np.array([])
+# 
+# for x, y in valid_dataset:
+#   prediction_classes = np.concatenate([prediction_classes,
+#                        np.argmax(model.predict(x), axis = -1)])
+#   true_classes = np.concatenate([true_classes, np.argmax(y.numpy(), axis=-1)])
+# 
+# 
+# print(classification_report(true_classes, prediction_classes, target_names=class_names, digits=4))
+
+# === AFTER (edited) ===
 from sklearn.metrics import classification_report, confusion_matrix
 import seaborn as sns
 
@@ -213,9 +174,9 @@ prediction_classes = np.array([])
 true_classes =  np.array([])
 
 for x, y in valid_dataset:
-  prediction_classes = np.concatenate([prediction_classes,
-                       np.argmax(model.predict(x), axis = -1)])
-  true_classes = np.concatenate([true_classes, np.argmax(y.numpy(), axis=-1)])
+  predictions = model.predict(x).flatten()
+  prediction_classes = np.concatenate([prediction_classes, (predictions > 0.5).astype(int)])
+  true_classes = np.concatenate([true_classes, y.astype(int)])
 
 
 print(classification_report(true_classes, prediction_classes, target_names=class_names, digits=4))

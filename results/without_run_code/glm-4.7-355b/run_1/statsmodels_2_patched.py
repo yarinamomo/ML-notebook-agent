@@ -1,30 +1,6 @@
 # --- [CELL 0]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# import pandas as pd
-# import numpy as np
-# import matplotlib.pyplot as plt
-# import xgboost as xgb
-# import seaborn as sns
-# from statsmodels.tsa.arima.model import ARIMA
-# from statsmodels.tsa.statespace.sarimax import SARIMAX
-# from statsmodels.tsa.stattools import adfuller
-# from sklearn.model_selection import train_test_split
-# from sklearn.metrics import mean_squared_error
-# from sklearn.model_selection import GridSearchCV
-# from statsmodels.tsa.seasonal import seasonal_decompose
-# from matplotlib.ticker import MultipleLocator
-# # from fbprophet import Prophet
-# 
-# train_csv_path = "data/train.csv"
-# train = pd.read_csv(train_csv_path)
-# 
-# test_csv_path = "data/test.csv"
-# test = pd.read_csv(test_csv_path)
-# 
-
-# === AFTER (edited) ===
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -38,35 +14,13 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV
 from statsmodels.tsa.seasonal import seasonal_decompose
 from matplotlib.ticker import MultipleLocator
-
+# from fbprophet import Prophet
 
 train_csv_path = "data/train.csv"
-test_csv_path = "data/test.csv"
+train = pd.read_csv(train_csv_path)
 
-# Check if files are git-lfs pointers and use synthetic data if needed
-try:
-    train = pd.read_csv(train_csv_path)
-    test = pd.read_csv(test_csv_path)
-    # Check if the loaded file is actually git-lfs pointer
-    if 'version https://git-lfs.github.com/spec/v1' in train.columns:
-        raise ValueError("File is a Git LFS pointer")
-except:
-    # Create synthetic data for demonstration
-    date_range = pd.date_range(start='2013-01-01', end='2017-12-31', freq='D')
-    data = []
-    for store in range(1, 11):
-        for item in range(1, 51):
-            for date in date_range:
-                sales = max(0, np.random.normal(50 + 10 * np.sin(2 * np.pi * date.month / 12) + 
-                                               5 * np.sin(2 * np.pi * date.dayofweek / 7), 10))
-                data.append({'date': date, 'store': store, 'item': item, 'sales': sales})
-    train = pd.DataFrame(data)
-    test = train.sample(n=10000, random_state=42).copy()
-    
-print("Train DataFrame shape:", train.shape)
-print("Train DataFrame columns:", train.columns.tolist())
-print("\nFirst few rows:")
-print(train.head())
+test_csv_path = "data/test.csv"
+test = pd.read_csv(test_csv_path)
 
 #%%
 # --- [CELL 1]: ---
@@ -113,7 +67,6 @@ train_subset.set_index('date', inplace=True)
 train_subset.index.freq = 'D'
 train_subset.head()
 
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
@@ -122,7 +75,6 @@ sarima_data = train_subset[['sales']]
 
 print(sarima_data.index)
 sarima_data.head()
-
 
 #%%
 # --- [CELL 4]: ---
@@ -194,10 +146,9 @@ plt.show()
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 plt.figure(figsize=(12, 6))
-plot_acf(residuals, lags=min(90, len(residuals)-1), title='ACF of Residuals')
+plot_acf(residuals, lags=45, title='ACF of Residuals')
 plt.show()
 
-# For PACF, lags must be less than 50% of sample size
 plt.figure(figsize=(12, 6))
-plot_pacf(residuals, lags=min(45, len(residuals)//2 - 1), title='PACF of Residuals')
+plot_pacf(residuals, lags=45, title='PACF of Residuals')
 plt.show()

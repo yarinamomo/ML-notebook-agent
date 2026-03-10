@@ -15,56 +15,21 @@ from sklearn.metrics import accuracy_score
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train=pd.read_csv('data/train.csv')
-
-# === AFTER (edited) ===
-# Create mock data since CSV files contain Git LFS pointers
-import pandas as pd
-import numpy as np
-
-# Create mock train data with expected columns
-np.random.seed(42)
-train = pd.DataFrame({
-    'gravity': np.random.normal(1.025, 0.005, 200),
-    'ph': np.random.normal(6.5, 0.5, 200),
-    'osmo': np.random.normal(300, 50, 200),
-    'cond': np.random.normal(15, 3, 200),
-    'urea': np.random.normal(200, 30, 200),
-    'calc': np.random.normal(5, 1, 200),
-    'target': np.random.randint(0, 2, 200)
-})
+train=pd.read_csv('data/train.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# test  = pd.read_csv('data/test.csv')
-
-# === AFTER (edited) ===
-# Create mock test data with expected columns
-np.random.seed(43)
-test = pd.DataFrame({
-    'gravity': np.random.normal(1.025, 0.005, 100),
-    'ph': np.random.normal(6.5, 0.5, 100),
-    'osmo': np.random.normal(300, 50, 100),
-    'cond': np.random.normal(15, 3, 100),
-    'urea': np.random.normal(200, 30, 100),
-    'calc': np.random.normal(5, 1, 100)
-})
+test  = pd.read_csv('data/test.csv')
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train=train.drop(columns=['id'])
-
-# === AFTER (edited) ===
-train=train.drop(columns=['id'], errors='ignore')
+train=train.drop(columns=['id'])
 
 #%%
 # --- [CELL 4]: ---
@@ -86,4 +51,4 @@ train = train[train['ph']<7.1]
 # fig = sm.qqplot(train['gravity'],line=45,fit=True)
 
 # === AFTER (edited) ===
-fig = sm.qqplot(train['gravity'], line='45', fit=True)
+fig = sm.qqplot(train['gravity'],line='45',fit=True)

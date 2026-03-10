@@ -73,25 +73,27 @@ def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
         for filename in filenames:
             foldername = os.path.basename(dirname)
             full_path = os.path.join(dirname, filename)
-            
-            # Skip non-audio files
-            if not filename.lower().endswith(('.wav', '.mp3', '.flac', '.ogg', '.m4a')):
-                continue
-            
-            try:
-                y, sr = librosa.load(full_path)
-                mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, fmax=fmax, fmin=fmin)
-                logam = librosa.power_to_db(mel)
-                data.append(logam)
-            except Exception as e:
-                print(f"Warning: Could not load {full_path}: {e}")
-                continue
 
-    if len(data) == 0:
-        print("Warning: No audio files were successfully loaded.")
-        return np.array([])
+            y, sr = librosa.load(full_path)
+            mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, fmax=fmax, fmin=fmin)
+            logam = librosa.power_to_db(mel)
+            data.append(logam)
+
+    # Find the maximum length (number of time frames)
+    max_len = max(d.shape[1] for d in data)
     
-    data = np.array(data)
+    # Pad all spectrograms to the same length
+    data_padded = []
+    for d in data:
+        if d.shape[1] < max_len:
+            # Pad with zeros on the right side
+            pad_width = ((0, 0), (0, max_len - d.shape[1]))
+            d_padded = np.pad(d, pad_width, mode='constant', constant_values=0)
+        else:
+            d_padded = d
+        data_padded.append(d_padded)
+    
+    data = np.array(data_padded)
     return data
 
 #%%

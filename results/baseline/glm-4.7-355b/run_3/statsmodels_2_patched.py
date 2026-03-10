@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,12 +22,10 @@ train = pd.read_csv(train_csv_path)
 test_csv_path = "data/test.csv"
 test = pd.read_csv(test_csv_path)
 
-
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 train['date'] = pd.to_datetime(train['date'])
 train['day'] = train['date'].dt.day
 train['month'] = train['date'].dt.month
@@ -62,28 +60,26 @@ train['sales_lag_365'] = train['sales'].shift(365)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # Filter for a specific store-item combination, say store 1 and item 1
 train_subset = train[(train['store'] == 8) & (train['item'] == 20)]
 train_subset.set_index('date', inplace=True)
 train_subset.index.freq = 'D'
 train_subset.head()
 
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 sarima_data = train_subset[['sales']]
 
 print(sarima_data.index)
 sarima_data.head()
 
-
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # # Data Splitting
 # train_end_date = '2017-09-30'
@@ -135,27 +131,23 @@ p, d, q = 1, 1, 1
 P, D, Q, s = 1, 1, 1, 7
 
 
-# Simplified SARIMAX specification with more robust parameters
-model = SARIMAX(y_train, exog=exog_train, order=(p, d, q), seasonal_order=(P, D, Q, s),
-                enforce_stationarity=True, enforce_invertibility=True)
 
-try:
-    results = model.fit(maxiter=250, disp=False, method='lbfgs')
-    
-    y_pred = results.predict(start=pd.Timestamp(pred_start_date), end=pd.Timestamp(pred_end_date), 
-                            exog=exog_val, dynamic=False)
-    
-    rmse = mean_squared_error(y_val, y_pred, squared=False)
-    print(f'RMSE: {rmse}')
-except Exception as e:
-    print(f"Error in SARIMAX estimation or prediction: {e}")
-    print("y_val shape:", y_val.shape if hasattr(y_val, 'shape') else len(y_val))
-    y_pred = pd.Series([np.nan] * len(y_val), index=y_val.index)
+
+model = SARIMAX(y_train, exog=exog_train, order=(p, d, q), seasonal_order=(P, D, Q, s))
+results = model.fit(maxiter=150, disp=-1)
+
+
+predicted_all = results.predict(start=pd.Timestamp(pred_start_date), end=pd.Timestamp(pred_end_date), exog=exog_val, dynamic=False)
+y_pred = predicted_all.loc[pred_start_date:pred_end_date]
+
+
+rmse = mean_squared_error(y_val, y_pred, squared=False)
+print(f'RMSE: {rmse}')
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 residuals = y_val - y_pred
 plt.figure(figsize=(12, 6))
 plt.plot(residuals.index, residuals, label='Residuals')
@@ -168,7 +160,7 @@ plt.show()
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 plt.figure(figsize=(12, 6))

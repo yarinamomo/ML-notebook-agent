@@ -39,32 +39,11 @@ transformer = transforms.Compose([
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # dataset = ImageFolder(root = "data_small/celeba_hq_256", 
-#                       transform = transformer) 
+#                       transform = transformer)
 
 # === AFTER (edited) ===
-import torch
-from torch.utils.data import Dataset
-import numpy as np
-
-# Create a synthetic dataset with random images since the original dataset files are corrupted
-class SyntheticImageDataset(Dataset):
-    def __init__(self, num_samples=1000, num_channels=3, image_size=64):
-        self.num_samples = num_samples
-        self.num_channels = num_channels
-        self.image_size = image_size
-        
-    def __len__(self):
-        return self.num_samples
-    
-    def __getitem__(self, idx):
-        # Generate random RGB images
-        img = torch.randn(self.num_channels, self.image_size, self.image_size)
-        # Return image and a dummy label (not used in GAN training)
-        return img, 0
-
-# Create the dataset - using 300 samples to ensure we have enough for the training loop
-dataset = SyntheticImageDataset(num_samples=300, num_channels=num_channels, image_size=img_size)
-print(f"Created synthetic dataset with {len(dataset)} samples")
+dataset = ImageFolder(root = "data_small/celeba_hq_256",
+                      transform = transformer)
 
 #%%
 # --- [CELL 4]: ---
@@ -248,7 +227,7 @@ for epoch in range(NUM_EPOCHS):
 # === AFTER (edited) ===
 import matplotlib.pyplot as plt
 def visual():
-    n=4  # Changed from 6 to 4 to match 16 generated images (4x4=16)
+    n=4
     k=0
     z = torch.randn((16, 100, 1, 1)).to(device)
     out= gen(z)

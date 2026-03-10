@@ -59,50 +59,72 @@ from torchvision.transforms import transforms
 from torch.utils.data import DataLoader
 
 
-def collate_fn(batch):
-    """Custom collate function to handle variable-sized images for Faster R-CNN"""
-    images = []
-    targets = []
-    for img, target in batch:
-        # Convert to tensor if not already
-        if not isinstance(img, torch.Tensor):
-            img = transforms.ToTensor()(img)
-        images.append(img)
-        targets.append(target)
-    return images, targets
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
 
 
-print("Downloading and loading training dataset...")
-trainset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='train', download=True)
-print(f"Training dataset loaded successfully! Number of samples: {len(trainset)}")
+trainset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='train', download=False, transform=transform)
+testset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='val', download=False, transform=transform)
 
-print("\nLoading validation dataset...")
-testset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='val', download=True)
-print(f"Validation dataset loaded successfully! Number of samples: {len(testset)}")
 
-print("\nCreating data loaders...")
-trainloader = DataLoader(trainset, batch_size=1, shuffle=True, num_workers=0, collate_fn=collate_fn)
-testloader = DataLoader(testset, batch_size=1, shuffle=False, num_workers=0, collate_fn=collate_fn)
+trainloader = DataLoader(trainset, batch_size=1, shuffle=True, num_workers=0, collate_fn=lambda x: x)
+testloader = DataLoader(testset, batch_size=1, shuffle=False, num_workers=0, collate_fn=lambda x: x)
 
-print("\nInitializing Faster R-CNN model...")
-model = fasterrcnn_resnet50_fpn(pretrained=True)
+
+model = fasterrcnn_resnet50_fpn(weights='DEFAULT')
+
 
 num_classes = 21
 in_features = model.roi_heads.box_predictor.cls_score.in_features
 model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, num_classes)
 
+
 optimizer = torch.optim.SGD(model.parameters(), lr=0.005, momentum=0.9, weight_decay=0.0005)
 
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-model.to(device)
-print(f"Using device: {device}")
 
-# Test that data loading works
-print("\nTesting data loading with one batch...")
-for images, targets in trainloader:
-    print(f"Successfully loaded a batch!")
-    print(f"Images: {len(images)}, Target type: {type(targets[0])}")
-    break
+def collate_fn(batch):
+    return tuple(zip(*batch))
 
-print("\nDataset loading and model initialization successful!")
-print("Training loop can be run if needed.")
+
+def convert_voc_to_target(annotation):
+    target = {}
+    objects = annotation['annotation']['object']
+    if isinstance(objects, dict):
+        objects = [objects]
+    
+    boxes = []
+    labels = []
+    for obj in objects:
+        bndbox = obj['bndbox']
+        xmin = float(bndbox['xmin'])
+        ymin = float(bndbox['ymin'])
+        xmax = float(bndbox['xmax'])
+        ymax = float(bndbox['ymax'])
+        boxes.append([xmin, ymin, xmax, ymax])
+        labels.append(int(obj['name']) if isinstance(obj['name'], int) else 1)
+    
+    target['boxes'] = torch.as_tensor(boxes, dtype=torch.float32)
+    target['labels'] = torch.as_tensor(labels, dtype=torch.int64)
+    return target
+
+
+model.train()
+num_iterations = 5
+for i, data in enumerate(trainloader, 0):
+    if i >= num_iterations:
+        break
+    
+    images, annotations = data[0]
+    target = convert_voc_to_target(annotations)
+    
+    optimizer.zero_grad()
+    loss_dict = model([images], [target])
+    losses = sum(loss for loss in loss_dict.values())
+    losses.backward()
+    optimizer.step()
+
+    print('[%5d] loss: %.3f' % (i + 1, losses.item()))
+
+print('Finished Training')

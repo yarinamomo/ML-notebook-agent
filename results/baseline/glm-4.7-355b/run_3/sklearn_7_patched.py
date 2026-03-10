@@ -15,11 +15,10 @@ else:
     else:
         print("Imported necessary libraries and loaded data successfully.")
 
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # from sklearn.model_selection import train_test_split
 # from sklearn.ensemble import RandomForestRegressor
@@ -45,26 +44,12 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
 
-# Find the correct column name for the target variable
-target_col = None
-for col in df.columns:
-    if 'spending' in col.lower() and 'score' in col.lower():
-        target_col = col
-        break
+X = df.drop(['Spending Score (1-100)'], axis=1)
+y = df['Spending Score (1-100)']
 
-if target_col is None:
-    # Try another pattern if the above doesn't match
-    for col in df.columns:
-        if 'score' in col.lower():
-            target_col = col
-            break
+# Encode categorical variables using one-hot encoding
+X = pd.get_dummies(X, drop_first=True)
 
-if target_col is None:
-    # Fall back to taking the last column if not found
-    target_col = df.columns[-1]
-
-X = df.drop([target_col], axis=1)
-y = df[target_col]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 

@@ -29,56 +29,19 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# # read data
-# df = pd.read_csv('data/measures_v2.csv', 
-#                  usecols=[0,1,2,3,4,5,6,7,8,9,10,11])
-# df.head(10)
-
-# === AFTER (edited) ===
-df = pd.read_csv('data/measures_v2.csv')
+# read data
+df = pd.read_csv('data/measures_v2.csv', 
+                 usecols=[0,1,2,3,4,5,6,7,8,9,10,11])
 df.head(10)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# X=df.drop("motor_speed", axis=1)
-# y=df["motor_speed"]
-
-# === AFTER (edited) ===
-# Check if we have valid data or just LFS pointer
-if df.shape == (2, 1) and 'version' in df.columns[0]:
-    # This is just the LFS pointer, create mock data for demonstration
-    import numpy as np
-    np.random.seed(42)
-    n_samples = 1000
-    
-    # Create features typical for motor measurements
-    df = pd.DataFrame({
-        'ambient': np.random.uniform(20, 40, n_samples),
-        'coolant': np.random.uniform(20, 40, n_samples),
-        'u_d': np.random.uniform(0, 400, n_samples),
-        'u_q': np.random.uniform(0, 400, n_samples),
-        'motor_speed': np.random.uniform(0, 3000, n_samples),
-        'torque': np.random.uniform(0, 2, n_samples),
-        'i_d': np.random.uniform(-50, 50, n_samples),
-        'i_q': np.random.uniform(-50, 50, n_samples),
-        'pm': np.random.uniform(0, 1, n_samples),
-        'stator_yoke': np.random.uniform(20, 80, n_samples),
-        'stator_tooth': np.random.uniform(20, 80, n_samples),
-        'stator_winding': np.random.uniform(20, 120, n_samples),
-    })
-    print("Created mock data (file appears to be LFS pointer)")
-
-X = df.drop("motor_speed", axis=1)
-y = df["motor_speed"]
-
-print(f"Features shape: {X.shape}")
-print(f"Target shape: {y.shape}")
+X=df.drop("motor_speed", axis=1)
+y=df["motor_speed"]
 
 #%%
 # --- [CELL 3]: ---
@@ -135,7 +98,7 @@ y_pred = model.predict(X_test)
 #%%
 # --- [CELL 8]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 # === BEFORE (original) ===
 # params = {}
 # params['tree_method'] = 'hist' # fix (for testing locally), use cpu instead of gpu
@@ -189,18 +152,18 @@ kf_rmse = []
 for fold, (train_idx, valid_idx) in enumerate(KFold(n_splits=n_splits, shuffle=True).split(X_train,y_train)):
 
     X_train_fold, y_train_fold = X_train.iloc[train_idx], y_train.iloc[train_idx]
-    X_valid_fold, y_valid_fold = X_train.iloc[valid_idx], y_train.iloc[valid_idx]
+    X_valid, y_valid = X_train.iloc[valid_idx], y_train.iloc[valid_idx]
 
 
     model = XGBRegressor(**params)
     model.fit(X_train_fold, y_train_fold,
-            eval_set=[(X_valid_fold, y_valid_fold)],
+            eval_set=[(X_valid, y_valid)],
             eval_metric='rmse', verbose=False)
 
 
-    valid_pred = model.predict(X_valid_fold)
+    valid_pred = model.predict(X_valid)
 
-    rmse = np.sqrt(mean_squared_error(y_valid_fold, valid_pred))
+    rmse = np.sqrt(mean_squared_error(y_valid, valid_pred))
     print(f'Fold {fold+1}/{n_splits} RMSE: {rmse:.4f}')
     kf_rmse.append(rmse)
 

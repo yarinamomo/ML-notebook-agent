@@ -34,9 +34,5 @@ df = pd.read_csv("data/IMDb_All_Genres_etf_clean1.csv")
 # clean_df = clean_df[clean_df['Censor']!="(Banned)"]
 
 # === AFTER (edited) ===
-try:
-    clean_df = df[(df["Total Gross (millions)"]!="$0.00M") & (df["Total Gross (millions)"]!="Gross Unkown")].copy()
-    clean_df = clean_df[clean_df['Censor']!="(Banned)"]
-except KeyError as e:
-    print(f"Warning: Column {e} not found. Data may be a Git LFS pointer or not loaded correctly.")
-    clean_df = df.copy()
+clean_df = df[(df["Total_Gross"]!="$0.00M") & (df["Total_Gross"]!="Gross Unkown")].copy()
+clean_df = clean_df[clean_df['Censor']!="(Banned)"]

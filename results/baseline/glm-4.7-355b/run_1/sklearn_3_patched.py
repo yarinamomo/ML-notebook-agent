@@ -27,31 +27,50 @@ greeks_df = pd.read_csv('data/greeks_synthetic.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train_df = pd.merge(train_df, greeks_df, on="Id")
-
-# === AFTER (edited) ===
-train_df = pd.merge(train_df, greeks_df, left_index=True, right_index=True)
+train_df = pd.merge(train_df, greeks_df, on="Id")
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # Remove the first column
 train_df = train_df.drop("Id", axis=1)
 test_df = test_df.drop("Id", axis=1)
 
-
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-# One-hot encoding
-encoder = OneHotEncoder(handle_unknown="ignore")
-train_df = pd.get_dummies(train_df, columns=list(train_df))
-test_df = pd.get_dummies(test_df, columns=list(test_df))
+# cell_state: edited
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# === BEFORE (original) ===
+# # One-hot encoding
+# encoder = OneHotEncoder(handle_unknown="ignore")
+# train_df = pd.get_dummies(train_df, columns=list(train_df))
+# test_df = pd.get_dummies(test_df, columns=list(test_df))
+
+# === AFTER (edited) ===
+# Get categorical columns (object or category dtype)
+categorical_cols = train_df.select_dtypes(include=['object', 'category']).columns.tolist()
+
+# Apply get_dummies to both datasets to ensure consistent columns
+# First encode train data
+train_df = pd.get_dummies(train_df, columns=categorical_cols, drop_first=False)
+test_df = pd.get_dummies(test_df, columns=categorical_cols, drop_first=False)
+
+# Ensure both datasets have the same columns
+train_cols = set(train_df.columns)
+test_cols = set(test_df.columns)
+
+# Add missing columns to each dataframe with 0s
+for col in train_cols - test_cols:
+    test_df[col] = 0
+    
+for col in test_cols - train_cols:
+    train_df[col] = 0
+
+# Ensure same column order
+test_df = test_df[train_df.columns]
 
 #%%
 # --- [CELL 5]: ---

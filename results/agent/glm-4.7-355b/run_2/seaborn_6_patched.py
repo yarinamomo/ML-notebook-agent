@@ -13,13 +13,9 @@ from sklearn.tree import DecisionTreeClassifier
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv("data/penguins.csv")
-
-# === AFTER (edited) ===
-df = sns.load_dataset("penguins")
+df = pd.read_csv("data/penguins.csv")
 
 #%%
 # --- [CELL 2]: ---
@@ -29,13 +25,9 @@ df=df.dropna()
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
-
-# === AFTER (edited) ===
-df["sex"] = df["sex"].map({"Male" : 0, "Female" : 1})
+df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
 
 #%%
 # --- [CELL 4]: ---

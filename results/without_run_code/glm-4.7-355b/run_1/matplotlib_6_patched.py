@@ -42,9 +42,9 @@ df=pd.read_csv('data/3711.csv');df
 
 # === AFTER (edited) ===
 sns.set_style('darkgrid')
-fig, ax = plt.subplots(6, 1, figsize=(5, 20))
+fig, ax = plt.subplots(len(df.columns), 1, figsize=(5, 4*len(df.columns)))
 
-for i, col in enumerate(list(df.select_dtypes(include=[np.number]).columns.values)):
+for i, col in enumerate(list(df.columns.values)):
     axes_box  = ax[i]
-    sns.boxplot(data=df, y=col, ax=axes_box,color='#a5c687')
+    sns.boxplot(data=df, x=col, ax=axes_box,color='#a5c687')
     ax[i].set_title(col,fontsize=15,color='magenta')

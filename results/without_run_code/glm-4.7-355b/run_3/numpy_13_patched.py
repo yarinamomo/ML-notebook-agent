@@ -74,16 +74,22 @@ def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
             foldername = os.path.basename(dirname)
             full_path = os.path.join(dirname, filename)
 
-            try:
-                y, sr = librosa.load(full_path)
-                mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, fmax=fmax, fmin=fmin)
-                logam = librosa.power_to_db(mel)
-                data.append(logam)
-            except Exception as e:
-                print(f"Warning: Could not load {full_path}: {e}")
-                continue
+            y, sr = librosa.load(full_path)
+            mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, fmax=fmax, fmin=fmin)
+            logam = librosa.power_to_db(mel)
+            data.append(logam)
+            
+    # Find the maximum length (time dimension)
+    max_len = max(arr.shape[1] for arr in data)
+    
+    # Pad all arrays to the same length
+    padded_data = []
+    for arr in data:
+        pad_width = max_len - arr.shape[1]
+        padded_arr = np.pad(arr, ((0, 0), (0, pad_width)), mode='constant')
+        padded_data.append(padded_arr)
 
-    data = np.array(data)
+    data = np.array(padded_data)
     return data
 
 #%%

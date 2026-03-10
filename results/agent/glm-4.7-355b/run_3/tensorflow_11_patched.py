@@ -1,38 +1,6 @@
 # --- [CELL 0]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# import numpy as np
-# import pandas as pd
-# from pathlib import Path
-# import os.path
-# import matplotlib.pyplot as plt
-# from IPython.display import Image, display
-# import matplotlib.cm as cm
-# 
-# import tensorflow as tf 
-# 
-# import os
-# import shutil
-# from tqdm import tqdm
-# from random import shuffle
-# 
-# import cv2
-# from glob import glob
-# 
-# from tensorflow.keras import backend as K
-# import random
-# import albumentations as A
-# from sklearn.model_selection import train_test_split, StratifiedKFold
-# 
-# from tensorflow.keras.layers import *
-# from tensorflow.keras.optimizers import *
-# from tensorflow.keras.models import *
-# from tensorflow.keras.preprocessing.image import *
-# from tensorflow.keras.callbacks import *
-# from tensorflow.keras.applications.efficientnet import *
-
-# === AFTER (edited) ===
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -41,7 +9,7 @@ import matplotlib.pyplot as plt
 from IPython.display import Image, display
 import matplotlib.cm as cm
 
-import tensorflow as tf
+import tensorflow as tf 
 
 import os
 import shutil
@@ -63,71 +31,20 @@ from tensorflow.keras.preprocessing.image import *
 from tensorflow.keras.callbacks import *
 from tensorflow.keras.applications.efficientnet import *
 
-# Create synthetic image data directory structure
-import PIL
-from PIL import Image as PILImage
-
-def create_synthetic_data():
-    """Create synthetic image data for testing when real images are not available"""
-    classes = ['cars', 'tanks']
-    base_dir = Path('data_small/train')
-    
-    # Create directories
-    for cls in classes:
-        (base_dir / cls).mkdir(parents=True, exist_ok=True)
-    
-    # Create synthetic images
-    for cls in classes:
-        for i in range(30):  # 30 images per class
-            # Create a random image
-            img_array = np.random.randint(0, 255, (224, 224, 3), dtype=np.uint8)
-            # Add class-specific patterns (just for demonstration)
-            if cls == 'cars':
-                # Make cars slightly bluer
-                img_array[:, :, 2] = np.clip(img_array[:, :, 2] + 30, 0, 255)
-            else:
-                # Make tanks slightly redder
-                img_array[:, :, 0] = np.clip(img_array[:, :, 0] + 30, 0, 255)
-            
-            img = PILImage.fromarray(img_array)
-            img.save(base_dir / f'{cls}/{i+1}.jpg')
-    
-    print(f"Created synthetic images in {base_dir}")
-
-
-# Check if real data exists, if not create synthetic data
-if not Path('data_small/train').exists() or len(list(Path('data_small/train').glob('**/*.jpg'))) == 0:
-    create_synthetic_data()
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# image_dir = Path('data_small/test')
-# 
-# # Get filepaths and labels
-# filepaths = list(image_dir.glob(r'**/*.jpg'))
-# labels = list(map(lambda x: os.path.split(os.path.split(x)[0])[1], filepaths))
-# 
-# filepaths = pd.Series(filepaths, name='Filepath').astype(str)
-# labels = pd.Series(labels, name='Label')
-# 
-# # Concatenate filepaths and labels
-# image_df = pd.concat([filepaths, labels], axis=1)
+image_dir = Path('data_small/test')
 
-# === AFTER (edited) ===
-# Use the synthetic images directory
-image_dir = Path('synthetic_images')
-
-
+# Get filepaths and labels
 filepaths = list(image_dir.glob(r'**/*.jpg'))
 labels = list(map(lambda x: os.path.split(os.path.split(x)[0])[1], filepaths))
 
 filepaths = pd.Series(filepaths, name='Filepath').astype(str)
 labels = pd.Series(labels, name='Label')
 
-
+# Concatenate filepaths and labels
 image_df = pd.concat([filepaths, labels], axis=1)
 
 #%%
@@ -226,10 +143,10 @@ test_images = test_generator.flow_from_dataframe(
 #     return model
 
 # === AFTER (edited) ===
-def create_model(input_shape=(224, 224, 3), num_classes=2):
+def create_model(input_shape=(224, 224, 3)):
 
     inputs = Input(input_shape)
-    base_model = EfficientNetB1(input_shape=input_shape, include_top=False, classes=num_classes)
+    base_model = EfficientNetB1(input_shape=input_shape, include_top=False, classes=5)
 
     x = base_model(inputs)
 
@@ -239,7 +156,7 @@ def create_model(input_shape=(224, 224, 3), num_classes=2):
     x = Dense(56, activation='relu')(x)
     x = Dropout(0.1)(x)
 
-    outputs = Dense(num_classes, activation='sigmoid')(x)
+    outputs = Dense(2, activation='softmax')(x)
 
     model = Model(inputs, outputs)
 
@@ -247,24 +164,12 @@ def create_model(input_shape=(224, 224, 3), num_classes=2):
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# === BEFORE (original) ===
-# K.clear_session()
-# 
-# model = create_model((224, 224, 3))
-# # model = load_model('models/checkpoint/EfficientNetB0.h5')
-# 
-# metrics = [
-#     'accuracy',
-#     'AUC'
-# ]
-
-# === AFTER (edited) ===
 K.clear_session()
 
-model = create_model((224, 224, 3), num_classes=2)
-
+model = create_model((224, 224, 3))
+# model = load_model('models/checkpoint/EfficientNetB0.h5')
 
 metrics = [
     'accuracy',
@@ -292,7 +197,7 @@ callbacks = [
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 12}
 history = model.fit(
     train_images,
     validation_data=val_images,

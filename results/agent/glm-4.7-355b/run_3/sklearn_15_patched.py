@@ -19,13 +19,9 @@ data = pd.read_csv('data/data.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# data = data.drop(['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm'], axis=1)
-
-# === AFTER (edited) ===
-data = data.drop(['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm'], axis=1, errors='ignore')
+data = data.drop(['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm'], axis=1)
 
 #%%
 # --- [CELL 3]: ---
@@ -39,34 +35,17 @@ for column in data.columns:
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# categorical_columns = ['WindGustDir', 'WindDir9am', 'WindDir3pm', 'RainToday']
-# data = pd.get_dummies(data, columns=categorical_columns, drop_first=True)
-
-# === AFTER (edited) ===
 categorical_columns = ['WindGustDir', 'WindDir9am', 'WindDir3pm', 'RainToday']
-existing_categorical_columns = [col for col in categorical_columns if col in data.columns]
-data = pd.get_dummies(data, columns=existing_categorical_columns, drop_first=True)
+data = pd.get_dummies(data, columns=categorical_columns, drop_first=True)
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# X = data.drop('RainTomorrow', axis=1)
-# y = data['RainTomorrow']
-
-# === AFTER (edited) ===
-target_column = 'RainTomorrow'
-if target_column in data.columns:
-    X = data.drop(target_column, axis=1)
-    y = data[target_column]
-else:
-    print(f"Warning: '{target_column}' column not found in dataset")
-    X = data
-    y = pd.Series(np.zeros(len(data)))
+X = data.drop('RainTomorrow', axis=1)
+y = data['RainTomorrow']
 
 #%%
 # --- [CELL 6]: ---
@@ -77,7 +56,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 #%%
 # --- [CELL 7]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # logreg = LogisticRegression(max_iter=1000)
 # 
@@ -91,19 +70,18 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # logreg.fit(X_train, y_train)
 
 # === AFTER (edited) ===
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+
 logreg = LogisticRegression(max_iter=1000)
 
-# Only apply scaling if X contains numeric data
-try:
-    scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
-except (ValueError, TypeError) as e:
-    print(f"Warning: Could not scale features. Error: {e}")
-    # X_train and X_test remain unchanged
+# Scale the features
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
 
-# Don't scale the target variable for classification
-try:
-    logreg.fit(X_train, y_train)
-except ValueError as e:
-    print(f"Warning: Could not fit model. Error: {e}")
+# Encode the target variable
+label_encoder = LabelEncoder()
+y_train = label_encoder.fit_transform(y_train)
+y_test = label_encoder.transform(y_test)
+
+logreg.fit(X_train, y_train)

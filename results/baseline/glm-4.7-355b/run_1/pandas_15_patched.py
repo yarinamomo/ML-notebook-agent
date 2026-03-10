@@ -8,17 +8,11 @@ import seaborn as sns
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# train=pd.read_csv('data/train.csv')
-# test=pd.read_csv('data/test.csv')
-# submission=pd.read_csv('data/sample_submission.csv')
-
-# === AFTER (edited) ===
-train=pd.read_csv('data/train.csv', engine='python', sep=None)
-test=pd.read_csv('data/test.csv', engine='python', sep=None)
-submission=pd.read_csv('data/sample_submission.csv', engine='python', sep=None)
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+train=pd.read_csv('data/train.csv')
+test=pd.read_csv('data/test.csv')
+submission=pd.read_csv('data/sample_submission.csv')
 
 #%%
 # --- [CELL 2]: ---
@@ -40,6 +34,10 @@ print("No of columns after dropping high missing value column: ",len(train.colum
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-test=test.drop(['Alley','PoolQC','Fence','MiscFeature','Id'],axis=1)
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# === BEFORE (original) ===
+# test=test.drop(['Alley','PoolQC','Fence','MiscFeature','Id'],axis=1)
+
+# === AFTER (edited) ===
+test=test.drop(['Id'],axis=1)

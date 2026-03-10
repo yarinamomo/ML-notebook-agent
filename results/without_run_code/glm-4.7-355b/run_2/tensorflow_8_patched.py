@@ -87,7 +87,7 @@ for c in [0,1]:
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 ben_upsampled = resample(data[data['target']==0],n_samples=data[data['target']==1].shape[0], random_state=42)
 
 up_sampled = pd.concat([data[data['target']==1], ben_upsampled])
@@ -97,7 +97,7 @@ up_sampled['target'].value_counts()
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # === BEFORE (original) ===
 # train_image = []
 # y = []
@@ -123,61 +123,33 @@ up_sampled['target'].value_counts()
 # print(X_val.shape)
 
 # === AFTER (edited) ===
-# --- [CELL 6]:
+train_image = []
+y = []
 
-# The image files are Git LFS pointers, not actual image files.
-# Using MNIST as placeholder data to allow the notebook to run
-print("Image files are Git LFS pointers. Using MNIST data as placeholder.")
+for i in tqdm(range(up_sampled.shape[0])):
+    img = tf.keras.utils.load_img(up_sampled['image'].iloc[i], target_size=(size,size,3))
+    img = tf.keras.utils.img_to_array(img)
+    img = img/255
+    train_image.append(img)
 
-# Load MNIST dataset (already imported in cell 0)
-(x_train_full, y_train_full), (x_test_full, y_test_full) = mnist.load_data()
 
-# Create binary classification problem: even (0) vs odd (1)
-y_train_binary = (y_train_full % 2).astype(int)
-y_test_binary = (y_test_full % 2).astype(int)
+X = np.array(train_image)
+y = up_sampled.iloc[:,-1].values
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, test_size=0.2)
+X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, random_state=42, test_size=0.2 , shuffle=True)
 
-# Normalize and reshape to match expected format
-total_samples = 500  # Use a subset for faster training
-X = x_train_full[:total_samples].astype('float32') / 255.0
-y = y_train_binary[:total_samples]
-
-# Expand dimensions to add channel dimension
-X = np.expand_dims(X, axis=-1)
-
-# Resize to match expected size (75x75)
-from scipy.ndimage import zoom
-def resize_images(images, target_size):
-    resized = np.zeros((len(images), target_size, target_size, 1))
-    for i, img in enumerate(images):
-        scale = target_size / img.shape[0]
-        resized[i] = zoom(img, (scale, scale, 1), order=1)
-    return resized
-
-X = resize_images(X, size)
-
-# Split the data
-if len(X) < 5:
-    print(f"WARNING: Only {len(X)} images available, using all for training")
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, test_size=0.1)
-    X_val = X_test
-    y_val = y_test
-else:
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, test_size=0.2)
-    X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, random_state=42, test_size=0.2 , shuffle=True)
-
-# Convert to categorical
 Y_train = to_categorical(y_train, 2)
 Y_test = to_categorical(y_test, 2)
 Y_val = to_categorical(y_val, 2)
 
-print(f"X_train shape: {X_train.shape}")
-print(f"X_test shape: {X_test.shape}")
-print(f"X_val shape: {X_val.shape}")
+print(X_train.shape)
+print(X_test.shape)
+print(X_val.shape)
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 def channel_shuffle(x, groups):
     """
     Channel shuffle operation as described in the ShuffleNet paper.
@@ -202,7 +174,7 @@ def channel_shuffle(x, groups):
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 def shuffle_unit(x, in_channels, out_channels, bottleneck_channels):
     # define residual
     res = x
@@ -241,7 +213,7 @@ def shuffle_unit(x, in_channels, out_channels, bottleneck_channels):
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 def GridSizeReductionBlock(inputs, filters):
     # Max pooling layer
     path1 = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), padding='same')(inputs)
@@ -260,7 +232,7 @@ def GridSizeReductionBlock(inputs, filters):
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 inputs = Input(shape=(size, size, 3))
 
 # initial layers
@@ -311,17 +283,16 @@ x = Dense(units=2, activation='softmax')(x)
 # create model
 model = Model(inputs=inputs, outputs=x)
 
-
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 model.compile(loss='binary_crossentropy', metrics=['accuracy'], optimizer='adam')
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 data_gen = ImageDataGenerator(
         zoom_range=1.2,  # set range for random zoom
         rotation_range = 90,
@@ -335,7 +306,7 @@ data_gen.fit(X_train)
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 history = model.fit(data_gen.flow(X_train,Y_train,
                                        batch_size=64, 
                                        seed=27,
