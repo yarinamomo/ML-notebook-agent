@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 
 from rich.logging import RichHandler
@@ -7,8 +8,7 @@ from src.utils.ui import console
 
 def _setup_root_logger() -> None:
     logger = logging.getLogger("mlnotebookagent")
-    # logger.setLevel(logging.INFO)
-    logger.setLevel(logging.ERROR)
+    logger.setLevel(os.getenv("NOTEBOOK_AGENT_LOG_LEVEL", "ERROR").upper())
     _handler = RichHandler(
         show_path=False,
         show_time=False,
