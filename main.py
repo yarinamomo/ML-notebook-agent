@@ -79,8 +79,14 @@ def build_instances(config: dict, model_name: str) -> list[SingleInstance]:
     trajectories_dir = get_trajectories_dir(config)
     number_of_runs = get_run_count(config)
 
+    IGNORED_INSTANCES = {"torch_13"}
+    IGNORED_PREFIXES = ("NBspecific",)
+
     runs_to_execute = []
     for instance_name in get_instances(config):
+        if instance_name in IGNORED_INSTANCES or instance_name.startswith(IGNORED_PREFIXES):
+            logger.info(f"Skipping (filtered): {instance_name}")
+            continue
         for run_num in range(1, number_of_runs + 1):
             run_output_dir = trajectories_dir / model_name / f"run_{run_num}"
             if skip_existing and enable_summary_log:
