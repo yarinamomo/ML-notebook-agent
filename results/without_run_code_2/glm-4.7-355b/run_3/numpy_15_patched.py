@@ -71,19 +71,12 @@ X_train, X_test, y_train, y_test = train_test_split(inp_df, out_df, test_size=0.
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-# === BEFORE (original) ===
-# X_tr_arr = X_train
-# X_ts_arr = X_test
-# y_tr_arr= y_train.values
-# y_ts_arr = y_test.values
-
-# === AFTER (edited) ===
 X_tr_arr = X_train
 X_ts_arr = X_test
-y_tr_arr = y_train.values.flatten()
-y_ts_arr = y_test.values.flatten()
+y_tr_arr= y_train.values
+y_ts_arr = y_test.values
 
 #%%
 # --- [CELL 10]: ---
@@ -97,7 +90,7 @@ y_ts_arr = y_test.values.flatten()
 
 # === AFTER (edited) ===
 def weightInitialization(n_features):
-    w = np.zeros((n_features, 1))
+    w = np.zeros((n_features,1))
     b = 0
     return w,b
 
@@ -181,125 +174,66 @@ def model_train(X, Y, num_iterations, learning_rate):
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-# === BEFORE (original) ===
-# def model_predict(w, b, X, Y, learning_rate, no_iterations):
-#     costs = []
-#     for i in range(no_iterations):
-#         #
-#         grads, cost = model_optimize(w,b,X,Y)
-#         #
-#         dw = grads["dw"]
-#         db = grads["db"]
-#         #weight update
-#         w = w - (learning_rate * (dw.T))
-#         b = b - (learning_rate * db)
-#         #
-#         
-#         if (i % 100 == 0):
-#             costs.append(cost)
-#             #print("Cost after %i iteration is %f" %(i, cost))
-#     
-#     #final parameters
-#     coeff = {"w": w, "b": b}
-#     gradient = {"dw": dw, "db": db}
-#     
-#     return coeff, gradient, costs
-
-# === AFTER (edited) ===
 def model_predict(w, b, X, Y, learning_rate, no_iterations):
     costs = []
     for i in range(no_iterations):
-
+        #
         grads, cost = model_optimize(w,b,X,Y)
-
+        #
         dw = grads["dw"]
         db = grads["db"]
-
-        w = w - (learning_rate * dw)
+        #weight update
+        w = w - (learning_rate * (dw.T))
         b = b - (learning_rate * db)
-
-
+        #
+        
         if (i % 100 == 0):
             costs.append(cost)
-
-
-
+            #print("Cost after %i iteration is %f" %(i, cost))
+    
+    #final parameters
     coeff = {"w": w, "b": b}
     gradient = {"dw": dw, "db": db}
-
+    
     return coeff, gradient, costs
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
-# === BEFORE (original) ===
-# def predict(final_pred, m):
-#     y_pred = np.zeros((1,m))
-#     for i in range(final_pred.shape[1]):
-#         if final_pred[0][i] > 0.5:
-#             y_pred[0][i] = 1
-#     return y_pred
-
-# === AFTER (edited) ===
 def predict(final_pred, m):
-    y_pred = np.zeros((m, 1))
-    for i in range(final_pred.shape[0]):
-        if final_pred[i][0] > 0.5:
-            y_pred[i][0] = 1
+    y_pred = np.zeros((1,m))
+    for i in range(final_pred.shape[1]):
+        if final_pred[0][i] > 0.5:
+            y_pred[0][i] = 1
     return y_pred
 
 #%%
 # --- [CELL 16]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
-# === BEFORE (original) ===
-# #Get number of features
-# n_features = X_tr_arr.shape[1]
-# print('Number of Features', n_features)
-# w, b = weightInitialization(n_features)
-# #Gradient Descent
-# coeff, gradient, costs = model_predict(w, b, X_tr_arr, y_tr_arr, learning_rate=0.0001,no_iterations=4500)
-# #Final prediction
-# w = coeff["w"]
-# b = coeff["b"]
-# print('Optimized weights', w)
-# print('Optimized intercept',b)
-# #
-# final_train_pred = sigmoid_activation(np.dot(w,X_tr_arr.T)+b)
-# final_test_pred = sigmoid_activation(np.dot(w,X_ts_arr.T)+b)
-# #
-# m_tr =  X_tr_arr.shape[0]
-# m_ts =  X_ts_arr.shape[0]
-# #
-# y_tr_pred = predict(final_train_pred, m_tr)
-# print('Training Accuracy',accuracy_score(y_tr_pred.T, y_tr_arr))
-# #
-# y_ts_pred = predict(final_test_pred, m_ts)
-# print('Test Accuracy',accuracy_score(y_ts_pred.T, y_ts_arr))
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+#Get number of features
 n_features = X_tr_arr.shape[1]
 print('Number of Features', n_features)
 w, b = weightInitialization(n_features)
-
+#Gradient Descent
 coeff, gradient, costs = model_predict(w, b, X_tr_arr, y_tr_arr, learning_rate=0.0001,no_iterations=4500)
-
+#Final prediction
 w = coeff["w"]
 b = coeff["b"]
 print('Optimized weights', w)
 print('Optimized intercept',b)
-
-final_train_pred = sigmoid_activation(np.dot(X_tr_arr, w)+b)
-final_test_pred = sigmoid_activation(np.dot(X_ts_arr, w)+b)
-
+#
+final_train_pred = sigmoid_activation(np.dot(w,X_tr_arr.T)+b)
+final_test_pred = sigmoid_activation(np.dot(w,X_ts_arr.T)+b)
+#
 m_tr =  X_tr_arr.shape[0]
 m_ts =  X_ts_arr.shape[0]
-
+#
 y_tr_pred = predict(final_train_pred, m_tr)
-print('Training Accuracy',accuracy_score(y_tr_pred, y_tr_arr))
-
+print('Training Accuracy',accuracy_score(y_tr_pred.T, y_tr_arr))
+#
 y_ts_pred = predict(final_test_pred, m_ts)
-print('Test Accuracy',accuracy_score(y_ts_pred, y_ts_arr))
+print('Test Accuracy',accuracy_score(y_ts_pred.T, y_ts_arr))

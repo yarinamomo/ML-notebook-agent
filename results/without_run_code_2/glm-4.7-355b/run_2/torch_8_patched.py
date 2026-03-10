@@ -118,14 +118,11 @@ train_nwms_pixVals = createPixelArr(out_array_nwm[:90]) # 1000
 # X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1)
 
 # === AFTER (edited) ===
-# Combine watermarked and non-watermarked images
+# Combine watermarked and non-watermarked images with labels
+# Label 1 for watermarked, 0 for non-watermarked
 X = np.concatenate([train_wms_pixVals, train_nwms_pixVals], axis=0)
-# Create labels: 1 for watermarked, 0 for non-watermarked
-y_wm = np.ones(len(train_wms_pixVals))
-y_nwm = np.zeros(len(train_nwms_pixVals))
-y = np.concatenate([y_wm, y_nwm], axis=0)
+y = np.concatenate([np.ones(len(train_wms_pixVals)), np.zeros(len(train_nwms_pixVals))], axis=0)
 
-# Split into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
 
 #%%
@@ -258,10 +255,6 @@ model_ft.classifier = nn.Sequential(
 #     return model, train_acc_history, val_acc_history
 
 # === AFTER (edited) ===
-from tqdm import tqdm
-
-device = torch.device('cpu')
-
 def train_model(model, train_loader, test_loader, criterion, optimizer, num_epochs=80):
     since = time.time()
 
@@ -272,7 +265,7 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
     best_acc = 0.0
 
     for epoch in range(num_epochs):
-        print('Epoch {}/{}'.format(epoch + 1, num_epochs))
+        print('Epoch {}/{}'.format(epoch, num_epochs - 1))
         print('-' * 10)
 
         model.train()
@@ -280,15 +273,16 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
         running_loss = 0.0
         running_corrects = 0
 
-        for inputs, labels in train_loader:
+        for inputs, labels in tqdm(train_loader):
             inputs = inputs.to(device)
             labels = labels.to(device)
 
             optimizer.zero_grad()
 
             with torch.set_grad_enabled(True):
-                outputs = model(inputs)
-                loss = criterion(outputs, labels)
+                with torch.cuda.amp.autocast():
+                    outputs = model(inputs)
+                    loss = criterion(outputs, labels)
 
                 _, preds = torch.max(outputs, 1)
 
@@ -309,13 +303,14 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
         running_loss = 0.0
         running_corrects = 0
 
-        for inputs, labels in test_loader:
+        for inputs, labels in tqdm(test_loader):
             inputs = inputs.to(device)
             labels = labels.to(device)
 
             with torch.set_grad_enabled(False):
-                outputs = model(inputs)
-                loss = criterion(outputs, labels)
+                with torch.cuda.amp.autocast():
+                    outputs = model(inputs)
+                    loss = criterion(outputs, labels)
 
                 _, preds = torch.max(outputs, 1)
 
@@ -343,8 +338,14 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# === BEFORE (original) ===
+# criterion = torch.nn.CrossEntropyLoss()
+# optimizer = optim.AdamW(params=model_ft.parameters(), lr=0.2e-5)
+
+# === AFTER (edited) ===
+device = torch.device('cpu')
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = optim.AdamW(params=model_ft.parameters(), lr=0.2e-5)
 
@@ -374,13 +375,12 @@ class MyDataset(Dataset):
         return len(self.X)
 
     def __getitem__(self, idx):
-        # Convert to float32 and normalize to [0, 1]
-        x = self.X[idx].astype(np.float32) / 255.0
+        # Convert numpy array to tensor and normalize to 0-1
         # Transpose from HWC to CHW format
-        x = np.transpose(x, (2, 0, 1))
-        # Convert to PyTorch tensor
-        x = torch.from_numpy(x)
-        return x, torch.tensor(self.y[idx], dtype=torch.long)
+        image = torch.from_numpy(self.X[idx]).float() / 255.0
+        image = image.permute(2, 0, 1)  # HWC -> CHW
+        labels = torch.tensor(self.y[idx], dtype=torch.long)
+        return image, labels
 
 #%%
 # --- [CELL 15]: ---
@@ -398,20 +398,11 @@ test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
 #%%
 # --- [CELL 17]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
-# === BEFORE (original) ===
-# import warnings
-# warnings.filterwarnings("ignore")
-# 
-# model_ft, train_acc_history, val_acc_history = train_model(
-#     model_ft, train_loader, test_loader, criterion, optimizer, num_epochs=3
-# )
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
 import warnings
 warnings.filterwarnings("ignore")
 
 model_ft, train_acc_history, val_acc_history = train_model(
-    model_ft, train_loader, test_loader, criterion, optimizer, num_epochs=1
+    model_ft, train_loader, test_loader, criterion, optimizer, num_epochs=3
 )

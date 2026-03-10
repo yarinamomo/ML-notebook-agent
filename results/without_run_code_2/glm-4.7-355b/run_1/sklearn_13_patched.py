@@ -20,11 +20,14 @@ df = pd.read_csv("data/SalaryData_Test(1).csv")
 # y = df.Salary.values.reshape(-1,1)
 
 # === AFTER (edited) ===
-# Encode categorical workclass variable using one-hot encoding
-x = pd.get_dummies(df.workclass, drop_first=True).values
+from sklearn.preprocessing import LabelEncoder
 
-# Encode Salary variable (convert to binary: 1 for >50K, 0 for <=50K)
-y = (df.Salary == ' >50K').astype(int).values.reshape(-1,1)
+# Encode categorical variables
+le_workclass = LabelEncoder()
+le_salary = LabelEncoder()
+
+x = le_workclass.fit_transform(df.workclass).reshape(-1,1)
+y = le_salary.fit_transform(df.Salary).reshape(-1,1)
 
 #%%
 # --- [CELL 3]: ---

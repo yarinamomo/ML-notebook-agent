@@ -220,15 +220,20 @@ test_model(model)
 
 # === AFTER (edited) ===
 n_epoch = 1
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = model.to(device)
+
 for epoch in range(n_epoch):
     model.train()
 
     for batch_idx, (sekil, netice) in enumerate(train_loader):
+        sekil, netice = sekil.to(device), netice.to(device)
+        netice = netice.view(-1, 1).float()  # Reshape to match output [batch_size, 1]
 
         optimizer.zero_grad()
 
         outputs = model(sekil)
-        loss = loss_fn(outputs.squeeze(), netice.float())
+        loss = loss_fn(outputs, netice)
 
         loss.backward()
         optimizer.step()

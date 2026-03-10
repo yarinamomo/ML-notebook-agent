@@ -99,13 +99,12 @@ def row2image(row):
     return image, emotion
 
 plt.figure(0, figsize=(16,10))
-# Iterate only over remaining emotion classes (skip 1 which was removed)
-emotion_classes = [0, 2, 3, 4, 5, 6]
-for idx, emotion_class in enumerate(emotion_classes):
-    face = data[data['emotion'] == emotion_class].iloc[0]
-
+# Get unique emotion values present in the data
+unique_emotions = sorted(data['emotion'].unique())
+for i, emotion_val in enumerate(unique_emotions):
+    face = data[data['emotion'] == emotion_val].iloc[0]
     img, label = row2image(face)
-    plt.subplot(2,3,idx+1)
+    plt.subplot(2,4,i+1)  # i+1 because subplot indices start at 1
     plt.imshow(img)
     plt.title(label)
 

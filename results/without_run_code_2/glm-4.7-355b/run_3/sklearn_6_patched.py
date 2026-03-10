@@ -38,22 +38,20 @@ test_ds = pd.read_csv("data/test.csv")
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
+# === BEFORE (original) ===
+# train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
+
+# === AFTER (edited) ===
+train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2', 
+                'MSZoning', 'Utilities', 'BsmtFullBath', 'BsmtHalfBath', 'Functional'], 
+               axis = 1, inplace = True)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# for column in train_ds:
-#     null_count = train_ds[column].isnull().sum()
-#     if null_count > 1:
-#         print(f"Dropping column {column} with {null_count} missing values.")
-#         train_ds.drop(column, axis = 1, inplace = True)
-
-# === AFTER (edited) ===
 for column in train_ds:
     null_count = train_ds[column].isnull().sum()
     if null_count > 1:
@@ -62,12 +60,24 @@ for column in train_ds:
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# === BEFORE (original) ===
+# le = LabelEncoder()
+# string_columns = train_ds.select_dtypes(include = ['object']).columns
+# for column in string_columns:
+#     train_ds[column] = le.fit_transform(train_ds[column])
+
+# === AFTER (edited) ===
 le = LabelEncoder()
 string_columns = train_ds.select_dtypes(include = ['object']).columns
 for column in string_columns:
     train_ds[column] = le.fit_transform(train_ds[column])
+
+# Fill remaining NaN values in numeric columns with median
+for column in train_ds.select_dtypes(include = ['number']).columns:
+    if train_ds[column].isnull().sum() > 0:
+        train_ds[column] = train_ds[column].fillna(train_ds[column].median())
 
 #%%
 # --- [CELL 6]: ---
@@ -107,14 +117,9 @@ print(f'MSE: {mse}')
 
 #%%
 # --- [CELL 11]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
-# === BEFORE (original) ===
-# test_ds_ids = test_ds['Id'] # fix for crash isolation purpose
-# test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
-
-# === AFTER (edited) ===
-test_ds_ids = test_ds['Id']
+test_ds_ids = test_ds['Id'] # fix for crash isolation purpose
 test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 #%%
@@ -137,53 +142,33 @@ for column in test_ds:
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# === BEFORE (original) ===
+# le = LabelEncoder()
+# string_columns = test_ds.select_dtypes(include = ['object']).columns
+# for column in string_columns:
+#     test_ds[column] = le.fit_transform(test_ds[column])
+
+# === AFTER (edited) ===
 le = LabelEncoder()
 string_columns = test_ds.select_dtypes(include = ['object']).columns
 for column in string_columns:
     test_ds[column] = le.fit_transform(test_ds[column])
 
+# Fill remaining NaN values in numeric columns with median
+for column in test_ds.select_dtypes(include = ['number']).columns:
+    if test_ds[column].isnull().sum() > 0:
+        test_ds[column] = test_ds[column].fillna(test_ds[column].median())
+
 #%%
 # --- [CELL 14]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-# === BEFORE (original) ===
-# predictions = FReg.predict(test_ds)
-# submissions_df = pd.DataFrame({
-#     "ID" : test_ds_ids, # test_data['ID'], # fix for crash isolation purpose
-#     "Predictions" : predictions
-# })
-# 
-# # submissions_df.to_csv('submission_csv', index = False)
-
-# === AFTER (edited) ===
-# Get the columns that are in training data (X) but missing in test_ds
-missing_in_test = set(X.columns) - set(test_ds.columns)
-print(f"Adding {len(missing_in_test)} missing columns to test_ds")
-
-# Add missing columns with default value 0
-for col in missing_in_test:
-    test_ds[col] = 0
-
-# Check for NaN values in test_ds that correspond to training columns
-test_ds_align_cols = X.columns
-test_ds_for_prediction = test_ds[test_ds_align_cols]
-
-# Fill any remaining NaN with column means (using the training data values where possible)
-for col in test_ds_for_prediction.columns:
-    if test_ds_for_prediction[col].isnull().any():
-        # Use the mean from training data if available, otherwise use 0
-        if col in X.columns:
-            train_mean = X[col].mean()
-            test_ds_for_prediction[col] = test_ds_for_prediction[col].fillna(train_mean)
-        else:
-            test_ds_for_prediction[col] = test_ds_for_prediction[col].fillna(0)
-        print(f"Filled NaN in column {col}")
-
-# Now make predictions
-predictions = FReg.predict(test_ds_for_prediction)
+predictions = FReg.predict(test_ds)
 submissions_df = pd.DataFrame({
-    "ID" : test_ds_ids,
+    "ID" : test_ds_ids, # test_data['ID'], # fix for crash isolation purpose
     "Predictions" : predictions
 })
+
+# submissions_df.to_csv('submission_csv', index = False)

@@ -180,4 +180,5 @@ model.save("train.h5")
 # model.load ("train.h5")
 
 # === AFTER (edited) ===
-model = tf.keras.models.load_model("train.h5")
+from tensorflow.keras.models import load_model
+model = load_model("train.h5")

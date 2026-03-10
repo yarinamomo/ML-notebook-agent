@@ -103,7 +103,7 @@ for i in range(filas):
         n = i * col + j
         if n < len(nombres_col.columns):
             axs[i, j].set_title(nombres_col.columns[n])
-            axs[i, j].scatter(df[nombres_col.columns[n]][:N], y[:N])
+            axs[i, j].scatter(nombres_col.iloc[:N, n], y[:N])
 
 fig.tight_layout()
 plt.show()

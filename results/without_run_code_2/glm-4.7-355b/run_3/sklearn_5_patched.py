@@ -53,7 +53,7 @@ y_pred = clf.predict(x_test)
 from sklearn import metrics
 confusion_matrix = metrics.confusion_matrix(y_test , y_pred)
 
-cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix, display_labels=clf.classes_)
+cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix , display_labels=clf.classes_)
 
 cm_display.plot()
 plt.show()

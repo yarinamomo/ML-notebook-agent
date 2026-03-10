@@ -81,17 +81,13 @@ dd={}
 
 for col in cols:
 
-    freq, edges = np.histogram(df[col].values[~np.isnan(df[col].values)])
+    freq, edges = np.histogram(df[col].dropna().values)
     dd[col] = hv.Histogram((edges, freq), label='ALL Loans').redim.label(x=' ')
 
-    paid_vals = g.get_group('PAID')[col].values
-    paid_vals = paid_vals[~np.isnan(paid_vals)]
-    freq, edges = np.histogram(paid_vals, bins=edges)
+    freq, edges = np.histogram(g.get_group('PAID')[col].dropna().values, bins=edges)
     dd[col] *= hv.Histogram((edges, freq), label='PAID Loans').redim.label(x=' ')
 
-    default_vals = g.get_group('DEFAULT')[col].values
-    default_vals = default_vals[~np.isnan(default_vals)]
-    freq, edges = np.histogram(default_vals, bins=edges)
+    freq, edges = np.histogram(g.get_group('DEFAULT')[col].dropna().values, bins=edges)
     dd[col] *= hv.Histogram((edges, freq), label='DEFAULT Loans' ).redim.label(x=' ')
 
 var = [*dd]

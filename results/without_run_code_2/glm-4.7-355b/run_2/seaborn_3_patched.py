@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -33,7 +33,7 @@ pd.set_option('display.float_format', lambda x: '%.3f' % x)
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 train = pd.read_csv("data/train.csv")
 test = pd.read_csv("data/test.csv")
 
@@ -54,7 +54,7 @@ df.isnull().sum()
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 def grab_col_names(dataframe, cat_th=10, car_th=25):
     """
     grab_col_names for given dataframe
@@ -98,7 +98,7 @@ cat_cols, cat_but_car, num_cols = grab_col_names(df)
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # def num_summary(dataframe, numerical_col, plot=False):
 #     quantiles = [0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99]
@@ -139,9 +139,6 @@ def num_summary(dataframe, numerical_col, plot=False):
 
 for col in num_cols:
     num_summary(df, col, True)
-
-for col in num_cols:
-    sns.barplot(data=df, x=col)
 
 for col in num_cols:
     sns.boxplot(data=df, x=col)

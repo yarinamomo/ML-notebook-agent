@@ -348,7 +348,6 @@ def predict(image_path, model, topk=5):
 
 # === AFTER (edited) ===
 import matplotlib.pyplot as plt
-import random
 
 
 def display_image(image_path):
@@ -357,18 +356,13 @@ def display_image(image_path):
 
 model = load_checkpoint('checkpoint.pth')
 
-# Create inverse mapping from model indices to class indices
-idx_to_class = {v: k for k, v in model.class_to_idx.items()}
 
-
-idx = random.choice(range(len(test_ds.imgs)))
-test_image_path = test_ds.imgs[idx][0]
+test_paths = [x[0] for x in test_ds.imgs]
+test_image_path = np.random.choice(test_paths)
 display_image(test_image_path)
 
 probs, classes = predict(test_image_path, model)
 
-# Convert model class indices to actual class indices
-classes = [idx_to_class[cls] for cls in classes]
 class_names = [cat_to_name[str(cls)] for cls in classes]
 
 print("Probabilities:", probs)
@@ -376,14 +370,11 @@ print("Classes:", class_names)
 
 
 for i in range(5):
-    idx = random.choice(range(len(test_ds.imgs)))
-    test_image_path = test_ds.imgs[idx][0]
+    test_image_path = np.random.choice(test_paths)
     display_image(test_image_path)
 
     probs, classes = predict(test_image_path, model)
 
-    # Convert model class indices to actual class indices
-    classes = [idx_to_class[cls] for cls in classes]
     class_names = [cat_to_name[str(cls)] for cls in classes]
 
     print("Probabilities:", probs)

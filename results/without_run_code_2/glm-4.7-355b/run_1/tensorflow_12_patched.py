@@ -98,9 +98,11 @@ for i in range(df.shape[0]):
 
     path = InputPath+df.laterality[i]+'-'+df.view_position[i]+'/'+df.image_id[i]+'.png'
     if os.path.exists(path):
-        img = cv2.imread(path)
+        img = cv2.imread(path,0)
         img_size = cv2.resize(img, (100, 100), interpolation = cv2.INTER_LINEAR)
 
+        # Convert grayscale to 3-channel by stacking
+        img_size = np.stack((img_size,)*3, axis=-1)
 
         X.append(img_size)
 

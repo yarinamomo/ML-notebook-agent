@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
@@ -32,7 +32,7 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 #By Ranamalla Nithin Reddy https://www.kaggle.com/code/nithinreddy90/chatpgpt-prompts
 
 from transformers import AutoTokenizer
@@ -55,7 +55,7 @@ print(df.head())
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # import pandas as pd
 # import torch
@@ -100,7 +100,7 @@ model_name = "gpt2"
 model = GPT2LMHeadModel.from_pretrained(model_name)
 tokenizer = GPT2Tokenizer.from_pretrained(model_name)
 
-# Set pad token for GPT2 (which doesn't have one by default)
+# Set pad token for GPT2 (it doesn't have one by default)
 tokenizer.pad_token = tokenizer.eos_token
 tokenizer.pad_token_id = tokenizer.eos_token_id
 
@@ -117,7 +117,7 @@ for index, row in df.iterrows():
             input_ids,
             max_length=input_ids.size(1) + 50,
             num_return_sequences=1,
-            pad_token_id=tokenizer.pad_token_id,
+            pad_token_id=tokenizer.eos_token_id,
             attention_mask=input_ids.ne(tokenizer.pad_token_id)
         )
 

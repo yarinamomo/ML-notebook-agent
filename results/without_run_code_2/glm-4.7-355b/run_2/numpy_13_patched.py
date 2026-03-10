@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 # importing necessary packages for the section
 import os
 import IPython
@@ -15,7 +15,7 @@ from scipy.signal import spectrogram, find_peaks
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 # importing packages
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
@@ -67,7 +67,7 @@ path = "data_small/"
 def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
 
     data = []
-    max_harm_length = 0
+    max_len = 0
 
     for dirname, _, filenames in os.walk(path):
         for filename in filenames:
@@ -78,25 +78,23 @@ def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
             mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, fmax=fmax, fmin=fmin)
             logam = librosa.power_to_db(mel)
             data.append(logam)
+            max_len = max(max_len, logam.shape[1])
 
-    # Find maximum length among all spectrograms
-    max_length = max(arr.shape[1] for arr in data)
-    
     # Pad all spectrograms to the same length
     padded_data = []
-    for arr in data:
-        if arr.shape[1] < max_length:
-            # Pad with zeros at the end
-            padded = np.pad(arr, ((0, 0), (0, max_length - arr.shape[1])), mode='constant')
+    for item in data:
+        if item.shape[1] < max_len:
+            pad_width = ((0, 0), (0, max_len - item.shape[1]))
+            padded_item = np.pad(item, pad_width, mode='constant', constant_values=0)
         else:
-            padded = arr
-        padded_data.append(padded)
-    
+            padded_item = item
+        padded_data.append(padded_item)
+
     data = np.array(padded_data)
     return data
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
 NX = FeatureExtractor(path, n_mels = 10)

@@ -157,11 +157,8 @@ class Network(nn.Module):
         self.bn4 = nn.BatchNorm2d(24)
         self.conv5 = nn.Conv2d(in_channels=24, out_channels=24, kernel_size=5, stride=1, padding=1)
         self.bn5 = nn.BatchNorm2d(24)
-        # Calculate dimensions:
-        # Input: 224x224 -> conv1 (pad=1, ker=5): 222x222 -> conv2 (pad=1, ker=5): 220x220 -> pool: 110x110
-        # -> conv4 (pad=1, ker=5): 108x108 -> conv5 (pad=1, ker=5): 106x106 -> pool: 53x53
-        # Final: 53 * 53 * 24 = 67416
-        self.fc1 = nn.Linear(24*53*53, 120)
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc1 = nn.Linear(24, 120)
 
     def forward(self, input):
         output = F.relu(self.bn1(self.conv1(input)))
@@ -169,8 +166,8 @@ class Network(nn.Module):
         output = self.pool(output)
         output = F.relu(self.bn4(self.conv4(output)))
         output = F.relu(self.bn5(self.conv5(output)))
-        output = self.pool(output)
-        output = output.view(-1, 24*53*53)
+        output = self.adaptive_pool(output)
+        output = output.view(output.size(0), -1)
         output = self.fc1(output)
 
         return output
@@ -322,10 +319,9 @@ def train(num_epochs):
         for i, (images, classes) in enumerate(training_set_loader, 0):
 
 
-            images = Variable(images.to(device))
+            images = images.to(device)
 
-            classes = torch.tensor(classes)
-            classes = Variable(classes.to(device))
+            classes = classes.to(device)
 
 
             optimizer.zero_grad()

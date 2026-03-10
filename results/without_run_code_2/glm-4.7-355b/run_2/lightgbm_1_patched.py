@@ -139,25 +139,45 @@ df_TSNE_te = df_TSNE_te.set_index('Id')
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# === BEFORE (original) ===
+# df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
+# df_TSNE = pd.concat([df_tmp,train[conf.target]], axis=1)
+# 
+# df_TSNE = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
+# 
+# groups = df_TSNE.groupby(conf.target)
+# 
+# #https://stackoverflow.com/questions/21654635/scatter-plots-in-pandas-pyplot-how-to-plot-by-category
+# fig, ax = plt.subplots(figsize=(12, 12))
+# ax.margins(0.05) # Optional, just adds 5% padding to the autoscaling
+# for name, group in groups:
+#     ax.plot(group.tsne1, group.tsne2, marker='o', linestyle='', ms=12, label=name)
+# ax.legend()
+# #plt.xlim(-75, -80)
+# #plt.ylim(-5, 5)
+# 
+# plt.show()
+
+# === AFTER (edited) ===
+# Create filtered version for visualization
 df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
-df_TSNE = pd.concat([df_tmp,train[conf.target]], axis=1)
+df_TSNE = pd.concat([df_tmp, train[conf.target]], axis=1)
+df_TSNE_filtered = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
 
-df_TSNE = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
+groups = df_TSNE_filtered.groupby(conf.target)
 
-groups = df_TSNE.groupby(conf.target)
-
-#https://stackoverflow.com/questions/21654635/scatter-plots-in-pandas-pyplot-how-to-plot-by-category
 fig, ax = plt.subplots(figsize=(12, 12))
-ax.margins(0.05) # Optional, just adds 5% padding to the autoscaling
+ax.margins(0.05)
 for name, group in groups:
     ax.plot(group.tsne1, group.tsne2, marker='o', linestyle='', ms=12, label=name)
 ax.legend()
-#plt.xlim(-75, -80)
-#plt.ylim(-5, 5)
 
 plt.show()
+
+# Also create the version with all data for later use (without the target column)
+df_TSNE_all = df_tmp
 
 #%%
 # --- [CELL 16]: ---
@@ -170,30 +190,15 @@ plt.show()
 
 # === AFTER (edited) ===
 df_tmp = train2.drop(columns=['quality'])
-train3 = pd.concat([df_tmp, df_TSNE[['tsne1', 'tsne2']]], axis=1)
+train3 = pd.concat([df_tmp, df_TSNE_all], axis=1)
+# Add back the quality column
 train3['quality'] = train2['quality'].values
 test3 = pd.concat([test2, df_TSNE_te], axis=1)
 
 #%%
 # --- [CELL 17]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
-# === BEFORE (original) ===
-# from sklearn.metrics import cohen_kappa_score
-# from sklearn.model_selection import StratifiedKFold
-# 
-# from lightgbm.sklearn import LGBMClassifier
-# from catboost import CatBoostClassifier
-# 
-# from lightgbm import LGBMRegressor
-# import scipy as sp
-# from functools import partial
-# 
-# import optuna
-# import warnings
-# warnings.filterwarnings('ignore')
-
-# === AFTER (edited) ===
 from sklearn.metrics import cohen_kappa_score
 from sklearn.model_selection import StratifiedKFold
 
@@ -201,7 +206,6 @@ from lightgbm.sklearn import LGBMClassifier
 from catboost import CatBoostClassifier
 
 from lightgbm import LGBMRegressor
-import lightgbm
 import scipy as sp
 from functools import partial
 
@@ -247,14 +251,18 @@ X = train3.drop([conf.target], axis=1)
 #     return np.mean(scores)
 
 # === AFTER (edited) ===
-scores = []
+import lightgbm
+
+scores =[]
 
 def find_out_params_model(trial):
-    random_state = trial.suggest_int('random_state', 1000, 2000)
-    n_splits = trial.suggest_int('n_splits', 8, 20)
+    random_state = trial.suggest_int('random_state', 1000, 1002)
+    n_splits = trial.suggest_int('n_splits', 3, 5)
     cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=conf.random)
     my_model = LGBMClassifier(
-        random_state = random_state
+        random_state = random_state,
+        n_estimators = 50,
+        max_depth = 5
     )
     for fold, (train_idx, valid_idx) in enumerate(cv.split(X, y)):
 
@@ -263,7 +271,7 @@ def find_out_params_model(trial):
         my_model.fit(
             X_train, y_train,
             eval_set= [(X_valid,y_valid)],
-            callbacks=[lightgbm.early_stopping(stopping_rounds=50), lightgbm.log_evaluation(period=-1)]
+            callbacks=[lightgbm.early_stopping(stopping_rounds=25), lightgbm.log_evaluation(period=-1)]
         )
 
         preds_valid = my_model.predict(X_valid)

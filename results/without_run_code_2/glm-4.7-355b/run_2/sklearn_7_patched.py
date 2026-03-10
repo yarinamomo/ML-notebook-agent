@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 try:
     import pandas as pd
 except ImportError:
@@ -18,7 +18,7 @@ else:
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # from sklearn.model_selection import train_test_split
 # from sklearn.ensemble import RandomForestRegressor
@@ -44,10 +44,12 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
 
-# Drop non-numeric columns (Gender, CustomerID, etc.) 
-# Keep only numeric features for the RandomForestRegressor
-X = df.select_dtypes(include=['number']).drop(['Spending Score (1-100)'], axis=1)
+# Encode categorical variables
+X = df.drop(['Spending Score (1-100)'], axis=1)
+# Convert categorical variables to numeric using one-hot encoding
+X = pd.get_dummies(X, drop_first=True)
 y = df['Spending Score (1-100)']
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 

@@ -51,4 +51,4 @@ train = train[train['ph']<7.1]
 # fig = sm.qqplot(train['gravity'],line=45,fit=True)
 
 # === AFTER (edited) ===
-fig = sm.qqplot(train['gravity'],line='45',fit=True)
+fig = sm.qqplot(train['gravity'], line='s', fit=True)

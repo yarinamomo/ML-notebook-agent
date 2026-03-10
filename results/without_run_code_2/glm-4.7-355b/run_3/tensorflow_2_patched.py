@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy 
 import matplotlib.pyplot as plt 
 import os 
@@ -12,7 +12,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 src_path_train = 'data_small/training_set'
 src_path_test = 'data_small/test_set'
 
@@ -26,7 +26,7 @@ test_datagen = ImageDataGenerator(rescale = 1 / 255.0)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 batch_size = 30
 train_generator = train_datagen.flow_from_directory(
     directory= src_path_train,
@@ -52,7 +52,7 @@ valid_generator = train_datagen.flow_from_directory(
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 test_generator = test_datagen.flow_from_directory(
     directory=src_path_test,
     target_size=(223, 223),
@@ -66,7 +66,7 @@ test_generator = test_datagen.flow_from_directory(
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # def prepare_model():
 #     model = Sequential()

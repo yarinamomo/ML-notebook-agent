@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
@@ -22,7 +22,7 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 from sklearn.model_selection import ( train_test_split, KFold, StratifiedKFold,cross_val_score, RepeatedKFold, RandomizedSearchCV,learning_curve, ShuffleSplit, GridSearchCV)
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import (IterativeImputer, SimpleImputer, KNNImputer)
@@ -46,7 +46,7 @@ np.seterr(divide = 'ignore')
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 class SelectColumnsTransformer():
     #The parameter "columns" is set and only those columns will be resulted 
     def __init__(self, columns=None):
@@ -63,7 +63,7 @@ class SelectColumnsTransformer():
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 class DataframeFunctionTransformer():
     def __init__(self, func):
         self.func = func
@@ -77,7 +77,7 @@ class DataframeFunctionTransformer():
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 class ml_support():
     def __init__(self):
         self.df = pd.read_csv("data/credit_risk_dataset.csv", encoding='latin')
@@ -223,7 +223,7 @@ class ml_support():
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 def get_higher_whisker(grp):
     try:
         q1, q3 = grp.quantile(0.25), grp.quantile(0.75)
@@ -286,13 +286,13 @@ def add_features(df):
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 feature_engieered = ("FeatureEngineering_add_features", DataframeFunctionTransformer(add_features))
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # # %%time
 # # Adaboost (Boosting of multiple Decision Trees)
@@ -309,14 +309,14 @@ feature_engieered = ("FeatureEngineering_add_features", DataframeFunctionTransfo
 # finalized_pipeline = ml_support_obj.get_final_pipeline(regression_model,ct,feature_engieered)
 
 # === AFTER (edited) ===
-from sklearn.ensemble import AdaBoostRegressor
+from sklearn.ensemble import AdaBoostClassifier
 ml_support_obj = ml_support()
 best_decision_tree_model = RandomForestClassifier(random_state = 42,n_estimators=1200,
                                           min_samples_split=5, min_samples_leaf = 1,
                                           max_features = 'auto', max_depth = None,
                                           bootstrap =True
                                          )
-regression_model = best_decision_tree_model
+regression_model = AdaBoostClassifier()
 ct = ml_support_obj.get_column_transformer(False, "", True)
 X_train, X_test , y_train, y_test = ml_support_obj.get_train_test_data()
 finalized_pipeline = ml_support_obj.get_final_pipeline(regression_model,ct,feature_engieered)
@@ -324,12 +324,12 @@ finalized_pipeline = ml_support_obj.get_final_pipeline(regression_model,ct,featu
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'not run'}
 # %%time
 preds = ml_support_obj.predit_with_pipeline(finalized_pipeline,X_train,X_test,y_train)
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'not run'}
 print("Balenced Accuracy Score : {0}".format(balanced_accuracy_score(y_test, preds)))

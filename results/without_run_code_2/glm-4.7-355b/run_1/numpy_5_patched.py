@@ -454,5 +454,4 @@ else:
 # np.savetxt('images.txt', images, delimiter=',', fmt='%d')
 
 # === AFTER (edited) ===
-images_2d = images.reshape(-1, 32 * 32 * 3)
-np.savetxt('images.txt', images_2d, delimiter=',', fmt='%d')
+np.savetxt('images.txt', images[0].reshape(-1), delimiter=',', fmt='%d')

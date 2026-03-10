@@ -25,10 +25,14 @@ dataset2 = load_dataset("multi_nli")
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-torch.manual_seed = 555
-# torch.set_default_tensor_type('torch.cuda.FloatTensor')
+# === BEFORE (original) ===
+# torch.manual_seed = 555
+# # torch.set_default_tensor_type('torch.cuda.FloatTensor')
+
+# === AFTER (edited) ===
+torch.manual_seed(555)
 
 #%%
 # --- [CELL 2]: ---
@@ -159,33 +163,8 @@ X,Y = build_input(tokens , word2index,text2int)
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
-# === BEFORE (original) ===
-# from torch.utils.data import Dataset, DataLoader
-# class  data(Dataset):
-#     def __init__(self , X,Y,vs , padsz):
-#         self.X = X
-#         self.Y = Y
-#         self.vocab_size = vs
-#         self.mx = padsz
-#     def __len__(self):
-#         return len(self.X)
-#     def __getitem__(self , index):
-#         dif = len(self.mx - self.X[index] )
-#         _x = self.X[index]
-#         _y = self.Y[index]
-#         if dif > 0:
-#             a = torch.zeros(self.mx)
-#             b = torch.zeros(self.mx)
-#             a[:len(_x)] = _x
-#             b[:len(_y)] = _y
-#             _x = a
-#             _y = torch.zeros( ( self.mx, self.vocab_size))
-#             _y [torch.arange(self.mx),b.long()] =1
-#         return _x.long() , _y.long()
-
-# === AFTER (edited) ===
 from torch.utils.data import Dataset, DataLoader
 class  data(Dataset):
     def __init__(self , X,Y,vs , padsz):
@@ -196,7 +175,7 @@ class  data(Dataset):
     def __len__(self):
         return len(self.X)
     def __getitem__(self , index):
-        dif = self.mx - len(self.X[index])
+        dif = len(self.mx - self.X[index] )
         _x = self.X[index]
         _y = self.Y[index]
         if dif > 0:
@@ -302,8 +281,7 @@ class elmo(torch.nn.Module):
 # optimizer = torch.optim.Adam(model.parameters())
 
 # === AFTER (edited) ===
-embed_size = len(word2index)  # Number of unique indices in word2index
-model = elmo(embed_size , glv_size, embed=embed)
+model = elmo(len(word2index), glv_size)
 optimizer = torch.optim.Adam(model.parameters())
 
 #%%
@@ -369,34 +347,37 @@ yt = dataset['test']['label']
 
 # === AFTER (edited) ===
 class sentimentdata(Dataset):
-    def __init__(self , X,Y, num_classes, padsz=40):
+    def __init__(self , X,Y, padsz, num_classes=2):
         self.X = X
         self.Y = Y
-        self.num_classes = num_classes
         self.mx = padsz
+        self.num_classes = num_classes
     def __len__(self):
         return len(self.X)
     def __getitem__(self , index):
-        dif = self.mx - len(self.X[index])
         _x = self.X[index]
         _y = self.Y[index]
+        dif = self.mx - len(_x)
         if dif > 0:
             a = torch.zeros(self.mx)
             a[:len(_x)] = _x
             _x = a
         # Convert label to one-hot encoding
-        y_onehot = torch.zeros(self.num_classes)
-        y_onehot[_y] = 1
-        return _x.long() , y_onehot
-
-st_train_loader = sentimentdata(X ,ylb, 2)
-st_test_loader = sentimentdata(X_test ,ytb, 2)
+        y_one_hot = torch.zeros(self.num_classes)
+        y_one_hot[_y] = 1
+        return _x.long(), y_one_hot.long()
+st_train_loader = sentimentdata(X ,ylb, 40)
+st_test_loader = sentimentdata(X ,ytb, 40)
 
 st_train = DataLoader(st_train_loader, batch_size=5 )
 st_test= DataLoader(st_test_loader, batch_size=5 )
 
 #%%
 # --- [CELL 19]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
-train(st_train,2)
+# cell_state: edited
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 21}
+# === BEFORE (original) ===
+# train(st_train,2)
+
+# === AFTER (edited) ===
+train(st_train,1)

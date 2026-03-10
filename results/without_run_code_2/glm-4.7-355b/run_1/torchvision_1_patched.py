@@ -183,7 +183,7 @@ model = ResNet()
 #%%
 # --- [CELL 7]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 # === BEFORE (original) ===
 # import torch
 # import torch.nn as nn
@@ -299,6 +299,7 @@ def evaluate(model, test_dl):
         correct = 0
         total = 0
         for inputs, labels in test_dl:
+
             outputs = model(inputs)
 
             _, predicted = torch.max(outputs.data, 1)

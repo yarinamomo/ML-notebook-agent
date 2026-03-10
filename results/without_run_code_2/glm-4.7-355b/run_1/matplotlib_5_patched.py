@@ -53,9 +53,12 @@ centriods = kmeans.cluster_centers_
 # plt.show()
 
 # === AFTER (edited) ===
-plt.scatter(X[:,0], X[:,1], c = labels, cmap = 'viridis')
-plt.scatter(centriods[:,0], centriods[:,1], marker = 'X', s = 200, c = 'red')
-plt.title("K-Means Clustering")
-plt.xlabel("Gluscose")
-plt.ylabel("BloodPressure")
+fig = plt.figure(figsize=(10, 8))
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(X[:,0], X[:,1], X[:,2], c=labels, cmap='viridis')
+ax.scatter(centriods[:,0], centriods[:,1], centriods[:,2], marker='X', s=200, c='red')
+ax.set_title("K-Means Clustering")
+ax.set_xlabel("Glucose")
+ax.set_ylabel("BloodPressure")
+ax.set_zlabel("Insulin")
 plt.show()

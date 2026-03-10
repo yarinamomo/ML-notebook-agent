@@ -1,23 +1,12 @@
 # --- [CELL 0]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# import numpy as np # linear algebra
-# import pandas as pd
-# import tensorflow as tf
-# from tensorflow.keras.models import Sequential
-# from tensorflow.keras import layers
-# from matplotlib import pyplot as plt
-
-# === AFTER (edited) ===
-import numpy as np
+import numpy as np # linear algebra
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras import layers
 from matplotlib import pyplot as plt
-import os
-from PIL import Image
 
 #%%
 # --- [CELL 1]: ---
@@ -36,7 +25,25 @@ data_dir = pathlib.Path(data_dir).with_suffix('')
 # image_count
 
 # === AFTER (edited) ===
-image_count = len(list(data_dir.glob('*/*.png')))
+import PIL
+
+def is_valid_image(path):
+    try:
+        with PIL.Image.open(path) as img:
+            img.verify()
+        # Re-open to check if it can be loaded
+        with PIL.Image.open(path) as img:
+            img.load()
+        return True
+    except:
+        return False
+
+# Get all image paths
+all_image_paths = list(data_dir.glob('*/*.jpg'))
+
+# Filter out corrupted images
+valid_image_paths = [p for p in all_image_paths if is_valid_image(p)]
+image_count = len(valid_image_paths)
 image_count
 
 #%%
@@ -56,26 +63,8 @@ PIL.Image.open(str(princess[1]))
 # batch_size,epochs = 64,10
 
 # === AFTER (edited) ===
-# Get image dimensions from a valid image
-image_height, image_width = PIL.Image.open(str(princess[1])).size
-batch_size, epochs = 64, 10
-
-# Fix potentially corrupt images by re-saving them as PNG
-import os
-from PIL import Image
-
-for class_dir in data_dir.iterdir():
-    if class_dir.is_dir():
-        for img_file in class_dir.glob('*'):
-            try:
-                with Image.open(img_file) as img:
-                    img.load()  # Try to load the image
-                    # Re-save as PNG to ensure validity
-                    img.save(img_file, 'PNG')
-            except Exception as e:
-                print(f"Error processing {img_file}: {e}")
-
-print("Image verification and conversion complete")
+image_width, image_height = PIL.Image.open(str(princess[1])).size
+batch_size,epochs = 64,10
 
 #%%
 # --- [CELL 5]: ---
@@ -93,46 +82,65 @@ print("Image verification and conversion complete")
 # )
 
 # === AFTER (edited) ===
-def is_valid_image(filepath):
-    """Check if a file is a valid image"""
-    try:
-        with Image.open(filepath) as img:
-            img.verify()
-        return True
-    except:
-        return False
+# Create a custom filtered dataset to avoid corrupt files
+def create_filtered_dataset(data_dir, subset):
+    # Collect image paths and labels
+    image_paths = []
+    labels = []
+    
+    class_names = sorted([str(d.name) for d in data_dir.iterdir() if d.is_dir()])
+    
+    valid_count = 0
+    for class_idx, class_name in enumerate(class_names):
+        class_dir = data_dir / class_name
+        for img_path in class_dir.glob('*.jpg'):
+            # Validate image
+            try:
+                with PIL.Image.open(img_path) as img:
+                    img.verify()
+                # Re-open to ensure it loads
+                with PIL.Image.open(img_path) as img:
+                    img.load()
+                valid_count += 1
+            except:
+                continue
+            
+            image_paths.append(str(img_path))
+            labels.append(class_idx)
+    
+    print(f"Found {len(image_paths)} valid images out of {valid_count + (40 - len(image_paths))} total")
+    
+    # Shuffle indices
+    indices = np.random.RandomState(seed=1).permutation(len(image_paths))
+    
+    # Split based on subset
+    split_idx = int(0.8 * len(indices))
+    if subset == 'training':
+        indices = indices[:split_idx]
+    else:
+        indices = indices[split_idx:]
+    
+    # Create dataset from filtered images
+    image_paths = [image_paths[i] for i in indices]
+    labels = [labels[i] for i in indices]
+    
+    # Define function to load and preprocess image
+    def load_image(path, label):
+        img = tf.io.read_file(path)
+        img = tf.image.decode_image(img, channels=3, expand_animations=False)
+        img = tf.image.resize(img, [image_height, image_width])
+        return img, label
+    
+    # Create tf.data.Dataset
+    dataset = tf.data.Dataset.from_tensor_slices((image_paths, labels))
+    dataset = dataset.map(load_image, num_parallel_calls=tf.data.AUTOTUNE)
+    dataset = dataset.shuffle(1000, seed=1)
+    dataset = dataset.batch(batch_size)
+    dataset = dataset.prefetch(tf.data.AUTOTUNE)
+    
+    return dataset
 
-# Find all valid image paths and their labels
-from pathlib import Path
-valid_paths = []
-valid_labels = []
-class_names = sorted([d.name for d in data_dir.iterdir() if d.is_dir()])
-
-for class_idx, class_name in enumerate(class_names):
-    class_dir = data_dir / class_name
-    for img_file in class_dir.glob('*.jpg'):
-        if is_valid_image(img_file):
-            valid_paths.append(str(img_file))
-            valid_labels.append(class_idx)
-
-print(f"Found {len(valid_paths)} valid images out of 40 total")
-
-# Create dataset from valid paths only
-path_ds = tf.data.Dataset.from_tensor_slices((valid_paths, valid_labels))
-
-def load_image(path, label):
-    img = tf.io.read_file(path)
-    img = tf.image.decode_image(img, channels=3, expand_animations=False)
-    img = tf.image.resize(img, [image_height, image_width])
-    img = tf.cast(img, tf.float32)
-    return img, label
-
-full_ds = path_ds.map(load_image, num_parallel_calls=tf.data.AUTOTUNE)
-
-# Split into train and validation
-train_size = int(0.8 * len(valid_paths))
-train_ds = full_ds.take(train_size).batch(batch_size).prefetch(tf.data.AUTOTUNE)
-train_ds.class_names = class_names
+train_ds = create_filtered_dataset(data_dir, 'training')
 
 #%%
 # --- [CELL 6]: ---
@@ -150,9 +158,7 @@ train_ds.class_names = class_names
 # )
 
 # === AFTER (edited) ===
-val_ds = full_ds.skip(train_size).batch(batch_size).prefetch(tf.data.AUTOTUNE)
-val_ds.class_names = class_names
-print(f"Validation dataset created with {len(valid_paths) - train_size} images")
+val_ds = create_filtered_dataset(data_dir, 'validation')
 
 #%%
 # --- [CELL 7]: ---
@@ -178,9 +184,15 @@ data_augmentation = keras.Sequential(
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-num_of_classes = len(train_ds.class_names)
+# === BEFORE (original) ===
+# num_of_classes = len(train_ds.class_names)
+# num_of_classes
+
+# === AFTER (edited) ===
+# Count number of classes from the data directory
+num_of_classes = len([d for d in data_dir.iterdir() if d.is_dir()])
 num_of_classes
 
 #%%

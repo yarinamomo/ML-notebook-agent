@@ -1,13 +1,13 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 class conf:
     index = 'Id'
     target = 'quality'
@@ -28,7 +28,7 @@ np.random.seed(conf.random)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pandas.plotting import scatter_matrix
@@ -36,7 +36,7 @@ from pandas.plotting import scatter_matrix
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 train_full = pd.read_csv("data/train.csv", index_col=conf.index)
 test_full = pd.read_csv("data/test.csv", index_col=conf.index)
 train = train_full.copy()
@@ -54,27 +54,27 @@ train.info()
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 train = train.reset_index()
 train = train.drop(columns=['Id'])
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 from sklearn.feature_selection import mutual_info_classif
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 train2 = train.copy()
 test2 = test.copy()
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 def fe(df):
     df['alcohol_density'] = df['alcohol']  * df['density']
     df['alcohol_to_density'] = df['alcohol'] / df['density']
@@ -83,14 +83,14 @@ def fe(df):
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 fe(train2)
 fe(test2)
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 features1 = train2[train2.quality==3].columns.to_list()[0:11] 
 features2 = train2[train2.quality==3].columns.to_list()[12:15]
 features = features1 + features2
@@ -98,20 +98,20 @@ features = features1 + features2
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 train2 = train2.drop(columns=['residual sugar', 'chlorides', 'free sulfur dioxide', 'pH'])
 test2 = test2.drop(columns=['residual sugar', 'chlorides', 'free sulfur dioxide', 'pH'])
 
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 features = test2.columns.to_list()
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 from sklearn.preprocessing import StandardScaler
 scaler = StandardScaler()
 train2_scaled = scaler.fit_transform(train2[features]) # (3199, 10)
@@ -121,13 +121,13 @@ train2 = pd.concat([df_train2_scaled, train2.quality], axis=1)
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
 from sklearn.manifold import TSNE
 
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
 # https://distill.pub/2016/misread-tsne/
 tsne_model = TSNE(perplexity=25, n_components=2, init='pca', n_iter=250, random_state=23) # n_iter=5000 for fast reproducing and fixing purposes
 df_tsne = tsne_model.fit_transform(train2[features])
@@ -139,58 +139,61 @@ df_TSNE_te = df_TSNE_te.set_index('Id')
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
-# === BEFORE (original) ===
-# df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
-# df_TSNE = pd.concat([df_tmp,train[conf.target]], axis=1)
-# 
-# df_TSNE = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
-# 
-# groups = df_TSNE.groupby(conf.target)
-# 
-# #https://stackoverflow.com/questions/21654635/scatter-plots-in-pandas-pyplot-how-to-plot-by-category
-# fig, ax = plt.subplots(figsize=(12, 12))
-# ax.margins(0.05) # Optional, just adds 5% padding to the autoscaling
-# for name, group in groups:
-#     ax.plot(group.tsne1, group.tsne2, marker='o', linestyle='', ms=12, label=name)
-# ax.legend()
-# #plt.xlim(-75, -80)
-# #plt.ylim(-5, 5)
-# 
-# plt.show()
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
 df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
 df_TSNE = pd.concat([df_tmp,train[conf.target]], axis=1)
 
-df_TSNE_viz = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
+df_TSNE = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
 
-groups = df_TSNE_viz.groupby(conf.target)
+groups = df_TSNE.groupby(conf.target)
 
-
+#https://stackoverflow.com/questions/21654635/scatter-plots-in-pandas-pyplot-how-to-plot-by-category
 fig, ax = plt.subplots(figsize=(12, 12))
-ax.margins(0.05)
+ax.margins(0.05) # Optional, just adds 5% padding to the autoscaling
 for name, group in groups:
     ax.plot(group.tsne1, group.tsne2, marker='o', linestyle='', ms=12, label=name)
 ax.legend()
-
-
+#plt.xlim(-75, -80)
+#plt.ylim(-5, 5)
 
 plt.show()
 
 #%%
 # --- [CELL 16]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
-df_tmp = train2.drop(columns=['quality'])
-train3 = pd.concat([df_tmp, df_TSNE], axis=1)
+# === BEFORE (original) ===
+# df_tmp = train2.drop(columns=['quality'])
+# train3 = pd.concat([df_tmp, df_TSNE], axis=1)
+# test3 = pd.concat([test2, df_TSNE_te], axis=1)
+
+# === AFTER (edited) ===
+df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
+df_tmp['quality'] = train[conf.target]
+train3 = pd.concat([train2.drop(columns=['quality']), df_tmp], axis=1)
 test3 = pd.concat([test2, df_TSNE_te], axis=1)
 
 #%%
 # --- [CELL 17]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 22}
+# === BEFORE (original) ===
+# from sklearn.metrics import cohen_kappa_score
+# from sklearn.model_selection import StratifiedKFold
+# 
+# from lightgbm.sklearn import LGBMClassifier
+# from catboost import CatBoostClassifier
+# 
+# from lightgbm import LGBMRegressor
+# import scipy as sp
+# from functools import partial
+# 
+# import optuna
+# import warnings
+# warnings.filterwarnings('ignore')
+
+# === AFTER (edited) ===
 from sklearn.metrics import cohen_kappa_score
 from sklearn.model_selection import StratifiedKFold
 
@@ -198,6 +201,7 @@ from lightgbm.sklearn import LGBMClassifier
 from catboost import CatBoostClassifier
 
 from lightgbm import LGBMRegressor
+import lightgbm as lgb
 import scipy as sp
 from functools import partial
 
@@ -208,14 +212,14 @@ warnings.filterwarnings('ignore')
 #%%
 # --- [CELL 18]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 23}
 y = train3[conf.target]
 X = train3.drop([conf.target], axis=1)
 
 #%%
 # --- [CELL 19]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 24}
 # === BEFORE (original) ===
 # scores =[]
 # 
@@ -243,8 +247,6 @@ X = train3.drop([conf.target], axis=1)
 #     return np.mean(scores)
 
 # === AFTER (edited) ===
-from lightgbm import early_stopping
-
 scores =[]
 
 def find_out_params_model(trial):
@@ -261,7 +263,7 @@ def find_out_params_model(trial):
         my_model.fit(
             X_train, y_train,
             eval_set= [(X_valid,y_valid)],
-            callbacks=[early_stopping(stopping_rounds=50, verbose=False)]
+            callbacks=[lgb.early_stopping(stopping_rounds=50, verbose=False)]
         )
 
         preds_valid = my_model.predict(X_valid)
@@ -272,6 +274,6 @@ def find_out_params_model(trial):
 #%%
 # --- [CELL 20]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 21}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 25}
 study = optuna.create_study(direction="maximize")
 study.optimize(find_out_params_model, n_trials=2)

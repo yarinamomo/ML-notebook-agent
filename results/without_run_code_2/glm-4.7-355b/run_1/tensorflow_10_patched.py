@@ -24,7 +24,7 @@ df=df_psytar
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
 df_1 = df[df['ADR']==1]
 df_0 = df[df['ADR']==0]
 
@@ -43,14 +43,14 @@ df = pd.concat([df_1,df_0])
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 from transformers import AutoTokenizer
 tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 def process_data(row):
 
     text = row['sentences']
@@ -71,7 +71,7 @@ def process_data(row):
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
 processed_data = []
 
 for i in range(len(df[:1000])):
@@ -79,10 +79,16 @@ for i in range(len(df[:1000])):
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-train_data = df["sentences"]
-train_labels = df['ADR']
+# === BEFORE (original) ===
+# train_data = df["sentences"]
+# train_labels = df['ADR']
+
+# === AFTER (edited) ===
+import numpy as np
+train_data = np.array([d['input_ids'] for d in processed_data], dtype=np.int32)
+train_labels = np.array([d['label'] for d in processed_data])
 
 #%%
 # --- [CELL 10]: ---
@@ -111,7 +117,7 @@ valid_hg = Dataset(pa.Table.from_pandas(valid_df))
 #%%
 # --- [CELL 12]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # class HuggingFaceLayer(tf.keras.layers.Layer):
 #     def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):
@@ -143,16 +149,13 @@ class HuggingFaceLayer(tf.keras.layers.Layer):
         super(HuggingFaceLayer, self).build(input_shape)
 
     def call(self, inputs):
-        # inputs is a dictionary with 'input_ids', 'attention_mask', etc.
         outputs = self.model(inputs)
-        # Return the last hidden state ( pooled_output or last_hidden_state)
-        # For sequence classification, we'll use the pooler_output (for [CLS] token)
-        return outputs.pooler_output
+        return outputs.last_hidden_state
 
 #%%
 # --- [CELL 13]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 15}
 # === BEFORE (original) ===
 # model_name = 'bert-base-uncased'
 # model = tf.keras.Sequential()
@@ -160,40 +163,17 @@ class HuggingFaceLayer(tf.keras.layers.Layer):
 # model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
 
 # === AFTER (edited) ===
-from transformers import TFAutoModelForSequenceClassification
-
 model_name = 'bert-base-uncased'
-model = TFAutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
+model = tf.keras.Sequential([
+    tf.keras.layers.Input(shape=(128,), dtype=tf.int32, name='input_ids'),
+    HuggingFaceLayer(model_name=model_name),
+    tf.keras.layers.Dense(1, activation='sigmoid')
+])
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-# === BEFORE (original) ===
-# # Compile and train the model
-# model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-# model.fit(train_data, train_labels, epochs=10)
-
-# === AFTER (edited) ===
-# Convert datasets to TensorFlow format
-train_dataset = train_hg.to_tf_dataset(
-    columns=['input_ids', 'attention_mask'],
-    label_cols=['label'],
-    shuffle=True,
-    batch_size=8,
-    collate_fn=None
-)
-
-valid_dataset = valid_hg.to_tf_dataset(
-    columns=['input_ids', 'attention_mask'],
-    label_cols=['label'],
-    shuffle=False,
-    batch_size=8,
-    collate_fn=None
-)
-
-# Compile the model - use string identifiers for optimizer
-model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-
-# Train the model
-model.fit(train_dataset, validation_data=valid_dataset, epochs=3)
+# cell_state: unchanged
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 15}
+# Compile and train the model
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+model.fit(train_data, train_labels, epochs=10)

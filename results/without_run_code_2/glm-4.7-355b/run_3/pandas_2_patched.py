@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -10,14 +10,14 @@ import missingno
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 train_df = pd.read_csv("data/train.csv",index_col='Id')
 test_df = pd.read_csv("data/test.csv",index_col='Id')
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 data=pd.concat([train_df, test_df], axis=0)
 cols=data.columns[data.isna().any()].tolist()
 missingvalue=pd.DataFrame(data[cols].isna().sum(), columns=['Number_missing'])
@@ -27,7 +27,7 @@ missingvalue
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # cat=[] 
 # num=[]

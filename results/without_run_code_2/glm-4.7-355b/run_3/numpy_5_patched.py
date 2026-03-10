@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,7 +21,7 @@ from tensorflow.keras.callbacks import LambdaCallback
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 def Load_Pprepr_Data():
     Data = tf.keras.datasets.cifar10.load_data()
     (train_images , train_labels) , (test_images , test_labels) = Data
@@ -86,7 +86,7 @@ def scale_image_to_uint8(image):
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 class AC_GAN:
 
         
@@ -403,7 +403,7 @@ class AC_GAN:
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 train_images ,train_labels ,test_images ,test_labels = Load_Pprepr_Data()
 train_img_f32 = scale_image_to_float(train_images)
 train_dataset = create_train_dataset(train_img_f32, train_labels, 25)
@@ -411,7 +411,7 @@ train_dataset = create_train_dataset(train_img_f32, train_labels, 25)
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 train_dataset_small = train_dataset.take(16)  # for fast reproducing and fixing purposes
 
 
@@ -449,9 +449,9 @@ else:
 #%%
 # --- [CELL 5]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # === BEFORE (original) ===
 # np.savetxt('images.txt', images, delimiter=',', fmt='%d')
 
 # === AFTER (edited) ===
-np.savetxt('images.txt', images.reshape(-1, images.shape[-1]), delimiter=',', fmt='%d')
+np.savetxt('images.txt', images.reshape(images.shape[0], -1), delimiter=',', fmt='%d')

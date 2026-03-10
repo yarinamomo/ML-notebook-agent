@@ -100,7 +100,7 @@ print(class_names)
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # import torch
 # import torch.nn as nn
@@ -157,14 +157,7 @@ class Network(nn.Module):
         self.bn4 = nn.BatchNorm2d(24)
         self.conv5 = nn.Conv2d(in_channels=24, out_channels=24, kernel_size=5, stride=1, padding=1)
         self.bn5 = nn.BatchNorm2d(24)
-        # After processing 224x224 input:
-        # conv1: 12x224x224
-        # conv2: 12x224x224
-        # pool: 12x112x112
-        # conv4: 24x112x112
-        # conv5: 24x112x112
-        # pool: 24x56x56 = 75264
-        self.fc1 = nn.Linear(24*56*56, 120)
+        self.fc1 = nn.Linear(24*106*106, 120)
 
     def forward(self, input):
         output = F.relu(self.bn1(self.conv1(input)))
@@ -172,8 +165,7 @@ class Network(nn.Module):
         output = self.pool(output)
         output = F.relu(self.bn4(self.conv4(output)))
         output = F.relu(self.bn5(self.conv5(output)))
-        output = self.pool(output)
-        output = output.view(-1, 24*56*56)
+        output = output.view(-1, 24*106*106)
         output = self.fc1(output)
 
         return output
@@ -398,21 +390,40 @@ def testBatch():
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 7}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# === BEFORE (original) ===
+# if __name__ == "__main__":
+#     
+#     # Let's build our model
+#     train(2) # 5
+#     print('Finished Training')
+# 
+#     # Test which classes performed well
+#     testAccuracy() # testModelAccuracy() # fix for crash isolation reasons
+#     
+#     # Let's load the model we just created and test the accuracy per label
+#     model = Network()
+#     path = "myFirstModel.pth"
+#     model.load_state_dict(torch.load(path))
+# 
+#     # Test with batch of images
+#     testBatch()
+
+# === AFTER (edited) ===
 if __name__ == "__main__":
-    
-    # Let's build our model
-    train(2) # 5
+
+
+    train(2)
     print('Finished Training')
 
-    # Test which classes performed well
-    testAccuracy() # testModelAccuracy() # fix for crash isolation reasons
-    
-    # Let's load the model we just created and test the accuracy per label
+
+    testAccuracy()
+
+
     model = Network()
-    path = "myFirstModel.pth"
+    path = "data_small/myFirstModel.pth"
     model.load_state_dict(torch.load(path))
 
-    # Test with batch of images
+
     testBatch()

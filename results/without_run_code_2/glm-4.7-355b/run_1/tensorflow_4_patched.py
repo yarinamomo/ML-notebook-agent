@@ -246,21 +246,15 @@ from tensorflow.keras import layers
 from sklearn.model_selection import train_test_split
 
 
-
-
-
 train_data = train_data.astype('float32') / 255
 test_data = test_data.astype('float32') / 255
 
-
-# Reshape from (batch_size, 1, 224, 224) to (batch_size, 1, 224*224)
-train_data = train_data.reshape(train_data.shape[0], 1, -1)
-test_data = test_data.reshape(test_data.shape[0], 1, -1)
-
+# Reshape 4D data (batch, 1, 224, 224) to 3D (batch, 224, 224) for LSTM
+train_data = train_data.reshape(train_data.shape[0], 224, 224)
+test_data = test_data.reshape(test_data.shape[0], 224, 224)
 
 model = keras.Sequential([
-    layers.Input(shape=(train_data.shape[1], train_data.shape[2])),
-    layers.LSTM(256),
+    layers.LSTM(256, input_shape=(train_data.shape[1], train_data.shape[2])),
     layers.Dense(2, activation='softmax')
 ])
 

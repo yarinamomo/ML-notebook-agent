@@ -225,18 +225,22 @@ def run_model(model,dataloader, optimizer,train = True ):
         data=data.to(device)
         label=label.to(device)
 
+        # Convert one-hot encoded labels to class indices
+        label_indices = torch.argmax(label, dim=1)
+
 
 
 
         optimizer.zero_grad()
         output,out_aux = model(data)
-        
-        # Convert one-hot encoded labels to class indices for CrossEntropyLoss
-        # argmax returns indices in shape [batch_size]
-        label_indices = torch.argmax(label, dim=1)
+        output=output.type(torch.FloatTensor).to(device)
+        out_aux=out_aux.type(torch.FloatTensor).to(device)
 
-        loss_ = loss(output, label_indices)
-        mod_loss = loss_
+
+
+        loss_ = loss(output, label_indices).to(device)
+        loss_aux=loss(out_aux,label_indices).to(device)
+        mod_loss = loss_+loss_aux
         mod_loss.backward()
         total_loss+=mod_loss.item()
 

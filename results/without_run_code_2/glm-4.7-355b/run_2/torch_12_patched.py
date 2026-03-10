@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
@@ -32,7 +32,7 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 #By Ranamalla Nithin Reddy https://www.kaggle.com/code/nithinreddy90/chatpgpt-prompts
 
 from transformers import AutoTokenizer
@@ -55,7 +55,7 @@ print(df.head())
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # import pandas as pd
 # import torch
@@ -100,13 +100,12 @@ model_name = "gpt2"
 model = GPT2LMHeadModel.from_pretrained(model_name)
 tokenizer = GPT2Tokenizer.from_pretrained(model_name)
 
-# Fix: GPT2 doesn't have a pad token by default, set it to eos_token
+# GPT-2 doesn't have a pad token by default, so set it to eos token
 tokenizer.pad_token = tokenizer.eos_token
-
 
 generated_responses = []
 
-# Process only first 5 rows to avoid timeout
+# Limit to first 5 rows for demonstration
 for index, row in df.head(5).iterrows():
     prompt = row['instruction']
     input_ids = tokenizer.encode(prompt, return_tensors="pt")
@@ -128,3 +127,4 @@ for index, row in df.head(5).iterrows():
     generated_responses.append(response)
 
 print(f"Generated {len(generated_responses)} responses")
+print("Sample responses:", generated_responses[:2])

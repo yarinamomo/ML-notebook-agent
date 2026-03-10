@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: edited
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # import os
 # import numpy as np
@@ -80,15 +80,9 @@ import torch
 def load_loss_weights_from_directory(directory_path):
     weight_files = [filename for filename in os.listdir(directory_path) if filename.endswith(".npy")]
     weights = [np.load(os.path.join(directory_path, filename)) for filename in weight_files]
-    # Handle zero-dimensional arrays by converting to 1D arrays before concatenation
-    weights_reshaped = []
-    for w in weights:
-        if w.ndim == 0:
-            # Convert zero-dimensional array to 1D array
-            weights_reshaped.append(np.array([w]))
-        else:
-            weights_reshaped.append(w)
-    return np.concatenate(weights_reshaped)
+    # Ensure all arrays have at least 1 dimension before concatenating
+    weights = [w if w.ndim > 0 else np.array([w]) for w in weights]
+    return np.concatenate(weights)
 
 
 def save_weights_to_directory(directory_path, weights):
@@ -139,5 +133,5 @@ for epoch in range(num_epochs_update_regression):
 
 
 
-print(f"Regression Weight (Epoch {epoch + 1}): shape={regression_weight.shape}, "
-      f"mean={regression_weight.mean():.6f}, std={regression_weight.std():.6f}")
+with np.printoptions(threshold=np.inf):
+    print(f"Regression Weight (Epoch {epoch + 1}): \n{regression_weight}")

@@ -17,10 +17,15 @@ test=pd.read_csv('data/train.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-num_feat = ['Age','Vintage']
-cat_feat = ['Gender', 'Driving_License', 'Previously_Insured', 'Vehicle_Age_lt_1_Year','Vehicle_Age_gt_2_Years','Vehicle_Damage_Yes','Region_Code','Policy_Sales_Channel']
+# === BEFORE (original) ===
+# num_feat = ['Age','Vintage']
+# cat_feat = ['Gender', 'Driving_License', 'Previously_Insured', 'Vehicle_Age_lt_1_Year','Vehicle_Age_gt_2_Years','Vehicle_Damage_Yes','Region_Code','Policy_Sales_Channel']
+
+# === AFTER (edited) ===
+num_feat = ['Age','Vintage','Region_Code','Policy_Sales_Channel']
+cat_feat = ['Gender', 'Driving_License', 'Previously_Insured', 'Vehicle_Age_lt_1_Year','Vehicle_Age_gt_2_Years','Vehicle_Damage_Yes']
 
 #%%
 # --- [CELL 3]: ---
@@ -116,16 +121,10 @@ test=test.drop('id',axis=1)
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-# === BEFORE (original) ===
-# # didn't work in original one also
-# 
-# for column in cat_feat:
-#     x_train[column] = x_train[column].astype('int')
-#     x_test[column] = x_test[column].astype('int')
+# didn't work in original one also
 
-# === AFTER (edited) ===
 for column in cat_feat:
-    x_train[column] = x_train[column].astype('float').astype('int')
-    x_test[column] = x_test[column].astype('float').astype('int')
+    x_train[column] = x_train[column].astype('int')
+    x_test[column] = x_test[column].astype('int')

@@ -175,8 +175,10 @@ print(bert_model.config.hidden_size)
 # tf.keras.utils.plot_model(bert_model)
 
 # === AFTER (edited) ===
-import tensorflow as tf
-# bert_model is a PyTorch model, not TensorFlow, so tf.keras.utils.plot_model won't work
-# To visualize PyTorch model architecture, you would need torchviz or similar libraries
+# Print the BERT model architecture (PyTorch compatible approach)
 print("BERT Model Architecture:")
 print(bert_model)
+
+# Show detailed configuration
+print("\nBERT Model Configuration:")
+print(bert_model.config)

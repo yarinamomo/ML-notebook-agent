@@ -1,25 +1,6 @@
 # --- [CELL 0]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# import numpy as np
-# import pandas as pd
-# import matplotlib.pyplot as plt
-# import seaborn as sns
-# import torch
-# import torch.nn as nn
-# import torchvision
-# import torchvision.transforms as transforms
-# import cv2
-# import torch.nn.functional as F
-# from PIL import Image
-# from glob import glob
-# from tqdm import tqdm
-# from itertools import combinations
-# from torch.utils.data import DataLoader
-# from torch.utils.data import Dataset
-
-# === AFTER (edited) ===
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -36,8 +17,6 @@ from tqdm import tqdm
 from itertools import combinations
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
-import os
-import torch as th
 
 #%%
 # --- [CELL 1]: ---
@@ -97,32 +76,60 @@ train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-#preprocessing and loading the data set
+# === BEFORE (original) ===
+# #preprocessing and loading the data set
+# class SiameseDataset(Dataset):
+#     def __init__(self,training_csv,training_dir,transform=None):
+#         # used to prepare the labels and images path
+#         self.train_df=pd.read_csv(training_csv)
+#         self.train_df = self.train_df.drop(columns=['Unnamed: 0'])
+#         self.train_df.columns =["image1","image2","label"]
+#         self.train_dir = training_dir   
+#         self.transform = transform
+# 
+#     def __getitem__(self,index):
+#         # getting the image path
+#         image1_path=os.path.join(self.train_dir,self.train_df.iat[index,0])
+#         image2_path=os.path.join(self.train_dir,self.train_df.iat[index,1])
+#         # Loading the image
+#         img0 = Image.open(image1_path)
+#         img1 = Image.open(image2_path)
+#         img0 = img0.convert("L")
+#         img1 = img1.convert("L")
+#         # Apply image transformations
+#         if self.transform is not None:
+#             img0 = self.transform(img0)
+#             img1 = self.transform(img1)
+#         return img0, img1 , th.from_numpy(np.array([int(self.train_df.iat[index,2])],dtype=np.float32))
+#     def __len__(self):
+#         return len(self.train_df)
+
+# === AFTER (edited) ===
 class SiameseDataset(Dataset):
     def __init__(self,training_csv,training_dir,transform=None):
-        # used to prepare the labels and images path
+
         self.train_df=pd.read_csv(training_csv)
         self.train_df = self.train_df.drop(columns=['Unnamed: 0'])
         self.train_df.columns =["image1","image2","label"]
-        self.train_dir = training_dir   
+        self.train_dir = training_dir
         self.transform = transform
 
     def __getitem__(self,index):
-        # getting the image path
+
         image1_path=os.path.join(self.train_dir,self.train_df.iat[index,0])
         image2_path=os.path.join(self.train_dir,self.train_df.iat[index,1])
-        # Loading the image
+
         img0 = Image.open(image1_path)
         img1 = Image.open(image2_path)
         img0 = img0.convert("L")
         img1 = img1.convert("L")
-        # Apply image transformations
+
         if self.transform is not None:
             img0 = self.transform(img0)
             img1 = self.transform(img1)
-        return img0, img1 , th.from_numpy(np.array([int(self.train_df.iat[index,2])],dtype=np.float32))
+        return img0, img1 , torch.from_numpy(np.array([int(self.train_df.iat[index,2])],dtype=np.float32))
     def __len__(self):
         return len(self.train_df)
 
@@ -220,7 +227,7 @@ class SiameseNetwork(nn.Module):
         self.fc1 = nn.Sequential(
             nn.Linear(27648, 500),
             nn.ReLU(inplace=True),
-            nn.Dropout2d(p=0.5),
+            nn.Dropout(p=0.5),
 
             nn.Linear(500, 128),
             nn.ReLU(inplace=True),

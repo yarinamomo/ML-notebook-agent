@@ -70,14 +70,14 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # logreg.fit(X_train, y_train)
 
 # === AFTER (edited) ===
-# Convert target variable to numerical (Yes=1, No=0)
-y_train = y_train.map({'Yes': 1, 'No': 0})
-y_test = y_test.map({'Yes': 1, 'No': 0})
-
 logreg = LogisticRegression(max_iter=1000)
 
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
+
+# Convert categorical target to numeric (1 for 'Yes', 0 for 'No')
+y_train = (y_train == 'Yes').astype(int)
+y_test = (y_test == 'Yes').astype(int)
 
 logreg.fit(X_train, y_train)

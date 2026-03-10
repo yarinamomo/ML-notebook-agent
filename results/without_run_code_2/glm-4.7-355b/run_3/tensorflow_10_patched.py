@@ -148,67 +148,78 @@ class HuggingFaceLayer(tf.keras.layers.Layer):
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
-# === BEFORE (original) ===
-# model_name = 'bert-base-uncased'
-# model = tf.keras.Sequential()
-# model.add(HuggingFaceLayer(model_name=model_name))
-# model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
-
-# === AFTER (edited) ===
-# We'll build the model in cell 14 with proper architecture
+model_name = 'bert-base-uncased'
+model = tf.keras.Sequential()
+model.add(HuggingFaceLayer(model_name=model_name))
+model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
 
 #%%
 # --- [CELL 14]: ---
 # cell_state: edited
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 # === BEFORE (original) ===
 # # Compile and train the model
 # model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 # model.fit(train_data, train_labels, epochs=10)
 
 # === AFTER (edited) ===
-# Prepare training data from the processed data
-train_input_ids = train_df['input_ids'].tolist()
-train_attention_mask = train_df['attention_mask'].tolist()
-train_labels = train_df['label'].tolist()
+# Prepare training data - use tokenized inputs from train_hg
+# BERT expects input_ids as integers, attention_mask, and token_type_ids
+def prepare_inputs(batch):
+    return {
+        'input_ids': tf.stack([tf.cast(x, tf.int32) for x in batch['input_ids']]),
+        'attention_mask': tf.stack([tf.cast(x, tf.int32) for x in batch['attention_mask']]),
+        'token_type_ids': tf.stack([tf.cast(x, tf.int32) for x in batch['token_type_ids']])
+    }
 
-valid_input_ids = valid_df['input_ids'].tolist()
-valid_attention_mask = valid_df['attention_mask'].tolist()
-valid_labels = valid_df['label'].tolist()
+def prepare_labels(batch):
+    return tf.cast(batch['label'], tf.float32)
 
-# Convert to numpy arrays
-import numpy as np
+# Create tf.data.Dataset
+train_tf = tf.data.Dataset.from_tensor_slices((
+    {
+        'input_ids': tf.cast(list(train_hg['input_ids']), tf.int32),
+        'attention_mask': tf.cast(list(train_hg['attention_mask']), tf.int32),
+        'token_type_ids': tf.cast(list(train_hg['token_type_ids']), tf.int32)
+    },
+    tf.cast(list(train_hg['label']), tf.float32)
+))
 
-train_input_ids = np.array(train_input_ids, dtype=np.int32)
-train_attention_mask = np.array(train_attention_mask, dtype=np.int32)
-train_labels = np.array(train_labels)
+valid_tf = tf.data.Dataset.from_tensor_slices((
+    {
+        'input_ids': tf.cast(list(valid_hg['input_ids']), tf.int32),
+        'attention_mask': tf.cast(list(valid_hg['attention_mask']), tf.int32),
+        'token_type_ids': tf.cast(list(valid_hg['token_type_ids']), tf.int32)
+    },
+    tf.cast(list(valid_hg['label']), tf.float32)
+))
 
-valid_input_ids = np.array(valid_input_ids, dtype=np.int32)
-valid_attention_mask = np.array(valid_attention_mask, dtype=np.int32)
-valid_labels = np.array(valid_labels)
+# Build the model correctly for BERT classification
+class HuggingFaceLayer(tf.keras.layers.Layer):
+    def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):
+        super(HuggingFaceLayer, self).__init__(**kwargs)
+        self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)
+        self.trainable = trainable
 
-# Use TFBertForSequenceClassification which is designed for classification tasks
-from transformers import TFBertForSequenceClassification
+    def build(self, input_shape):
+        self.model.built = True
+        if not self.trainable:
+            self.model.trainable = False
+        super(HuggingFaceLayer, self).build(input_shape)
 
-model = TFBertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=1)
+    def call(self, inputs):
+        outputs = self.model(inputs)
+        # Use the [CLS] token representation (first token) for classification
+        return outputs.last_hidden_state[:, 0, :]
 
-# Use the built-in loss for binary classification
-# TFBertForSequenceClassification returns a loss when labels are provided
-model.compile(
-    optimizer='adam',
-    loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-    metrics=['accuracy']
-)
+# Rebuild model
+model_name = 'bert-base-uncased'
+model = tf.keras.Sequential()
+model.add(HuggingFaceLayer(model_name=model_name))
+model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
 
-# Fit the model - reduced epochs for faster execution
-model.fit(
-    x={'input_ids': train_input_ids, 'attention_mask': train_attention_mask},
-    y=train_labels,
-    validation_data=(
-        {'input_ids': valid_input_ids, 'attention_mask': valid_attention_mask},
-        valid_labels
-    ),
-    epochs=2
-)
+# Compile and train the model
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+model.fit(train_tf.batch(8), validation_data=valid_tf.batch(8), epochs=10)

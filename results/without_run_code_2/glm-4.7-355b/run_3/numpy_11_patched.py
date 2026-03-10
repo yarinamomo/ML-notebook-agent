@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Reshape, Dropout, Dense 
 from tensorflow.keras.layers import Flatten, BatchNormalization
@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # Generation resolution - Must be square 
 # Training data is also scaled to this.
 # Note GENERATE_RES 4 or higher  
@@ -49,7 +49,7 @@ print(f"Will generate {GENERATE_SQUARE}px square images.")
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # training_binary_path = os.path.join(DATA_PATH,
 #         f'training_data_{GENERATE_SQUARE}_{GENERATE_SQUARE}.npy')

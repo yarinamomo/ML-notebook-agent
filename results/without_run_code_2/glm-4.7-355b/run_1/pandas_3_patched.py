@@ -56,10 +56,9 @@ name_count = train["Name"].value_counts().rename("name_count")
 RescuerID = LabelEncoder().fit(train["RescuerID"])
 
 def procData(data, name_count, RescuerID):
-    
-    # Create mapping from label to encoded value
-    label_mapping = dict(zip(RescuerID.classes_, RescuerID.transform(RescuerID.classes_)))
-    data["RescuerID"] = data["RescuerID"].map(label_mapping).fillna(-1)
+    # Handle RescuerID encoding with unseen labels
+    rescuerMapping = dict(zip(RescuerID.classes_, RescuerID.transform(RescuerID.classes_)))
+    data["RescuerID"] = data["RescuerID"].map(rescuerMapping).fillna(-1)
 
     data["NameNull"] = data["Name"].isnull()
     data["NameLen"] = data["Name"].fillna("").str.len()

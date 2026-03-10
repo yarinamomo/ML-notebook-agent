@@ -263,7 +263,7 @@ METRICS=[
 #%%
 # --- [CELL 9]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 # === BEFORE (original) ===
 # from sklearn.utils.class_weight import compute_class_weight
 # class_weights = compute_class_weight('balanced', np.unique(train_dataset.labels), train_dataset.labels)

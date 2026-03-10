@@ -176,3 +176,5 @@ print(bert_model.config.hidden_size)
 
 # === AFTER (edited) ===
 print(bert_model)
+print("\nModel Architecture:")
+print(f"Number of parameters: {sum(p.numel() for p in bert_model.parameters()):,}")

@@ -143,8 +143,49 @@ vocab = Vocab(train_df)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# === BEFORE (original) ===
+# import torch.nn as nn
+# import torch.nn.functional as F
+# 
+# class Attention(nn.Module):
+#     '''Scaled Dot-Product Attention'''
+#     def __init__(self, hidden_size):
+#         super(Attention, self).__init__()
+#         self.weight = nn.Parameter(torch.Tensor(hidden_size, hidden_size))
+#         self.weight.data.normal_(mean=0.0, std=0.05)
+#         
+#         self.bias = nn.Parameter(torch.Tensor(hidden_size))
+#         b = np.zeros(hidden_size, dtype=np.float32)
+#         self.bias.data.copy_(torch.from_numpy(b))
+#         
+#         self.query = nn.Parameter(torch.Tensor(hidden_size))
+#         self.query.data.normal_(mean=0.0, std=0.05)
+#         
+#     def forward(self, batch_hidden, batch_masks):
+#         # batch_hidden: batch_size x len x hidden_size (2 * hidden_size of lstm)
+#         # batch_masks: batch_size x len
+#         
+#         # broadcast机制
+#         key = torch.matmul(batch_hidden, self.weight) + self.bias  # b x len x hidden
+#         
+#         outputs = torch.matmul(key, self.query)  # b x len
+#         
+#         # 填充一个很小的负数，softmax后就会变为0
+#         masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32)) 
+#         
+#         attn_scores = F.softmax(masked_outputs, dim=1)  # b x len
+#         
+#         # 经过softmax后可能存在nan，因此将这些位置都变为0
+#         masked_attn_scores = attn_scores.masked_fill((1 - batch_masks).bool(), 0.0)
+#         
+#         # 矩阵批量乘法（batch matrix-matrix product）函数
+#         batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)  # b x hidden
+#         
+#         return batch_outputs, attn_scores
+
+# === AFTER (edited) ===
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -154,34 +195,32 @@ class Attention(nn.Module):
         super(Attention, self).__init__()
         self.weight = nn.Parameter(torch.Tensor(hidden_size, hidden_size))
         self.weight.data.normal_(mean=0.0, std=0.05)
-        
-        self.bias = nn.Parameter(torch.Tensor(hidden_size))
-        b = np.zeros(hidden_size, dtype=np.float32)
-        self.bias.data.copy_(torch.from_numpy(b))
-        
+
+        self.bias = nn.Parameter(torch.zeros(hidden_size, dtype=torch.float32))
+
         self.query = nn.Parameter(torch.Tensor(hidden_size))
         self.query.data.normal_(mean=0.0, std=0.05)
-        
+
     def forward(self, batch_hidden, batch_masks):
-        # batch_hidden: batch_size x len x hidden_size (2 * hidden_size of lstm)
-        # batch_masks: batch_size x len
-        
-        # broadcast机制
-        key = torch.matmul(batch_hidden, self.weight) + self.bias  # b x len x hidden
-        
-        outputs = torch.matmul(key, self.query)  # b x len
-        
-        # 填充一个很小的负数，softmax后就会变为0
-        masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32)) 
-        
-        attn_scores = F.softmax(masked_outputs, dim=1)  # b x len
-        
-        # 经过softmax后可能存在nan，因此将这些位置都变为0
+
+
+
+
+        key = torch.matmul(batch_hidden, self.weight) + self.bias
+
+        outputs = torch.matmul(key, self.query)
+
+
+        masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32))
+
+        attn_scores = F.softmax(masked_outputs, dim=1)
+
+
         masked_attn_scores = attn_scores.masked_fill((1 - batch_masks).bool(), 0.0)
-        
-        # 矩阵批量乘法（batch matrix-matrix product）函数
-        batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)  # b x hidden
-        
+
+
+        batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)
+
         return batch_outputs, attn_scores
 
 #%%
@@ -255,12 +294,12 @@ class WordLSTMEncoder(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.word_dims = num_features
 
-        self.word_embed = nn.Embedding(vocab.word_size(), self.word_dims, padding_idx=0)
+        self.word_embed = nn.Embedding(vocab.word_size(), self.word_dims, padding_idx=0, device=device)
 
         extword_embed = vocab.load_pretrained_embs(word2vec_path)
         extword_size, word_dims = extword_embed.shape
 
-        self.extword_embed = nn.Embedding(extword_size, word_dims, padding_idx=0)
+        self.extword_embed = nn.Embedding(extword_size, word_dims, padding_idx=0, device=device)
         self.extword_embed.weight.data.copy_(torch.from_numpy(extword_embed))
         self.extword_embed.weight.requires_grad = False
 
@@ -394,7 +433,7 @@ class Model(nn.Module):
         self.sent_attention = Attention(self.doc_rep_size)
         parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_encoder.parameters())))
         parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_attention.parameters())))
-        self.out = nn.Linear(self.doc_rep_size, vocab.label_size(), bias=True)
+        self.out = nn.Linear(self.doc_rep_size, vocab.label_size(), bias=True, device=device)
         parameters.extend(list(filter(lambda p: p.requires_grad, self.out.parameters())))
 
         self.to(device)

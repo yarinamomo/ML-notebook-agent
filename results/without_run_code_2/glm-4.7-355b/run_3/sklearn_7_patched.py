@@ -43,15 +43,17 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
-# Handle categorical columns by one-hot encoding
-categorical_cols = df.select_dtypes(include=['object']).columns
-df_encoded = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
-
-X = df_encoded.drop(['Spending Score (1-100)'], axis=1)
-y = df_encoded['Spending Score (1-100)']
+# Convert categorical columns to numerical using one-hot encoding
+X = df.drop(['Spending Score (1-100)'], axis=1)
+X = pd.get_dummies(X, drop_first=True)
+y = df['Spending Score (1-100)']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+
 
 rf = RandomForestRegressor(n_estimators=100, random_state=42)
 rf.fit(X_train, y_train)
+
+
 
 y_pred = rf.predict(X_test)

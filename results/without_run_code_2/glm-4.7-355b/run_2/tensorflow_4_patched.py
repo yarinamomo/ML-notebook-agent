@@ -30,126 +30,8 @@ SIZE = 224
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# def find_files_in_folder(path, folder_name):
-#     folder_path = None
-#     for root, dirs, files in os.walk(path):
-#         if folder_name in dirs:
-#             folder_path = os.path.join(root, folder_name)
-#             break
-#     img1 = []
-#     if folder_path:
-#         files = os.listdir(folder_path)
-#         for file in files:
-#             folder_name = os.path.dirname(file)
-#             file_name = os.path.basename(file)
-#             img1.append(file_name)
-#         return img1
-#     else:
-#         return None
-#     
-# 
-# train_data_names = []
-# test_data_names = []
-# 
-# train_data = []
-# train_labels = []
-# 
-# real_images = []
-# forged_images = []
-# 
-# for per in os.listdir(train_dir):
-#     for data in glob.glob(train_dir+'/'+per+'/*.*'):
-#         
-#         train_data_names.append(data)
-#         
-#         if per[-1]=='g':
-#             img = cv2.imread(data)
-#             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-#             img = cv2.resize(img, (SIZE,SIZE))
-#             forged_images.append([img])
-# #             train_labels.append(np.array(1))
-#         else:
-#             img = cv2.imread(data)
-#             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-#             img = cv2.resize(img, (SIZE,SIZE))
-#             real_images.append([img])
-# #             train_labels.append(np.array(0))
-# 
-# # train_data = np.array(train_data)/255.0
-# # train_labels = np.array(train_labels)
-# print("number of real_images",len(real_images))
-# #Test Data
-# 
-# test_data = []
-# test_labels = []
-# 
-# for per in os.listdir(test_dir):
-#     for data in glob.glob(test_dir+'/'+per+'/*.*'):
-#         test_data_names.append(data)
-#         
-#         if per[-1]=='g':
-#             img = cv2.imread(data)
-#             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-#             img = cv2.resize(img, (SIZE,SIZE))
-#             forged_images.append([img])
-# #             test_labels.append(np.array(1))
-#         else:
-#             img = cv2.imread(data)
-#             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-#             img = cv2.resize(img, (SIZE,SIZE))
-#             real_images.append([img])
-# #             test_labels.append(np.array(0))
-# 
-# # test_data = np.array(test_data)/255.0
-# # test_labels = np.array(test_labels)
-# 
-# 
-# 
-# # # Load the real signature images
-# 
-# # for filename in os.listdir(train_dir):
-# #     for file in filename:
-# #         files_in_folder = find_files_in_folder(train_dir, file)
-# #         if "-f" in file:
-# #             forged_images.append(file)
-# #         else:
-# #             real_images.append(file)
-# #     image = cv2.imread(os.path.join(train_dir, filename))
-# #     if image is not None:
-# #         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-# #         image = cv2.resize(image, (224, 224))
-# #         real_images.append(image)
-# 
-# # # Load the forged signature images
-# 
-# # for filename in os.listdir(test_dir):
-# #     for file in filename:
-# #         files_in_folder = find_files_in_folder(test_dir, file)
-# #         if "-f" in file:
-# #             forged_images.append(file)
-# #         else:
-# #             real_images.append(file)
-# #     image = cv2.imread(os.path.join(forged_path, filename))
-# #     if image is not None:
-# #         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-# #         image = cv2.resize(image, (224, 224))
-# #         forged_images.append(image)
-# 
-# # Convert the images to numpy arrays
-# real_images = np.array(real_images)
-# forged_images = np.array(forged_images)
-# 
-# # Create the labels (0 for real, 1 for forged)
-# real_labels = np.zeros((real_images.shape[0], 1))
-# forged_labels = np.ones((forged_images.shape[0], 1))
-# 
-# print("number of real_images",len(real_images))
-# print("number of forged_images",len(forged_images))
-
-# === AFTER (edited) ===
 def find_files_in_folder(path, folder_name):
     folder_path = None
     for root, dirs, files in os.walk(path):
@@ -166,7 +48,7 @@ def find_files_in_folder(path, folder_name):
         return img1
     else:
         return None
-
+    
 
 train_data_names = []
 test_data_names = []
@@ -179,26 +61,26 @@ forged_images = []
 
 for per in os.listdir(train_dir):
     for data in glob.glob(train_dir+'/'+per+'/*.*'):
-
+        
         train_data_names.append(data)
-
+        
         if per[-1]=='g':
             img = cv2.imread(data)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             img = cv2.resize(img, (SIZE,SIZE))
-            forged_images.append(img)
-
+            forged_images.append([img])
+#             train_labels.append(np.array(1))
         else:
             img = cv2.imread(data)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             img = cv2.resize(img, (SIZE,SIZE))
-            real_images.append(img)
+            real_images.append([img])
+#             train_labels.append(np.array(0))
 
-
-
-
+# train_data = np.array(train_data)/255.0
+# train_labels = np.array(train_labels)
 print("number of real_images",len(real_images))
-
+#Test Data
 
 test_data = []
 test_labels = []
@@ -206,23 +88,60 @@ test_labels = []
 for per in os.listdir(test_dir):
     for data in glob.glob(test_dir+'/'+per+'/*.*'):
         test_data_names.append(data)
-
+        
         if per[-1]=='g':
             img = cv2.imread(data)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             img = cv2.resize(img, (SIZE,SIZE))
-            forged_images.append(img)
-
+            forged_images.append([img])
+#             test_labels.append(np.array(1))
         else:
             img = cv2.imread(data)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             img = cv2.resize(img, (SIZE,SIZE))
-            real_images.append(img)
+            real_images.append([img])
+#             test_labels.append(np.array(0))
 
+# test_data = np.array(test_data)/255.0
+# test_labels = np.array(test_labels)
+
+
+
+# # Load the real signature images
+
+# for filename in os.listdir(train_dir):
+#     for file in filename:
+#         files_in_folder = find_files_in_folder(train_dir, file)
+#         if "-f" in file:
+#             forged_images.append(file)
+#         else:
+#             real_images.append(file)
+#     image = cv2.imread(os.path.join(train_dir, filename))
+#     if image is not None:
+#         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+#         image = cv2.resize(image, (224, 224))
+#         real_images.append(image)
+
+# # Load the forged signature images
+
+# for filename in os.listdir(test_dir):
+#     for file in filename:
+#         files_in_folder = find_files_in_folder(test_dir, file)
+#         if "-f" in file:
+#             forged_images.append(file)
+#         else:
+#             real_images.append(file)
+#     image = cv2.imread(os.path.join(forged_path, filename))
+#     if image is not None:
+#         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+#         image = cv2.resize(image, (224, 224))
+#         forged_images.append(image)
+
+# Convert the images to numpy arrays
 real_images = np.array(real_images)
 forged_images = np.array(forged_images)
 
-
+# Create the labels (0 for real, 1 for forged)
 real_labels = np.zeros((real_images.shape[0], 1))
 forged_labels = np.ones((forged_images.shape[0], 1))
 
@@ -333,10 +252,13 @@ from sklearn.model_selection import train_test_split
 train_data = train_data.astype('float32') / 255
 test_data = test_data.astype('float32') / 255
 
+# Reshape from 4D (samples, 1, 224, 224) to 3D (samples, 224, 224) for LSTM
+# Using each row as a timestep
+train_data = train_data.reshape(train_data.shape[0], train_data.shape[2], train_data.shape[3])
+test_data = test_data.reshape(test_data.shape[0], test_data.shape[2], test_data.shape[3])
 
 model = keras.Sequential([
-    layers.Input(shape=(train_data.shape[1], train_data.shape[2])),
-    layers.LSTM(256),
+    layers.LSTM(256, input_shape=(train_data.shape[1], train_data.shape[2])),
     layers.Dense(2, activation='softmax')
 ])
 

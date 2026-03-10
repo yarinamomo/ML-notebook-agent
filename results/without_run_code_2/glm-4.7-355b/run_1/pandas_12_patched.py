@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import datetime as dt
 import numpy as np
 import pandas as pd
@@ -17,7 +17,7 @@ pd.set_option('display.float_format',lambda x : '%.2f' % x)
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 df_ = pd.read_csv("data/dataset.csv", compression="gzip")
 df = df_.copy()
 df.head()
@@ -25,7 +25,7 @@ df.head()
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 def grab_col_names(dataframe, cat_th=10, car_th=20):
 
     cat_cols = [col for col in dataframe.columns if dataframe[col].dtypes == "O"]
@@ -51,13 +51,13 @@ def grab_col_names(dataframe, cat_th=10, car_th=20):
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 cat_cols, num_cols, num_but_cat = grab_col_names(df)
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 def outlier_thresholds(dataframe, col_name, q1=0.01, q3=0.99):
     quartile1= dataframe[col_name].quantile(q1)
     quartile3= dataframe[col_name].quantile(q3)
@@ -69,7 +69,7 @@ def outlier_thresholds(dataframe, col_name, q1=0.01, q3=0.99):
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 def replace_with_thresholds(dataframe, variable):
     low_limit, up_limit = outlier_thresholds(dataframe, variable)
     dataframe.loc[(dataframe[variable] < low_limit), variable] = low_limit
@@ -81,7 +81,7 @@ for col in num_cols:
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 def check_outlier(dataframe, col_name):
     low_limit, up_limit = outlier_thresholds(dataframe, col_name)
     if dataframe[(dataframe[col_name] > up_limit) | (dataframe[col_name] < low_limit)].any(axis=None):
@@ -94,13 +94,13 @@ check_outlier(df,num_cols)
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'not run'}
 df= df.iloc[:,1:]
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'not run'}
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import MinMaxScaler
 from yellowbrick.cluster import KElbowVisualizer
@@ -115,39 +115,39 @@ from sklearn.cluster import AgglomerativeClustering
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'not run'}
 cat_cols, num_cols, num_but_cat = grab_col_names(df)
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'not run'}
 df2=df.copy()
 
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'not run'}
 sc = MinMaxScaler((0, 1))
 df2[num_cols] = sc.fit_transform(df2[num_cols])
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'not run'}
 kmeans = KMeans(n_clusters=30, n_init="auto").fit(df2[["TotalTime","Calories","SugarContent"]])
 
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'not run'}
 clusters_kmeans = kmeans.labels_
 clusters_kmeans
 
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'not run'}
 df["kmeans_cluster"] = clusters_kmeans
 df["kmeans_cluster"]= df["kmeans_cluster"] + 1
 df.head()
@@ -155,7 +155,7 @@ df.head()
 #%%
 # --- [CELL 15]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # df.groupby('kmeans_cluster').agg({1: ['count','mean', 'median', 'sum'],
 #                                     2: ['count','mean', 'median', 'sum'],
@@ -163,7 +163,7 @@ df.head()
 #                                     4: ['count','mean','median', 'sum']})
 
 # === AFTER (edited) ===
-df.groupby('kmeans_cluster').agg({"CookTime": ['count','mean', 'median', 'sum'],
-                                    "PrepTime": ['count','mean', 'median', 'sum'],
-                                    "TotalTime": ['count','mean', 'median', 'sum'],
-                                    "Calories": ['count','mean','median', 'sum']})
+df.groupby('kmeans_cluster').agg({'CookTime': ['count','mean', 'median', 'sum'],
+                                    'PrepTime': ['count','mean', 'median', 'sum'],
+                                    'TotalTime': ['count','mean', 'median', 'sum'],
+                                    'Calories': ['count','mean','median', 'sum']})

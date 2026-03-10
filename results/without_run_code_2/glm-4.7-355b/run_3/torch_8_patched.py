@@ -118,10 +118,9 @@ train_nwms_pixVals = createPixelArr(out_array_nwm[:90]) # 1000
 # X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1)
 
 # === AFTER (edited) ===
-# Combine all images and create proper labels
-# 0 for non-watermarked, 1 for watermarked
-X = np.concatenate([train_nwms_pixVals, train_wms_pixVals], axis=0)
-y = np.concatenate([np.zeros(len(train_nwms_pixVals)), np.ones(len(train_wms_pixVals))], axis=0)
+# Combine both classes: watermarked (label 1) and non-watermarked (label 0)
+X = np.concatenate([train_wms_pixVals, train_nwms_pixVals])
+y = np.array([1] * len(train_wms_pixVals) + [0] * len(train_nwms_pixVals))
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
 
@@ -168,9 +167,94 @@ model_ft.classifier = nn.Sequential(
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
-device = torch.device('cpu') # 'cuda:0'
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# device = torch.device('cpu') # 'cuda:0'
+# 
+# def train_model(model, train_loader, test_loader, criterion, optimizer, num_epochs=80):
+#     since = time.time()
+# 
+#     val_acc_history = []
+#     train_acc_history = []
+# 
+#     best_model_wts = copy.deepcopy(model.state_dict())
+#     best_acc = 0.0
+# 
+#     for epoch in range(num_epochs):
+#         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
+#         print('-' * 10)
+# 
+#         model.train()
+# 
+#         running_loss = 0.0
+#         running_corrects = 0
+# 
+#         for inputs, labels in tqdm(train_loader):
+#             inputs = inputs.to(device)
+#             labels = labels.to(device)
+# 
+#             optimizer.zero_grad()
+# 
+#             with torch.set_grad_enabled(True):
+#                 with torch.cuda.amp.autocast():
+#                     outputs = model(inputs)
+#                     loss = criterion(outputs, labels)
+# 
+#                 _, preds = torch.max(outputs, 1)
+# 
+#                 loss.backward()
+#                 optimizer.step()
+# 
+#             running_loss += loss.item() * inputs.size(0)
+#             running_corrects += torch.sum(preds == labels.data)
+# 
+#         epoch_loss = running_loss / len(train_loader.dataset)
+#         epoch_acc = running_corrects.double() / len(train_loader.dataset)
+# 
+#         print('Train Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
+#         train_acc_history.append(epoch_acc)
+# 
+#         model.eval()
+# 
+#         running_loss = 0.0
+#         running_corrects = 0
+# 
+#         for inputs, labels in tqdm(test_loader):
+#             inputs = inputs.to(device)
+#             labels = labels.to(device)
+# 
+#             with torch.set_grad_enabled(False):
+#                 with torch.cuda.amp.autocast():
+#                     outputs = model(inputs)
+#                     loss = criterion(outputs, labels)
+# 
+#                 _, preds = torch.max(outputs, 1)
+# 
+#             running_loss += loss.item() * inputs.size(0)
+#             running_corrects += torch.sum(preds == labels.data)
+# 
+#         epoch_loss = running_loss / len(test_loader.dataset)
+#         epoch_acc = running_corrects.double() / len(test_loader.dataset)
+# 
+#         print('Test Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
+#         val_acc_history.append(epoch_acc)
+# 
+#         if epoch_acc > best_acc:
+#             best_acc = epoch_acc
+#             best_model_wts = copy.deepcopy(model.state_dict())
+# 
+#         print()
+# 
+#     time_elapsed = time.time() - since
+#     print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+#     print('Best val Acc: {:4f}'.format(best_acc))
+# 
+#     model.load_state_dict(best_model_wts)
+#     return model, train_acc_history, val_acc_history
+
+# === AFTER (edited) ===
+device = torch.device('cpu')
 
 def train_model(model, train_loader, test_loader, criterion, optimizer, num_epochs=80):
     since = time.time()
@@ -197,9 +281,8 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
             optimizer.zero_grad()
 
             with torch.set_grad_enabled(True):
-                with torch.cuda.amp.autocast():
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
 
                 _, preds = torch.max(outputs, 1)
 
@@ -225,9 +308,8 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
             labels = labels.to(device)
 
             with torch.set_grad_enabled(False):
-                with torch.cuda.amp.autocast():
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
 
                 _, preds = torch.max(outputs, 1)
 
@@ -286,15 +368,10 @@ class MyDataset(Dataset):
         return len(self.X)
 
     def __getitem__(self, idx):
-        # Convert to tensor and change from HWC to CHW format
-        # X shape: (H, W, C) -> need (C, H, W)
-        x = torch.tensor(self.X[idx], dtype=torch.float32)
-        x = x.permute(2, 0, 1)  # Change from (H, W, C) to (C, H, W)
-        # Normalize to [0, 1] range if values are in [0, 255]
-        x = x / 255.0
-        # Convert label to long tensor (required for classification)
-        label = torch.tensor(self.y[idx], dtype=torch.long)
-        return x, label
+        # Convert numpy array to tensor and permute from HWC to CHW format
+        img = torch.tensor(self.X[idx]).permute(2, 0, 1).float() / 255.0
+        label = self.y[idx]
+        return img, label
 
 #%%
 # --- [CELL 15]: ---
@@ -313,7 +390,7 @@ test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 #%%
 # --- [CELL 17]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
 import warnings
 warnings.filterwarnings("ignore")
 

@@ -235,17 +235,17 @@ def predict(final_pred, m):
 # === AFTER (edited) ===
 n_features = X_tr_arr.shape[1]
 print('Number of Features', n_features)
-w, b = weightInitialization(n_features)
+w, b = initialize_params(n_features)
 
-coeff, gradient, costs = model_predict(w.T, b, X_tr_arr, y_tr_arr, learning_rate=0.0001,no_iterations=4500)
+coeff, gradient, costs = model_predict(w, b, X_tr_arr, y_tr_arr, learning_rate=0.0001,no_iterations=4500)
 
 w = coeff["w"]
 b = coeff["b"]
 print('Optimized weights', w)
 print('Optimized intercept',b)
 
-final_train_pred = sigmoid_activation(np.dot(w.T,X_tr_arr.T)+b)
-final_test_pred = sigmoid_activation(np.dot(w.T,X_ts_arr.T)+b)
+final_train_pred = sigmoid_activation(np.dot(w,X_tr_arr.T)+b)
+final_test_pred = sigmoid_activation(np.dot(w,X_ts_arr.T)+b)
 
 m_tr =  X_tr_arr.shape[0]
 m_ts =  X_ts_arr.shape[0]

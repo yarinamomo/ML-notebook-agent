@@ -164,9 +164,8 @@ predictions = (model.predict(test_ds) >= 0.5)
 predictions = np.array([])
 labels =  np.array([])
 for x, y in test_ds:
-  preds = model.predict(x)
-  preds = (preds >= 0.5).astype(int).flatten()
-  predictions = np.concatenate([predictions, preds])
+  pred = (model.predict(x) >= 0.5).astype(int).flatten()
+  predictions = np.concatenate([predictions, pred])
   labels = np.concatenate([labels, y.numpy().flatten()])
 
 tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()

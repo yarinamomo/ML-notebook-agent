@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import warnings
 from collections import namedtuple
 from functools import partial
@@ -14,7 +14,7 @@ from torch import Tensor
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 class GoogLeNet(nn.Module):
     def __init__(
         self,
@@ -186,8 +186,8 @@ class Inception(nn.Module):
         branch3 = self.branch3(x)
         branch4 = self.branch4(x)
 
-        outputs = [branch1, branch2, branch3, branch4]
-        return torch.cat(outputs, 1)
+        outputs = torch.cat([branch1, branch2, branch3, branch4], 1)
+        return outputs
 
 #%%
 # --- [CELL 3]: ---
@@ -252,7 +252,7 @@ weights = torch.hub.load_state_dict_from_url(url, map_location='cpu')
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 torch_googlenet_re = GoogLeNet()
 torch_googlenet_re.load_state_dict(weights)
 
@@ -271,9 +271,26 @@ display(dog_image)
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
-# Preprocess torch image
+# === BEFORE (original) ===
+# # Preprocess torch image
+# from torchvision import transforms
+# from PIL import Image
+# 
+# preprocess = transforms.Compose([
+#     transforms.Resize(256),
+#     transforms.CenterCrop(224),
+#     transforms.ToTensor(),
+#     transforms.Normalize(
+#     mean=[0.485, 0.456, 0.406],
+#     std=[0.229, 0.224, 0.225]
+# )])
+# torch_img = Image.open("dog.jpg")
+# torch_img = preprocess(dog_image)
+# torch_img = torch.unsqueeze(torch_img, 0)
+
+# === AFTER (edited) ===
 from torchvision import transforms
 from PIL import Image
 
@@ -282,21 +299,22 @@ preprocess = transforms.Compose([
     transforms.CenterCrop(224),
     transforms.ToTensor(),
     transforms.Normalize(
-    mean=[0.485, 0.456, 0.406],
-    std=[0.229, 0.224, 0.225]
-)])
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+])
 torch_img = Image.open("dog.jpg")
-torch_img = preprocess(dog_image)
+torch_img = preprocess(torch_img)
 torch_img = torch.unsqueeze(torch_img, 0)
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 torch_googlenet_re.eval()
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 torch_googlenet_re(torch_img)

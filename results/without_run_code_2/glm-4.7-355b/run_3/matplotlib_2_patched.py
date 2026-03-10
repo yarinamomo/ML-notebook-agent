@@ -231,6 +231,5 @@ train_loader = DataLoader(custom_dataset, batch_size=batch_size, shuffle=shuffle
 import matplotlib.pyplot as plt
 
 plt.imshow(custom_dataset.images[1][0, :, :])
-
-plt.title(f"Label: {labels_array[1]}")
+plt.title(f"Label: {custom_dataset.labels[0]}")
 plt.show()

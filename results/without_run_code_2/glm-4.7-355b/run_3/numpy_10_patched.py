@@ -207,24 +207,43 @@ torch.save(checkpoint, 'checkpoint.pth')
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# TODO: Write a function that loads a checkpoint and rebuilds the model
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# # TODO: Write a function that loads a checkpoint and rebuilds the model
+# 
+# def load_checkpoint(filepath):
+#     checkpoint = torch.load(filepath)
+#     model = models.vgg16(pretrained=True) 
+#     for param in model.parameters():
+#         param.requires_grad = False
+#         
+#     model.class_to_idx = checkpoint['class_to_idx']
+#         
+#     model.classifier = checkpoint['classifier']
+#     model.load_state_dict(checkpoint['state_dict'])
+#     
+#     return model
+# 
+# # Usage:
+# model = load_checkpoint('checkpoint.pth')
 
+# === AFTER (edited) ===
 def load_checkpoint(filepath):
     checkpoint = torch.load(filepath)
-    model = models.vgg16(pretrained=True) 
+    model = models.vgg16(pretrained=True)
     for param in model.parameters():
         param.requires_grad = False
-        
+
     model.class_to_idx = checkpoint['class_to_idx']
-        
+    model.idx_to_class = {v: k for k, v in checkpoint['class_to_idx'].items()}
+
     model.classifier = checkpoint['classifier']
     model.load_state_dict(checkpoint['state_dict'])
-    
+
     return model
 
-# Usage:
+
 model = load_checkpoint('checkpoint.pth')
 
 #%%
@@ -330,9 +349,6 @@ def predict(image_path, model, topk=5):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
-    # Create idx_to_class mapping
-    idx_to_class = {idx: class_ for class_, idx in model.class_to_idx.items()}
-
     img_tensor = process_image(image_path)
     img_tensor = img_tensor.unsqueeze_(0).to(device)
 
@@ -342,15 +358,16 @@ def predict(image_path, model, topk=5):
 
 
         probs = ps[0].tolist()[0]
-        # Convert indices to class keys
-        classes = [idx_to_class[idx] for idx in ps[1].cpu().tolist()[0]]
+        classes = ps[1].cpu().tolist()[0]
+        # Convert indices to class names using idx_to_class
+        classes = [model.idx_to_class[cls] for cls in classes]
 
     return probs, classes
 
 #%%
 # --- [CELL 11]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 # === BEFORE (original) ===
 # import matplotlib.pyplot as plt
 # 
@@ -386,7 +403,6 @@ def predict(image_path, model, topk=5):
 
 # === AFTER (edited) ===
 import matplotlib.pyplot as plt
-import random
 
 
 def display_image(image_path):
@@ -396,24 +412,25 @@ def display_image(image_path):
 model = load_checkpoint('checkpoint.pth')
 
 
-test_image_path = random.choice(test_ds.imgs)[0]
+test_image_path = np.random.choice([x[0] for x in test_ds.imgs])
 display_image(test_image_path)
 
 probs, classes = predict(test_image_path, model)
 
-class_names = [cat_to_name[cls] for cls in classes]
+# Handle cases where a class might not be in cat_to_name
+class_names = [cat_to_name.get(cls, f"Unknown ({cls})") for cls in classes]
 
 print("Probabilities:", probs)
 print("Classes:", class_names)
 
 
 for i in range(5):
-    test_image_path = random.choice(test_ds.imgs)[0]
+    test_image_path = np.random.choice([x[0] for x in test_ds.imgs])
     display_image(test_image_path)
 
     probs, classes = predict(test_image_path, model)
 
-    class_names = [cat_to_name[cls] for cls in classes]
+    class_names = [cat_to_name.get(cls, f"Unknown ({cls})") for cls in classes]
 
     print("Probabilities:", probs)
     print("Classes:", class_names)

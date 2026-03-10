@@ -1,13 +1,13 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 INPUT_DIR = 'data'
 !ls {INPUT_DIR}
 
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 import numpy as np
 import pandas as pd
 
@@ -20,7 +20,7 @@ rating_df.head(4)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 n_ratings = rating_df['user_id'].value_counts()
 rating_df = rating_df[rating_df['user_id'].isin(n_ratings[n_ratings >= 400].index)].copy()
 len(rating_df)
@@ -28,7 +28,7 @@ len(rating_df)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # Scaling BTW (0 , 1.0)
 min_rating = min(rating_df['rating'])
 max_rating = max(rating_df['rating'])
@@ -40,7 +40,7 @@ print('Avg', AvgRating)
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # # Encoding categorical data
 # user_ids = rating_df["user_id"].unique().tolist()[:1000]
@@ -59,45 +59,32 @@ print('Avg', AvgRating)
 # print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rating_df['rating'])))
 
 # === AFTER (edited) ===
-# Get the top 1000 most frequent users and animes to ensure good overlap
-top_users = rating_df["user_id"].value_counts().head(1000).index.tolist()
-top_animes = rating_df["anime_id"].value_counts().head(1000).index.tolist()
-
-user2user_encoded = {x: i for i, x in enumerate(top_users)}
-user_encoded2user = {i: x for i, x in enumerate(top_users)}
+user_ids = rating_df["user_id"].unique().tolist()[:1000]
+user2user_encoded = {x: i for i, x in enumerate(user_ids)}
+user_encoded2user = {i: x for i, x in enumerate(user_ids)}
+rating_df["user"] = rating_df["user_id"].map(user2user_encoded)
 n_users = len(user2user_encoded)
 
-anime2anime_encoded = {x: i for i, x in enumerate(top_animes)}
-anime_encoded2anime = {i: x for i, x in enumerate(top_animes)}
+anime_ids = rating_df["anime_id"].unique().tolist()[:1000]
+anime2anime_encoded = {x: i for i, x in enumerate(anime_ids)}
+anime_encoded2anime = {i: x for i, x in enumerate(anime_ids)}
+rating_df["anime"] = rating_df["anime_id"].map(anime2anime_encoded)
 n_animes = len(anime2anime_encoded)
 
-# Filter rating_df to only include these users and animes
-rating_df = rating_df[rating_df["user_id"].isin(user2user_encoded.keys()) & 
-                      rating_df["anime_id"].isin(anime2anime_encoded.keys())].copy()
-
-rating_df["user"] = rating_df["user_id"].map(user2user_encoded)
-rating_df["anime"] = rating_df["anime_id"].map(anime2anime_encoded)
+# Filter out rows where mapping resulted in NaN values
+rating_df = rating_df.dropna(subset=['user', 'anime']).copy()
 
 print("Num of users: {}, Num of animes: {}".format(n_users, n_animes))
-print("Num of valid rows in df: {}".format(len(rating_df)))
 print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rating_df['rating'])))
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# # Shuffle
-# rating_df = rating_df.sample(frac=1, random_state=73)
-# 
-# rating_df= rating_df.head(1000)
-# 
-# X = rating_df[['user', 'anime']].values
-# y = rating_df["rating"]
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# Shuffle
 rating_df = rating_df.sample(frac=1, random_state=73)
-rating_df = rating_df.head(1000)
+
+rating_df= rating_df.head(1000)
 
 X = rating_df[['user', 'anime']].values
 y = rating_df["rating"]
@@ -105,13 +92,13 @@ y = rating_df["rating"]
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 rating_df.shape[0]
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # Split
 # test_set_size = 200 #200 for test set
 # train_indices = rating_df.shape[0] - test_set_size 
@@ -144,14 +131,14 @@ print(len(X_test))
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 X_train_array = [X_train[:, 0], X_train[:, 1]]
 X_test_array = [X_test[:, 0], X_test[:, 1]]
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 import tensorflow as tf
 from tensorflow.keras import layers
 from tensorflow.keras.models import Model
@@ -160,7 +147,7 @@ from tensorflow.keras.optimizers import Adam
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 # Embedding layers
 from tensorflow.keras.layers import Add, Activation, Lambda, BatchNormalization, Concatenate, Dropout, Input, Embedding, Dot, Reshape, Dense, Flatten
 
@@ -197,7 +184,7 @@ model.summary()
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 # Callbacks
 from tensorflow.keras.callbacks import Callback, ModelCheckpoint, LearningRateScheduler, TensorBoard, EarlyStopping, ReduceLROnPlateau
 
@@ -245,7 +232,7 @@ my_callbacks = [
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # Model training
 history = model.fit(
     x=X_train_array,

@@ -146,11 +146,9 @@ plt.show()
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 plt.figure(figsize=(12, 6))
-plot_acf(residuals, lags=min(180, len(residuals)-1), title='ACF of Residuals')
+plot_acf(residuals, lags=45, title='ACF of Residuals')
 plt.show()
 
-# PACF requires lags < 50% of sample size
 plt.figure(figsize=(12, 6))
-max_pacf_lags = len(residuals) // 2 - 1
-plot_pacf(residuals, lags=min(180, max_pacf_lags), title='PACF of Residuals')
+plot_pacf(residuals, lags=45, title='PACF of Residuals')
 plt.show()

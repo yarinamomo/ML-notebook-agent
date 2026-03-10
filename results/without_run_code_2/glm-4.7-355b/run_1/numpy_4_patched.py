@@ -150,7 +150,7 @@ class_names = ['PNEUMONIA','NORMAL']
 #%%
 # --- [CELL 11]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # from sklearn.metrics import classification_report, confusion_matrix
 # import seaborn as sns
@@ -173,11 +173,9 @@ import seaborn as sns
 prediction_classes = np.array([])
 true_classes =  np.array([])
 
-num_batches = len(valid_dataset)
-for i in range(num_batches):
-  x, y = valid_dataset[i]
+for x, y in valid_dataset:
   prediction_classes = np.concatenate([prediction_classes,
-                       (model.predict(x) > 0.5).astype(int).flatten()])
+                       (model.predict(x).flatten() > 0.5).astype(int)])
   true_classes = np.concatenate([true_classes, y.astype(int)])
 
 
