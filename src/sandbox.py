@@ -287,7 +287,6 @@ class DockerSandbox:
         return self._run_cell(code, timeout)
 
     @retry_on_failure()
-    @check_websocket_connected()
     def run_all(self, codes: list[str], timeout=30) -> list[CellExecutionResult]:
         # Restart kernel to ensure clean state
         self.restart_kernel()
