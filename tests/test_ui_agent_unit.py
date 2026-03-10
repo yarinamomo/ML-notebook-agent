@@ -2,6 +2,7 @@
 
 from contextlib import nullcontext
 import time
+from types import SimpleNamespace
 
 import pytest
 
@@ -53,6 +54,9 @@ class StubEnv:
         if self._execute_exception:
             raise self._execute_exception
         return self._execute_result
+
+    def get_initial_notebook(self):
+        return SimpleNamespace(cells=[])
 
     def get_template_vars(self, **kwargs):
         return {}

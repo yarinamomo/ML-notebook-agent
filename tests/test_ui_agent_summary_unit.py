@@ -2,6 +2,7 @@
 
 from contextlib import nullcontext
 import json
+from types import SimpleNamespace
 
 import pytest
 
@@ -13,8 +14,16 @@ class _ProblemStub:
     def __init__(self, cells=None):
         self._cells = list(cells or ["print('original')"])
 
-    def get_cells(self):
-        return list(self._cells)
+    def get_initial_notebook(self):
+        return SimpleNamespace(
+            cells=[
+                {
+                    "cell_type": "code",
+                    "source": source,
+                }
+                for source in self._cells
+            ]
+        )
 
 
 class _SummaryEnvStub:
@@ -31,6 +40,9 @@ class _SummaryEnvStub:
         if self._execute_exception:
             raise self._execute_exception
         return self._execute_result
+
+    def get_initial_notebook(self):
+        return self.problem.get_initial_notebook()
 
     def get_template_vars(self, **kwargs):
         return {}
@@ -142,7 +154,9 @@ def test_save_summary_includes_operations_code_changes_and_original_notebook(qui
 
     assert summary["metadata"]["status"] == "Submitted"
     assert summary["metadata"]["success"] is True
-    assert summary["original_notebook"] == ["print('before')"]
+    assert len(summary["original_notebook"]) == 1
+    assert summary["original_notebook"][0].startswith("# --- [CELL 0]: ---")
+    assert "print('before')" in summary["original_notebook"][0]
     assert summary["statistics"]["total_steps"] == 1
     assert summary["statistics"]["cells_edited"] == 1
     assert summary["statistics"]["unique_cells_edited"] == 1
