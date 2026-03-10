@@ -31,6 +31,7 @@ class NotebookEnvironmentConfig(BaseModel):
     docker_mount_path: str =  "example/docker_mount/"
     problem_mode: str = "JunoBench_Buggy"
     timeout: int = 600
+    no_runtime_output: bool = False
 
 class NotebookEnvironment:
     """mini-swe-agent Environment for Jupyter Notebook Sandbox."""
@@ -131,7 +132,7 @@ class NotebookEnvironment:
                 result = self._wrap_execution_result(last_exec_result)
                 output_parts = []
                 for i, exec_result in enumerate(exec_results):
-                    cell_output = format_exec_result_for_llm(exec_result, if_truncate=True)
+                    cell_output = format_exec_result_for_llm(exec_result, if_truncate=True, no_runtime_output=self.config.no_runtime_output)
                     output_parts.append(f"Cell {i}:\n{cell_output}")
 
                 result["output"] = "\n\n".join(output_parts)
@@ -162,7 +163,7 @@ class NotebookEnvironment:
 
     def get_initial_notebook(self) -> str:
         """Get the original notebook content."""
-        return format_initial_notebook(self.problem.get_initial_notebook())
+        return format_initial_notebook(self.problem.get_initial_notebook(), no_runtime_output=self.config.no_runtime_output)
 
     def get_template_vars(self, **kwargs) -> dict[str, Any]:
         """
@@ -212,7 +213,7 @@ class NotebookEnvironment:
 
     def _wrap_execution_result(self, exec_result: CellExecutionResult | None) -> EnvironmentResult:
         """Wrap a cell execution result into the standard tool output format."""
-        formatted_output = format_exec_result_for_llm(exec_result, if_truncate=True)
+        formatted_output = format_exec_result_for_llm(exec_result, if_truncate=True, no_runtime_output=self.config.no_runtime_output)
         error = self._get_execution_error(exec_result)
         if error is not None:
             self.is_submittable = False  # Mark as not submittable if there's an execution error

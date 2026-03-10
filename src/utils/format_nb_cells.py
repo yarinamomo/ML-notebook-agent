@@ -43,7 +43,7 @@ def format_cell_source_for_llm(index: int, cell: NotebookCell) -> str:
     return f"# --- [CELL {index}]: ---\n{remove_comments(get_cell_source(cell))}"
 
 
-def format_exec_result_for_llm(exec_result: Optional[CellExecutionResult], if_truncate: bool = False, max_words: int = 500) -> str:
+def format_exec_result_for_llm(exec_result: Optional[CellExecutionResult], if_truncate: bool = False, max_words: int = 500, no_runtime_output: bool = False) -> str:
     """Converts execution result into LLM-compatible text format."""
     if exec_result is None or not isinstance(exec_result, dict):
         return "(No output)"
@@ -56,7 +56,10 @@ def format_exec_result_for_llm(exec_result: Optional[CellExecutionResult], if_tr
         metadata_parts.append(f"Status: {exec_result['status']}")
     
     text_parts = []
-    cleaned_oututs = _clean_outputs(exec_result.get('outputs', []))
+    raw_outputs = exec_result.get('outputs', [])
+    if no_runtime_output:
+        raw_outputs = [o for o in raw_outputs if o.get('msg_type', o.get('output_type', '')) == 'error']
+    cleaned_oututs = _clean_outputs(raw_outputs)
 
     for out in cleaned_oututs:
         msg_type = out.get('msg_type', out.get('output_type', ''))
@@ -104,20 +107,21 @@ def format_exec_result_for_llm(exec_result: Optional[CellExecutionResult], if_tr
     return '\n'.join(result_parts) if result_parts else "(No output)"
 
 
-def format_initial_notebook(notebook: NotebookNode) -> str:   
+def format_initial_notebook(notebook: NotebookNode, no_runtime_output: bool = False) -> str:   
     formatted_texts = []
     for i, cell in enumerate(cast(List[NotebookCell], notebook.cells)):
         source = format_cell_source_for_llm(i, cell)
         cell_outputs: List[CellOutput] = cell.get("outputs", [])
         has_error = any(output.get("output_type") == "error" for output in cell_outputs)
 
+        filtered_outputs = [output for output in cell_outputs if output.get("output_type") == "error"] if no_runtime_output else cell_outputs
         exec_result: CellExecutionResult = {
-            "outputs": [output for output in cell_outputs if output.get("output_type") == "error"],
+            "outputs": filtered_outputs,
             "execution_count": cell.get("execution_count", None),
             "status": "error" if has_error else "ok",
             "done": True
         }
-        formatted_texts.extend([source, "\n OUTPUT:\n", format_exec_result_for_llm(exec_result, if_truncate=True), "\n\n"])
+        formatted_texts.extend([source, "\n OUTPUT:\n", format_exec_result_for_llm(exec_result, if_truncate=True, no_runtime_output=no_runtime_output), "\n\n"])
     return "\n\n".join(formatted_texts)
 
 
