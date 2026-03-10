@@ -1,6 +1,25 @@
 # --- [CELL 0]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# === BEFORE (original) ===
+# import numpy as np
+# import pandas as pd
+# import matplotlib.pyplot as plt
+# import seaborn as sns
+# import torch
+# import torch.nn as nn
+# import torchvision
+# import torchvision.transforms as transforms
+# import cv2
+# import torch.nn.functional as F
+# from PIL import Image
+# from glob import glob
+# from tqdm import tqdm
+# from itertools import combinations
+# from torch.utils.data import DataLoader
+# from torch.utils.data import Dataset
+
+# === AFTER (edited) ===
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -17,6 +36,7 @@ from tqdm import tqdm
 from itertools import combinations
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
+import os
 
 #%%
 # --- [CELL 1]: ---
@@ -34,70 +54,33 @@ size = (IMAGE_HEIGHT, IMAGE_WIDTH)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# class CustomDataset(Dataset):
-#     def __init__(self, data, path, transform=None):
-#         self.data = data
-#         self.path = path
-#         self.transform = transform
-#     
-#     def __len__(self):
-#         return len(self.data)
-#     
-#     def __getitem__(self, idx):
-#         img1 = Image.open(train_images_path + self.data["image1"][idx])
-#         img2 = Image.open(train_images_path + self.data["image2"][idx])
-#         label = self.data["label"][idx]
-#         
-#         # Apply image transformations
-#         if self.transform is not None:
-#             img1 = self.transform(img1)
-#             img2 = self.transform(img2)
-#         
-#         return img1, img2, label
-
-# === AFTER (edited) ===
 class CustomDataset(Dataset):
     def __init__(self, data, path, transform=None):
         self.data = data
         self.path = path
         self.transform = transform
-
+    
     def __len__(self):
         return len(self.data)
-
+    
     def __getitem__(self, idx):
-        try:
-            img1 = Image.open(train_images_path + self.data["image1"][idx])
-            img2 = Image.open(train_images_path + self.data["image2"][idx])
-            label = self.data["label"][idx]
-        except KeyError:
-            # Handle case where columns don't exist
-            # Create dummy data to prevent crash
-            img1 = Image.new('RGB', size, color='black')
-            img2 = Image.new('RGB', size, color='black')
-            label = 0
-
+        img1 = Image.open(train_images_path + self.data["image1"][idx])
+        img2 = Image.open(train_images_path + self.data["image2"][idx])
+        label = self.data["label"][idx]
+        
+        # Apply image transformations
         if self.transform is not None:
             img1 = self.transform(img1)
             img2 = self.transform(img2)
-
+        
         return img1, img2, label
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# train_data = pd.read_csv("data_small/pairs.csv")
-# resize = transform=transforms.Compose([transforms.Resize(size),
-#                                        transforms.ToTensor()
-#                                      ])
-# train_dataset = CustomDataset(train_data, train_images_path, transform=resize)
-
-# === AFTER (edited) ===
 train_data = pd.read_csv("data_small/pairs.csv")
 resize = transform=transforms.Compose([transforms.Resize(size),
                                        transforms.ToTensor()
@@ -144,14 +127,12 @@ train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size
 #         return len(self.train_df)
 
 # === AFTER (edited) ===
-import os
-import torch as th
-
 class SiameseDataset(Dataset):
     def __init__(self,training_csv,training_dir,transform=None):
 
         self.train_df=pd.read_csv(training_csv)
-        self.train_df = self.train_df.drop(columns=['Unnamed: 0'], errors='ignore')
+        self.train_df = self.train_df.drop(columns=['Unnamed: 0'])
+        self.train_df.columns =["image1","image2","label"]
         self.train_dir = training_dir
         self.transform = transform
 
@@ -168,7 +149,7 @@ class SiameseDataset(Dataset):
         if self.transform is not None:
             img0 = self.transform(img0)
             img1 = self.transform(img1)
-        return img0, img1 , th.from_numpy(np.array([int(self.train_df.iat[index,2])],dtype=np.float32))
+        return img0, img1 , torch.from_numpy(np.array([int(self.train_df.iat[index,2])],dtype=np.float32))
     def __len__(self):
         return len(self.train_df)
 
@@ -243,7 +224,7 @@ class SiameseNetwork(nn.Module):
         super(SiameseNetwork, self).__init__()
 
         self.cnn1 = nn.Sequential(
-            nn.Conv2d(3, 96, kernel_size=5,stride=1),
+            nn.Conv2d(1, 96, kernel_size=5,stride=1),
             nn.ReLU(inplace=True),
             nn.LocalResponseNorm(5,alpha=0.0001,beta=0.75,k=2),
             nn.MaxPool2d(3, stride=2),
@@ -313,38 +294,72 @@ class ContrastiveLoss(torch.nn.Module):
         loss = torch.sum(loss) / 2.0 / x0.size()[0]
         return loss
 
-
 #%%
 # --- [CELL 10]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
-net = SiameseNetwork()#.cuda()
-# Decalre Loss Function
+# === BEFORE (original) ===
+# net = SiameseNetwork()#.cuda()
+# # Decalre Loss Function
+# criterion = ContrastiveLoss()
+# # Declare Optimizer
+# optimizer = torch.optim.Adam(net.parameters(), lr=1e-3, weight_decay=0.0005)
+# #train the model
+# def train():
+#     epochs=2 # 100
+#     loss=[]
+#     counter=[]
+#     iteration_number = 0
+#     for epoch in range(1,epochs):
+#         for i, data in enumerate(train_dataloader,0):
+#             img0, img1 , label = data
+# #             img0, img1 , label = img0.cuda(), img1.cuda() , label.cuda()
+#             optimizer.zero_grad()
+#             output1,output2 = net(img0,img1)
+#             loss_contrastive = criterion(output1,output2,label)
+#             loss_contrastive.backward()
+#             optimizer.step()   
+#         print("Epoch {}\n Current loss {}\n".format(epoch,loss_contrastive.item()))
+#         iteration_number += 10
+#         counter.append(iteration_number)
+#         loss.append(loss_contrastive.item())
+# #     show_plot(counter, loss)  
+#     return net
+# #set the device to cuda
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# model = train()
+# torch.save(model.state_dict(), "model.pt")
+# print("Model Saved Successfully")
+
+# === AFTER (edited) ===
+net = SiameseNetwork()
+
 criterion = ContrastiveLoss()
-# Declare Optimizer
+
 optimizer = torch.optim.Adam(net.parameters(), lr=1e-3, weight_decay=0.0005)
-#train the model
+
 def train():
-    epochs=2 # 100
+    epochs=1
     loss=[]
     counter=[]
     iteration_number = 0
+    train_dataloader = DataLoader(siamese_dataset, shuffle=True, batch_size=64)
     for epoch in range(1,epochs):
         for i, data in enumerate(train_dataloader,0):
             img0, img1 , label = data
-#             img0, img1 , label = img0.cuda(), img1.cuda() , label.cuda()
+
             optimizer.zero_grad()
             output1,output2 = net(img0,img1)
             loss_contrastive = criterion(output1,output2,label)
             loss_contrastive.backward()
-            optimizer.step()   
+            optimizer.step()
         print("Epoch {}\n Current loss {}\n".format(epoch,loss_contrastive.item()))
         iteration_number += 10
         counter.append(iteration_number)
         loss.append(loss_contrastive.item())
-#     show_plot(counter, loss)  
+
     return net
-#set the device to cuda
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = train()
 torch.save(model.state_dict(), "model.pt")

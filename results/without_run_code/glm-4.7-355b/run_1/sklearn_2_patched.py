@@ -16,88 +16,20 @@ warnings.filterwarnings('ignore')
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train_raw = pd.read_csv('data/train.csv')
-# test_raw = pd.read_csv('data/test.csv')
-# meal = pd.read_csv('data/meal_info.csv')
-# centerinfo = pd.read_csv('data/fulfilment_center_info.csv')
-
-# === AFTER (edited) ===
-import numpy as np
-np.random.seed(42)
-
-# Create synthetic train_raw data
-train_raw = pd.DataFrame({
-    'id': range(1, 1001),
-    'week': np.random.randint(1, 146, 1000),
-    'center_id': np.random.randint(1, 101, 1000),
-    'meal_id': np.random.randint(1, 52, 1000),
-    'checkout_price': np.random.uniform(100, 500, 1000),
-    'base_price': np.random.uniform(100, 500, 1000),
-    'num_orders': np.random.randint(100, 5000, 1000),
-    'emailer_for_promotion': np.random.randint(0, 2, 1000),
-    'homepage_featured': np.random.randint(0, 2, 1000)
-})
-
-# Create synthetic test_raw data
-test_raw = pd.DataFrame({
-    'id': range(1001, 2001),
-    'week': np.random.randint(1, 146, 1000),
-    'center_id': np.random.randint(1, 101, 1000),
-    'meal_id': np.random.randint(1, 52, 1000),
-    'checkout_price': np.random.uniform(100, 500, 1000),
-    'base_price': np.random.uniform(100, 500, 1000),
-    'num_orders': np.random.randint(100, 5000, 1000),
-    'emailer_for_promotion': np.random.randint(0, 2, 1000),
-    'homepage_featured': np.random.randint(0, 2, 1000)
-})
-
-# Create synthetic meal data
-categories = ['Beverages', 'Rice Bowl', 'Snacks', 'Desert', 'Seafood', 'Soup', 'Pizza']
-cuisines = ['Thai', 'Indian', 'Italian', 'Continental']
-meal = pd.DataFrame({
-    'meal_id': range(1, 52),
-    'category': np.random.choice(categories, 51),
-    'cuisine': np.random.choice(cuisines, 51)
-})
-
-# Create synthetic centerinfo data
-city_codes = np.random.randint(1, 20, 100)
-center_types = ['TYPE_A', 'TYPE_B', 'TYPE_C']
-centerinfo = pd.DataFrame({
-    'center_id': range(1, 101),
-    'city_code': city_codes,
-    'region_code': np.random.randint(1, 5, 100),
-    'center_type': np.random.choice(center_types, 100)
-})
-
-print("Synthetic data created:")
-print(f"train_raw shape: {train_raw.shape}")
-print(f"test_raw shape: {test_raw.shape}")
-print(f"meal shape: {meal.shape}")
-print(f"centerinfo shape: {centerinfo.shape}")
+train_raw = pd.read_csv('data/train.csv')
+test_raw = pd.read_csv('data/test.csv')
+meal = pd.read_csv('data/meal_info.csv')
+centerinfo = pd.read_csv('data/fulfilment_center_info.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train = pd.merge(train_raw, meal, on="meal_id", how="left")
-# df = pd.merge(train, centerinfo, on="center_id", how="left")
-# print("Shape of train data : ", df.shape)
-# df.head()
-
-# === AFTER (edited) ===
-print("Merging train_raw with meal on meal_id...")
 train = pd.merge(train_raw, meal, on="meal_id", how="left")
-
-print("Merging train with centerinfo on center_id...")
 df = pd.merge(train, centerinfo, on="center_id", how="left")
-
 print("Shape of train data : ", df.shape)
-print("Check for NaN values:", df.isnull().sum().sum())
 df.head()
 
 #%%
@@ -164,7 +96,6 @@ weekly_cuisine_category.rename(columns={'category': 'weekly_cuisine_cat'}, inpla
 # weekly_cuisine_cat sütununu df veri çerçevesine ekleyin
 df = df.merge(weekly_cuisine_category, on=['week', 'cuisine'], how='left')
 df.head()
-
 
 #%%
 # --- [CELL 11]: ---
@@ -292,8 +223,6 @@ print("RMSE:", rmse)
 # --- [CELL 23]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 24}
-
-
 dft['new_discount_rate'] = (dft['base_price'] - dft['checkout_price']) / dft['base_price']
 
 #%%
@@ -314,7 +243,6 @@ weekly_cuisine_category.rename(columns={'category': 'weekly_cuisine_cat'}, inpla
 dft = dft.merge(weekly_cuisine_category, on=['week', 'cuisine'], how='left')
 dft.head()
 
-
 #%%
 # --- [CELL 26]: ---
 # cell_state: unchanged
@@ -333,8 +261,6 @@ dft.head()
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 28}
 dft=dft.drop("id",axis=1)
 
-
-
 #%%
 # --- [CELL 28]: ---
 # cell_state: unchanged
@@ -350,19 +276,9 @@ c
 
 #%%
 # --- [CELL 30]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 31}
-# === BEFORE (original) ===
-# dft_encoded = pd.get_dummies(dft[c], drop_first=True)
-# dft_encoded.head()
-
-# === AFTER (edited) ===
 dft_encoded = pd.get_dummies(dft[c], drop_first=True)
-
-# Need to drop num_orders since it's the target variable, not a feature
-# This matches the logic in cell 20 where w = df_test_encoded.drop("num_orders", axis=1)
-dft_encoded = dft_encoded.drop("num_orders", axis=1)
-
 dft_encoded.head()
 
 #%%
@@ -374,5 +290,3 @@ dft_encoded.head()
 
 # === AFTER (edited) ===
 final_pred = best_estimator.predict(dft_encoded)
-print("Final predictions shape:", final_pred.shape)
-print("Sample predictions:", final_pred[:5])

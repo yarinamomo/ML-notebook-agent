@@ -35,9 +35,9 @@ print("No of columns after dropping high missing value column: ",len(train.colum
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # test=test.drop(['Alley','PoolQC','Fence','MiscFeature','Id'],axis=1)
 
 # === AFTER (edited) ===
-test=test.drop(['Alley','PoolQC','Fence','MiscFeature','Id'],axis=1, errors='ignore')
+test=test.drop(['Id'],axis=1)

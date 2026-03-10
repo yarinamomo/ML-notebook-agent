@@ -14,16 +14,10 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df= pd.read_csv(r'data/Retailsales.csv')
-# df=df.drop(columns='Unnamed: 0')
-# df.head()
-
-# === AFTER (edited) ===
 df= pd.read_csv(r'data/Retailsales.csv')
-df=df.drop(columns='Unnamed: 0', errors='ignore')
+df=df.drop(columns='Unnamed: 0')
 df.head()
 
 #%%
@@ -42,8 +36,5 @@ df
 # #This Error is occuring due to some string values in Order ID Column
 
 # === AFTER (edited) ===
-# Check if 'Order ID' column exists before processing
-if 'Order ID' in df.columns:
-    df=df['Order ID'].astype('int')
-else:
-    print("Column 'Order ID' not found in dataframe")
+df = df[df['Order ID'] != 'Order ID']
+df['Order ID'] = df['Order ID'].astype('int')

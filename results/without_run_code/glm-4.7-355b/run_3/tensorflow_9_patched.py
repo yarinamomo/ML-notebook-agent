@@ -17,48 +17,11 @@ import string
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/train.csv')
-# test_df = pd.read_csv('data/test.csv')
-# df.sample(5)
-
-# === AFTER (edited) ===
-# Try to read the data files
-try:
-    df = pd.read_csv('data/train.csv')
-    test_df = pd.read_csv('data/test.csv')
-    # Check if data is actually valid (not git-lfs pointers)
-    if 'text' not in df.columns or len(df.columns) < 2:
-        raise ValueError("Invalid CSV data")
-    df.head(5)
-except:
-    # Create sample data for demonstration if CSV files are not available
-    sample_data = {
-        'text': [
-            'This is a normal tweet about the weather today and nothing bad happened',
-            'Emergency! Fire at the downtown building people are evacuating now',
-            'Just had lunch at a great restaurant the food was amazing',
-            'Explosion reported at the factory please stay away from the area',
-            'Watching a movie at home tonight with my family',
-            'The earthquake shook the city causing widespread damage',
-            'Happy birthday to my best friend hope you have a great day',
-            'Flood warning in effect for the valley residents should evacuate',
-            'Beautiful sunset over the mountains today',
-            'Train derailment causes injuries and delays on the main line'
-        ],
-        'target': [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
-    }
-    test_sample_data = {
-        'text': [
-            'This is a test tweet without a label',
-            'Another test tweet for the prediction'
-        ]
-    }
-    df = pd.DataFrame(sample_data)
-    test_df = pd.DataFrame(test_sample_data)
-    df.head(5)
+df = pd.read_csv('data/train.csv')
+test_df = pd.read_csv('data/test.csv')
+df.sample(5)
 
 #%%
 # --- [CELL 2]: ---
@@ -212,7 +175,10 @@ print(bert_model.config.hidden_size)
 # tf.keras.utils.plot_model(bert_model)
 
 # === AFTER (edited) ===
-import tensorflow as tf
-# tf.keras.utils.plot_model() only works with Keras models, not PyTorch models
-# For PyTorch BERT model, we can print the model structure instead
+# Print the BERT model architecture (PyTorch compatible approach)
+print("BERT Model Architecture:")
 print(bert_model)
+
+# Show detailed configuration
+print("\nBERT Model Configuration:")
+print(bert_model.config)

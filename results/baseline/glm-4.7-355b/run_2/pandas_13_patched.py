@@ -27,7 +27,6 @@ from sklearn.metrics import mean_absolute_error,mean_squared_error,r2_score
 
 import matplotlib.pyplot as plt
 
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
@@ -45,58 +44,25 @@ df.duplicated().sum()  # 检查是否已删除
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# # 一种转换方法
-# dfm = DataFrameMapper([(['Year'],StandardScaler()),
-#                        (['Selling_Price'],None),
-#                        (['Driven_kms'],MinMaxScaler()),
-#                        ('Owner',None),
-#                        (['Car_Name'],OneHotEncoder()),
-#                        (['Fuel_Type'],OneHotEncoder()),
-#                        (['Selling_type'],OneHotEncoder()),
-#                        (['Transmission'],OneHotEncoder()),
-#                        (['Present_Price'],MinMaxScaler())
-#                       ],df_out=True)
-# transformed = dfm.fit_transform(df)
-
-# === AFTER (edited) ===
-# First, let's see what columns actually exist in the DataFrame
-print("Columns in df:", df.columns.tolist())
-
-# Check if 'Year' column exists, if not try common variations
-year_col = None
-for col in df.columns:
-    if 'year' in col.lower():
-        year_col = col
-        break
-
-# If Year column doesn't exist, we'll need to handle it
-# Based on common car dataset naming, let's try to match expected columns
-# The error indicates 'Year' is not in columns, so let's use what exists
-# A common naming convention for car datasets is older names
-
-# Let's load and inspect the data properly
-df = pd.read_csv('data/car data.csv')
-print("\nActual columns:", df.columns.tolist())
-print("\nFirst few rows:")
-print(df.head())
-
-# Now let's build the DataFrameMapper with actual column names
-# Based on the error, the column 'Year' doesn't exist
-# Let's try to be more flexible with column names
-
-dfm = DataFrameMapper([
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# 一种转换方法
+dfm = DataFrameMapper([(['Year'],StandardScaler()),
                        (['Selling_Price'],None),
+                       (['Driven_kms'],MinMaxScaler()),
                        ('Owner',None),
+                       (['Car_Name'],OneHotEncoder()),
+                       (['Fuel_Type'],OneHotEncoder()),
+                       (['Selling_type'],OneHotEncoder()),
+                       (['Transmission'],OneHotEncoder()),
+                       (['Present_Price'],MinMaxScaler())
                       ],df_out=True)
 transformed = dfm.fit_transform(df)
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # 第二种 不处理数值
 # 文本类型的处理上不再使用独热编码
 dfm2 = DataFrameMapper([(['Year'],None),
@@ -114,7 +80,7 @@ transformed2 = dfm2.fit_transform(df)
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # 提取转换后的
 X = transformed.loc[:,~transformed.columns.isin(['Selling_Price'])]
 y = transformed.loc[:,'Selling_Price']
@@ -135,7 +101,7 @@ X.columns.tolist()
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # 提取转换2的
 X_ = transformed2.loc[:,~transformed2.columns.isin(['Selling_Price'])]
 y_ = transformed2.loc[:,'Selling_Price']
@@ -143,7 +109,7 @@ y_ = transformed2.loc[:,'Selling_Price']
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # 将数据集分割为训练集与测试集
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=20)
 
@@ -152,7 +118,7 @@ X_2_train, X_2_test, y_2_train, y_2_test = train_test_split(X_, y_, test_size=0.
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 # 默认方式
 gbr = GradientBoostingRegressor(random_state=20)
 gbr.fit(X_train,y_train)
@@ -161,7 +127,7 @@ gbr_y_predict = gbr.predict(X_test)
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 gbr2 = GradientBoostingRegressor(random_state=20)
 gbr2.fit(X_2_train,y_2_train)
 gbr2_y_predict = gbr2.predict(X_2_test)
@@ -169,7 +135,7 @@ gbr2_y_predict = gbr2.predict(X_2_test)
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 gbr_gs = GradientBoostingRegressor(loss='squared_error', n_estimators=133,random_state=20)
 gbr_gs.fit(X_2_train,y_2_train)
 gbr_gs_y_predict = gbr_gs.predict(X_2_test)
@@ -178,7 +144,7 @@ gbr_gs.score(X_2_test,y_2_test)
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 #默认
 rfr = RandomForestRegressor(random_state=20)
 rfr.fit(X_train,y_train)
@@ -187,7 +153,7 @@ rfr_y_predict = rfr.predict(X_test)
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 rfr2 = RandomForestRegressor(random_state=20)
 rfr2.fit(X_2_train,y_2_train)
 rfr2_y_predict = rfr2.predict(X_2_test)
@@ -195,7 +161,7 @@ rfr2_y_predict = rfr2.predict(X_2_test)
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 rfr_gs = RandomForestRegressor(criterion = 'friedman_mse', 
                                n_estimators = 136,
                                random_state=20)
@@ -204,20 +170,37 @@ rfr_gs_y_predict = rfr_gs.predict(X_2_test)
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-# 表格方式
-model_dict = {'X_train': [gbr, gbr_gs, rfr, rfr_gs],
-              'X_2_train': [gbr2, rfr2]}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# === BEFORE (original) ===
+# # 表格方式
+# model_dict = {'X_train': [gbr, gbr_gs, rfr, rfr_gs],
+#               'X_2_train': [gbr2, rfr2]}
+# 
+# for key in model_dict:
+#     f_list = []
+#     for model in model_dict[key]:
+#         feature_importance = model.feature_importances_
+#         f_list.append(feature_importance)
+#     
+#     fearture_names = X_train.columns.tolist() if key == 'X_train' else X_2_train.columns.tolist()
+#     f_index = ['gbr', 'gbr_gs', 'rfr', 'rfr_gs'] if key == 'X_train' else ['gbr2','rfr2']
+#     
+#     feature_df = pd.DataFrame(np.array(f_list), columns=fearture_names, index=f_index)
+#     display(feature_df)
+
+# === AFTER (edited) ===
+model_dict = {'X_train': [gbr, rfr],
+              'X_2_train': [gbr_gs, gbr2, rfr_gs, rfr2]}
 
 for key in model_dict:
     f_list = []
     for model in model_dict[key]:
         feature_importance = model.feature_importances_
         f_list.append(feature_importance)
-    
+
     fearture_names = X_train.columns.tolist() if key == 'X_train' else X_2_train.columns.tolist()
-    f_index = ['gbr', 'gbr_gs', 'rfr', 'rfr_gs'] if key == 'X_train' else ['gbr2','rfr2']
-    
+    f_index = ['gbr', 'rfr'] if key == 'X_train' else ['gbr_gs', 'gbr2', 'rfr_gs', 'rfr2']
+
     feature_df = pd.DataFrame(np.array(f_list), columns=fearture_names, index=f_index)
     display(feature_df)

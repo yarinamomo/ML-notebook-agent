@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import warnings
 from collections import namedtuple
 from functools import partial
@@ -14,7 +14,7 @@ from torch import Tensor
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 class GoogLeNet(nn.Module):
     def __init__(
         self,
@@ -106,7 +106,7 @@ class GoogLeNet(nn.Module):
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # class Inception(nn.Module):
 #     def __init__(
@@ -186,13 +186,13 @@ class Inception(nn.Module):
         branch3 = self.branch3(x)
         branch4 = self.branch4(x)
 
-        outputs = [branch1, branch2, branch3, branch4]
-        return torch.cat(outputs, 1)
+        outputs = torch.cat([branch1, branch2, branch3, branch4], 1)
+        return outputs
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 class InceptionAux(nn.Module):
     def __init__(
         self,
@@ -230,7 +230,7 @@ class InceptionAux(nn.Module):
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 class BasicConv2d(nn.Module):
     def __init__(self, in_channels: int, out_channels: int, kernel_size, stride=1, padding=0) -> None:
         super().__init__()
@@ -245,21 +245,21 @@ class BasicConv2d(nn.Module):
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 url = "https://download.pytorch.org/models/googlenet-1378be20.pth"
 weights = torch.hub.load_state_dict_from_url(url, map_location='cpu')
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 torch_googlenet_re = GoogLeNet()
 torch_googlenet_re.load_state_dict(weights)
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'not run'}
 import urllib
 url, filename = ("https://github.com/pytorch/hub/raw/master/images/dog.jpg", "dog.jpg")
 try: urllib.URLopener().retrieve(url, filename)
@@ -272,7 +272,7 @@ display(dog_image)
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'not run'}
 # Preprocess torch image
 from torchvision import transforms
 from PIL import Image
@@ -289,15 +289,14 @@ torch_img = Image.open("dog.jpg")
 torch_img = preprocess(dog_image)
 torch_img = torch.unsqueeze(torch_img, 0)
 
-
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'not run'}
 torch_googlenet_re.eval()
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'not run'}
 torch_googlenet_re(torch_img)

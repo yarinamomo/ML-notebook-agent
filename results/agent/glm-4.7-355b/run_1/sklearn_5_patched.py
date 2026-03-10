@@ -1,16 +1,6 @@
 # --- [CELL 0]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# import pandas as pd
-# import numpy as np
-# from sklearn.model_selection import train_test_split
-# from sklearn.linear_model import LogisticRegression
-# from sklearn.metrics import confusion_matrix, accuracy_score
-# import matplotlib.pyplot as plt
-# import seaborn as sns
-
-# === AFTER (edited) ===
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -18,19 +8,12 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.datasets import load_iris
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df= pd.read_csv("data/iris.csv")
-
-# === AFTER (edited) ===
-iris = load_iris()
-df = pd.DataFrame(data=iris.data, columns=iris.feature_names)
-df['species'] = iris.target
+df= pd.read_csv("data/iris.csv")
 
 #%%
 # --- [CELL 2]: ---
@@ -70,7 +53,7 @@ y_pred = clf.predict(x_test)
 from sklearn import metrics
 confusion_matrix = metrics.confusion_matrix(y_test , y_pred)
 
-cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix , display_labels=iris.target_names)
+cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix , display_labels=['setosa', 'versicolor', 'virginica'])
 
 cm_display.plot()
 plt.show()

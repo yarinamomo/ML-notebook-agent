@@ -18,81 +18,46 @@ print("El tamaño del dataset: {}".format(df.shape))
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# df = df.drop(['PassengerId', 'Name'], axis=1)
-# df.head(5)
-
-# === AFTER (edited) ===
-df = df.drop(['PassengerId', 'Name'], axis=1, errors='ignore')
+df = df.drop(['PassengerId', 'Name'], axis=1)
 df.head(5)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# df[['Age', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck','RoomService']] = df[['Age', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck','RoomService']].fillna(value=0)
-# df.isnull().sum().sort_values(ascending=False)
-
-# === AFTER (edited) ===
-cols_to_fill = ['Age', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck', 'RoomService']
-cols_exist = [col for col in cols_to_fill if col in df.columns]
-if cols_exist:
-    df[cols_exist] = df[cols_exist].fillna(value=0)
+df[['Age', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck','RoomService']] = df[['Age', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck','RoomService']].fillna(value=0)
 df.isnull().sum().sort_values(ascending=False)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# from sklearn.preprocessing import LabelEncoder
-# 
-# le = LabelEncoder()
-# 
-# df['HomePlanet'] = le.fit_transform(df['HomePlanet'])
-# df['Cabin'] = le.fit_transform(df['Cabin'])
-# df['Destination'] = le.fit_transform(df['Destination'])
-# df['CryoSleep'] = le.fit_transform(df['CryoSleep'])
-# df['VIP'] = le.fit_transform(df['VIP'])
-# df['Transported'] = le.fit_transform(df['Transported'])
-# 
-# print(df)
-
-# === AFTER (edited) ===
 from sklearn.preprocessing import LabelEncoder
 
 le = LabelEncoder()
 
-cols_to_encode = ['HomePlanet', 'Cabin', 'Destination', 'CryoSleep', 'VIP', 'Transported']
-for col in cols_to_encode:
-    if col in df.columns:
-        df[col] = le.fit_transform(df[col])
+df['HomePlanet'] = le.fit_transform(df['HomePlanet'])
+df['Cabin'] = le.fit_transform(df['Cabin'])
+df['Destination'] = le.fit_transform(df['Destination'])
+df['CryoSleep'] = le.fit_transform(df['CryoSleep'])
+df['VIP'] = le.fit_transform(df['VIP'])
+df['Transported'] = le.fit_transform(df['Transported'])
 
 print(df)
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# # Convertir las columnas a enteros
-# df["Age"] = df["Age"].astype(int)
-# df["RoomService"] = df["RoomService"].astype(int)
-# df["FoodCourt"] = df["FoodCourt"].astype(int)
-# df["ShoppingMall"] = df["ShoppingMall"].astype(int)
-# df["Spa"] = df["Spa"].astype(int)
-# df["VRDeck"] = df["VRDeck"].astype(int)
-# 
-# df.dtypes
-
-# === AFTER (edited) ===
-cols_to_int = ['Age', 'RoomService', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck']
-for col in cols_to_int:
-    if col in df.columns:
-        df[col] = df[col].astype(int)
+# Convertir las columnas a enteros
+df["Age"] = df["Age"].astype(int)
+df["RoomService"] = df["RoomService"].astype(int)
+df["FoodCourt"] = df["FoodCourt"].astype(int)
+df["ShoppingMall"] = df["ShoppingMall"].astype(int)
+df["Spa"] = df["Spa"].astype(int)
+df["VRDeck"] = df["VRDeck"].astype(int)
 
 df.dtypes
 
@@ -126,24 +91,19 @@ df.dtypes
 filas = 2
 col = 5
 
-available_cols = ["Cabin", "RoomService", "FoodCourt", "ShoppingMall", "Spa", "VRDeck"]
-existing_cols = [c for c in available_cols if c in df.columns]
+nombres_col = df[["Cabin", "RoomService", "FoodCourt", "ShoppingMall", "Spa", "VRDeck"]]
+y = df["Age"]
 
-if existing_cols and "Age" in df.columns:
-    nombres_col = df[existing_cols]
-    y = df["Age"]
-    
-    N = 50
-    fig, axs = plt.subplots(filas, col, figsize=(25, 10))
-    
-    for i in range(filas):
-        for j in range(col):
-            n = i * col + j
-            if n < len(nombres_col):
-                axs[i, j].set_title(nombres_col.columns[n])
-                axs[i, j].scatter(df[nombres_col.columns[n]][:N], y[:N])
-    
-    fig.tight_layout()
-    plt.show()
-else:
-    print("Warning: Required columns not found for plotting")
+
+N = 50
+fig, axs = plt.subplots(filas, col, figsize=(25, 10))
+
+for i in range(filas):
+    for j in range(col):
+        n = i * col + j
+        if n < len(nombres_col.columns):
+            axs[i, j].set_title(nombres_col.columns[n])
+            axs[i, j].scatter(df[nombres_col.columns[n]][:N], y[:N])
+
+fig.tight_layout()
+plt.show()

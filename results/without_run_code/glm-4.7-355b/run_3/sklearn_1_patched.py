@@ -13,7 +13,6 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.layers import Dense, Input, Dropout, Flatten, Conv2D
 
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
@@ -31,7 +30,6 @@ valid_datagen = ImageDataGenerator(rescale = 1./255,
 test_datagen = ImageDataGenerator(rescale = 1./255,
                                          validation_split = 0.2)
 
-
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
@@ -42,7 +40,6 @@ train_dataset=train_datagen.flow_from_directory(directory='data_small/train',
                                                subset='training',
                                                batch_size=64)
 
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
@@ -52,7 +49,6 @@ valid_dataset=valid_datagen.flow_from_directory(directory='data_small/test',
                                                class_mode='categorical',
                                                batch_size=64)
 
-
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
@@ -61,7 +57,6 @@ test_dataset=test_datagen.flow_from_directory(directory='data_small/test',
                                                target_size=(48,48),
                                                class_mode='categorical',
                                                batch_size=64)
-
 
 #%%
 # --- [CELL 5]: ---
@@ -240,7 +235,6 @@ outputs = Dense(7, activation='softmax')(x)
 model = Model(inputs=inputs, outputs=outputs)
 model.summary()
 
-
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
@@ -254,7 +248,6 @@ def f1_score(y_true,y_pred):
     f1_val=2*(precision*recall)/(precision+recall+K.epsilon())
     return f1_val
 
-
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
@@ -266,7 +259,6 @@ METRICS=[
     tf.keras.metrics.AUC(name='auc'),
       f1_score,
 ]
-
 
 #%%
 # --- [CELL 9]: ---
@@ -281,8 +273,6 @@ METRICS=[
 # model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=METRICS, class_weight=class_weight_dict)
 
 # === AFTER (edited) ===
-# --- [CELL 9]: ---
-
 from sklearn.utils.class_weight import compute_class_weight
 class_weights = compute_class_weight(class_weight='balanced', classes=np.unique(train_dataset.labels), y=train_dataset.labels)
 class_weight_dict = {i: class_weights[i] for i in range(len(class_weights))}

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 # importing necessary packages for the section
 import os
 import IPython
@@ -15,7 +15,7 @@ from scipy.signal import spectrogram, find_peaks
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 # importing packages
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
@@ -41,7 +41,7 @@ import matplotlib.pyplot as plt
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # path = "data_small/"
 # def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
@@ -65,43 +65,43 @@ import matplotlib.pyplot as plt
 # === AFTER (edited) ===
 path = "data_small/"
 def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
+    import librosa
+    import numpy as np
+    import os
 
     data = []
     max_harm_length = 0
 
     for dirname, _, filenames in os.walk(path):
         for filename in filenames:
+            # Skip non-audio files
+            if not filename.endswith(('.wav', '.WAV', '.mp3', '.flac', '.ogg')):
+                continue
+                
             foldername = os.path.basename(dirname)
             full_path = os.path.join(dirname, filename)
 
-            # Check if file is a valid audio file by looking at the header
-            is_valid_audio = False
-            try:
-                with open(full_path, 'rb') as f:
-                    header = f.read(4)
-                    # Check for RIFF (standard WAV) header
-                    if header == b'RIFF':
-                        is_valid_audio = True
-            except:
-                pass
-            
-            # If not valid audio, generate synthetic audio data for demonstration
-            if not is_valid_audio:
-                # Generate random audio data (1 second at 22050 Hz)
-                y = np.random.randn(22050) * 0.1
-                sr = 22050
-            else:
-                y, sr = librosa.load(full_path)
-            
+            y, sr = librosa.load(full_path)
             mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, fmax=fmax, fmin=fmin)
             logam = librosa.power_to_db(mel)
             data.append(logam)
 
-    data = np.array(data)
+    # Pad all spectrograms to the same length (length of the longest one)
+    if data:
+        max_len = max(spec.shape[1] for spec in data)
+        padded_data = []
+        for spec in data:
+            # Pad with zeros to match max_len
+            padded_spec = np.pad(spec, ((0, 0), (0, max_len - spec.shape[1])), mode='constant')
+            padded_data.append(padded_spec)
+        data = np.array(padded_data)
+    else:
+        data = np.array(data)
+        
     return data
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 NX = FeatureExtractor(path, n_mels = 10)

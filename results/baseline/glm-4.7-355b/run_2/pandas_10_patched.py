@@ -7,15 +7,9 @@ import matplotlib.pyplot as plt
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# df=pd.read_csv('data/googleplaystore.csv')
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 df=pd.read_csv('data/googleplaystore.csv')
-# Strip whitespace from column names to avoid KeyError
-df.columns = df.columns.str.strip()
 
 #%%
 # --- [CELL 2]: ---
@@ -26,11 +20,15 @@ df.dropna(inplace=True)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 df['Reviews']=df['Reviews'].astype('int')
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-df['Installs']=df['Installs'].astype('int')
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# === BEFORE (original) ===
+# df['Installs']=df['Installs'].astype('int')
+
+# === AFTER (edited) ===
+df['Installs']=df['Installs'].str.replace(',', '').str.replace('+', '').astype('int')

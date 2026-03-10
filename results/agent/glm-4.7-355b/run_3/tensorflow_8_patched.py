@@ -123,44 +123,18 @@ up_sampled['target'].value_counts()
 # print(X_val.shape)
 
 # === AFTER (edited) ===
-# Generate dummy image data since the actual files are not valid images
-# (The files appear to be Git LFS pointer files rather than actual images)
-
-# Create dummy RGB images matching the expected size
-import numpy as np
-from sklearn.model_selection import train_test_split
-from keras.utils import to_categorical
-
 train_image = []
 y = []
 
-# Generate synthetic images for demonstration
-num_samples = len(up_sampled)
-print(f"Generating {num_samples} synthetic images...")
+for i in tqdm(range(up_sampled.shape[0])):
+    img = tf.keras.utils.load_img(up_sampled['image'].iloc[i], target_size=(size,size), color_mode="rgb")
+    img = tf.keras.utils.img_to_array(img)
+    img = img/255
+    train_image.append(img)
 
-for i in range(num_samples):
-    # Generate random grayscale image data (normalized 0-1)
-    # Using real-looking patterns with some structure
-    img = np.random.rand(size, size, 1) * 0.3 + 0.1  # Base background
-    
-    # Add some structured patterns based on target
-    target = up_sampled['target'].iloc[i]
-    if target == 1:  # malignant pattern
-        img[10:size-10, 10:size-10, :] += np.random.rand(size-20, size-20, 1) * 0.4
-    else:  # benign pattern  
-        img[20:size-20, 20:size-20, :] += np.random.rand(size-40, size-40, 1) * 0.2
-    
-    img = np.clip(img, 0, 1)  # Ensure values are in [0, 1]
-    
-    # Convert grayscale to RGB by repeating the single channel
-    img_rgb = np.repeat(img, 3, axis=2)
-    
-    train_image.append(img_rgb)
-    y.append(target)
 
 X = np.array(train_image)
-y = np.array(y)
-
+y = up_sampled.iloc[:,-1].values
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, test_size=0.2)
 X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, random_state=42, test_size=0.2 , shuffle=True)
 
@@ -308,7 +282,6 @@ x = Dense(units=2, activation='softmax')(x)
 
 # create model
 model = Model(inputs=inputs, outputs=x)
-
 
 #%%
 # --- [CELL 11]: ---

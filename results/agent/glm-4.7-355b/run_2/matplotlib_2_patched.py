@@ -58,69 +58,14 @@ import torch.nn.functional as F
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# import numpy as np
-# import pandas as pd
-# import pyarrow.parquet as pq
-# import matplotlib.pyplot as plt
-# 
-# # Function to convert to 3D
-# def to_3d(arr):
-#     douaa = []
-#     for i in range(0, 3):
-#         dou = np.stack(np.stack(arr)[i], axis=-1)
-#         douaa.append(dou)
-#     douaa = np.array(douaa)
-#     return douaa
-# 
-# # Load Parquet file
-# parquet_file_path = 'data/QCDToGGQQ_IMGjet_RH1all_jet0_run0_n36272.test.snappy.parquet'
-# parquet_file = pq.ParquetFile(parquet_file_path)
-# 
-# # Get the total number of rows
-# total_rows = parquet_file.metadata.num_rows
-# 
-# # Initialize arrays to store images and labels
-# images_array = []
-# labels_array = []
-# 
-# # Loop over the file in chunks
-# chunk_size = 50
-# for i in range(0, total_rows, chunk_size):
-#     # Read a chunk of rows from the file
-#     chunk = parquet_file.read_row_group(i)
-#     df = chunk.to_pandas()
-# 
-#     # Initialize arrays inside the loop
-#     chunk_images_array = []
-#     chunk_labels_array = []
-# 
-#     # Loop over rows in the chunk
-#     for j in range(len(df)):
-#         # Convert 'X_jets' to 3D
-#         df['X_jets'][j] = to_3d(df['X_jets'][j].copy())  # Use .copy() to create a copy
-# 
-#         # Append image and label to arrays
-#         chunk_images_array.append(df['X_jets'][j])
-#         chunk_labels_array.append(df['y'][j])
-# 
-#     # Append chunk data to the main arrays
-#     images_array.extend(chunk_images_array)
-#     labels_array.extend(chunk_labels_array)
-# 
-# # Convert arrays to NumPy arrays
-# images_array = np.array(images_array)
-# labels_array = np.array(labels_array)
-
-# === AFTER (edited) ===
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 import matplotlib.pyplot as plt
 
-
+# Function to convert to 3D
 def to_3d(arr):
     douaa = []
     for i in range(0, 3):
@@ -129,29 +74,44 @@ def to_3d(arr):
     douaa = np.array(douaa)
     return douaa
 
+# Load Parquet file
+parquet_file_path = 'data/QCDToGGQQ_IMGjet_RH1all_jet0_run0_n36272.test.snappy.parquet'
+parquet_file = pq.ParquetFile(parquet_file_path)
 
-# Generate mock data since parquet file is corrupted
-# Creating synthetic image data that mimics the expected structure
-num_samples = 100
-image_shape = (125, 125, 3)
+# Get the total number of rows
+total_rows = parquet_file.metadata.num_rows
 
-# Generate random images with 3 channels (similar to X_jets structure)
-np.random.seed(42)
+# Initialize arrays to store images and labels
 images_array = []
 labels_array = []
 
-for i in range(num_samples):
-    # Generate random image data with 3 channels
-    img = np.random.rand(125, 125, 3).astype(np.float32)
-    images_array.append(img)
-    # Generate random labels (0 or 1 for binary classification)
-    labels_array.append(np.random.randint(0, 2))
+# Loop over the file in chunks
+chunk_size = 50
+for i in range(0, total_rows, chunk_size):
+    # Read a chunk of rows from the file
+    chunk = parquet_file.read_row_group(i)
+    df = chunk.to_pandas()
 
+    # Initialize arrays inside the loop
+    chunk_images_array = []
+    chunk_labels_array = []
+
+    # Loop over rows in the chunk
+    for j in range(len(df)):
+        # Convert 'X_jets' to 3D
+        df['X_jets'][j] = to_3d(df['X_jets'][j].copy())  # Use .copy() to create a copy
+
+        # Append image and label to arrays
+        chunk_images_array.append(df['X_jets'][j])
+        chunk_labels_array.append(df['y'][j])
+
+    # Append chunk data to the main arrays
+    images_array.extend(chunk_images_array)
+    labels_array.extend(chunk_labels_array)
+
+# Convert arrays to NumPy arrays
 images_array = np.array(images_array)
 labels_array = np.array(labels_array)
-
-print(f"Generated {len(images_array)} samples with shape {images_array.shape}")
-print(f"Labels shape: {labels_array.shape}")
 
 #%%
 # --- [CELL 2]: ---
@@ -164,12 +124,10 @@ train_images, test_images, train_labels, test_labels = train_test_split(
 print(train_images.shape)
 print(train_labels.shape)
 
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -183,7 +141,6 @@ for i in range(num_images_to_plot):
     plt.imshow(reduced_images_array[i], cmap='gray')  # Displaying the mean across channels
     plt.title(f"Label: {labels_array[i]}")
     plt.show()
-
 
 #%%
 # --- [CELL 4]: ---
@@ -272,5 +229,6 @@ train_loader = DataLoader(custom_dataset, batch_size=batch_size, shuffle=shuffle
 
 # === AFTER (edited) ===
 plt.imshow(custom_dataset.images[1][0, :, :])
+
 plt.title(f"Label: {labels_array[1]}")
 plt.show()

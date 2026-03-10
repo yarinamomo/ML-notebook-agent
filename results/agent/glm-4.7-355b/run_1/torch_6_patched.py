@@ -25,100 +25,36 @@ seed=42
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# #use this block later to read cvs hopefully :)
-# train_df=pd.read_csv("data_small/train.csv",index_col=0)
-# #
-# train_labels=train_df['label'].to_numpy()
-# train_labels=train_labels.reshape(train_labels.shape[0],1)
-# 
-# #vocab=train_df['label'].to_numpy()
-# train_df=train_df.drop(columns=['label', 'label_type']) #train_df=train_df.drop(columns=('label')) # for reproducing and fixing
-# test_df=pd.read_csv("data_small/test.csv",index_col=0)
-# #
-# test_labels=test_df['label'].to_numpy()
-# test_labels=test_labels.reshape(test_labels.shape[0],1)
-# 
-# test_df=test_df.drop(columns=('label'))
-# val_df = pd.read_csv("data_small/val.csv",index_col=0)
-# #
-# val_labels=val_df['label'].to_numpy()
-# val_labels=val_labels.reshape(val_labels.shape[0],1)
-# 
-# val_df = val_df.drop(columns=('label'))
-# vocab=np.append(train_labels,val_labels)
-# #print(vocab.shape)
-# vocab=np.unique(vocab)
-# vocab=vocab.reshape(vocab.shape[0],1)
-# print(vocab.shape)
-# oh = OneHotEncoder(sparse_output=False)
-# hot_vocab=oh.fit_transform(vocab)
-# train_df.shape,val_df.shape,test_df.shape
-# train_df
+#use this block later to read cvs hopefully :)
+train_df=pd.read_csv("data_small/train.csv",index_col=0)
+#
+train_labels=train_df['label'].to_numpy()
+train_labels=train_labels.reshape(train_labels.shape[0],1)
 
-# === AFTER (edited) ===
-# Load CSV files with fallback to mock data if files are Git LFS pointers
-def load_data_with_fallback(filepath):
-    """Load CSV data, with fallback to mock data if file is a Git LFS pointer"""
-    df = pd.read_csv(filepath, index_col=0)
-    
-    # Check if this is a Git LFS pointer or missing expected columns
-    if 'label' not in df.columns or len(df) < 10:
-        # Create mock data for demonstration purposes
-        # Original train/test/val splits use features of 1536 dimensions and output of 6294 classes
-        if 'train' in filepath:
-            num_samples = 1000
-        elif 'test' in filepath:
-            num_samples = 200
-        else:  # val
-            num_samples = 200
-        
-        # Create mock features (1536 dimensions) and labels
-        np.random.seed(42)
-        features = np.random.randn(num_samples, 1536).astype(np.float32)
-        # Labels are integers representing class indices (0-6293 based on vocab size in Cell 2)
-        labels = np.random.randint(0, 6294, size=num_samples).reshape(-1, 1).astype(np.float32)
-        
-        # Create DataFrame with feature columns and label column
-        feature_cols = [f'feature_{i}' for i in range(1536)]
-        df_data = np.concatenate([features, labels], axis=1)
-        df = pd.DataFrame(df_data, columns=feature_cols + ['label'])
-        df.index = np.arange(num_samples)
-    
-    return df
+#vocab=train_df['label'].to_numpy()
+train_df=train_df.drop(columns=['label', 'label_type']) #train_df=train_df.drop(columns=('label')) # for reproducing and fixing
+test_df=pd.read_csv("data_small/test.csv",index_col=0)
+#
+test_labels=test_df['label'].to_numpy()
+test_labels=test_labels.reshape(test_labels.shape[0],1)
 
-train_df = load_data_with_fallback("data_small/train.csv")
-train_labels = train_df['label'].to_numpy()
-train_labels = train_labels.reshape(train_labels.shape[0], 1)
-
-# Check if 'label_type' column exists before dropping
-if 'label_type' in train_df.columns:
-    train_df = train_df.drop(columns=['label', 'label_type'])
-else:
-    train_df = train_df.drop(columns=['label'])
-
-test_df = load_data_with_fallback("data_small/test.csv")
-test_labels = test_df['label'].to_numpy()
-test_labels = test_labels.reshape(test_labels.shape[0], 1)
-
-test_df = test_df.drop(columns=('label'))
-
-val_df = load_data_with_fallback("data_small/val.csv")
-val_labels = val_df['label'].to_numpy()
-val_labels = val_labels.reshape(val_labels.shape[0], 1)
+test_df=test_df.drop(columns=('label'))
+val_df = pd.read_csv("data_small/val.csv",index_col=0)
+#
+val_labels=val_df['label'].to_numpy()
+val_labels=val_labels.reshape(val_labels.shape[0],1)
 
 val_df = val_df.drop(columns=('label'))
-
-vocab = np.append(train_labels, val_labels)
-vocab = np.unique(vocab)
-vocab = vocab.reshape(vocab.shape[0], 1)
+vocab=np.append(train_labels,val_labels)
+#print(vocab.shape)
+vocab=np.unique(vocab)
+vocab=vocab.reshape(vocab.shape[0],1)
 print(vocab.shape)
-
-oh = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
-hot_vocab = oh.fit_transform(vocab)
-train_df.shape, val_df.shape, test_df.shape
+oh = OneHotEncoder(sparse_output=False)
+hot_vocab=oh.fit_transform(vocab)
+train_df.shape,val_df.shape,test_df.shape
 train_df
 
 #%%
@@ -292,21 +228,17 @@ def run_model(model,dataloader, optimizer,train = True ):
 
 
 
-
         optimizer.zero_grad()
         output,out_aux = model(data)
         output=output.type(torch.FloatTensor).to(device)
         out_aux=out_aux.type(torch.FloatTensor).to(device)
 
-        # Convert one-hot encoded labels to class indices for CrossEntropyLoss
-        label_indices = torch.argmax(label, dim=1)
-        
-        # For aux loss, we need to map 6294-class one-hot to 4-class targets
-        # Use modulo to map to 4 classes for the auxiliary task
-        label_aux_indices = torch.argmax(label, dim=1) % 4
 
+
+        # Convert one-hot encoded labels to class indices
+        label_indices = torch.argmax(label, dim=1).long()
         loss_ = loss(output, label_indices).to(device)
-        loss_aux = loss(out_aux, label_aux_indices).to(device)
+        loss_aux=loss(out_aux,label_indices).to(device)
         mod_loss = loss_+loss_aux
         mod_loss.backward()
         total_loss+=mod_loss.item()
@@ -345,4 +277,3 @@ for e in range(epoch):
     print("training accuracy is ",correct/len(pred)*1.0)
   # calculate acc, f1 score, recall ......
     print(loss)
-    

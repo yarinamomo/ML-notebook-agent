@@ -23,33 +23,10 @@ print(os.listdir("data"))
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# data = pd.read_csv('data/fer2013.csv')
-# #check data shape
-# data.shape
-
-# === AFTER (edited) ===
-import numpy as np
-
-# Try to read the real data file
-try:
-    data = pd.read_csv('data/fer2013.csv')
-    # Check if it's the actual data (not just LFS pointer)
-    if 'emotion' not in data.columns:
-        raise ValueError("Not actual FER2013 data")
-except:
-    # Create mock data for testing purposes
-    # FER2013 has 7 emotions: 0=Angry, 1=Disgust, 2=Fear, 3=Happy, 4=Sad, 5=Surprise, 6=Neutral
-    n_samples = 1000
-    np.random.seed(42)
-    data = pd.DataFrame({
-        'emotion': np.random.randint(0, 7, n_samples),
-        'pixels': [' '.join(str(np.random.randint(0, 255)) for _ in range(2304)) for _ in range(n_samples)],
-        'Usage': np.random.choice(['Training', 'PublicTest', 'PrivateTest'], n_samples, p=[0.8, 0.1, 0.1])
-    })
-
+data = pd.read_csv('data/fer2013.csv')
+#check data shape
 data.shape
 
 #%%
@@ -70,7 +47,6 @@ data.drop(data[data['emotion'] == 1].index, inplace=True)
 
 # afficher la nouvelle forme du DataFrame
 print(data.shape)
-
 
 #%%
 # --- [CELL 3]: ---
@@ -108,7 +84,7 @@ emotion_counts
 #     plt.imshow(img[0])
 #     plt.title(label) # plt.title(img[1])
 # 
-# plt.show()  
+# plt.show()
 
 # === AFTER (edited) ===
 def row2image(row):
@@ -123,17 +99,13 @@ def row2image(row):
     return image, emotion
 
 plt.figure(0, figsize=(16,10))
-# Get unique emotions present in the data
-unique_emotions = sorted(data['emotion'].unique())
-n_emotions = len(unique_emotions)
+emotions_to_show = [0, 2, 3, 4, 5, 6]
+for i, emotion_id in enumerate(emotions_to_show):
+    face = data[data['emotion'] == emotion_id].iloc[0]
 
-for i, emotion_value in enumerate(unique_emotions, 1):
-    face = data[data['emotion'] == emotion_value].iloc[0]
-    
     img, label = row2image(face)
-    plt.subplot(1, n_emotions, i)
+    plt.subplot(2,4,i+1)
     plt.imshow(img)
-    plt.title(f"{label} ({emotion_value})")
+    plt.title(label)
 
-plt.tight_layout()
 plt.show()

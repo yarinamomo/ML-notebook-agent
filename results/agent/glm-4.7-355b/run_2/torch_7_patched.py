@@ -289,7 +289,6 @@ torch_img = Image.open("dog.jpg")
 torch_img = preprocess(dog_image)
 torch_img = torch.unsqueeze(torch_img, 0)
 
-
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged

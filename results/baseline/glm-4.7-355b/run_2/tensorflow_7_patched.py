@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from transformers import BertTokenizer, TFBertModel
 
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
@@ -41,38 +40,12 @@ print(tf.__version__)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# import pandas as pd
-# 
-# train = pd.read_csv("data/train.csv")
-# train = train[:8] # for faster reproducing and fixing purposes --- make a smaller dataset
-
-# === AFTER (edited) ===
 import pandas as pd
 
-try:
-    train = pd.read_csv("data/train.csv")
-    train = train[:8]
-    print(f"Loaded {len(train)} rows from CSV")
-except Exception as e:
-    print(f"Could not load CSV (error: {e}), creating sample data...")
-    # Create sample data if CSV doesn't exist
-    train = pd.DataFrame({
-        'premise': [
-            'The man is walking.', 'A dog runs fast.', 'She watches TV.', 
-            'Birds fly south.', 'They study hard.', 'Rain falls down.',
-            'Music plays loud.', 'Clouds cover sky.'
-        ],
-        'hypothesis': [
-            'A person moves.', 'Animals move.', 'He looks at screen.',
-            'Animals migrate.', 'Students learn.', 'Water drops.',
-            'Sound is audible.', 'Sky is gray.'
-        ],
-        'label': [0, 1, 0, 1, 0, 1, 0, 1]
-    })
-    print(f"Created {len(train)} sample rows")
+train = pd.read_csv("data/train.csv")
+train = train[:8] # for faster reproducing and fixing purposes --- make a smaller dataset
 
 #%%
 # --- [CELL 3]: ---
@@ -92,12 +65,43 @@ def encode_sentence(s):
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-def bert_encode(hypotheses, premises, tokenizer):
-    
+# === BEFORE (original) ===
+# def bert_encode(hypotheses, premises, tokenizer):
+#     
+#   num_examples = len(hypotheses)
+#   
+#   sentence1 = tf.ragged.constant([
+#       encode_sentence(s)
+#       for s in np.array(hypotheses)])
+#   sentence2 = tf.ragged.constant([
+#       encode_sentence(s)
+#        for s in np.array(premises)])
+# 
+#   cls = [tokenizer.convert_tokens_to_ids(['[CLS]'])]*sentence1.shape[0]
+#   input_word_ids = tf.concat([cls, sentence1, sentence2], axis=-1)
+# 
+#   input_mask = tf.ones_like(input_word_ids).to_tensor()
+# 
+#   type_cls = tf.zeros_like(cls)
+#   type_s1 = tf.zeros_like(sentence1)
+#   type_s2 = tf.ones_like(sentence2)
+#   input_type_ids = tf.concat(
+#       [type_cls, type_s1, type_s2], axis=-1).to_tensor()
+# 
+#   inputs = {
+#       'input_word_ids': input_word_ids.to_tensor(),
+#       'input_mask': input_mask,
+#       'input_type_ids': input_type_ids}
+# 
+#   return inputs
+
+# === AFTER (edited) ===
+def bert_encode(hypotheses, premises, tokenizer, max_len):
+
   num_examples = len(hypotheses)
-  
+
   sentence1 = tf.ragged.constant([
       encode_sentence(s)
       for s in np.array(hypotheses)])
@@ -117,22 +121,27 @@ def bert_encode(hypotheses, premises, tokenizer):
       [type_cls, type_s1, type_s2], axis=-1).to_tensor()
 
   inputs = {
-      'input_word_ids': input_word_ids.to_tensor(),
-      'input_mask': input_mask,
-      'input_type_ids': input_type_ids}
+      'input_word_ids': input_word_ids.to_tensor()[:, :max_len],
+      'input_mask': input_mask[:, :max_len],
+      'input_type_ids': input_type_ids[:, :max_len]}
 
   return inputs
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 7}
-train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer)
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# === BEFORE (original) ===
+# train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer)
+
+# === AFTER (edited) ===
+max_len = 50
+train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer, max_len)
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 max_len = 50
 from transformers import BertTokenizer, TFBertModel
 
@@ -154,7 +163,7 @@ def build_model():
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 with strategy.scope():
     model = build_model()
     model.summary()
@@ -162,5 +171,5 @@ with strategy.scope():
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 model.fit(train_input, train.label.values, epochs = 2, verbose = 1, batch_size = 64, validation_split = 0.2)

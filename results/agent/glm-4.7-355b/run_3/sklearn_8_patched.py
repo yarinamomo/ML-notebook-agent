@@ -13,53 +13,10 @@ warnings.filterwarnings('ignore')
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# insurance_train = pd.read_csv("data/train_synthetic.csv.zip")
-# insurance_test = pd.read_csv("data/test_synthetic.csv.zip")
-
-# === AFTER (edited) ===
-# Create synthetic data since the actual files are Git LFS pointers
-import numpy as np
-import pandas as pd
-
-np.random.seed(42)
-
-# Define columns based on what the notebook expects
-columns = ['Id', 'Product_Info_1', 'Product_Info_2', 'Product_Info_3', 'Product_Info_4',
-           'Employment_Info_1', 'Employment_Info_2', 'Employment_Info_3', 'Employment_Info_4', 
-           'Employment_Info_5', 'Employment_Info_6',
-           'Insurance_History_1', 'Insurance_History_2', 'Insurance_History_3', 
-           'Insurance_History_4', 'Insurance_History_5', 'Insurance_History_6', 'Insurance_History_7',
-           'Family_Hist_1', 'Family_Hist_2', 'Family_Hist_3', 'Family_Hist_4', 'Family_Hist_5',
-           'Medical_History_1', 'Medical_History_2', 'Medical_History_3', 'Medical_History_4',
-           'Medical_History_5', 'Medical_History_6', 'Medical_History_7', 'Medical_History_8',
-           'Medical_History_9', 'Medical_History_10', 'Medical_History_11', 'Medical_History_12',
-           'Medical_History_13', 'Medical_History_14', 'Medical_History_15', 'Medical_History_16',
-           'Medical_History_17', 'Medical_History_18', 'Medical_History_19', 'Medical_History_20',
-           'Medical_History_21', 'Medical_History_22', 'Medical_History_23', 'Medical_History_24',
-           'Medical_History_25', 'Medical_History_26', 'Medical_History_27', 'Medical_History_28',
-           'Medical_History_29', 'Medical_History_30', 'Medical_History_31', 'Medical_History_32',
-           'InsuredInfo_1', 'InsuredInfo_2', 'InsuredInfo_3', 'InsuredInfo_4', 'InsuredInfo_5',
-           'InsuredInfo_6', 'InsuredInfo_7', 'Response']
-
-# Create train data
-n_train = 1000
-insurance_train = pd.DataFrame(np.random.rand(n_train, len(columns)), columns=columns)
-insurance_train['Id'] = range(n_train)
-insurance_train['Response'] = np.random.randint(1, 9, n_train)  # Response values 1-8
-insurance_train['Product_Info_2'] = np.random.choice(['A1', 'A2', 'B1', 'B2', 'C1'], n_train)
-
-# Create test data
-n_test = 500
-insurance_test = pd.DataFrame(np.random.rand(n_test, len(columns)), columns=columns)
-insurance_test['Id'] = range(n_train, n_train + n_test)
-insurance_test['Response'] = np.random.randint(1, 9, n_test)
-insurance_test['Product_Info_2'] = np.random.choice(['A1', 'A2', 'B1', 'B2', 'C1'], n_test)
-
-print(f"Created synthetic train data with shape: {insurance_train.shape}")
-print(f"Created synthetic test data with shape: {insurance_test.shape}")
+insurance_train = pd.read_csv("data/train_synthetic.csv.zip")
+insurance_test = pd.read_csv("data/test_synthetic.csv.zip")
 
 #%%
 # --- [CELL 2]: ---
@@ -160,6 +117,6 @@ val_predictions = RF.predict(x)
 # print("Accuracy: ", accuracy)
 
 # === AFTER (edited) ===
-accuracy = accuracy_score(val_predictions, y)
+accuracy = accuracy_score(y, val_predictions)
 
 print("Accuracy: ", accuracy)

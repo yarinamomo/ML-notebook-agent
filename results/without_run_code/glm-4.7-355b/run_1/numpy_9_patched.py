@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # import os
 # import numpy as np
@@ -79,57 +79,7 @@ import torch
 
 def load_loss_weights_from_directory(directory_path):
     weight_files = [filename for filename in os.listdir(directory_path) if filename.endswith(".npy")]
-    
-    if not weight_files:
-        print(f"Warning: No .npy files found in {directory_path}")
-        return None
-    
-    weights = []
-    
-    for filename in weight_files:
-        filepath = os.path.join(directory_path, filename)
-        try:
-            # Try different loading strategies
-            try:
-                # Strategy 1: Standard load with allow_pickle=True
-                data = np.load(filepath, allow_pickle=True)
-                if isinstance(data, np.ndarray):
-                    weights.append(data)
-                elif hasattr(data, 'files'):
-                    # npz file
-                    for key in data.files:
-                        weights.append(data[key])
-                    data.close()
-            except Exception as e1:
-                try:
-                    # Strategy 2: Load with encoding='latin1'
-                    data = np.load(filepath, allow_pickle=True, encoding='latin1')
-                    if isinstance(data, np.ndarray):
-                        weights.append(data)
-                    elif hasattr(data, 'files'):
-                        for key in data.files:
-                            weights.append(data[key])
-                        data.close()
-                except Exception as e2:
-                    try:
-                        # Strategy 3: Load with encoding='bytes'
-                        data = np.load(filepath, allow_pickle=True, encoding='bytes')
-                        if isinstance(data, np.ndarray):
-                            weights.append(data)
-                        elif hasattr(data, 'files'):
-                            for key in data.files:
-                                weights.append(data[key])
-                            data.close()
-                    except Exception as e3:
-                        print(f"Warning: Could not load {filename}: {e3}")
-                        continue
-        except Exception as e:
-            print(f"Warning: Error processing {filename}: {e}")
-            continue
-    
-    if not weights:
-        raise ValueError(f"No valid weight arrays found in {directory_path}")
-    
+    weights = [np.atleast_1d(np.load(os.path.join(directory_path, filename))) for filename in weight_files]
     return np.concatenate(weights)
 
 
@@ -138,18 +88,10 @@ def save_weights_to_directory(directory_path, weights):
     np.save(os.path.join(directory_path, "updated_regression_weights.npy"), weights)
 
 
-# Check if directory exists
 regression_weights_directory = 'data/adjusted_survival_2019'
-if not os.path.exists(regression_weights_directory):
-    print(f"Warning: Directory {regression_weights_directory} does not exist. Using dummy weights.")
-    regression_weight = np.random.rand(10).astype(np.float32)
-else:
-    try:
-        regression_weight = load_loss_weights_from_directory(regression_weights_directory)
-    except Exception as e:
-        print(f"Warning: Could not load weights from {regression_weights_directory}: {e}")
-        print("Using dummy weights instead.")
-        regression_weight = np.random.rand(10).astype(np.float32)
+
+
+regression_weight = load_loss_weights_from_directory(regression_weights_directory)
 
 
 num_epochs_update_regression = 5

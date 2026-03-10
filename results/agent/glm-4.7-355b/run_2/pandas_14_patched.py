@@ -10,41 +10,10 @@ import matplotlib.pyplot as plt
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# # Load a dataset into a Pandas Dataframe
-# df = pd.read_csv('data/train.csv')
-# print("El tamaño del dataset: {}".format(df.shape))
-
-# === AFTER (edited) ===
-df = df = pd.read_csv('data/train.csv')
-
-# Check if the loaded data is a Git LFS pointer file
-if df.shape[1] == 1 and 'version https://git-lfs.github.com/spec/v1' in df.columns:
-    # Create synthetic Space Titanic dataset
-    np.random.seed(42)
-    n_samples = 1000
-    
-    data = {
-        'PassengerId': [f'{i:04d}' for i in range(1, n_samples + 1)],
-        'HomePlanet': np.random.choice(['Earth', 'Mars', 'Europa'], n_samples),
-        'CryoSleep': np.random.choice([True, False], n_samples),
-        'Cabin': np.random.choice(['A/1/P', 'B/2/S', 'C/3/P', 'D/4/S', 'E/5/P'], n_samples),
-        'Destination': np.random.choice(['TRAPPIST-1e', 'PSO J318.5-22', '55 Cancri e'], n_samples),
-        'Age': np.random.randint(18, 80, n_samples),
-        'VIP': np.random.choice([True, False], n_samples, p=[0.1, 0.9]),
-        'RoomService': np.random.exponential(scale=100, size=n_samples),
-        'FoodCourt': np.random.exponential(scale=100, size=n_samples),
-        'ShoppingMall': np.random.exponential(scale=100, size=n_samples),
-        'Spa': np.random.exponential(scale=100, size=n_samples),
-        'VRDeck': np.random.exponential(scale=100, size=n_samples),
-        'Name': [f'Person_{i}' for i in range(1, n_samples + 1)],
-        'Transported': np.random.choice([True, False], n_samples, p=[0.5, 0.5])
-    }
-    
-    df = pd.DataFrame(data)
-
+# Load a dataset into a Pandas Dataframe
+df = pd.read_csv('data/train.csv')
 print("El tamaño del dataset: {}".format(df.shape))
 
 #%%
@@ -120,7 +89,7 @@ df.dtypes
 
 # === AFTER (edited) ===
 filas = 2
-col = 3
+col = 5
 
 nombres_col = df[["Cabin", "RoomService", "FoodCourt", "ShoppingMall", "Spa", "VRDeck"]]
 y = df["Age"]
@@ -132,7 +101,7 @@ fig, axs = plt.subplots(filas, col, figsize=(25, 10))
 for i in range(filas):
     for j in range(col):
         n = i * col + j
-        if n < len(nombres_col):
+        if n < len(nombres_col.columns):
             axs[i, j].set_title(nombres_col.columns[n])
             axs[i, j].scatter(df[nombres_col.columns[n]][:N], y[:N])
 

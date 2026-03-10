@@ -45,22 +45,7 @@ df_test=pd.read_csv(test_df_path)
 #     item.set_rotation(45)
 
 # === AFTER (edited) ===
-# Check if 'labels' column exists in df_train
-if 'labels' not in df_train.columns:
-    # Create a representative sample of plant pathology labels for visualization
-    # Common classes: rust, scab, complex, frog_eye_leaf_spot, powderly_mildew, healthy
-    sample_data = pd.DataFrame({
-        'labels': ['rust', 'scab', 'complex', 'frog_eye_leaf_spot', 'powdery_mildew', 'healthy'],
-        'count': [1500, 2000, 3000, 1200, 800, 2500]
-    })
-    
-    plt.figure(figsize=(15,12))
-    labels = sns.barplot(x='labels', y='count', data=sample_data)
-    for item in labels.get_xticklabels():
-        item.set_rotation(45)
-    plt.title('Label Distribution (Sample Data - Original CSV not available)')
-else:
-    plt.figure(figsize=(15,12))
-    labels = sns.barplot(x=df_train['labels'].value_counts().index, y=df_train['labels'].value_counts())
-    for item in labels.get_xticklabels():
-        item.set_rotation(45)
+plt.figure(figsize=(15,12))
+labels = sns.barplot(x=df_train.labels.value_counts().index, y=df_train.labels.value_counts())
+for item in labels.get_xticklabels():
+    item.set_rotation(45)

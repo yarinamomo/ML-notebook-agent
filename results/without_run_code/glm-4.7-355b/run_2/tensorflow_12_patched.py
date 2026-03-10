@@ -55,51 +55,16 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# InputPath = 'data/images-after-converted_small/'
-# CsvPath   = 'data/breast-level_annotations (1).csv.zip'
-
-# === AFTER (edited) ===
 InputPath = 'data/images-after-converted_small/'
 CsvPath   = 'data/breast-level_annotations (1).csv.zip'
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# df = pd.read_csv(CsvPath)
-# df.head(3)
-
-# === AFTER (edited) ===
-import pandas as pd
-import numpy as np
-import os
-import cv2
-
-# The file appears to be stored using Git LFS, so the actual data isn't available.
-# Creating a mock DataFrame with expected columns for demonstration purposes
-np.random.seed(42)
-n_samples = 100
-
-df = pd.DataFrame({
-    'laterality': np.random.choice(['L', 'R'], n_samples),
-    'view_position': np.random.choice(['CC', 'MLO'], n_samples),
-    'image_id': [f'img_{i:05d}' for i in range(n_samples)],
-    'breast_birads': np.random.choice(['BI-RADS-0', 'BI-RADS-1', 'BI-RADS-2', 'BI-RADS-3'], n_samples)
-})
-
-# Create mock image directory structure with sample images for all IDs in the DataFrame
-for _, row in df.iterrows():
-    dir_path = os.path.join(InputPath, f'{row.laterality}-{row.view_position}')
-    os.makedirs(dir_path, exist_ok=True)
-    # Create a random image for each image_id
-    sample_img = np.random.randint(0, 255, (256, 256), dtype=np.uint8)
-    cv2.imwrite(os.path.join(dir_path, f'{row.image_id}.png'), sample_img)
-
-print(f"Mock dataset created with {len(df)} samples and images in 4 directories")
+df = pd.read_csv(CsvPath)
 df.head(3)
 
 #%%
@@ -108,7 +73,6 @@ df.head(3)
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 X= []
 y=[]
-
 
 #%%
 # --- [CELL 4]: ---
@@ -134,7 +98,7 @@ for i in range(df.shape[0]):
 
     path = InputPath+df.laterality[i]+'-'+df.view_position[i]+'/'+df.image_id[i]+'.png'
     if os.path.exists(path):
-        img = cv2.imread(path, 1)  # Changed from 0 (grayscale) to 1 (color)
+        img = cv2.imread(path)  # Load in color mode (3 channels)
         img_size = cv2.resize(img, (100, 100), interpolation = cv2.INTER_LINEAR)
 
 
@@ -144,28 +108,12 @@ for i in range(df.shape[0]):
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# Y = []
-# import re
-# for i in y:
-#     Y.append(int(re.sub("[A-Z]+\-[A-Z]+", "", i)))
-
-# === AFTER (edited) ===
 Y = []
 import re
 for i in y:
-    # Extract the last number from the BI-RADS string
-    match = re.search(r'(\d+)', i)
-    if match:
-        Y.append(int(match.group(1)))
-    else:
-        # Fallback: try to get the last character if it's a digit
-        if i[-1].isdigit():
-            Y.append(int(i[-1]))
-        else:
-            Y.append(0)  # Default value if no number found
+    Y.append(int(re.sub("[A-Z]+\-[A-Z]+", "", i)))
 
 #%%
 # --- [CELL 6]: ---
@@ -246,7 +194,6 @@ model.add(Dense(20, activation = 'softmax'))
 
 model.compile(optimizer=Adam(0.00001), loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics = ['accuracy'])
 model.summary()
-
 
 #%%
 # --- [CELL 10]: ---

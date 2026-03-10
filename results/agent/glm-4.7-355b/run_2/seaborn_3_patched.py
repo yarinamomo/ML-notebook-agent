@@ -30,83 +30,23 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.width', None)
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
 
-
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train = pd.read_csv("data/train.csv")
-# test = pd.read_csv("data/test.csv")
-# 
-# # ignore_index=True kullanarak index sıfırdan başlayacak şekilde birleştirme yapın
-# df = pd.concat([train, test], ignore_index=True)
-# 
-# selected_list = ["GarageArea", "LotArea", "LotFrontage", "OverallQual", "PoolArea", "MSSubClass", "YearBuilt", "GrLivArea",
-#                  "BedroomAbvGr", "LowQualFinSF", "TotRmsAbvGrd", "Id", "SalePrice"]
-# 
-# # Id ve SalePrice'ı seçili sütunlara ekleyin
-# df = df[selected_list]
-# 
-# # "index" sütununu düşürmeye gerek yok
-# df.head()
-# df.shape
-# df.isnull().sum()
+train = pd.read_csv("data/train.csv")
+test = pd.read_csv("data/test.csv")
 
-# === AFTER (edited) ===
-import numpy as np
-import pandas as pd
-
-# Create sample data since the CSV files are Git LFS pointers
-np.random.seed(42)
-
-# Create sample data for training (with SalePrice)
-n_train = 1000
-train_data = {
-    'Id': range(1, n_train + 1),
-    'GarageArea': np.random.randint(0, 1000, n_train),
-    'LotArea': np.random.randint(1000, 50000, n_train),
-    'LotFrontage': np.random.randint(20, 200, n_train),
-    'OverallQual': np.random.randint(1, 10, n_train),
-    'PoolArea': np.random.randint(0, 800, n_train),
-    'MSSubClass': np.random.randint(20, 200, n_train),
-    'YearBuilt': np.random.randint(1950, 2020, n_train),
-    'GrLivArea': np.random.randint(500, 4000, n_train),
-    'BedroomAbvGr': np.random.randint(0, 8, n_train),
-    'LowQualFinSF': np.random.randint(0, 500, n_train),
-    'TotRmsAbvGrd': np.random.randint(2, 14, n_train),
-    'SalePrice': np.random.randint(50000, 500000, n_train)
-}
-
-# Create sample data for testing (without SalePrice)
-n_test = 500
-test_data = {
-    'Id': range(n_train + 1, n_train + n_test + 1),
-    'GarageArea': np.random.randint(0, 1000, n_test),
-    'LotArea': np.random.randint(1000, 50000, n_test),
-    'LotFrontage': np.random.randint(20, 200, n_test),
-    'OverallQual': np.random.randint(1, 10, n_test),
-    'PoolArea': np.random.randint(0, 800, n_test),
-    'MSSubClass': np.random.randint(20, 200, n_test),
-    'YearBuilt': np.random.randint(1950, 2020, n_test),
-    'GrLivArea': np.random.randint(500, 4000, n_test),
-    'BedroomAbvGr': np.random.randint(0, 8, n_test),
-    'LowQualFinSF': np.random.randint(0, 500, n_test),
-    'TotRmsAbvGrd': np.random.randint(2, 14, n_test),
-    'SalePrice': np.nan  # Test set doesn't have SalePrice in practice
-}
-
-train = pd.DataFrame(train_data)
-test = pd.DataFrame(test_data)
-
+# ignore_index=True kullanarak index sıfırdan başlayacak şekilde birleştirme yapın
 df = pd.concat([train, test], ignore_index=True)
 
 selected_list = ["GarageArea", "LotArea", "LotFrontage", "OverallQual", "PoolArea", "MSSubClass", "YearBuilt", "GrLivArea",
                  "BedroomAbvGr", "LowQualFinSF", "TotRmsAbvGrd", "Id", "SalePrice"]
 
+# Id ve SalePrice'ı seçili sütunlara ekleyin
 df = df[selected_list]
 
+# "index" sütununu düşürmeye gerek yok
 df.head()
 df.shape
 df.isnull().sum()
@@ -155,7 +95,6 @@ def grab_col_names(dataframe, cat_th=10, car_th=25):
 
 cat_cols, cat_but_car, num_cols = grab_col_names(df)
 
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
@@ -200,8 +139,6 @@ def num_summary(dataframe, numerical_col, plot=False):
 
 for col in num_cols:
     num_summary(df, col, True)
-
-# Removed sns.barplot as it's not appropriate for numerical columns
 
 for col in num_cols:
     sns.boxplot(data=df, x=col)

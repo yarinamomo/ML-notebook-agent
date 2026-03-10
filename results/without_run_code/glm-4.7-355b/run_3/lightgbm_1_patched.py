@@ -1,13 +1,13 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 class conf:
     index = 'Id'
     target = 'quality'
@@ -28,96 +28,53 @@ np.random.seed(conf.random)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pandas.plotting import scatter_matrix
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train_full = pd.read_csv("data/train.csv", index_col=conf.index)
-# test_full = pd.read_csv("data/test.csv", index_col=conf.index)
-# train = train_full.copy()
-# test = test_full.copy()
-# if conf.load_original:
-#     print("Load external data...")
-#     original = pd.read_csv('data/WineQT.csv', index_col=conf.index)
-#     if conf.only_positive:
-#         train = pd.concat([original[original[conf.target] == 1], train_full], ignore_index=True)
-#     else:
-#         train = pd.concat([original, train_full])
-#         #train = train.drop(columns=['Id']).reset_index()
-# train.info()
-
-# === AFTER (edited) ===
-# Generate synthetic wine quality data since actual data files are not available
-from sklearn.datasets import make_classification
-
-# Generate synthetic training data
-synthetic_train, synthetic_train_target = make_classification(
-    n_samples=1000, n_features=11, n_informative=8, n_classes=6, 
-    n_clusters_per_class=1, random_state=conf.random
-)
-
-# Create feature names matching wine quality dataset
-feature_names = ['fixed acidity', 'volatile acidity', 'citric acid', 'residual sugar', 
-                 'chlorides', 'free sulfur dioxide', 'total sulfur dioxide', 'density', 
-                 'pH', 'sulphates', 'alcohol']
-
-train_full = pd.DataFrame(synthetic_train, columns=feature_names)
-train_full['quality'] = synthetic_train_target + 3  # shift to quality range 3-8
-train_full['Id'] = range(len(train_full))
-
-test_full = pd.DataFrame(synthetic_train[:200], columns=feature_names)
-test_full['Id'] = range(len(test_full))
-
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+train_full = pd.read_csv("data/train.csv", index_col=conf.index)
+test_full = pd.read_csv("data/test.csv", index_col=conf.index)
 train = train_full.copy()
 test = test_full.copy()
-
 if conf.load_original:
     print("Load external data...")
-    original_full = pd.DataFrame(synthetic_train, columns=feature_names)
-    original_full['quality'] = synthetic_train_target + 3
-    original_full['Id'] = range(len(original_full))
-    
+    original = pd.read_csv('data/WineQT.csv', index_col=conf.index)
     if conf.only_positive:
-        train = pd.concat([original_full[original_full[conf.target] == 1], train_full], ignore_index=True)
+        train = pd.concat([original[original[conf.target] == 1], train_full], ignore_index=True)
     else:
-        train = pd.concat([original_full, train_full], ignore_index=True)
-
+        train = pd.concat([original, train_full])
+        #train = train.drop(columns=['Id']).reset_index()
 train.info()
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# train = train.reset_index()
-# train = train.drop(columns=['Id'])
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 train = train.reset_index()
+train = train.drop(columns=['Id'])
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 from sklearn.feature_selection import mutual_info_classif
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 train2 = train.copy()
 test2 = test.copy()
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 def fe(df):
     df['alcohol_density'] = df['alcohol']  * df['density']
     df['alcohol_to_density'] = df['alcohol'] / df['density']
@@ -126,36 +83,35 @@ def fe(df):
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 fe(train2)
 fe(test2)
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 features1 = train2[train2.quality==3].columns.to_list()[0:11] 
 features2 = train2[train2.quality==3].columns.to_list()[12:15]
-features = features1 + features2 
+features = features1 + features2
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
-
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 train2 = train2.drop(columns=['residual sugar', 'chlorides', 'free sulfur dioxide', 'pH'])
 test2 = test2.drop(columns=['residual sugar', 'chlorides', 'free sulfur dioxide', 'pH'])
 
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 features = test2.columns.to_list()
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 from sklearn.preprocessing import StandardScaler
 scaler = StandardScaler()
 train2_scaled = scaler.fit_transform(train2[features]) # (3199, 10)
@@ -165,13 +121,13 @@ train2 = pd.concat([df_train2_scaled, train2.quality], axis=1)
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
 from sklearn.manifold import TSNE
 
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
 # https://distill.pub/2016/misread-tsne/
 tsne_model = TSNE(perplexity=25, n_components=2, init='pca', n_iter=250, random_state=23) # n_iter=5000 for fast reproducing and fixing purposes
 df_tsne = tsne_model.fit_transform(train2[features])
@@ -184,7 +140,7 @@ df_TSNE_te = df_TSNE_te.set_index('Id')
 #%%
 # --- [CELL 15]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
 df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
 df_TSNE = pd.concat([df_tmp,train[conf.target]], axis=1)
 
@@ -213,19 +169,31 @@ plt.show()
 # test3 = pd.concat([test2, df_TSNE_te], axis=1)
 
 # === AFTER (edited) ===
-# Create the TSNE dataframe with all rows, not just filtered ones
-df_TSNE_full = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
-df_TSNE_full[conf.target] = train[conf.target].values
-
-df_tmp = train2.drop(columns=['quality'])
-train3 = pd.concat([df_tmp, df_TSNE_full[['tsne1', 'tsne2']]], axis=1)
-train3[conf.target] = train[conf.target].values
+df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
+df_tmp['quality'] = train[conf.target]
+train3 = pd.concat([train2.drop(columns=['quality']), df_tmp], axis=1)
 test3 = pd.concat([test2, df_TSNE_te], axis=1)
 
 #%%
 # --- [CELL 17]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 22}
+# === BEFORE (original) ===
+# from sklearn.metrics import cohen_kappa_score
+# from sklearn.model_selection import StratifiedKFold
+# 
+# from lightgbm.sklearn import LGBMClassifier
+# from catboost import CatBoostClassifier
+# 
+# from lightgbm import LGBMRegressor
+# import scipy as sp
+# from functools import partial
+# 
+# import optuna
+# import warnings
+# warnings.filterwarnings('ignore')
+
+# === AFTER (edited) ===
 from sklearn.metrics import cohen_kappa_score
 from sklearn.model_selection import StratifiedKFold
 
@@ -233,6 +201,7 @@ from lightgbm.sklearn import LGBMClassifier
 from catboost import CatBoostClassifier
 
 from lightgbm import LGBMRegressor
+import lightgbm as lgb
 import scipy as sp
 from functools import partial
 
@@ -243,15 +212,14 @@ warnings.filterwarnings('ignore')
 #%%
 # --- [CELL 18]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 23}
 y = train3[conf.target]
 X = train3.drop([conf.target], axis=1)
-
 
 #%%
 # --- [CELL 19]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 24}
 # === BEFORE (original) ===
 # scores =[]
 # 
@@ -277,11 +245,8 @@ X = train3.drop([conf.target], axis=1)
 #         score = cohen_kappa_score(y_valid,  preds_valid, weights = "quadratic")
 #         scores.append(score)
 #     return np.mean(scores)
-#     
 
 # === AFTER (edited) ===
-import lightgbm as lgb
-
 scores =[]
 
 def find_out_params_model(trial):
@@ -295,8 +260,6 @@ def find_out_params_model(trial):
 
         X_train, X_valid = X.iloc[train_idx], X.iloc[valid_idx]
         y_train , y_valid = y.iloc[train_idx] , y.iloc[valid_idx]
-        
-        # Use callbacks for early stopping in newer LightGBM versions
         my_model.fit(
             X_train, y_train,
             eval_set= [(X_valid,y_valid)],
@@ -311,6 +274,6 @@ def find_out_params_model(trial):
 #%%
 # --- [CELL 20]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 21}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 25}
 study = optuna.create_study(direction="maximize")
 study.optimize(find_out_params_model, n_trials=2)

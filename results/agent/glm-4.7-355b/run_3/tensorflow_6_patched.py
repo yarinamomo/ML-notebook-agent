@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 import pandas as pd#特征工程
 import numpy as np#矩阵运算
 import matplotlib.pyplot as plt#画图
@@ -38,51 +38,21 @@ sns.set(style='white', context='notebook', palette='deep')#画图设置
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 import tensorflow as tf
 # tf.config.experimental.set_memory_growth(tf.config.list_physical_devices('GPU')[0], True)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# train = pd.read_csv("data/train.csv")
-# test = pd.read_csv("data/test.csv")
-
-# === AFTER (edited) ===
-# Load the MNIST dataset from keras
-from tensorflow.keras.datasets import mnist
-
-(X_train_full, Y_train_full), (X_test, _) = mnist.load_data()
-
-# For this notebook structure, we'll create train and test DataFrames
-# Normalize pixel values to 0-1 range
-X_train_full = X_train_full / 255.0
-X_test = X_test / 255.0
-
-# Create train DataFrame with label column
-import numpy as np
-import pandas as pd
-
-# Flatten the 28x28 images to 784 columns
-X_train_flat = X_train_full.reshape(X_train_full.shape[0], 784)
-X_test_flat = X_test.reshape(X_test.shape[0], 784)
-
-# Create train DataFrame with label as the first column
-train_df = pd.DataFrame(X_train_flat)
-train_df.insert(0, 'label', Y_train_full)
-
-# Create test DataFrame without label column
-test_df = pd.DataFrame(X_test_flat)
-# Assign to the expected variable names
-train = train_df
-test = test_df
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+train = pd.read_csv("data/train.csv")
+test = pd.read_csv("data/test.csv")
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 Y_train = train["label"]#得到训练集标签
 
 # Drop 'label' column
@@ -98,7 +68,7 @@ Y_train.value_counts()#计算每个值的数量
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # Normalize the data
 X_train = X_train / 255.0
 test = test / 255.0
@@ -106,7 +76,7 @@ test = test / 255.0
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # 黑白图  图片只有一个通道 长宽 都是 28 个像素
 X_train = X_train.values.reshape(-1,28,28,1)
 test = test.values.reshape(-1,28,28,1)
@@ -114,22 +84,21 @@ test = test.values.reshape(-1,28,28,1)
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 # Encode labels to one hot vectors (ex : 2 -> [0,0,1,0,0,0,0,0,0,0])把标签编码为独热向量形式
 Y_train = to_categorical(Y_train, num_classes = 10)
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 random_seed = 2
 X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size = 0.1, random_state=random_seed)
-
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 '''
 - filters：滤波器的数量，即输出的通道数；
 - kernelsize：卷积核的大小，这里是一个5x5的矩阵；
@@ -149,7 +118,7 @@ p.shape
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 # Set the CNN model 
 # my CNN architechture is（我的CNN架构是） In -> [[Conv2D->relu]*2 -> MaxPool2D -> Dropout]*2 -> Flatten -> Dense -> Dropout -> Out
 
@@ -192,7 +161,7 @@ model.add(Dense(10, activation = "softmax"))
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # Define the optimizer定义优化器
 optimizer = RMSprop(learning_rate=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
 '''
@@ -211,14 +180,14 @@ optimizer = RMSprop(learning_rate=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 # Compile the model 装配模型用于训练
 model.compile(optimizer = optimizer , loss = "categorical_crossentropy", metrics=["accuracy"])
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 # Set a learning rate annealer定义学习率退火算法。定义回调函数，在训练时，相应的回调函数的方法就会被在各自的阶段被调用。
 # https://keras.io/zh/callbacks/
 # https://keras.io/zh/callbacks/#reducelronplateau
@@ -244,7 +213,7 @@ verbose是ReduceLROnPlateau回调函数的一个可选参数，用于控制输�
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
 # 定义一个ModelCheckpoint回调函数，用于保存验证集上准确率最高的模型
 checkpoint_filepath = 'best_model.keras'
 model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
@@ -256,14 +225,14 @@ model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
 epochs = 1 #30 # Turn epochs to 30 to get 0.9967 accuracy
 batch_size = 86
 
 #%%
 # --- [CELL 15]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
 datagen = ImageDataGenerator(
         featurewise_center=False,  # set input mean to 0 over the dataset
         samplewise_center=False,  # set each sample mean to 0
@@ -291,7 +260,7 @@ datagen.fit(X_train)
 #%%
 # --- [CELL 16]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
 # stepsperepoch是一个fitgenerator()函数的参数，它用于指定每个训练周期（epoch）的训练步骤数。
 # 具体来说，它是由训练集的大小（即Xtrain.shape[0]）和批量大小（即batchsize）相除得出的结果。
 # 这个参数告诉模型在每个训练周期中要从训练数据集中取出多少个批次（batch）进行训练。
@@ -304,13 +273,24 @@ history = model.fit(datagen.flow(X_train,Y_train, batch_size=batch_size),
 
 #%%
 # --- [CELL 17]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
+# === BEFORE (original) ===
+# fig, ax = plt.subplots(2,1)
+# ax[0].plot(history.history['loss'], color='b', label="Training loss")
+# ax[0].plot(history.history['val_loss'], color='r', label="validation loss",axes =ax[0])
+# legend = ax[0].legend(loc='best', shadow=True)
+# 
+# ax[1].plot(history.history['acc'], color='b', label="Training accuracy")
+# ax[1].plot(history.history['val_acc'], color='r',label="Validation accuracy")
+# legend = ax[1].legend(loc='best', shadow=True)
+
+# === AFTER (edited) ===
 fig, ax = plt.subplots(2,1)
 ax[0].plot(history.history['loss'], color='b', label="Training loss")
 ax[0].plot(history.history['val_loss'], color='r', label="validation loss",axes =ax[0])
 legend = ax[0].legend(loc='best', shadow=True)
 
-ax[1].plot(history.history['acc'], color='b', label="Training accuracy")
-ax[1].plot(history.history['val_acc'], color='r',label="Validation accuracy")
+ax[1].plot(history.history['accuracy'], color='b', label="Training accuracy")
+ax[1].plot(history.history['val_accuracy'], color='r',label="Validation accuracy")
 legend = ax[1].legend(loc='best', shadow=True)

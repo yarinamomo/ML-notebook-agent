@@ -23,52 +23,11 @@ print(os.listdir("data"))
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# data = pd.read_csv('data/fer2013.csv')
-# #check data shape
-# data.shape
-
-# === AFTER (edited) ===
-import numpy as np
-import pandas as pd
-
-# Load original FER2013 dataset from Hugging Face if available
-try:
-    from datasets import load_dataset
-    dataset = load_dataset('fer2013')
-    df_train = pd.DataFrame(dataset['train'])
-    df_test = pd.DataFrame(dataset['test'])
-    df_val = pd.DataFrame(dataset['validation'])
-    df_train['Usage'] = 'Training'
-    df_test['Usage'] = 'PrivateTest'
-    df_val['Usage'] = 'PublicTest'
-    data = pd.concat([df_train, df_test, df_val], ignore_index=True)
-    data = data[['emotion', 'pixels', 'Usage']]
-    print(f"✅ Successfully loaded FER2013 dataset via Hugging Face")
-except Exception as e:
-    print(f"❌ Cannot load FER2013 dataset: {e}")
-    # Create sample FER2013 structure if loading fails
-    np.random.seed(42)
-    n_samples = 500
-    pixel_data = []
-    for _ in range(n_samples):
-        pixels = ' '.join([str(np.random.randint(0, 256)) for _ in range(2304)])
-        pixel_data.append(pixels)
-    emotions = np.random.randint(0, 7, n_samples)
-    usages = np.random.choice(['Training', 'PublicTest', 'PrivateTest'], n_samples)
-    data = pd.DataFrame({
-        'emotion': emotions,
-        'pixels': pixel_data,
-        'Usage': usages
-    })
-    print("📊 Using sample FER2013 dataset structure")
-
-print("Column names:", list(data.columns))
-print("Shape:", data.shape)
-print("Emotion distribution:")
-print(data['emotion'].value_counts().sort_index().to_dict())
+data = pd.read_csv('data/fer2013.csv')
+#check data shape
+data.shape
 
 #%%
 # --- [CELL 2]: ---
@@ -88,7 +47,6 @@ data.drop(data[data['emotion'] == 1].index, inplace=True)
 
 # afficher la nouvelle forme du DataFrame
 print(data.shape)
-
 
 #%%
 # --- [CELL 3]: ---
@@ -126,7 +84,7 @@ emotion_counts
 #     plt.imshow(img[0])
 #     plt.title(label) # plt.title(img[1])
 # 
-# plt.show()  
+# plt.show()
 
 # === AFTER (edited) ===
 def row2image(row):
@@ -141,15 +99,12 @@ def row2image(row):
     return image, emotion
 
 plt.figure(0, figsize=(16,10))
-plot_idx = 1
-for emotion in range(7):  # emotions 0-6
-    # Check if this emotion exists in the dataframe (emotion 1 was removed)
-    if len(data[data['emotion'] == emotion]) > 0:
-        face = data[data['emotion'] == emotion].iloc[0]
-        img, label = row2image(face)
-        plt.subplot(2,4,plot_idx)
-        plt.imshow(img)
-        plt.title(label)
-        plot_idx += 1
+for idx, emotion_id in enumerate(emotion_map.keys()):
+    face = data[data['emotion'] == emotion_id].iloc[0]
+
+    img, label = row2image(face)
+    plt.subplot(2,4,idx+1)
+    plt.imshow(img)
+    plt.title(label)
 
 plt.show()

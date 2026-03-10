@@ -1,47 +1,38 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-# === BEFORE (original) ===
-# df = pd.read_csv("data/SalaryData_Test(1).csv")
-
-# === AFTER (edited) ===
-# Since the CSV file appears to be a Git LFS pointer, create sample data
-import pandas as pd
-import numpy as np
-
-# Create sample data for demonstration
-np.random.seed(42)
-df = pd.DataFrame({
-    'workclass': np.random.randint(0, 5, 100),
-    'Salary': np.random.randint(30000, 100000, 100)
-})
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+df = pd.read_csv("data/SalaryData_Test(1).csv")
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # x = df.workclass.values.reshape(-1,1)
 # y = df.Salary.values.reshape(-1,1)
 
 # === AFTER (edited) ===
-x = df['workclass'].values.reshape(-1,1)
-y = df['Salary'].values.reshape(-1,1)
+from sklearn.preprocessing import LabelEncoder
+
+# Encode categorical variables
+le_workclass = LabelEncoder()
+le_salary = LabelEncoder()
+
+x = le_workclass.fit_transform(df.workclass).reshape(-1,1)
+y = le_salary.fit_transform(df.Salary).reshape(-1,1)
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 from sklearn.linear_model import LinearRegression
 
 linear_reg = LinearRegression() 

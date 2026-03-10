@@ -152,28 +152,17 @@ transform = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-
-class SafeImageFolder(torchvision.datasets.ImageFolder):
-    def __getitem__(self, index):
-        try:
-            return super().__getitem__(index)
-        except Exception:
-            # Return a placeholder tensor and default label if image loading fails
-            # This allows training to continue even with corrupted images
-            return torch.randn(3, 227, 227), 0
-
-
-train_data = SafeImageFolder(root = train_data_path,transform = transform)
-test_data = SafeImageFolder(root = test_data_path,transform = transform)
+train_data=torchvision.datasets.ImageFolder(root = train_data_path,transform = transform)
+test_data = torchvision.datasets.ImageFolder(root = test_data_path,transform = transform)
 
 
 train_dataloader = DataLoader(dataset = train_data,batch_size=64,shuffle=True,drop_last=False)
 test_dataloader = DataLoader(dataset = test_data,batch_size=64,shuffle=True,drop_last=False)
 
 
-class module(nn.Module):
+class MyModule(nn.Module):
     def __init__(self):
-        super(module,self).__init__()
+        super(MyModule,self).__init__()
         self.conv1 = Conv2d(3,96,11,stride = 4)
         self.relu1 = ReLU()
         self.maxpool1 = MaxPool2d(3,stride = 2)
@@ -212,9 +201,9 @@ class module(nn.Module):
         return x
 
 
-module = module()
+model = MyModule()
 if torch.cuda.is_available():
-    module = module.cuda()
+    model = model.cuda()
 
 
 loss_fn = nn.CrossEntropyLoss()
@@ -223,7 +212,7 @@ if torch.cuda.is_available():
 
 
 learning_rate = 0.001
-optimizer = torch.optim.Adam(module.parameters(),lr = learning_rate)
+optimizer = torch.optim.Adam(model.parameters(),lr = learning_rate)
 
 
 total_train_step = 0
@@ -233,13 +222,13 @@ epoch = 2
 for i in range(epoch):
     print('------第{}轮训练开始------'.format(i+1))
 
-    module.train()
+    model.train()
     for data in train_dataloader:
         imgs,targets = data
         if torch.cuda.is_available():
             imgs = imgs.cuda()
             targets = targets.cuda()
-        outputs = module(imgs)
+        outputs = model(imgs)
         loss = loss_fn(outputs,targets)
 
         optimizer.zero_grad()
@@ -250,7 +239,7 @@ for i in range(epoch):
         if total_train_step % 100 ==0:
             print("训练次数：{}，LOSS：{}".format(total_train_step,loss.item()))
 
-    module.eval()
+    model.eval()
     total_test_loss = 0
     total_accuracy = 0
     with torch.no_grad():
@@ -259,7 +248,7 @@ for i in range(epoch):
             if torch.cuda.is_available():
                 imgs = imgs.cuda()
                 targets = targets.cuda()
-            outputs = module(imgs)
+            outputs = model(imgs)
             loss = loss_fn(outputs,targets)
             total_test_loss = total_test_loss + loss.item()
             accuracy = (outputs.argmax(1) == targets).sum()
@@ -270,15 +259,28 @@ for i in range(epoch):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# === BEFORE (original) ===
+# train_data_path = 'data_small/101/train'
+# train_data=torchvision.datasets.ImageFolder(root = train_data_path,transform=transforms)
+# train_dataloader = DataLoader(dataset = train_data,batch_size=64,shuffle=True,drop_last=False)
+# for data in train_dataloader:#训练步骤
+#     imgs,targets = data
+#     if torch.cuda.is_available():
+#         imgs = imgs.cuda()
+#         targets = targets.cuda()
+#     outputs = module(imgs)
+#     loss = loss_fn(outputs,targets)
+
+# === AFTER (edited) ===
 train_data_path = 'data_small/101/train'
-train_data=torchvision.datasets.ImageFolder(root = train_data_path,transform=transforms)
+train_data=torchvision.datasets.ImageFolder(root = train_data_path,transform=transform)
 train_dataloader = DataLoader(dataset = train_data,batch_size=64,shuffle=True,drop_last=False)
-for data in train_dataloader:#训练步骤
+for data in train_dataloader:
     imgs,targets = data
     if torch.cuda.is_available():
         imgs = imgs.cuda()
         targets = targets.cuda()
-    outputs = module(imgs)
+    outputs = model(imgs)
     loss = loss_fn(outputs,targets)

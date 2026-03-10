@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from transformers import BertTokenizer, TFBertModel
 
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
@@ -41,43 +40,12 @@ print(tf.__version__)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# import pandas as pd
-# 
-# train = pd.read_csv("data/train.csv")
-# train = train[:8] # for faster reproducing and fixing purposes --- make a smaller dataset
-
-# === AFTER (edited) ===
 import pandas as pd
 
 train = pd.read_csv("data/train.csv")
-# The CSV is a Git LFS pointer file. Creating sample data with correct structure.
-train = pd.DataFrame({
-    'premise': [
-        'The man is playing guitar.',
-        'A woman is reading a book.',
-        'The dog is running in the park.',
-        'Children are playing soccer.',
-        'The chef is cooking dinner.',
-        'A bird is singing on the branch.',
-        'The car is parked on the street.',
-        'Students are studying in the library.'
-    ],
-    'hypothesis': [
-        'The man is making music.',
-        'A woman is looking at pictures.',
-        'The animal is sleeping.',
-        'Kids are playing a game.',
-        'Someone is preparing food.',
-        'An animal is making noise.',
-        'A vehicle is on the road.',
-        'People are reading books.'
-    ],
-    'label': [0, 1, 2, 0, 1, 2, 0, 1]
-})
-train = train[:8]
+train = train[:8] # for faster reproducing and fixing purposes --- make a smaller dataset
 
 #%%
 # --- [CELL 3]: ---
@@ -143,22 +111,17 @@ def bert_encode(hypotheses, premises, tokenizer, max_len=50):
 
   cls = [tokenizer.convert_tokens_to_ids(['[CLS]'])]*sentence1.shape[0]
   input_word_ids = tf.concat([cls, sentence1, sentence2], axis=-1)
-  
-  # Pad to max_len
-  input_word_ids = input_word_ids.to_tensor(shape=(num_examples, max_len))
 
-  input_mask = tf.ones_like(input_word_ids)
+  input_mask = tf.ones_like(input_word_ids).to_tensor(shape=[num_examples, max_len])
 
   type_cls = tf.zeros_like(cls)
   type_s1 = tf.zeros_like(sentence1)
   type_s2 = tf.ones_like(sentence2)
   input_type_ids = tf.concat(
-      [type_cls, type_s1, type_s2], axis=-1)
-  # Pad to max_len
-  input_type_ids = input_type_ids.to_tensor(shape=(num_examples, max_len))
+      [type_cls, type_s1, type_s2], axis=-1).to_tensor(shape=[num_examples, max_len])
 
   inputs = {
-      'input_word_ids': input_word_ids,
+      'input_word_ids': input_word_ids.to_tensor(shape=[num_examples, max_len]),
       'input_mask': input_mask,
       'input_type_ids': input_type_ids}
 
@@ -166,38 +129,14 @@ def bert_encode(hypotheses, premises, tokenizer, max_len=50):
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer)
-
-# === AFTER (edited) ===
-train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer, max_len=50)
+train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer)
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# === BEFORE (original) ===
-# max_len = 50
-# from transformers import BertTokenizer, TFBertModel
-# 
-# 
-# def build_model():
-#     bert_encoder = TFBertModel.from_pretrained(model_name)
-#     input_word_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_word_ids")
-#     input_mask = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_mask")
-#     input_type_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_type_ids")
-#     
-#     embedding = bert_encoder([input_word_ids, input_mask, input_type_ids])[0]
-#     output = tf.keras.layers.Dense(3, activation='softmax')(embedding[:,0,:])
-#     
-#     model = tf.keras.Model(inputs=[input_word_ids, input_mask, input_type_ids], outputs=output)
-#     model.compile(tf.keras.optimizers.Adam(lr=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-#     
-#     return model
-
-# === AFTER (edited) ===
 max_len = 50
 from transformers import BertTokenizer, TFBertModel
 
@@ -207,13 +146,13 @@ def build_model():
     input_word_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_word_ids")
     input_mask = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_mask")
     input_type_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_type_ids")
-
+    
     embedding = bert_encoder([input_word_ids, input_mask, input_type_ids])[0]
     output = tf.keras.layers.Dense(3, activation='softmax')(embedding[:,0,:])
-
+    
     model = tf.keras.Model(inputs=[input_word_ids, input_mask, input_type_ids], outputs=output)
-    model.compile(tf.keras.optimizers.Adam(learning_rate=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-
+    model.compile(tf.keras.optimizers.Adam(lr=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    
     return model
 
 #%%

@@ -25,119 +25,42 @@ seed=42
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# #use this block later to read cvs hopefully :)
-# train_df=pd.read_csv("data_small/train.csv",index_col=0)
-# #
-# train_labels=train_df['label'].to_numpy()
-# train_labels=train_labels.reshape(train_labels.shape[0],1)
-# 
-# #vocab=train_df['label'].to_numpy()
-# train_df=train_df.drop(columns=['label', 'label_type']) #train_df=train_df.drop(columns=('label')) # for reproducing and fixing
-# test_df=pd.read_csv("data_small/test.csv",index_col=0)
-# #
-# test_labels=test_df['label'].to_numpy()
-# test_labels=test_labels.reshape(test_labels.shape[0],1)
-# 
-# test_df=test_df.drop(columns=('label'))
-# val_df = pd.read_csv("data_small/val.csv",index_col=0)
-# #
-# val_labels=val_df['label'].to_numpy()
-# val_labels=val_labels.reshape(val_labels.shape[0],1)
-# 
-# val_df = val_df.drop(columns=('label'))
-# vocab=np.append(train_labels,val_labels)
-# #print(vocab.shape)
-# vocab=np.unique(vocab)
-# vocab=vocab.reshape(vocab.shape[0],1)
-# print(vocab.shape)
-# oh = OneHotEncoder(sparse_output=False)
-# hot_vocab=oh.fit_transform(vocab)
-# train_df.shape,val_df.shape,test_df.shape
-# train_df
+#use this block later to read cvs hopefully :)
+train_df=pd.read_csv("data_small/train.csv",index_col=0)
+#
+train_labels=train_df['label'].to_numpy()
+train_labels=train_labels.reshape(train_labels.shape[0],1)
 
-# === AFTER (edited) ===
-# Since the CSV files are Git LFS pointers, we'll create synthetic data
-# that matches the expected structure for the notebook to run
+#vocab=train_df['label'].to_numpy()
+train_df=train_df.drop(columns=['label', 'label_type']) #train_df=train_df.drop(columns=('label')) # for reproducing and fixing
+test_df=pd.read_csv("data_small/test.csv",index_col=0)
+#
+test_labels=test_df['label'].to_numpy()
+test_labels=test_labels.reshape(test_labels.shape[0],1)
 
-# Generate synthetic training data
-num_train_samples = 1000
-num_features = 1536  # Based on the model architecture
-num_classes = 6294   # Based on the model output size
+test_df=test_df.drop(columns=('label'))
+val_df = pd.read_csv("data_small/val.csv",index_col=0)
+#
+val_labels=val_df['label'].to_numpy()
+val_labels=val_labels.reshape(val_labels.shape[0],1)
 
-# Random feature data
-np.random.seed(seed)
-train_data = np.random.randn(num_train_samples, num_features)
-train_processed_labels = np.random.randint(0, num_classes, num_train_samples)
-
-# Create test data
-num_test_samples = 200
-test_data = np.random.randn(num_test_samples, num_features)
-test_processed_labels = np.random.randint(0, num_classes, num_test_samples)
-
-# Create validation data
-num_val_samples = 200
-val_data = np.random.randn(num_val_samples, num_features)
-val_processed_labels = np.random.randint(0, num_classes, num_val_samples)
-
-# Create dataframes
-train_df = pd.DataFrame(train_data)
-test_df = pd.DataFrame(test_data)
-val_df = pd.DataFrame(val_data)
-
-# Process labels
-train_labels = train_processed_labels.reshape(train_processed_labels.shape[0], 1)
-val_labels = val_processed_labels.reshape(val_processed_labels.shape[0], 1)
-test_labels = test_processed_labels.reshape(test_processed_labels.shape[0], 1)
-
-# Create vocabulary from labels
-vocab = np.append(train_labels, val_labels)
-vocab = np.unique(vocab)
-vocab = vocab.reshape(vocab.shape[0], 1)
-print(f"Vocabulary shape: {vocab.shape}")
-
-# One-hot encode labels
+val_df = val_df.drop(columns=('label'))
+vocab=np.append(train_labels,val_labels)
+#print(vocab.shape)
+vocab=np.unique(vocab)
+vocab=vocab.reshape(vocab.shape[0],1)
+print(vocab.shape)
 oh = OneHotEncoder(sparse_output=False)
-oh.fit(vocab)
-
-print(f"Train shape: {train_df.shape}, Val shape: {val_df.shape}, Test shape: {test_df.shape}")
+hot_vocab=oh.fit_transform(vocab)
+train_df.shape,val_df.shape,test_df.shape
+train_df
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train_arr=train_df.to_numpy()
-# train_arr=torch.from_numpy(train_arr)
-# test_arr=test_df.to_numpy()
-# test_arr=torch.from_numpy(test_arr)
-# val_arr=val_df.to_numpy()
-# val_arr=torch.from_numpy(val_arr)
-# 
-# 
-# train_labels=oh.transform(train_labels)
-# val_labels =oh.transform(val_labels)
-# test_enc_labels=[]
-# for i in range(test_labels.shape[0]):
-#     try:
-#         test_enc_labels.append(oh.transform(test_labels[i]))
-#     except ValueError as e:
-#         z=np.zeros((1,6294))
-#         test_enc_labels.append(z)
-# test_labels=np.array(test_enc_labels)
-# test_labels=np.squeeze(test_labels)
-# test_labels.shape
-# 
-# train_labels=torch.tensor(train_labels)
-# train_labels=train_labels.to(torch.float32)
-# val_labels=torch.tensor(val_labels)
-# val_labels=val_labels.to(torch.float32)
-# test_labels=torch.tensor(test_labels)
-# test_labels=test_labels.to(torch.float32)
-
-# === AFTER (edited) ===
 train_arr=train_df.to_numpy()
 train_arr=torch.from_numpy(train_arr)
 test_arr=test_df.to_numpy()
@@ -145,15 +68,26 @@ test_arr=torch.from_numpy(test_arr)
 val_arr=val_df.to_numpy()
 val_arr=torch.from_numpy(val_arr)
 
-# Labels are already class indices from cell 1, just need to convert to proper tensors
-# train_labels, val_labels, test_labels are already defined from cell 1
-train_labels = torch.tensor(train_labels, dtype=torch.long).squeeze()
-val_labels = torch.tensor(val_labels, dtype=torch.long).squeeze()
-test_labels = torch.tensor(test_labels, dtype=torch.long).squeeze()
 
-print(f"train_labels shape: {train_labels.shape}")
-print(f"val_labels shape: {val_labels.shape}")
-print(f"test_labels shape: {test_labels.shape}")
+train_labels=oh.transform(train_labels)
+val_labels =oh.transform(val_labels)
+test_enc_labels=[]
+for i in range(test_labels.shape[0]):
+    try:
+        test_enc_labels.append(oh.transform(test_labels[i]))
+    except ValueError as e:
+        z=np.zeros((1,6294))
+        test_enc_labels.append(z)
+test_labels=np.array(test_enc_labels)
+test_labels=np.squeeze(test_labels)
+test_labels.shape
+
+train_labels=torch.tensor(train_labels)
+train_labels=train_labels.to(torch.float32)
+val_labels=torch.tensor(val_labels)
+val_labels=val_labels.to(torch.float32)
+test_labels=torch.tensor(test_labels)
+test_labels=test_labels.to(torch.float32)
 
 #%%
 # --- [CELL 3]: ---
@@ -193,84 +127,43 @@ train_dataloader = DataLoader(customDataset, batch_size=64,shuffle=True, num_wor
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# #trial torch model
-# class AnswerModel(torch.nn.Module):
-# 
-#     def __init__(self):
-#         super(AnswerModel, self).__init__()
-#         
-#         self.norm0 = torch.nn.LayerNorm(1536).to(device)
-#         self.dropout0 = torch.nn.Dropout(0.5).to(device)
-#         self.linear1 = torch.nn.Linear(1536, 512).to(device)
-#         #check layer norm
-#         self.norm1 = torch.nn.LayerNorm(512).to(device)
-#         self.dropout1 = torch.nn.Dropout(0.5).to(device)
-#         
-#         self.activation = torch.nn.ReLU().to(device)
-#         
-#         self.linear2 = torch.nn.Linear(512 , 6294).to(device)
-#         
-#         self.aux = torch.nn.Linear(512,4).to(device)
-#         self.dropout1 = torch.nn.Dropout(0.5).to(device)
-#         self.gate = torch.nn.Linear(4, 6294).to(device)
-#         self.sigmoid=torch.nn.Sigmoid().to(device)
-#         
-#         
-#     def forward(self, x):
-#         x = self.norm0(x).to(device)
-#         x = self.dropout0(x).to(device)
-#         
-#         x= self.linear1(x).to(device)
-#         x = self.dropout1(x).to(device)
-#         
-#         xaux =self.aux(x).to(device)
-#         xaux =self.gate(xaux).to(device)
-#         vqa = self.linear2(x).to(device)
-#         out = vqa * self.sigmoid(xaux)
-#         return out,xaux
-# model= AnswerModel().to(device)
-# print(model)
-
-# === AFTER (edited) ===
+#trial torch model
 class AnswerModel(torch.nn.Module):
 
     def __init__(self):
         super(AnswerModel, self).__init__()
-
+        
         self.norm0 = torch.nn.LayerNorm(1536).to(device)
         self.dropout0 = torch.nn.Dropout(0.5).to(device)
         self.linear1 = torch.nn.Linear(1536, 512).to(device)
-
+        #check layer norm
         self.norm1 = torch.nn.LayerNorm(512).to(device)
         self.dropout1 = torch.nn.Dropout(0.5).to(device)
-
+        
         self.activation = torch.nn.ReLU().to(device)
-
+        
         self.linear2 = torch.nn.Linear(512 , 6294).to(device)
-
+        
         self.aux = torch.nn.Linear(512,4).to(device)
         self.dropout1 = torch.nn.Dropout(0.5).to(device)
         self.gate = torch.nn.Linear(4, 6294).to(device)
         self.sigmoid=torch.nn.Sigmoid().to(device)
-
-
+        
+        
     def forward(self, x):
         x = self.norm0(x).to(device)
         x = self.dropout0(x).to(device)
-
+        
         x= self.linear1(x).to(device)
         x = self.dropout1(x).to(device)
-
-        # Keep the 4-dimensional auxiliary output
-        aux_out = self.aux(x).to(device)
+        
+        xaux =self.aux(x).to(device)
+        xaux =self.gate(xaux).to(device)
         vqa = self.linear2(x).to(device)
-        # Use the gate to modulate the main output
-        gate = self.gate(aux_out).to(device)
-        out = vqa * self.sigmoid(gate)
-        return out, aux_out
+        out = vqa * self.sigmoid(xaux)
+        return out,xaux
 model= AnswerModel().to(device)
 print(model)
 
@@ -333,15 +226,19 @@ def run_model(model,dataloader, optimizer,train = True ):
         label=label.to(device)
 
 
+
+
         optimizer.zero_grad()
-        output, aux_out = model(data)
+        output,out_aux = model(data)
         output=output.type(torch.FloatTensor).to(device)
+        out_aux=out_aux.type(torch.FloatTensor).to(device)
         
-        # Only compute loss on the main output (6294 classes)
-        # aux_out is just 4 dimensions and not meant for classification loss
-        loss_ = loss(output, label).to(device)
-        
-        mod_loss = loss_
+        # Convert one-hot encoded labels to class indices for CrossEntropyLoss
+        label_indices = torch.argmax(label, dim=1)
+
+        loss_ = loss(output, label_indices).to(device)
+        loss_aux=loss(out_aux,label_indices).to(device)
+        mod_loss = loss_+loss_aux
         mod_loss.backward()
         total_loss+=mod_loss.item()
 
@@ -379,4 +276,3 @@ for e in range(epoch):
     print("training accuracy is ",correct/len(pred)*1.0)
   # calculate acc, f1 score, recall ......
     print(loss)
-    

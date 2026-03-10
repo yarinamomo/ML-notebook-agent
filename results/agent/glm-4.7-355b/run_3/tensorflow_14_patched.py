@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -13,61 +13,16 @@ import tensorflow.keras.backend as K
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# # Define VGG_FACE_MODEL architecture
-# model = Sequential()
-# model.add(ZeroPadding2D((1,1),input_shape=(224,224, 3)))
-# model.add(Convolution2D(64, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(64, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))	
-# model.add(Convolution2D(128, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(128, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(Convolution2D(4096, (7, 7), activation='relu'))
-# model.add(Dropout(0.5))
-# model.add(Convolution2D(4096, (1, 1), activation='relu'))
-# model.add(Dropout(0.5))
-# model.add(Convolution2D(2622, (1, 1)))
-# model.add(Flatten())
-# model.add(Activation('softmax'))
-# 
-# # Load VGG Face model weights
-# model.load_weights('data/vgg_face_weights.h5')
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
+# Define VGG_FACE_MODEL architecture
 model = Sequential()
 model.add(ZeroPadding2D((1,1),input_shape=(224,224, 3)))
 model.add(Convolution2D(64, (3, 3), activation='relu'))
 model.add(ZeroPadding2D((1,1)))
 model.add(Convolution2D(64, (3, 3), activation='relu'))
 model.add(MaxPooling2D((2,2), strides=(2,2)))
-model.add(ZeroPadding2D((1,1)))
+model.add(ZeroPadding2D((1,1)))	
 model.add(Convolution2D(128, (3, 3), activation='relu'))
 model.add(ZeroPadding2D((1,1)))
 model.add(Convolution2D(128, (3, 3), activation='relu'))
@@ -101,8 +56,8 @@ model.add(Convolution2D(2622, (1, 1)))
 model.add(Flatten())
 model.add(Activation('softmax'))
 
-
-# model.load_weights('data/vgg_face_weights.h5')
+# Load VGG Face model weights
+model.load_weights('data/vgg_face_weights.h5')
 
 #%%
 # --- [CELL 2]: ---
@@ -116,7 +71,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # # Set the main data directory where subdirectories represent classes/labels
 # main_data_directory = 'data/train-data-imgs'
@@ -181,33 +136,38 @@ train_datagen = ImageDataGenerator(
     zoom_range=0.2
 )
 
-# train_generator = train_datagen.flow_from_directory(
-#     main_data_directory,
-#     target_size=input_size,
-#     batch_size=32,
-#     class_mode='categorical',
-#     shuffle=True
-# )
+train_generator = train_datagen.flow_from_directory(
+    main_data_directory,
+    target_size=input_size,
+    batch_size=32,
+    class_mode='categorical',
+    shuffle=True
+)
 
 
 base_model = VGG16(weights='imagenet', include_top=False,classes=7)
 
+# Add classification head
+from tensorflow.keras.layers import GlobalAveragePooling2D
 
-for layer in base_model.layers:
+x = GlobalAveragePooling2D()(base_model.output)
+x = Dense(7, activation='softmax')(x)
+
+base_model = tf.keras.Model(inputs=base_model.input, outputs=x)
+
+
+for layer in base_model.layers[:-2]:  # Freeze all layers except the new ones
     layer.trainable = False
 
 
 base_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 
-# base_model.load_weights('data/vgg_face_weights.h5')
+base_model.fit(
+    train_generator,
+    steps_per_epoch=len(train_generator),
+    epochs=10,
+)
 
 
-# base_model.fit(
-#     train_generator,
-#     steps_per_epoch=len(train_generator),
-#     epochs=10,
-# )
-
-
-# base_model.save('data/updated_vgg_face_weights.h5')
+base_model.save('data/updated_vgg_face_weights.h5')

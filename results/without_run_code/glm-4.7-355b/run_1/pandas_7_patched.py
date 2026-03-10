@@ -21,41 +21,21 @@ game_df.head(5)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# import pandas as pd
-# 
-# # Fill missing 'genres' values with the mode (most frequent) genres
-# game_df['genres'] = game_df['genres'].fillna(game_df['genres'].mode()[0])
-# 
-# # Verify the missing values have been filled
-# game_df['genres'].isnull().sum()
-
-# === AFTER (edited) ===
 import pandas as pd
 
-# Check if 'genres' column exists before processing
-if 'genres' in game_df.columns:
-    game_df['genres'] = game_df['genres'].fillna(game_df['genres'].mode()[0])
-    game_df['genres'].isnull().sum()
-else:
-    print("'genres' column not found in the dataframe")
+# Fill missing 'genres' values with the mode (most frequent) genres
+game_df['genres'] = game_df['genres'].fillna(game_df['genres'].mode()[0])
+
+# Verify the missing values have been filled
+game_df['genres'].isnull().sum()
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# game_df = game_df.drop(['website', 'tba', 'publishers', 'platforms', 'slug','updated'], axis=1)
-# game_df.head(5)
-
-# === AFTER (edited) ===
-# Only drop columns that exist in the dataframe
-columns_to_drop = ['website', 'tba', 'publishers', 'platforms', 'slug', 'updated']
-existing_columns = [col for col in columns_to_drop if col in game_df.columns]
-if existing_columns:
-    game_df = game_df.drop(existing_columns, axis=1)
+game_df = game_df.drop(['website', 'tba', 'publishers', 'platforms', 'slug','updated'], axis=1)
 game_df.head(5)
 
 #%%
@@ -66,6 +46,4 @@ game_df.head(5)
 # game_df['released'] = game_df['released'].apply(lambda x: str(x).split('-')[0]).astype('int')
 
 # === AFTER (edited) ===
-# Check if 'released' column exists before processing
-if 'released' in game_df.columns:
-    game_df['released'] = game_df['released'].apply(lambda x: str(x).split('-')[0]).astype('int')
+game_df['released'] = game_df['released'].apply(lambda x: str(x).split('-')[0] if pd.notna(x) else '0').astype('int')

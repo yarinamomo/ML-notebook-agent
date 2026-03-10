@@ -1,30 +1,6 @@
 # --- [CELL 0]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# import pandas as pd
-# import numpy as np
-# import matplotlib.pyplot as plt
-# import xgboost as xgb
-# import seaborn as sns
-# from statsmodels.tsa.arima.model import ARIMA
-# from statsmodels.tsa.statespace.sarimax import SARIMAX
-# from statsmodels.tsa.stattools import adfuller
-# from sklearn.model_selection import train_test_split
-# from sklearn.metrics import mean_squared_error
-# from sklearn.model_selection import GridSearchCV
-# from statsmodels.tsa.seasonal import seasonal_decompose
-# from matplotlib.ticker import MultipleLocator
-# # from fbprophet import Prophet
-# 
-# train_csv_path = "data/train.csv"
-# train = pd.read_csv(train_csv_path)
-# 
-# test_csv_path = "data/test.csv"
-# test = pd.read_csv(test_csv_path)
-# 
-
-# === AFTER (edited) ===
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -38,43 +14,13 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV
 from statsmodels.tsa.seasonal import seasonal_decompose
 from matplotlib.ticker import MultipleLocator
+# from fbprophet import Prophet
 
-# Create synthetic sales data (since CSV files are Git LFS pointers)
-def create_dummy_sales_data(start_date='2013-01-01', end_date='2018-12-31'):
-    """Create synthetic sales data with stores, items, and date features."""
-    dates = pd.date_range(start=start_date, end=end_date, freq='D')
-    n_stores = 10
-    n_items = 50
-    
-    data = []
-    np.random.seed(42)
-    
-    for store in range(1, n_stores + 1):
-        for item in range(1, n_items + 1):
-            for date in dates:
-                # Generate sales with some seasonality and randomness
-                base_sales = 10 + item + store
-                seasonal = 5 * np.sin(2 * np.pi * date.dayofyear / 365)
-                weekly = 3 * np.sin(2 * np.pi * date.dayofweek / 7)
-                random_noise = np.random.normal(0, 2)
-                sales = max(0, base_sales + seasonal + weekly + random_noise)
-                
-                data.append({
-                    'date': date,
-                    'store': store,
-                    'item': item,
-                    'sales': sales
-                })
-    
-    return pd.DataFrame(data)
+train_csv_path = "data/train.csv"
+train = pd.read_csv(train_csv_path)
 
-train = create_dummy_sales_data('2013-01-01', '2017-12-31')
-test = create_dummy_sales_data('2018-01-01', '2018-12-31')
-
-print(f"Train data shape: {train.shape}")
-print(f"Test data shape: {test.shape}")
-print("\nTrain sample:")
-print(train.head())
+test_csv_path = "data/test.csv"
+test = pd.read_csv(test_csv_path)
 
 #%%
 # --- [CELL 1]: ---
@@ -121,7 +67,6 @@ train_subset.set_index('date', inplace=True)
 train_subset.index.freq = 'D'
 train_subset.head()
 
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
@@ -130,7 +75,6 @@ sarima_data = train_subset[['sales']]
 
 print(sarima_data.index)
 sarima_data.head()
-
 
 #%%
 # --- [CELL 4]: ---
@@ -183,7 +127,7 @@ plt.show()
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 # === BEFORE (original) ===
 # from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 # 

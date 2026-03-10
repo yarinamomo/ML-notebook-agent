@@ -31,109 +31,97 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# #By Ranamalla Nithin Reddy https://www.kaggle.com/code/nithinreddy90/chatpgpt-prompts
-# 
-# from transformers import AutoTokenizer
-# 
-# df = pd.read_csv('data/train.csv')
-# 
-# tokenizer = AutoTokenizer.from_pretrained("gpt2")
-# 
-# # Preprocess the data
-# df.drop_duplicates(inplace=True)
-# df.dropna(subset=['output', 'instruction'], inplace=True)
-# 
-# # Tokenize prompts and actions
-# df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(x)))
-# df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(x)))
-# 
-# # Display the preprocessed and tokenized dataframe
-# print(df.head())
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+#By Ranamalla Nithin Reddy https://www.kaggle.com/code/nithinreddy90/chatpgpt-prompts
 
-# === AFTER (edited) ===
 from transformers import AutoTokenizer
 
 df = pd.read_csv('data/train.csv')
 
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
-
+# Preprocess the data
 df.drop_duplicates(inplace=True)
+df.dropna(subset=['output', 'instruction'], inplace=True)
 
-# Check what columns are available
-print("Available columns:", df.columns.tolist())
+# Tokenize prompts and actions
+df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(x)))
+df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(x)))
 
-# Try to find the instruction and output columns
-# Common column names in instruction datasets
-instruction_candidates = ['instruction', 'input', 'prompt', 'question']
-output_candidates = ['output', 'response', 'answer', 'completion']
-
-# Find matching columns
-instruction_col = None
-output_col = None
-
-for col in df.columns:
-    if col.lower() in [c.lower() for c in instruction_candidates]:
-        instruction_col = col
-    if col.lower() in [c.lower() for c in output_candidates]:
-        output_col = col
-
-if instruction_col and output_col:
-    print(f"Using columns: instruction='{instruction_col}', output='{output_col}'")
-    df.dropna(subset=[output_col, instruction_col], inplace=True)
-
-    df['instruction_tokens'] = df[instruction_col].apply(lambda x: len(tokenizer.tokenize(x)))
-    df['output_tokens'] = df[output_col].apply(lambda x: len(tokenizer.tokenize(x)))
-
-    print(df.head())
-else:
-    print(f"Could not find instruction/output columns. Available columns: {df.columns.tolist()}")
-    print("Available columns:", df.columns.tolist())
-    if len(df.columns) >= 2:
-        print("Using first two columns as instruction and output")
-        instruction_col = df.columns[0]
-        output_col = df.columns[1]
-        df.dropna(subset=[output_col, instruction_col], inplace=True)
-        df['instruction_tokens'] = df[instruction_col].apply(lambda x: len(tokenizer.tokenize(str(x))))
-        df['output_tokens'] = df[output_col].apply(lambda x: len(tokenizer.tokenize(str(x))))
-        print(df.head())
+# Display the preprocessed and tokenized dataframe
+print(df.head())
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 3}
+# === BEFORE (original) ===
+# import pandas as pd
+# import torch
+# from transformers import GPT2LMHeadModel, GPT2Tokenizer
+# 
+# # Load pre-trained model and tokenizer
+# model_name = "gpt2"
+# model = GPT2LMHeadModel.from_pretrained(model_name)
+# tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+# 
+# # Load prompts from DataFrame
+# # (Assuming you've loaded your prompts into a DataFrame named df_prompts)
+# generated_responses = []
+# 
+# for index, row in df.iterrows():
+#     prompt = row['instruction']
+#     input_ids = tokenizer.encode(prompt, return_tensors="pt")
+#     
+#     # Generate response
+#     with torch.no_grad():
+#         output = model.generate(
+#             input_ids,
+#             max_length=input_ids.size(1) + 50,  # Adjust the additional tokens as needed
+#             num_return_sequences=1,
+#             pad_token_id=tokenizer.eos_token_id,
+#             attention_mask=input_ids.ne(tokenizer.pad_token_id)
+#         )
+#     
+#     # Pad the generated sequence
+#     padded_output = output[:, input_ids.size(1):]
+#     
+#     response = tokenizer.decode(padded_output[0], skip_special_tokens=True)
+#     generated_responses.append(response)
+
+# === AFTER (edited) ===
 import pandas as pd
 import torch
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 
-# Load pre-trained model and tokenizer
+
 model_name = "gpt2"
 model = GPT2LMHeadModel.from_pretrained(model_name)
 tokenizer = GPT2Tokenizer.from_pretrained(model_name)
 
-# Load prompts from DataFrame
-# (Assuming you've loaded your prompts into a DataFrame named df_prompts)
+# Set pad_token for GPT2 (it doesn't have one by default)
+tokenizer.pad_token = tokenizer.eos_token
+tokenizer.pad_token_id = tokenizer.eos_token_id
+
 generated_responses = []
 
 for index, row in df.iterrows():
     prompt = row['instruction']
     input_ids = tokenizer.encode(prompt, return_tensors="pt")
-    
-    # Generate response
+
+
     with torch.no_grad():
         output = model.generate(
             input_ids,
-            max_length=input_ids.size(1) + 50,  # Adjust the additional tokens as needed
+            max_length=input_ids.size(1) + 50,
             num_return_sequences=1,
             pad_token_id=tokenizer.eos_token_id,
             attention_mask=input_ids.ne(tokenizer.pad_token_id)
         )
-    
-    # Pad the generated sequence
+
+
     padded_output = output[:, input_ids.size(1):]
-    
+
     response = tokenizer.decode(padded_output[0], skip_special_tokens=True)
     generated_responses.append(response)

@@ -55,25 +55,15 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# InputPath = 'data/images-after-converted_small/'
-# CsvPath   = 'data/breast-level_annotations (1).csv.zip'
-
-# === AFTER (edited) ===
 InputPath = 'data/images-after-converted_small/'
-CsvPath   = 'data/test_breast_annotations.csv'
+CsvPath   = 'data/breast-level_annotations (1).csv.zip'
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# df = pd.read_csv(CsvPath)
-# df.head(3)
-
-# === AFTER (edited) ===
 df = pd.read_csv(CsvPath)
 df.head(3)
 
@@ -83,7 +73,6 @@ df.head(3)
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 X= []
 y=[]
-
 
 #%%
 # --- [CELL 4]: ---
@@ -105,64 +94,26 @@ y=[]
 
 # === AFTER (edited) ===
 import imageio
-import os
-import cv2
-import numpy as np
-
-# Create dummy images for testing since the real images aren't available (Git LFS)
-print("Creating dummy images for testing...")
-
-# Create the directory structure if it doesn't exist
-os.makedirs(InputPath, exist_ok=True)
-
 for i in range(df.shape[0]):
-    path = InputPath+df.laterality[i]+'-'+df.view_position[i]+'/'
-    os.makedirs(path, exist_ok=True)
-    
-    img_path = path + df.image_id[i] + '.png'
-    
-    # Create a dummy 100x100 RGB image if it doesn't exist
-    if not os.path.exists(img_path):
-        dummy_img = np.random.randint(0, 256, (100, 100, 3), dtype=np.uint8)
-        cv2.imwrite(img_path, cv2.cvtColor(dummy_img, cv2.COLOR_RGB2BGR))
-        print(f"Created dummy image: {img_path}")
 
-# Now load the images - load as RGB (change 0 to 1 for color)
-for i in range(df.shape[0]):
     path = InputPath+df.laterality[i]+'-'+df.view_position[i]+'/'+df.image_id[i]+'.png'
     if os.path.exists(path):
-        # Load as color image (not grayscale) - change 0 to 1
-        img = cv2.imread(path, 1)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
+        img = cv2.imread(path)  # Load as color (3 channels)
         img_size = cv2.resize(img, (100, 100), interpolation = cv2.INTER_LINEAR)
-        
-        X.append(img_size)
-        y.append(df.breast_birads[i])
 
-print(f"Loaded {len(X)} images")
-print(f"Image shape: {X[0].shape if len(X) > 0 else 'N/A'}")
+
+        X.append(img_size)
+
+        y.append(df.breast_birads[i])
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# Y = []
-# import re
-# for i in y:
-#     Y.append(int(re.sub("[A-Z]+\-[A-Z]+", "", i)))
-
-# === AFTER (edited) ===
 Y = []
 import re
 for i in y:
-    # Extract just the number from "BI-RADS-1", "BI-RADS-2", etc.
-    # Find all digits in the string and convert to int
-    match = re.search(r'\d+', i)
-    if match:
-        Y.append(int(match.group()))
-    else:
-        Y.append(0)  # Default value if no number found
+    Y.append(int(re.sub("[A-Z]+\-[A-Z]+", "", i)))
 
 #%%
 # --- [CELL 6]: ---
@@ -243,7 +194,6 @@ model.add(Dense(20, activation = 'softmax'))
 
 model.compile(optimizer=Adam(0.00001), loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics = ['accuracy'])
 model.summary()
-
 
 #%%
 # --- [CELL 10]: ---

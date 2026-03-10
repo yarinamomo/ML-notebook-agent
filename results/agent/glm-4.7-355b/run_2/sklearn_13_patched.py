@@ -5,33 +5,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv("data/SalaryData_Test(1).csv")
-
-# === AFTER (edited) ===
-# Create a mock dataset since the original data is unavailable (Git LFS pointers)
-import pandas as pd
-import numpy as np
-
-np.random.seed(42)
-n_samples = 100
-
-# Mock workclass values (encoded as numbers for linear regression)
-workclass_values = np.random.randint(0, 5, n_samples)
-
-# Mock salary values based on workclass with some noise
-salary_values = 30000 + workclass_values * 10000 + np.random.normal(0, 5000, n_samples)
-
-df = pd.DataFrame({
-    'workclass': workclass_values,
-    'Salary': salary_values
-})
+df = pd.read_csv("data/SalaryData_Test(1).csv")
 
 #%%
 # --- [CELL 2]: ---
@@ -42,8 +20,15 @@ df = pd.DataFrame({
 # y = df.Salary.values.reshape(-1,1)
 
 # === AFTER (edited) ===
-x = df['workclass'].values.reshape(-1,1)
-y = df['Salary'].values.reshape(-1,1)
+# Use numeric columns for LinearRegression
+# Map Salary to numeric values (0 for <=50K, 1 for >50K)
+# Note: Salary values have leading spaces
+salary_map = {' <=50K': 0, ' >50K': 1}
+df['Salary_numeric'] = df['Salary'].map(salary_map)
+
+# Use age as predictor and Salary_numeric as target
+x = df.age.values.reshape(-1,1)
+y = df.Salary_numeric.values.reshape(-1,1)
 
 #%%
 # --- [CELL 3]: ---

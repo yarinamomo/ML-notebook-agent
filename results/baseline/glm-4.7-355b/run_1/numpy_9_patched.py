@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # === BEFORE (original) ===
 # import os
 # import numpy as np
@@ -79,7 +79,11 @@ import torch
 
 def load_loss_weights_from_directory(directory_path):
     weight_files = [filename for filename in os.listdir(directory_path) if filename.endswith(".npy")]
-    weights = [np.load(os.path.join(directory_path, filename), allow_pickle=True) for filename in weight_files]
+    weights = [np.load(os.path.join(directory_path, filename)) for filename in weight_files]
+    # Filter out zero-dimensional arrays or convert to 1D
+    weights = [w for w in weights if w.ndim > 0]
+    if len(weights) == 0:
+        return np.array([])
     return np.concatenate(weights)
 
 

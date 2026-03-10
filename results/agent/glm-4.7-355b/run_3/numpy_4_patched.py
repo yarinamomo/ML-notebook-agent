@@ -27,61 +27,8 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
-#                                    zoom_range = 0.4,
-#                                    validation_split = 0.2)
-# 
-# valid_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
-#                                    validation_split = 0.2)
-# 
-# test_datagen  = ImageDataGenerator(rescale = 1.0 / 255.0)
-
-# === AFTER (edited) ===
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import skimage.io
-import tensorflow
-import glob
-import tqdm
-import cv2
-from tqdm import tqdm
-
-from skimage.io import imread, imshow
-from skimage.transform import resize
-
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.applications.vgg16 import VGG16
-from tensorflow.keras.layers import InputLayer, Dense, BatchNormalization, Dropout, Flatten, Activation
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-from tensorflow.keras.preprocessing.image import load_img, img_to_array
-import torch
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
-import PIL
-from PIL import Image
-%matplotlib inline
-
-# Monkey-patch PIL to return a blank image for corrupted files
-original_open = Image.open
-
-def patched_open(fp, *args, **kwargs):
-    try:
-        return original_open(fp, *args, **kwargs)
-    except Exception as e:
-        # Return a blank 224x224 RGB image for corrupted files
-        import numpy as np
-        from PIL import Image as PILImage
-        blank = PILImage.new('RGB', (224, 224), color=0)
-        return blank
-
-PIL.Image.open = patched_open
-
-# Original data augmentation setup
 train_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
                                    zoom_range = 0.4,
                                    validation_split = 0.2)
@@ -93,16 +40,8 @@ test_datagen  = ImageDataGenerator(rescale = 1.0 / 255.0)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train_dataset = train_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
-#                                                   target_size = (224,224),
-#                                                   class_mode = 'binary',
-#                                                   subset = 'training',
-#                                                   batch_size = 64)
-
-# === AFTER (edited) ===
 train_dataset = train_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
                                                   target_size = (224,224),
                                                   class_mode = 'binary',
@@ -111,16 +50,8 @@ train_dataset = train_datagen.flow_from_directory(directory = 'data_small/chest-
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# valid_dataset = valid_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
-#                                                   target_size = (224,224),
-#                                                   class_mode = 'binary',
-#                                                   subset = 'validation',
-#                                                   batch_size = 64)
-
-# === AFTER (edited) ===
 valid_dataset = valid_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
                                                   target_size = (224,224),
                                                   class_mode = 'binary',
@@ -204,7 +135,6 @@ callback_list = [earlystopping, checkpoint]
 # --- [CELL 9]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-
 model_history=model.fit(train_dataset,
                         validation_data=valid_dataset,
                         epochs = 1,
@@ -220,7 +150,7 @@ class_names = ['PNEUMONIA','NORMAL']
 #%%
 # --- [CELL 11]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
 # === BEFORE (original) ===
 # from sklearn.metrics import classification_report, confusion_matrix
 # import seaborn as sns
@@ -244,16 +174,9 @@ prediction_classes = np.array([])
 true_classes =  np.array([])
 
 for x, y in valid_dataset:
-  # Binary classification: sigmoid output gives probability
-  predictions = model.predict(x)
-  pred_classes = (predictions > 0.5).flatten().astype(int)
-  # y is already 0/1 for binary classification, just flatten
-  y_classes = y.flatten().astype(int)
-  prediction_classes = np.concatenate([prediction_classes, pred_classes])
-  true_classes = np.concatenate([true_classes, y_classes])
+  prediction_classes = np.concatenate([prediction_classes,
+                       (model.predict(x) > 0.5).astype(int).flatten()])
+  true_classes = np.concatenate([true_classes, y.astype(int).flatten()])
 
-# Ensure we have binary classes (0, 1)
-prediction_classes = np.round(prediction_classes).astype(int)
-true_classes = np.round(true_classes).astype(int)
 
 print(classification_report(true_classes, prediction_classes, target_names=class_names, digits=4))

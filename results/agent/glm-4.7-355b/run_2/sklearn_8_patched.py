@@ -13,58 +13,10 @@ warnings.filterwarnings('ignore')
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# insurance_train = pd.read_csv("data/train_synthetic.csv.zip")
-# insurance_test = pd.read_csv("data/test_synthetic.csv.zip")
-
-# === AFTER (edited) ===
-import numpy as np
-import pandas as pd
-from sklearn.preprocessing import LabelEncoder
-
-# Create synthetic training data with required columns
-np.random.seed(42)
-n_train = 1000
-n_test = 200
-
-insurance_train = pd.DataFrame({
-    'Id': range(n_train),
-    'Response': np.random.randint(1, 9, n_train),
-    'Employment_Info_4': np.random.rand(n_train),
-    'Insurance_History_5': np.random.rand(n_train),
-    'Employment_Info_6': np.random.rand(n_train),
-    'Family_Hist_2': np.random.rand(n_train),
-    'Family_Hist_3': np.random.rand(n_train),
-    'Family_Hist_4': np.random.rand(n_train),
-    'Family_Hist_5': np.random.rand(n_train),
-    'Medical_History_1': np.random.rand(n_train),
-    'Medical_History_10': np.random.rand(n_train),
-    'Medical_History_15': np.random.rand(n_train),
-    'Medical_History_24': np.random.rand(n_train),
-    'Medical_History_32': np.random.rand(n_train),
-    'Product_Info_2': np.random.choice(['A1', 'A2', 'B1', 'B2', 'C1'], n_train),
-    'InsuredInfo_7': np.random.randint(0, 3, n_train)
-})
-
-insurance_test = pd.DataFrame({
-    'Id': range(n_train, n_train + n_test),
-    'Employment_Info_4': np.random.rand(n_test),
-    'Insurance_History_5': np.random.rand(n_test),
-    'Employment_Info_6': np.random.rand(n_test),
-    'Family_Hist_2': np.random.rand(n_test),
-    'Family_Hist_3': np.random.rand(n_test),
-    'Family_Hist_4': np.random.rand(n_test),
-    'Family_Hist_5': np.random.rand(n_test),
-    'Medical_History_1': np.random.rand(n_test),
-    'Medical_History_10': np.random.rand(n_test),
-    'Medical_History_15': np.random.rand(n_test),
-    'Medical_History_24': np.random.rand(n_test),
-    'Medical_History_32': np.random.rand(n_test),
-    'Product_Info_2': np.random.choice(['A1', 'A2', 'B1', 'B2', 'C1'], n_test),
-    'InsuredInfo_7': np.random.randint(0, 3, n_test)
-})
+insurance_train = pd.read_csv("data/train_synthetic.csv.zip")
+insurance_test = pd.read_csv("data/test_synthetic.csv.zip")
 
 #%%
 # --- [CELL 2]: ---
@@ -165,6 +117,6 @@ val_predictions = RF.predict(x)
 # print("Accuracy: ", accuracy)
 
 # === AFTER (edited) ===
-accuracy = accuracy_score(val_predictions, y)
+accuracy = accuracy_score(y, val_predictions)
 
 print("Accuracy: ", accuracy)

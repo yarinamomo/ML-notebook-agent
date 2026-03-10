@@ -1,30 +1,6 @@
 # --- [CELL 0]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# import pandas as pd
-# import numpy as np
-# import matplotlib.pyplot as plt
-# import xgboost as xgb
-# import seaborn as sns
-# from statsmodels.tsa.arima.model import ARIMA
-# from statsmodels.tsa.statespace.sarimax import SARIMAX
-# from statsmodels.tsa.stattools import adfuller
-# from sklearn.model_selection import train_test_split
-# from sklearn.metrics import mean_squared_error
-# from sklearn.model_selection import GridSearchCV
-# from statsmodels.tsa.seasonal import seasonal_decompose
-# from matplotlib.ticker import MultipleLocator
-# # from fbprophet import Prophet
-# 
-# train_csv_path = "data/train.csv"
-# train = pd.read_csv(train_csv_path)
-# 
-# test_csv_path = "data/test.csv"
-# test = pd.read_csv(test_csv_path)
-# 
-
-# === AFTER (edited) ===
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -38,52 +14,13 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV
 from statsmodels.tsa.seasonal import seasonal_decompose
 from matplotlib.ticker import MultipleLocator
-
-
-import os
-os.chdir('/app/container')
+# from fbprophet import Prophet
 
 train_csv_path = "data/train.csv"
 train = pd.read_csv(train_csv_path)
 
 test_csv_path = "data/test.csv"
 test = pd.read_csv(test_csv_path)
-
-# Check if the data contains Git LFS pointers (invalid data) by checking for expected columns
-# Create sample data if the CSV files contain LFS pointers instead of actual data
-if 'date' not in train.columns or 'sales' not in train.columns:
-    print("Warning: CSV files contain Git LFS pointers. Creating sample data for demonstration.")
-    # Create sample training data
-    dates = pd.date_range(start='2015-01-01', end='2017-12-31', freq='D')
-    np.random.seed(42)
-    data = []
-    for store in range(1, 11):  # 10 stores
-        for item in range(1, 51):  # 50 items
-            sales = np.random.normal(50, 15, len(dates))
-            sales = np.maximum(0, sales)  # Ensure non-negative sales
-            for i, date in enumerate(dates):
-                data.append({
-                    'date': date,
-                    'store': store,
-                    'item': item,
-                    'sales': sales[i]
-                })
-    train = pd.DataFrame(data)
-    
-    # Create sample test data
-    test_dates = pd.date_range(start='2018-01-01', end='2018-03-31', freq='D')
-    data_test = []
-    for store in range(1, 11):
-        for item in range(1, 51):
-            for date in test_dates:
-                data_test.append({
-                    'date': date,
-                    'store': store,
-                    'item': item
-                })
-    test = pd.DataFrame(data_test)
-    print(f"Created sample train data with {len(train)} rows")
-    print(f"Created sample test data with {len(test)} rows")
 
 #%%
 # --- [CELL 1]: ---
@@ -130,7 +67,6 @@ train_subset.set_index('date', inplace=True)
 train_subset.index.freq = 'D'
 train_subset.head()
 
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
@@ -139,7 +75,6 @@ sarima_data = train_subset[['sales']]
 
 print(sarima_data.index)
 sarima_data.head()
-
 
 #%%
 # --- [CELL 4]: ---
@@ -192,7 +127,7 @@ plt.show()
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # === BEFORE (original) ===
 # from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 # 
@@ -210,16 +145,10 @@ plt.show()
 # === AFTER (edited) ===
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
-# Use lags parameter based on the actual number of data points in residuals
-# ACF can use lags up to n-1, but PACF is limited to 50% of sample size
-n = len(residuals)
-max_lags_acf = min(n - 1, 180)
-max_lags_pacf = min(n // 2 - 1, 180)
-
 plt.figure(figsize=(12, 6))
-plot_acf(residuals, lags=max_lags_acf, title='ACF of Residuals')
+plot_acf(residuals, lags=40, title='ACF of Residuals')
 plt.show()
 
 plt.figure(figsize=(12, 6))
-plot_pacf(residuals, lags=max_lags_pacf, title='PACF of Residuals')
+plot_pacf(residuals, lags=40, title='PACF of Residuals')
 plt.show()

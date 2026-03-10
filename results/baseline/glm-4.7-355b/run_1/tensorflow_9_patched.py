@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,7 +18,7 @@ import string
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 df = pd.read_csv('data/train.csv')
 test_df = pd.read_csv('data/test.csv')
 df.sample(5)
@@ -26,13 +26,13 @@ df.sample(5)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 class_names =['Not a disaster', 'Disaster']
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # word_count
 df['word_count'] = df['text'].apply(lambda x: len(str(x).split()))
 
@@ -63,7 +63,7 @@ df['mention_count'] = df['text'].apply(lambda x: len([c for c in str(x) if c == 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 ## Truncate some extreme values for better visuals ##
 df['word_count'].loc[df['word_count']>60] = 60 #truncation for better visuals
 df['char_count'].loc[df['char_count']>350] = 350 #truncation for better visuals
@@ -86,7 +86,7 @@ axes[2].set_title("Number of punctuations in each class", fontsize=15)
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 df['hashtag_count'].loc[df['hashtag_count']>60] = 60 #truncation for better visuals
 df['mention_count'].loc[df['mention_count']>60] = 60 #truncation for better visuals
 
@@ -108,7 +108,7 @@ plt.show()
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 exclude = string.punctuation
 def remove_url(text):
     pattern = re.compile(r'https?://\S+|www\.\S+')
@@ -120,7 +120,7 @@ def remove_punc(text):
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 text1 = 'Check out my notebook https://www.kaggle.com/campusx/notebook8223fc1abb'
 text2 = '!hello *world@ 1'
 df['text'] = df['text'].apply(remove_url)
@@ -131,7 +131,7 @@ test_df['text'] = test_df['text'].apply(remove_url)
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 from transformers import BertModel, BertTokenizer
 import torch
 from torch import nn
@@ -143,13 +143,13 @@ from sklearn.metrics import confusion_matrix, classification_report
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 example_text = 'I will watch #Memento tonight!'
 bert_input = tokenizer(example_text, padding='max_length', max_length = 15,
                       truncation = True, return_tensors = 'pt')
@@ -157,7 +157,7 @@ bert_input = tokenizer(example_text, padding='max_length', max_length = 15,
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 input_ids = torch.tensor(bert_input.input_ids)
 attention_mask = torch.tensor(bert_input.attention_mask)
 bert_model = BertModel.from_pretrained('bert-base-uncased')
@@ -169,14 +169,12 @@ print(bert_model.config.hidden_size)
 #%%
 # --- [CELL 12]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # === BEFORE (original) ===
 # import tensorflow as tf
 # tf.keras.utils.plot_model(bert_model)
 
 # === AFTER (edited) ===
-# Print the BERT model architecture (PyTorch equivalent of plot_model)
-print("BERT Model Architecture:")
+import tensorflow as tf
+# Print the model architecture (PyTorch equivalent of model visualization)
 print(bert_model)
-print("\nModel Configuration:")
-print(bert_model.config)

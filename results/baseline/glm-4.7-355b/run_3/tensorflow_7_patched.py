@@ -1,17 +1,16 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import tensorflow as tf
 #import tensorflow_addons as tfa
 import matplotlib.pyplot as plt
 import numpy as np
 from transformers import BertTokenizer, TFBertModel
 
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 try:
     tpu=tf.distribute.cluster_resolver.TCPClusterResolver()# this is a TensorFlow class
     #used to create a TPUStrategy object for training on TPUs.
@@ -42,7 +41,7 @@ print(tf.__version__)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 import pandas as pd
 
 train = pd.read_csv("data/train.csv")
@@ -51,14 +50,14 @@ train = train[:8] # for faster reproducing and fixing purposes --- make a smalle
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 model_name = 'bert-base-multilingual-cased'
 tokenizer = BertTokenizer.from_pretrained(model_name)
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 def encode_sentence(s):
    tokens = list(tokenizer.tokenize(s))
    tokens.append('[SEP]')
@@ -66,12 +65,43 @@ def encode_sentence(s):
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-def bert_encode(hypotheses, premises, tokenizer):
-    
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# === BEFORE (original) ===
+# def bert_encode(hypotheses, premises, tokenizer):
+#     
+#   num_examples = len(hypotheses)
+#   
+#   sentence1 = tf.ragged.constant([
+#       encode_sentence(s)
+#       for s in np.array(hypotheses)])
+#   sentence2 = tf.ragged.constant([
+#       encode_sentence(s)
+#        for s in np.array(premises)])
+# 
+#   cls = [tokenizer.convert_tokens_to_ids(['[CLS]'])]*sentence1.shape[0]
+#   input_word_ids = tf.concat([cls, sentence1, sentence2], axis=-1)
+# 
+#   input_mask = tf.ones_like(input_word_ids).to_tensor()
+# 
+#   type_cls = tf.zeros_like(cls)
+#   type_s1 = tf.zeros_like(sentence1)
+#   type_s2 = tf.ones_like(sentence2)
+#   input_type_ids = tf.concat(
+#       [type_cls, type_s1, type_s2], axis=-1).to_tensor()
+# 
+#   inputs = {
+#       'input_word_ids': input_word_ids.to_tensor(),
+#       'input_mask': input_mask,
+#       'input_type_ids': input_type_ids}
+# 
+#   return inputs
+
+# === AFTER (edited) ===
+def bert_encode(hypotheses, premises, tokenizer, max_len=50):
+
   num_examples = len(hypotheses)
-  
+
   sentence1 = tf.ragged.constant([
       encode_sentence(s)
       for s in np.array(hypotheses)])
@@ -91,17 +121,21 @@ def bert_encode(hypotheses, premises, tokenizer):
       [type_cls, type_s1, type_s2], axis=-1).to_tensor()
 
   inputs = {
-      'input_word_ids': input_word_ids.to_tensor(),
-      'input_mask': input_mask,
-      'input_type_ids': input_type_ids}
+      'input_word_ids': input_word_ids.to_tensor()[:, :max_len],
+      'input_mask': input_mask[:, :max_len],
+      'input_type_ids': input_type_ids[:, :max_len]}
 
   return inputs
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer)
+# cell_state: edited
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 7}
+# === BEFORE (original) ===
+# train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer)
+
+# === AFTER (edited) ===
+train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer, max_len=max_len)
 
 #%%
 # --- [CELL 7]: ---

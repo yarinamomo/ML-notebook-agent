@@ -13,64 +13,16 @@ import tensorflow.keras.backend as K
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# # Define VGG_FACE_MODEL architecture
-# model = Sequential()
-# model.add(ZeroPadding2D((1,1),input_shape=(224,224, 3)))
-# model.add(Convolution2D(64, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(64, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))	
-# model.add(Convolution2D(128, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(128, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(Convolution2D(4096, (7, 7), activation='relu'))
-# model.add(Dropout(0.5))
-# model.add(Convolution2D(4096, (1, 1), activation='relu'))
-# model.add(Dropout(0.5))
-# model.add(Convolution2D(2622, (1, 1)))
-# model.add(Flatten())
-# model.add(Activation('softmax'))
-# 
-# # Load VGG Face model weights
-# model.load_weights('data/vgg_face_weights.h5')
-
-# === AFTER (edited) ===
-from tensorflow.keras.layers import Input
-
+# Define VGG_FACE_MODEL architecture
 model = Sequential()
-model.add(Input(shape=(224, 224, 3)))
-model.add(ZeroPadding2D((1,1)))
+model.add(ZeroPadding2D((1,1),input_shape=(224,224, 3)))
 model.add(Convolution2D(64, (3, 3), activation='relu'))
 model.add(ZeroPadding2D((1,1)))
 model.add(Convolution2D(64, (3, 3), activation='relu'))
 model.add(MaxPooling2D((2,2), strides=(2,2)))
-model.add(ZeroPadding2D((1,1)))
+model.add(ZeroPadding2D((1,1)))	
 model.add(Convolution2D(128, (3, 3), activation='relu'))
 model.add(ZeroPadding2D((1,1)))
 model.add(Convolution2D(128, (3, 3), activation='relu'))
@@ -104,8 +56,8 @@ model.add(Convolution2D(2622, (1, 1)))
 model.add(Flatten())
 model.add(Activation('softmax'))
 
-
-# Note: vgg_face_weights.h5 file not available - model initialized with random weights
+# Load VGG Face model weights
+model.load_weights('data/vgg_face_weights.h5')
 
 #%%
 # --- [CELL 2]: ---
@@ -169,14 +121,6 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 # base_model.save('data/updated_vgg_face_weights.h5')
 
 # === AFTER (edited) ===
-import numpy as np
-import tensorflow as tf
-from tensorflow.keras.applications import VGG16
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Flatten, Dense, Dropout
-
-
 main_data_directory = 'data/train-data-imgs'
 
 
@@ -201,30 +145,21 @@ train_generator = train_datagen.flow_from_directory(
 )
 
 
-base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+base_model = VGG16(weights='imagenet', include_top=False)
 
 
 for layer in base_model.layers:
     layer.trainable = False
 
 
-model = Sequential([
-    base_model,
-    Flatten(),
-    Dense(256, activation='relu'),
-    Dropout(0.5),
-    Dense(7, activation='softmax')
-])
+base_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-
-
-model.fit(
+base_model.fit(
     train_generator,
     steps_per_epoch=len(train_generator),
     epochs=10,
 )
 
 
-model.save('data/updated_vgg_face_weights.h5')
+base_model.save('data/updated_vgg_face_weights.h5')

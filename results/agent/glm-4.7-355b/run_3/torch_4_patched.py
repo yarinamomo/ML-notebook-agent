@@ -27,67 +27,16 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# from gensim.models.word2vec import Word2Vec
-# 
-# num_features = 10 #100  # 词向量维度
-# num_workers = 8
-# 
-# # train_df = pd.read_csv('data/train_set.csv.zip', sep='\t')
-# train_df = pd.read_csv('data/train_set.csv.zip', sep='\t', nrows=5000)
-# train_text = list(map(lambda x:list(x.split()), train_df.iloc[:, 1]))
-# model = Word2Vec(train_text, workers=num_workers, vector_size=num_features)
-# model.init_sims(replace=True)
-# 
-# model.wv.save_word2vec_format('data/word2vec.txt', binary=False)
-
-# === AFTER (edited) ===
-import pandas as pd
-import numpy as np
-import random
 from gensim.models.word2vec import Word2Vec
 
-num_features = 10
+num_features = 10 #100  # 词向量维度
 num_workers = 8
 
-# Create dummy/synthetic training data since original files are Git LFS placeholders
-# Generate sample data with text and labels
-sample_texts = [
-    "科技发展迅速人工智能不断进步",
-    "股票市场今日涨停科技股表现优异",
-    "体育比赛精彩绝伦运动员拼搏精神",
-    "娱乐新闻明星动态电影票房",
-    "时政新闻国际关系重要会议",
-    "社会新闻民生关注政策发布",
-    "教育改革学生学习教师发展",
-    "财经新闻经济数据金融政策",
-    "家居装修生活用品品质生活",
-    "游戏发布电竞比赛玩家互动",
-    "房产市场房价走势购房指南",
-    "时尚潮流服装搭配美妆护肤",
-    "彩票中奖号码开奖结果",
-    "星座运势今日运程十二星座"
-]
-
-# Create 5000 samples by repeating and varying the data
-random.seed(2023)
-np.random.seed(2023)
-
-train_data = []
-for i in range(5000):
-    text = random.choice(sample_texts)
-    # Add some variation
-    words = text.split()
-    random.shuffle(words)
-    varied_text = ' '.join(words)
-    label = i % 14  # Labels 0-13
-    train_data.append({'text': varied_text, 'label': label})
-
-train_df = pd.DataFrame(train_data)
-
-train_text = list(map(lambda x:list(x.split()), train_df.iloc[:, 0]))
+# train_df = pd.read_csv('data/train_set.csv.zip', sep='\t')
+train_df = pd.read_csv('data/train_set.csv.zip', sep='\t', nrows=5000)
+train_text = list(map(lambda x:list(x.split()), train_df.iloc[:, 1]))
 model = Word2Vec(train_text, workers=num_workers, vector_size=num_features)
 model.init_sims(replace=True)
 
@@ -191,7 +140,6 @@ class Vocab():
         return len(self._id2label)
     
 vocab = Vocab(train_df)
-            
 
 #%%
 # --- [CELL 4]: ---
@@ -235,7 +183,6 @@ class Attention(nn.Module):
         batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)  # b x hidden
         
         return batch_outputs, attn_scores
-    
 
 #%%
 # --- [CELL 5]: ---

@@ -10,49 +10,10 @@ sns.set(style='whitegrid')
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train=pd.read_csv('data/train.csv')
-# test=pd.read_csv('data/train.csv')
-
-# === AFTER (edited) ===
-# Create mock data with expected columns for demonstration
-# This simulates the expected structure of the insurance dataset
-import numpy as np
-
-train_data = {
-    'id': range(1, 101),
-    'Gender': ['Male', 'Female'] * 50,
-    'Age': np.random.randint(20, 70, 100),
-    'Driving_License': [1] * 98 + [0, 0],
-    'Region_Code': np.random.randint(0, 30, 100),
-    'Previously_Insured': [0, 1] * 50,
-    'Vehicle_Age': ['< 1 Year'] * 50 + ['1-2 Year'] * 30 + ['> 2 Years'] * 20,
-    'Vehicle_Damage': ['Yes', 'No'] * 50,
-    'Annual_Premium': np.random.uniform(10000, 100000, 100),
-    'Policy_Sales_Channel': np.random.randint(1, 160, 100),
-    'Vintage': np.random.randint(10, 300, 100),
-    'Response': [0, 1] * 50
-}
-
-test_data = {
-    'id': range(101, 151),
-    'Gender': ['Male', 'Female'] * 25,
-    'Age': np.random.randint(20, 70, 50),
-    'Driving_License': [1] * 50,
-    'Region_Code': np.random.randint(0, 30, 50),
-    'Previously_Insured': [0, 1] * 25,
-    'Vehicle_Age': ['< 1 Year'] * 25 + ['1-2 Year'] * 15 + ['> 2 Years'] * 10,
-    'Vehicle_Damage': ['Yes', 'No'] * 25,
-    'Annual_Premium': np.random.uniform(10000, 100000, 50),
-    'Policy_Sales_Channel': np.random.randint(1, 160, 50),
-    'Vintage': np.random.randint(10, 300, 50),
-    'Response': [0, 1] * 25
-}
-
-train = pd.DataFrame(train_data)
-test = pd.DataFrame(test_data)
+train=pd.read_csv('data/train.csv')
+test=pd.read_csv('data/train.csv')
 
 #%%
 # --- [CELL 2]: ---
@@ -155,10 +116,16 @@ test=test.drop('id',axis=1)
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-# didn't work in original one also
+# === BEFORE (original) ===
+# # didn't work in original one also
+# 
+# for column in cat_feat:
+#     x_train[column] = x_train[column].astype('int')
+#     x_test[column] = x_test[column].astype('int')
 
+# === AFTER (edited) ===
 for column in cat_feat:
-    x_train[column] = x_train[column].astype('int')
-    x_test[column] = x_test[column].astype('int')
+    x_train[column] = x_train[column].astype('float').astype('int')
+    x_test[column] = x_test[column].astype('float').astype('int')

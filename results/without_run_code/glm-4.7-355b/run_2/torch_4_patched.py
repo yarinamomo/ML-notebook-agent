@@ -27,160 +27,25 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# from gensim.models.word2vec import Word2Vec
-# 
-# num_features = 10 #100  # 词向量维度
-# num_workers = 8
-# 
-# # train_df = pd.read_csv('data/train_set.csv.zip', sep='\t')
-# train_df = pd.read_csv('data/train_set.csv.zip', sep='\t', nrows=5000)
-# train_text = list(map(lambda x:list(x.split()), train_df.iloc[:, 1]))
-# model = Word2Vec(train_text, workers=num_workers, vector_size=num_features)
-# model.init_sims(replace=True)
-# 
-# model.wv.save_word2vec_format('data/word2vec.txt', binary=False)
-
-# === AFTER (edited) ===
 from gensim.models.word2vec import Word2Vec
 
-num_features = 10
+num_features = 10 #100  # 词向量维度
 num_workers = 8
 
-# Create sample data since the actual CSV file is not available (Git LFS pointer)
-# The expected format appears to be at least 2 columns: column 0 for labels, column 1 for text
-sample_data = {
-    'label': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] * 500,
-    'text': [
-        '这是 一篇 关于 科技 的 新闻 文章',
-        '股票 市场 今天 上涨 了很多',
-        '体育 运动员 在 比赛 中 取得 好成绩',
-        '娱乐 明星 参加 了 晚会 活动',
-        '时政 新闻 报道 了 重要 会议',
-        '社会 新闻 关注 民生 问题',
-        '教育 政策 有了 新 的 变化',
-        '财经 数据 显示 经济 稳步 增长',
-        '家居 装饰 风格 越来越 现代',
-        '游戏 产业 迎来 新 的 机遇'
-    ] * 500
-}
-
-train_df = pd.DataFrame(sample_data)
-print(f"Created sample dataframe with {len(train_df)} rows")
-print(f"Columns: {train_df.columns.tolist()}")
-print(f"Shape: {train_df.shape}")
-
+# train_df = pd.read_csv('data/train_set.csv.zip', sep='\t')
+train_df = pd.read_csv('data/train_set.csv.zip', sep='\t', nrows=5000)
 train_text = list(map(lambda x:list(x.split()), train_df.iloc[:, 1]))
 model = Word2Vec(train_text, workers=num_workers, vector_size=num_features)
 model.init_sims(replace=True)
 
 model.wv.save_word2vec_format('data/word2vec.txt', binary=False)
-print("Word2Vec model saved successfully")
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# from collections import Counter
-# from transformers import BasicTokenizer
-# 
-# basic_tokenizer = BasicTokenizer()
-# 
-# class Vocab():
-#     def __init__(self, train_data):
-#         self.min_count = 5
-#         self.pad = 0
-#         self.unk = 1
-#         self._id2word = ['[PAD]', '[UNK]']
-#         self._id2extword = ['[PAD]', '[UNK]']
-#         
-#         self._id2label = []
-#         self.target_names = []
-#         
-#         self.build_vocab(train_data)
-#         
-#         reverse = lambda x: dict(zip(x, range(len(x))))
-#         self._word2id = reverse(self._id2word)
-#         self._label2id = reverse(self._id2label)
-#         
-#     def build_vocab(self, data):
-#         self.word_counter = Counter()
-#         
-#         for text in data['text']:
-#             words = text.split()
-#             for word in words:
-#                 self.word_counter[word] += 1
-#                 
-#         for word, count in self.word_counter.most_common():
-#             if count >= self.min_count:
-#                 self._id2word.append(word)
-#                 
-#         label2name = {0: '科技', 1: '股票', 2: '体育', 3: '娱乐', 4: '时政', 5: '社会', 6: '教育',
-#                       7: '财经', 8: '家居', 9: '游戏', 10: '房产', 11: '时尚', 12: '彩票', 13: '星座'}
-#         self.label_counter = Counter(data['label'])
-#         
-#         for label in range(len(self.label_counter)):
-#             count = self.label_counter[label]
-#             self._id2label.append(label)
-#             self.target_names.append(label2name[label])
-#             
-#     def load_pretrained_embs(self, embfile):
-#         with open(embfile, encoding='utf-8') as f:
-#             lines = f.readlines()
-#             items = lines[0].split()
-#             word_count, embedding_dim = int(items[0]), int(items[1])
-#             
-#         index = len(self._id2extword)
-#         embeddings = np.zeros((word_count + index, embedding_dim))
-#         for line in lines[1:]:
-#             values = line.split()
-#             self._id2extword.append(values[0])
-#             vector = np.array(values[1:], dtype='float64')
-#             embeddings[self.unk] += vector
-#             embeddings[index] = vector
-#             index += 1
-#             
-#         embeddings[self.unk] = embeddings[self.unk] / word_count
-#         embeddings = embeddings / np.std(embeddings)
-#         
-#         reverse = lambda x: dict(zip(x, range(len(x))))
-#         self._extword2id = reverse(self._id2extword)
-#         
-#         assert len(set(self._id2extword)) == len(self._id2extword)
-#         
-#         return embeddings
-#     
-#     def word2id(self, xs):
-#         if isinstance(xs, list): 
-#             return [self._word2id.get(x, self.unk) for x in xs]
-#         return self._word2id.get(xs, self.unk)
-#     
-#     def extword2id(self, xs):
-#         if isinstance(xs, list):
-#             return [self._extword2id.get(x, self.unk) for x in xs]
-#         return self._extword2id.get(xs, self.unk)
-#     
-#     def label2id(self, xs):
-#         if isinstance(xs, list):
-#             return [self._label2id.get(x, self.unk) for x in xs]
-#         return self._label2id.get(xs, self.unk)
-#     
-#     def word_size(self):
-#         return len(self._id2word)
-#     
-#     def extword_size(self):
-#         return len(self._id2extword)
-#     
-#     def label_size(self):
-#         return len(self._id2label)
-#     
-# vocab = Vocab(train_df)
-#             
-
-# === AFTER (edited) ===
 from collections import Counter
 from transformers import BasicTokenizer
 
@@ -193,43 +58,43 @@ class Vocab():
         self.unk = 1
         self._id2word = ['[PAD]', '[UNK]']
         self._id2extword = ['[PAD]', '[UNK]']
-
+        
         self._id2label = []
         self.target_names = []
-
+        
         self.build_vocab(train_data)
-
+        
         reverse = lambda x: dict(zip(x, range(len(x))))
         self._word2id = reverse(self._id2word)
         self._label2id = reverse(self._id2label)
-
+        
     def build_vocab(self, data):
         self.word_counter = Counter()
-
+        
         for text in data['text']:
-            words = str(text).split()  # Ensure we're working with strings
+            words = text.split()
             for word in words:
                 self.word_counter[word] += 1
-
+                
         for word, count in self.word_counter.most_common():
             if count >= self.min_count:
                 self._id2word.append(word)
-
+                
         label2name = {0: '科技', 1: '股票', 2: '体育', 3: '娱乐', 4: '时政', 5: '社会', 6: '教育',
                       7: '财经', 8: '家居', 9: '游戏', 10: '房产', 11: '时尚', 12: '彩票', 13: '星座'}
         self.label_counter = Counter(data['label'])
-
+        
         for label in range(len(self.label_counter)):
             count = self.label_counter[label]
             self._id2label.append(label)
             self.target_names.append(label2name[label])
-
+            
     def load_pretrained_embs(self, embfile):
         with open(embfile, encoding='utf-8') as f:
             lines = f.readlines()
             items = lines[0].split()
             word_count, embedding_dim = int(items[0]), int(items[1])
-
+            
         index = len(self._id2extword)
         embeddings = np.zeros((word_count + index, embedding_dim))
         for line in lines[1:]:
@@ -239,51 +104,88 @@ class Vocab():
             embeddings[self.unk] += vector
             embeddings[index] = vector
             index += 1
-
+            
         embeddings[self.unk] = embeddings[self.unk] / word_count
         embeddings = embeddings / np.std(embeddings)
-
+        
         reverse = lambda x: dict(zip(x, range(len(x))))
         self._extword2id = reverse(self._id2extword)
-
+        
         assert len(set(self._id2extword)) == len(self._id2extword)
-
+        
         return embeddings
-
+    
     def word2id(self, xs):
-        if isinstance(xs, list):
+        if isinstance(xs, list): 
             return [self._word2id.get(x, self.unk) for x in xs]
         return self._word2id.get(xs, self.unk)
-
+    
     def extword2id(self, xs):
         if isinstance(xs, list):
             return [self._extword2id.get(x, self.unk) for x in xs]
         return self._extword2id.get(xs, self.unk)
-
+    
     def label2id(self, xs):
         if isinstance(xs, list):
             return [self._label2id.get(x, self.unk) for x in xs]
         return self._label2id.get(xs, self.unk)
-
+    
     def word_size(self):
         return len(self._id2word)
-
+    
     def extword_size(self):
         return len(self._id2extword)
-
+    
     def label_size(self):
         return len(self._id2label)
-
+    
 vocab = Vocab(train_df)
-print(f"Vocab word_size: {vocab.word_size()}")
-print(f"Vocab extword_size: {vocab.extword_size()}")
-print(f"Vocab label_size: {vocab.label_size()}")
-print(f"Number of words in vocab: {len(vocab._id2word)}")
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# === BEFORE (original) ===
+# import torch.nn as nn
+# import torch.nn.functional as F
+# 
+# class Attention(nn.Module):
+#     '''Scaled Dot-Product Attention'''
+#     def __init__(self, hidden_size):
+#         super(Attention, self).__init__()
+#         self.weight = nn.Parameter(torch.Tensor(hidden_size, hidden_size))
+#         self.weight.data.normal_(mean=0.0, std=0.05)
+#         
+#         self.bias = nn.Parameter(torch.Tensor(hidden_size))
+#         b = np.zeros(hidden_size, dtype=np.float32)
+#         self.bias.data.copy_(torch.from_numpy(b))
+#         
+#         self.query = nn.Parameter(torch.Tensor(hidden_size))
+#         self.query.data.normal_(mean=0.0, std=0.05)
+#         
+#     def forward(self, batch_hidden, batch_masks):
+#         # batch_hidden: batch_size x len x hidden_size (2 * hidden_size of lstm)
+#         # batch_masks: batch_size x len
+#         
+#         # broadcast机制
+#         key = torch.matmul(batch_hidden, self.weight) + self.bias  # b x len x hidden
+#         
+#         outputs = torch.matmul(key, self.query)  # b x len
+#         
+#         # 填充一个很小的负数，softmax后就会变为0
+#         masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32)) 
+#         
+#         attn_scores = F.softmax(masked_outputs, dim=1)  # b x len
+#         
+#         # 经过softmax后可能存在nan，因此将这些位置都变为0
+#         masked_attn_scores = attn_scores.masked_fill((1 - batch_masks).bool(), 0.0)
+#         
+#         # 矩阵批量乘法（batch matrix-matrix product）函数
+#         batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)  # b x hidden
+#         
+#         return batch_outputs, attn_scores
+
+# === AFTER (edited) ===
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -293,36 +195,33 @@ class Attention(nn.Module):
         super(Attention, self).__init__()
         self.weight = nn.Parameter(torch.Tensor(hidden_size, hidden_size))
         self.weight.data.normal_(mean=0.0, std=0.05)
-        
-        self.bias = nn.Parameter(torch.Tensor(hidden_size))
-        b = np.zeros(hidden_size, dtype=np.float32)
-        self.bias.data.copy_(torch.from_numpy(b))
-        
+
+        self.bias = nn.Parameter(torch.zeros(hidden_size, dtype=torch.float32))
+
         self.query = nn.Parameter(torch.Tensor(hidden_size))
         self.query.data.normal_(mean=0.0, std=0.05)
-        
+
     def forward(self, batch_hidden, batch_masks):
-        # batch_hidden: batch_size x len x hidden_size (2 * hidden_size of lstm)
-        # batch_masks: batch_size x len
-        
-        # broadcast机制
-        key = torch.matmul(batch_hidden, self.weight) + self.bias  # b x len x hidden
-        
-        outputs = torch.matmul(key, self.query)  # b x len
-        
-        # 填充一个很小的负数，softmax后就会变为0
-        masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32)) 
-        
-        attn_scores = F.softmax(masked_outputs, dim=1)  # b x len
-        
-        # 经过softmax后可能存在nan，因此将这些位置都变为0
+
+
+
+
+        key = torch.matmul(batch_hidden, self.weight) + self.bias
+
+        outputs = torch.matmul(key, self.query)
+
+
+        masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32))
+
+        attn_scores = F.softmax(masked_outputs, dim=1)
+
+
         masked_attn_scores = attn_scores.masked_fill((1 - batch_masks).bool(), 0.0)
-        
-        # 矩阵批量乘法（batch matrix-matrix product）函数
-        batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)  # b x hidden
-        
+
+
+        batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)
+
         return batch_outputs, attn_scores
-    
 
 #%%
 # --- [CELL 5]: ---
@@ -393,15 +292,15 @@ class WordLSTMEncoder(nn.Module):
     def __init__(self, vocab):
         super(WordLSTMEncoder, self).__init__()
         self.dropout = nn.Dropout(dropout)
-        self.word_dims = num_features  #100
+        self.word_dims = num_features
 
-        self.word_embed = nn.Embedding(int(vocab.word_size()), int(self.word_dims), padding_idx=0)
+        self.word_embed = nn.Embedding(vocab.word_size(), self.word_dims, padding_idx=0, device=device)
 
         extword_embed = vocab.load_pretrained_embs(word2vec_path)
         extword_size, word_dims = extword_embed.shape
 
-        self.extword_embed = nn.Embedding(int(extword_size), int(word_dims), padding_idx=0)
-        self.extword_embed.weight.data.copy_(torch.from_numpy(extword_embed).float())
+        self.extword_embed = nn.Embedding(extword_size, word_dims, padding_idx=0, device=device)
+        self.extword_embed.weight.data.copy_(torch.from_numpy(extword_embed))
         self.extword_embed.weight.requires_grad = False
 
         input_size = self.word_dims
@@ -534,7 +433,7 @@ class Model(nn.Module):
         self.sent_attention = Attention(self.doc_rep_size)
         parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_encoder.parameters())))
         parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_attention.parameters())))
-        self.out = nn.Linear(int(self.doc_rep_size), int(vocab.label_size()), bias=True)
+        self.out = nn.Linear(self.doc_rep_size, vocab.label_size(), bias=True, device=device)
         parameters.extend(list(filter(lambda p: p.requires_grad, self.out.parameters())))
 
         self.to(device)

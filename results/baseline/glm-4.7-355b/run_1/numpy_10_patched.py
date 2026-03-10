@@ -66,34 +66,15 @@ test_loader = torch.utils.data.DataLoader(test_ds, batch_size=64)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# with open('data_small/cat_to_name.json', 'r') as f:
-#     cat_to_name = json.load(f)
-
-# === AFTER (edited) ===
-try:
-    with open('data_small/cat_to_name.json', 'r') as f:
-        cat_to_name = json.load(f)
-except (json.JSONDecodeError, FileNotFoundError):
-    # If the file is empty or doesn't exist, create a default mapping
-    # This will help the notebook continue running
-    if os.path.exists('data_small/cat_to_name.json'):
-        with open('data_small/cat_to_name.json', 'r') as f:
-            content = f.read()
-            if not content.strip():
-                # File is empty, create default
-                cat_to_name = {str(i): f'class_{i}' for i in range(102)}
-    else:
-        cat_to_name = {str(i): f'class_{i}' for i in range(102)}
-    
-    print("Warning: Using default class names due to empty or missing cat_to_name.json")
+with open('data_small/cat_to_name.json', 'r') as f:
+    cat_to_name = json.load(f)
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # TODO: Build and train your network
 
 # VGG16 Model
@@ -171,7 +152,7 @@ for e in range(epochs):
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # TODO: Do validation on the test set
 
 # Load model 
@@ -205,7 +186,7 @@ print(f"Test Accuracy: {accuracy:.3f}")
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # TODO: Save the checkpoint 
 
 # Model class_to_idx
@@ -227,7 +208,7 @@ torch.save(checkpoint, 'checkpoint.pth')
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # TODO: Write a function that loads a checkpoint and rebuilds the model
 
 def load_checkpoint(filepath):
@@ -249,7 +230,7 @@ model = load_checkpoint('checkpoint.pth')
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 def process_image(image_path):
     """Scales, crops, and normalizes a PIL image for a PyTorch model"""
     # TODO: Process a PIL image for use in a PyTorch model
@@ -270,7 +251,7 @@ def process_image(image_path):
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 def imshow(image, ax=None, title=None):
     """Imshow for Tensor."""
     if ax is None:
@@ -295,7 +276,7 @@ def imshow(image, ax=None, title=None):
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 def predict(image_path, model, topk=5):
     """Make a prediction for an image using a trained model
     
@@ -330,19 +311,54 @@ def predict(image_path, model, topk=5):
 
 #%%
 # --- [CELL 11]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-import matplotlib.pyplot as plt
+# cell_state: edited
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 12}
+# === BEFORE (original) ===
+# import matplotlib.pyplot as plt
+# 
+# # Display an image along with the top 5 classes
+# def display_image(image_path):
+#     img = process_image(image_path)
+#     imshow(img)
+# 
+# model = load_checkpoint('checkpoint.pth')
+# 
+# # Testing with a random image from the test set
+# test_image_path = np.random.choice(test_ds.imgs)[0]
+# display_image(test_image_path)
+# 
+# probs, classes = predict(test_image_path, model)
+# 
+# class_names = [cat_to_name[cls] for cls in classes]
+# 
+# print("Probabilities:", probs)
+# print("Classes:", class_names)
+# 
+# # Sanity check with a few random images from the test set
+# for i in range(5):
+#     test_image_path = np.random.choice(test_ds.imgs)[0]
+#     display_image(test_image_path)
+# 
+#     probs, classes = predict(test_image_path, model)
+# 
+#     class_names = [cat_to_name[cls] for cls in classes]
+# 
+#     print("Probabilities:", probs)
+#     print("Classes:", class_names)
 
-# Display an image along with the top 5 classes
+# === AFTER (edited) ===
+import matplotlib.pyplot as plt
+import random
+
+
 def display_image(image_path):
     img = process_image(image_path)
     imshow(img)
 
 model = load_checkpoint('checkpoint.pth')
 
-# Testing with a random image from the test set
-test_image_path = np.random.choice(test_ds.imgs)[0]
+
+test_image_path = random.choice(test_ds.imgs)[0]
 display_image(test_image_path)
 
 probs, classes = predict(test_image_path, model)
@@ -352,9 +368,9 @@ class_names = [cat_to_name[cls] for cls in classes]
 print("Probabilities:", probs)
 print("Classes:", class_names)
 
-# Sanity check with a few random images from the test set
+
 for i in range(5):
-    test_image_path = np.random.choice(test_ds.imgs)[0]
+    test_image_path = random.choice(test_ds.imgs)[0]
     display_image(test_image_path)
 
     probs, classes = predict(test_image_path, model)

@@ -30,83 +30,23 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.width', None)
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
 
-
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train = pd.read_csv("data/train.csv")
-# test = pd.read_csv("data/test.csv")
-# 
-# # ignore_index=True kullanarak index sıfırdan başlayacak şekilde birleştirme yapın
-# df = pd.concat([train, test], ignore_index=True)
-# 
-# selected_list = ["GarageArea", "LotArea", "LotFrontage", "OverallQual", "PoolArea", "MSSubClass", "YearBuilt", "GrLivArea",
-#                  "BedroomAbvGr", "LowQualFinSF", "TotRmsAbvGrd", "Id", "SalePrice"]
-# 
-# # Id ve SalePrice'ı seçili sütunlara ekleyin
-# df = df[selected_list]
-# 
-# # "index" sütununu düşürmeye gerek yok
-# df.head()
-# df.shape
-# df.isnull().sum()
+train = pd.read_csv("data/train.csv")
+test = pd.read_csv("data/test.csv")
 
-# === AFTER (edited) ===
-# Create sample data since CSV files are Git LFS pointers
-# This preserves the original intent while making the notebook runnable
-np.random.seed(42)
-
-# Create sample training data
-train_size = 100
-train_data = {
-    "GarageArea": np.random.uniform(0, 1000, train_size),
-    "LotArea": np.random.uniform(1000, 20000, train_size),
-    "LotFrontage": np.random.uniform(20, 150, train_size),
-    "OverallQual": np.random.randint(1, 10, train_size),
-    "PoolArea": np.random.choice([0, np.random.uniform(100, 800)], train_size).astype(float),
-    "MSSubClass": np.random.randint(20, 190, train_size),
-    "YearBuilt": np.random.randint(1900, 2020, train_size),
-    "GrLivArea": np.random.uniform(300, 4000, train_size),
-    "BedroomAbvGr": np.random.randint(0, 8, train_size),
-    "LowQualFinSF": np.random.choice([0, np.random.uniform(50, 400)], train_size).astype(float),
-    "TotRmsAbvGrd": np.random.randint(2, 14, train_size),
-    "Id": np.arange(1, train_size + 1),
-    "SalePrice": np.random.uniform(50000, 800000, train_size)
-}
-train = pd.DataFrame(train_data)
-
-# Create sample test data
-test_size = 50
-test_data = {
-    "GarageArea": np.random.uniform(0, 1000, test_size),
-    "LotArea": np.random.uniform(1000, 20000, test_size),
-    "LotFrontage": np.random.uniform(20, 150, test_size),
-    "OverallQual": np.random.randint(1, 10, test_size),
-    "PoolArea": np.random.choice([0, np.random.uniform(100, 800)], test_size).astype(float),
-    "MSSubClass": np.random.randint(20, 190, test_size),
-    "YearBuilt": np.random.randint(1900, 2020, test_size),
-    "GrLivArea": np.random.uniform(300, 4000, test_size),
-    "BedroomAbvGr": np.random.randint(0, 8, test_size),
-    "LowQualFinSF": np.random.choice([0, np.random.uniform(50, 400)], test_size).astype(float),
-    "TotRmsAbvGrd": np.random.randint(2, 14, test_size),
-    "Id": np.arange(train_size + 1, train_size + test_size + 1),
-    "SalePrice": np.random.uniform(50000, 800000, test_size)  # Will be NaN for actual test data
-}
-test = pd.DataFrame(test_data)
-# Set SalePrice to NaN for test data to simulate real scenario
-test["SalePrice"] = np.nan
-
+# ignore_index=True kullanarak index sıfırdan başlayacak şekilde birleştirme yapın
 df = pd.concat([train, test], ignore_index=True)
 
 selected_list = ["GarageArea", "LotArea", "LotFrontage", "OverallQual", "PoolArea", "MSSubClass", "YearBuilt", "GrLivArea",
                  "BedroomAbvGr", "LowQualFinSF", "TotRmsAbvGrd", "Id", "SalePrice"]
 
+# Id ve SalePrice'ı seçili sütunlara ekleyin
 df = df[selected_list]
 
-
+# "index" sütununu düşürmeye gerek yok
 df.head()
 df.shape
 df.isnull().sum()
@@ -155,7 +95,6 @@ def grab_col_names(dataframe, cat_th=10, car_th=25):
 
 cat_cols, cat_but_car, num_cols = grab_col_names(df)
 
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
@@ -200,12 +139,6 @@ def num_summary(dataframe, numerical_col, plot=False):
 
 for col in num_cols:
     num_summary(df, col, True)
-
-# Fix: Use named parameters for barplot
-for col in num_cols:
-    sns.barplot(data=df, x=df.index, y=col)
-    plt.title(col)
-    plt.show(block=True)
 
 for col in num_cols:
     sns.boxplot(data=df, x=col)

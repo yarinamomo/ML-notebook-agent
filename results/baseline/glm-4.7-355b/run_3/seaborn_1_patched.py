@@ -31,7 +31,7 @@ warnings.filterwarnings("ignore")
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 # TPU or GPU detection
 # Detect hardware, return appropriate distribution strategy
 try:
@@ -54,7 +54,7 @@ print(f'REPLICAS: {REPLICAS}')
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 BATCH_SIZE = 16 * REPLICAS
 WARMUP_EPOCHS = 3
 WARMUP_LEARNING_RATE = 1e-4 * REPLICAS
@@ -68,82 +68,46 @@ ES_PATIENCE = 5
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# model_path = f'model_{HEIGHT}x{WIDTH}.h5'
-# 
-# # GCS_PATH = KaggleDatasets().get_gcs_path('tpu-getting-started') + f'/tfrecords-jpeg-{HEIGHT}x{WIDTH}'
-# GCS_PATH = "data/tfrecords-jpeg-{}x{}".format(HEIGHT, WIDTH) # get data from local disk (reproducing purposes)
-# 
-# TRAINING_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/train/*.tfrec')
-# VALIDATION_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/val/*.tfrec')
-# TEST_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/test/*.tfrec')
-# 
-# CLASSES = [
-#     'pink primrose', 'hard-leaved pocket orchid', 'canterbury bells', 'sweet pea', 
-#     'wild geranium', 'tiger lily', 'moon orchid', 'bird of paradise', 'monkshood', 
-#     'globe thistle', 'snapdragon', "colt's foot", 'king protea', 'spear thistle', 
-#     'yellow iris', 'globe-flower', 'purple coneflower', 'peruvian lily', 
-#     'balloon flower', 'giant white arum lily', 'fire lily', 'pincushion flower', 
-#     'fritillary', 'red ginger', 'grape hyacinth', 'corn poppy', 
-#     'prince of wales feathers', 'stemless gentian', 'artichoke', 'sweet william', 
-#     'carnation', 'garden phlox', 'love in the mist', 'cosmos',  'alpine sea holly', 
-#     'ruby-lipped cattleya', 'cape flower', 'great masterwort',  'siam tulip', 
-#     'lenten rose', 'barberton daisy', 'daffodil',  'sword lily', 'poinsettia', 
-#     'bolero deep blue',  'wallflower', 'marigold', 'buttercup', 'daisy', 
-#     'common dandelion', 'petunia', 'wild pansy', 'primula',  'sunflower', 
-#     'lilac hibiscus', 'bishop of llandaff', 'gaura',  'geranium', 'orange dahlia', 
-#     'pink-yellow dahlia', 'cautleya spicata',  'japanese anemone', 
-#     'black-eyed susan', 'silverbush', 'californian poppy',  'osteospermum', 
-#     'spring crocus', 'iris', 'windflower',  'tree poppy', 'gazania', 'azalea', 
-#     'water lily',  'rose', 'thorn apple', 'morning glory', 'passion flower',  
-#     'lotus', 'toad lily', 'anthurium', 'frangipani',  'clematis', 'hibiscus', 
-#     'columbine', 'desert-rose', 'tree mallow', 'magnolia', 'cyclamen ', 
-#     'watercress',  'canna lily', 'hippeastrum ', 'bee balm', 'pink quill',  
-#     'foxglove', 'bougainvillea', 'camellia', 'mallow',  'mexican petunia',  
-#     'bromelia', 'blanket flower', 'trumpet creeper',  'blackberry lily', 
-#     'common tulip', 'wild rose']
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
 model_path = f'model_{HEIGHT}x{WIDTH}.h5'
 
+# GCS_PATH = KaggleDatasets().get_gcs_path('tpu-getting-started') + f'/tfrecords-jpeg-{HEIGHT}x{WIDTH}'
+GCS_PATH = "data/tfrecords-jpeg-{}x{}".format(HEIGHT, WIDTH) # get data from local disk (reproducing purposes)
 
-GCS_PATH = KaggleDatasets().get_gcs_path()
-
-TRAINING_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/tfrecords-jpeg-{}x{}/train/*.tfrec'.format(HEIGHT, WIDTH))
-VALIDATION_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/tfrecords-jpeg-{}x{}/val/*.tfrec'.format(HEIGHT, WIDTH))
-TEST_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/tfrecords-jpeg-{}x{}/test/*.tfrec'.format(HEIGHT, WIDTH))
+TRAINING_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/train/*.tfrec')
+VALIDATION_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/val/*.tfrec')
+TEST_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/test/*.tfrec')
 
 CLASSES = [
-    'pink primrose', 'hard-leaved pocket orchid', 'canterbury bells', 'sweet pea',
-    'wild geranium', 'tiger lily', 'moon orchid', 'bird of paradise', 'monkshood',
-    'globe thistle', 'snapdragon', "colt's foot", 'king protea', 'spear thistle',
-    'yellow iris', 'globe-flower', 'purple coneflower', 'peruvian lily',
-    'balloon flower', 'giant white arum lily', 'fire lily', 'pincushion flower',
-    'fritillary', 'red ginger', 'grape hyacinth', 'corn poppy',
-    'prince of wales feathers', 'stemless gentian', 'artichoke', 'sweet william',
-    'carnation', 'garden phlox', 'love in the mist', 'cosmos',  'alpine sea holly',
-    'ruby-lipped cattleya', 'cape flower', 'great masterwort',  'siam tulip',
-    'lenten rose', 'barberton daisy', 'daffodil',  'sword lily', 'poinsettia',
-    'bolero deep blue',  'wallflower', 'marigold', 'buttercup', 'daisy',
-    'common dandelion', 'petunia', 'wild pansy', 'primula',  'sunflower',
-    'lilac hibiscus', 'bishop of llandaff', 'gaura',  'geranium', 'orange dahlia',
-    'pink-yellow dahlia', 'cautleya spicata',  'japanese anemone',
-    'black-eyed susan', 'silverbush', 'californian poppy',  'osteospermum',
-    'spring crocus', 'iris', 'windflower',  'tree poppy', 'gazania', 'azalea',
-    'water lily',  'rose', 'thorn apple', 'morning glory', 'passion flower',
-    'lotus', 'toad lily', 'anthurium', 'frangipani',  'clematis', 'hibiscus',
-    'columbine', 'desert-rose', 'tree mallow', 'magnolia', 'cyclamen ',
-    'watercress',  'canna lily', 'hippeastrum ', 'bee balm', 'pink quill',
-    'foxglove', 'bougainvillea', 'camellia', 'mallow',  'mexican petunia',
-    'bromelia', 'blanket flower', 'trumpet creeper',  'blackberry lily',
+    'pink primrose', 'hard-leaved pocket orchid', 'canterbury bells', 'sweet pea', 
+    'wild geranium', 'tiger lily', 'moon orchid', 'bird of paradise', 'monkshood', 
+    'globe thistle', 'snapdragon', "colt's foot", 'king protea', 'spear thistle', 
+    'yellow iris', 'globe-flower', 'purple coneflower', 'peruvian lily', 
+    'balloon flower', 'giant white arum lily', 'fire lily', 'pincushion flower', 
+    'fritillary', 'red ginger', 'grape hyacinth', 'corn poppy', 
+    'prince of wales feathers', 'stemless gentian', 'artichoke', 'sweet william', 
+    'carnation', 'garden phlox', 'love in the mist', 'cosmos',  'alpine sea holly', 
+    'ruby-lipped cattleya', 'cape flower', 'great masterwort',  'siam tulip', 
+    'lenten rose', 'barberton daisy', 'daffodil',  'sword lily', 'poinsettia', 
+    'bolero deep blue',  'wallflower', 'marigold', 'buttercup', 'daisy', 
+    'common dandelion', 'petunia', 'wild pansy', 'primula',  'sunflower', 
+    'lilac hibiscus', 'bishop of llandaff', 'gaura',  'geranium', 'orange dahlia', 
+    'pink-yellow dahlia', 'cautleya spicata',  'japanese anemone', 
+    'black-eyed susan', 'silverbush', 'californian poppy',  'osteospermum', 
+    'spring crocus', 'iris', 'windflower',  'tree poppy', 'gazania', 'azalea', 
+    'water lily',  'rose', 'thorn apple', 'morning glory', 'passion flower',  
+    'lotus', 'toad lily', 'anthurium', 'frangipani',  'clematis', 'hibiscus', 
+    'columbine', 'desert-rose', 'tree mallow', 'magnolia', 'cyclamen ', 
+    'watercress',  'canna lily', 'hippeastrum ', 'bee balm', 'pink quill',  
+    'foxglove', 'bougainvillea', 'camellia', 'mallow',  'mexican petunia',  
+    'bromelia', 'blanket flower', 'trumpet creeper',  'blackberry lily', 
     'common tulip', 'wild rose']
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # Datasets utility functions
 AUTO = tf.data.experimental.AUTOTUNE # instructs the API to read from multiple files if available.
 
@@ -239,7 +203,7 @@ def count_data_items(filenames):
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 # Train data
 NUM_TRAINING_IMAGES = count_data_items(TRAINING_FILENAMES)
 train_dataset = get_training_dataset_preview(ordered=True)
@@ -259,18 +223,38 @@ test_dataset = get_test_dataset(ordered=True)
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
-train_agg = np.asarray([[label, (y_train == index).sum()] for index, label in enumerate(CLASSES)])
-valid_agg = np.asarray([[label, (y_valid == index).sum()] for index, label in enumerate(CLASSES)])
+# === BEFORE (original) ===
+# train_agg = np.asarray([[label, (y_train == index).sum()] for index, label in enumerate(CLASSES)])
+# valid_agg = np.asarray([[label, (y_valid == index).sum()] for index, label in enumerate(CLASSES)])
+# 
+# fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(24, 64))
+# 
+# ax1 = sns.barplot(x=train_agg[...,1], y=train_agg[...,0], order=CLASSES, ax=ax1)
+# ax1.set_title('Train', fontsize=30)
+# ax1.tick_params(labelsize=16)
+# 
+# ax2 = sns.barplot(x=valid_agg[...,1], y=valid_agg[...,0], order=CLASSES, ax=ax2)
+# ax2.set_title('Validation', fontsize=30)
+# ax2.tick_params(labelsize=16)
+# 
+# plt.show()
+
+# === AFTER (edited) ===
+train_agg = [[label, (y_train == index).sum()] for index, label in enumerate(CLASSES)]
+valid_agg = [[label, (y_valid == index).sum()] for index, label in enumerate(CLASSES)]
+
+train_df = pd.DataFrame(train_agg, columns=['label', 'count'])
+valid_df = pd.DataFrame(valid_agg, columns=['label', 'count'])
 
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(24, 64))
 
-ax1 = sns.barplot(x=train_agg[...,1], y=train_agg[...,0], order=CLASSES, ax=ax1)
+ax1 = sns.barplot(x='count', y='label', data=train_df, order=CLASSES, ax=ax1)
 ax1.set_title('Train', fontsize=30)
 ax1.tick_params(labelsize=16)
 
-ax2 = sns.barplot(x=valid_agg[...,1], y=valid_agg[...,0], order=CLASSES, ax=ax2)
+ax2 = sns.barplot(x='count', y='label', data=valid_df, order=CLASSES, ax=ax2)
 ax2.set_title('Validation', fontsize=30)
 ax2.tick_params(labelsize=16)
 

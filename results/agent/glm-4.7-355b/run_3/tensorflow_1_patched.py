@@ -25,42 +25,81 @@ image_count
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# import PIL
-# princess = list(data_dir.glob('princess/*'))
-# PIL.Image.open(str(princess[1]))
-
-# === AFTER (edited) ===
 import PIL
 princess = list(data_dir.glob('princess/*'))
-try:
-    img = PIL.Image.open(str(princess[1]))
-    img
-except Exception as e:
-    print(f"Cannot open image file: {e}")
-    print("Note: Image files may be Git LFS pointers rather than actual image data.")
+PIL.Image.open(str(princess[1]))
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# image_height, image_width = PIL.Image.open(str(princess[1])).size
-# batch_size,epochs = 64,10
-
-# === AFTER (edited) ===
-# Set default image dimensions since image files appear to be Git LFS pointers
-image_height, image_width = 180, 180
-batch_size, epochs = 64, 10
+image_height, image_width = PIL.Image.open(str(princess[1])).size
+batch_size,epochs = 64,10
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# === BEFORE (original) ===
+# train_ds = tf.keras.utils.image_dataset_from_directory(
+#     data_dir,
+#     validation_split=0.2,
+#     subset='training',
+#     image_size=(image_height, image_width),
+#     seed = 1,
+#     shuffle=True,
+#     batch_size=batch_size
+# )
+
+# === AFTER (edited) ===
+# Filter out corrupted image files first
+import PIL.Image
+from pathlib import Path
+
+def is_valid_image(filepath):
+    try:
+        with PIL.Image.open(filepath) as img:
+            img.verify()
+        return True
+    except:
+        return False
+
+# Get list of valid files
+valid_files = []
+for class_dir in data_dir.iterdir():
+    if class_dir.is_dir():
+        for img_file in class_dir.glob('*.jpg'):
+            if is_valid_image(img_file):
+                valid_files.append(str(img_file))
+            else:
+                print(f"Skipping corrupted file: {img_file}")
+
+# Create labels from file paths
+labels = []
+for path in valid_files:
+    class_name = Path(path).parent.name
+    labels.append(class_name)
+
+# Create directories with symbolic links to valid files only
+import tempfile
+import os
+import shutil
+
+filtered_dir = Path(tempfile.mkdtemp())
+print(f"Creating filtered dataset in: {filtered_dir}")
+
+for path, label in zip(valid_files, labels):
+    class_dir = filtered_dir / label
+    class_dir.mkdir(parents=True, exist_ok=True)
+    # Copy the file (or use symlink if supported)
+    shutil.copy2(path, class_dir / Path(path).name)
+
+print(f"Prepared {len(valid_files)} valid images")
+
 train_ds = tf.keras.utils.image_dataset_from_directory(
-    data_dir,
+    filtered_dir,
     validation_split=0.2,
     subset='training',
     image_size=(image_height, image_width),
@@ -71,10 +110,22 @@ train_ds = tf.keras.utils.image_dataset_from_directory(
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# === BEFORE (original) ===
+# val_ds = tf.keras.utils.image_dataset_from_directory(
+#     data_dir,
+#     validation_split=0.2,
+#     subset='validation',
+#     image_size=(image_height, image_width),
+#     seed = 1,
+#     shuffle=True,
+#     batch_size=batch_size
+# )
+
+# === AFTER (edited) ===
 val_ds = tf.keras.utils.image_dataset_from_directory(
-    data_dir,
+    filtered_dir,
     validation_split=0.2,
     subset='validation',
     image_size=(image_height, image_width),
@@ -139,15 +190,6 @@ model.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentro
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
-# === BEFORE (original) ===
-# history = model.fit(train_ds,validation_data=val_ds, epochs=1)
-
-# === AFTER (edited) ===
-try:
-    history = model.fit(train_ds,validation_data=val_ds, epochs=1)
-except Exception as e:
-    print(f"Error during model training: {e}")
-    print("Note: The image files appear to be Git LFS pointer files rather than actual image data.")
-    print("Please ensure the actual image files are properly downloaded/checked out.")
+history = model.fit(train_ds,validation_data=val_ds, epochs=1)

@@ -37,7 +37,7 @@ df_test=pd.read_csv(test_df_path)
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # plt.figure(figsize=(15,12))
 # labels = sns.barplot(df_train.labels.value_counts().index,df_train.labels.value_counts())
@@ -46,6 +46,6 @@ df_test=pd.read_csv(test_df_path)
 
 # === AFTER (edited) ===
 plt.figure(figsize=(15,12))
-labels = sns.barplot(df_train['labels'].value_counts().index, df_train['labels'].value_counts())
+labels = sns.barplot(x=df_train.labels.value_counts().index, y=df_train.labels.value_counts())
 for item in labels.get_xticklabels():
     item.set_rotation(45)

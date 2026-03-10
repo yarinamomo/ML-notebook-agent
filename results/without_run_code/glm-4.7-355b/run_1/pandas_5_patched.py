@@ -10,43 +10,10 @@ sns.set(style='whitegrid')
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train=pd.read_csv('data/train.csv')
-# test=pd.read_csv('data/train.csv')
-
-# === AFTER (edited) ===
-# Create dummy data for demonstration since actual file appears to be LFS pointer
-import pandas as pd
-import numpy as np
-
-# Create sample data with expected columns
-np.random.seed(42)
-n_samples = 1000
-
-train = pd.DataFrame({
-    'id': range(n_samples),
-    'Gender': np.random.choice(['Male', 'Female'], n_samples),
-    'Age': np.random.randint(20, 80, n_samples),
-    'Driving_License': np.random.choice([0, 1], n_samples),
-    'Region_Code': np.random.randint(0, 52, n_samples),
-    'Previously_Insured': np.random.choice([0, 1], n_samples),
-    'Vehicle_Age': np.random.choice(['< 1 Year', '1-2 Year', '> 2 Years'], n_samples),
-    'Vehicle_Damage': np.random.choice(['Yes', 'No'], n_samples),
-    'Annual_Premium': np.random.uniform(10000, 100000, n_samples),
-    'Policy_Sales_Channel': np.random.randint(1, 160, n_samples),
-    'Vintage': np.random.randint(10, 300, n_samples),
-    'Response': np.random.choice([0, 1], n_samples)
-})
-
-# Create test data similarly
-test = train.sample(frac=0.3, random_state=42).reset_index(drop=True)
-train = train.drop(test.index).reset_index(drop=True)
-
-print(f"Train shape: {train.shape}")
-print(f"Test shape: {test.shape}")
-print("\nColumns:", train.columns.tolist())
+train=pd.read_csv('data/train.csv')
+test=pd.read_csv('data/train.csv')
 
 #%%
 # --- [CELL 2]: ---
@@ -57,12 +24,8 @@ cat_feat = ['Gender', 'Driving_License', 'Previously_Insured', 'Vehicle_Age_lt_1
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train['Gender'] = train['Gender'].map( {'Female': 0, 'Male': 1} ).astype(int)
-
-# === AFTER (edited) ===
 train['Gender'] = train['Gender'].map( {'Female': 0, 'Male': 1} ).astype(int)
 
 #%%
@@ -153,10 +116,16 @@ test=test.drop('id',axis=1)
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-# didn't work in original one also
+# === BEFORE (original) ===
+# # didn't work in original one also
+# 
+# for column in cat_feat:
+#     x_train[column] = x_train[column].astype('int')
+#     x_test[column] = x_test[column].astype('int')
 
+# === AFTER (edited) ===
 for column in cat_feat:
-    x_train[column] = x_train[column].astype('int')
-    x_test[column] = x_test[column].astype('int')
+    x_train[column] = x_train[column].astype('float').astype('int')
+    x_test[column] = x_test[column].astype('float').astype('int')

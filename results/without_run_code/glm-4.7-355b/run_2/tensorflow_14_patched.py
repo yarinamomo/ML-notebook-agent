@@ -13,61 +13,16 @@ import tensorflow.keras.backend as K
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# # Define VGG_FACE_MODEL architecture
-# model = Sequential()
-# model.add(ZeroPadding2D((1,1),input_shape=(224,224, 3)))
-# model.add(Convolution2D(64, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(64, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))	
-# model.add(Convolution2D(128, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(128, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(Convolution2D(4096, (7, 7), activation='relu'))
-# model.add(Dropout(0.5))
-# model.add(Convolution2D(4096, (1, 1), activation='relu'))
-# model.add(Dropout(0.5))
-# model.add(Convolution2D(2622, (1, 1)))
-# model.add(Flatten())
-# model.add(Activation('softmax'))
-# 
-# # Load VGG Face model weights
-# model.load_weights('data/vgg_face_weights.h5')
-
-# === AFTER (edited) ===
+# Define VGG_FACE_MODEL architecture
 model = Sequential()
 model.add(ZeroPadding2D((1,1),input_shape=(224,224, 3)))
 model.add(Convolution2D(64, (3, 3), activation='relu'))
 model.add(ZeroPadding2D((1,1)))
 model.add(Convolution2D(64, (3, 3), activation='relu'))
 model.add(MaxPooling2D((2,2), strides=(2,2)))
-model.add(ZeroPadding2D((1,1)))
+model.add(ZeroPadding2D((1,1)))	
 model.add(Convolution2D(128, (3, 3), activation='relu'))
 model.add(ZeroPadding2D((1,1)))
 model.add(Convolution2D(128, (3, 3), activation='relu'))
@@ -101,8 +56,8 @@ model.add(Convolution2D(2622, (1, 1)))
 model.add(Flatten())
 model.add(Activation('softmax'))
 
-# Note: Skip loading weights as the file is not available
-# model.load_weights('data/vgg_face_weights.h5')
+# Load VGG Face model weights
+model.load_weights('data/vgg_face_weights.h5')
 
 #%%
 # --- [CELL 2]: ---
@@ -116,7 +71,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # # Set the main data directory where subdirectories represent classes/labels
 # main_data_directory = 'data/train-data-imgs'
@@ -172,17 +127,6 @@ main_data_directory = 'data/train-data-imgs'
 input_size = (224, 224)
 
 
-def safe_image_generator(generator):
-    """Generator that skips corrupted images"""
-    while True:
-        try:
-            x, y = next(generator)
-            yield x, y
-        except Exception as e:
-            print(f"Skipping corrupted image batch: {e}")
-            continue
-
-
 train_datagen = ImageDataGenerator(
     rescale=1.0/255,
     rotation_range=20,
@@ -208,30 +152,25 @@ for layer in base_model.layers:
     layer.trainable = False
 
 
-x = base_model.output
-x = Flatten()(x)
-x = Dense(512, activation='relu')(x)
+x = Flatten()(base_model.output)
+x = Dense(4096, activation='relu')(x)
+x = Dropout(0.5)(x)
+x = Dense(4096, activation='relu')(x)
 x = Dropout(0.5)(x)
 predictions = Dense(7, activation='softmax')(x)
 
 
-model = Model(inputs=base_model.input, outputs=predictions)
+model_finetune = Model(inputs=base_model.input, outputs=predictions)
 
 
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+model_finetune.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 
-# Note: Skip loading weights as the file is not available
-# base_model.load_weights('data/vgg_face_weights.h5')
-
-# Use data generator with error handling
-safe_train_gen = safe_image_generator(iter(train_generator))
-
-model.fit(
-    safe_train_gen,
+model_finetune.fit(
+    train_generator,
     steps_per_epoch=len(train_generator),
-    epochs=1,
+    epochs=10,
 )
 
 
-model.save('data/updated_vgg_face_weights.h5')
+model_finetune.save('data/updated_vgg_face_weights.h5')

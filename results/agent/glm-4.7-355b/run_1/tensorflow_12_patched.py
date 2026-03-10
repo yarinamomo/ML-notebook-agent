@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 from collections import Counter
 import cv2
 import os
@@ -60,44 +60,11 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 InputPath = 'data/images-after-converted_small/'
 CsvPath   = 'data/breast-level_annotations (1).csv.zip'
 
-
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# df = pd.read_csv(CsvPath)
-# df.head(3)
-
-# === AFTER (edited) ===
-# Create sample data based on actual images since the original CSV is a Git LFS pointer
-import os
-
-if os.path.exists(CsvPath) and os.path.getsize(CsvPath) < 1000:
-    # Create sample data structure based on actual images in the directory
-    sample_data = []
-    label_value = 0
-    for laterality in ['L', 'R']:
-        for view_position in ['CC', 'MLO']:
-            dir_path = os.path.join(InputPath, f"{laterality}-{view_position}")
-            if os.path.exists(dir_path):
-                files = [f for f in os.listdir(dir_path) if f.endswith('.png')][:2]  # Take 2 files per subdir
-                for f in files:
-                    image_id = f[:-4]  # Remove .png extension
-                    # Use valid label range [0, 19] to match the 20 classes in the model
-                    sample_data.append({
-                        'laterality': laterality,
-                        'view_position': view_position,
-                        'image_id': image_id,
-                        'breast_birads': f'BI-RADS-{label_value % 19 + 1}'  # Labels 1-19
-                    })
-                    label_value += 1
-    
-    df = pd.DataFrame(sample_data)
-    print(f"Created sample data with {len(df)} entries matching actual images")
-else:
-    df = pd.read_csv(CsvPath)
-
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+df = pd.read_csv(CsvPath)
 df.head(3)
 
 #%%
@@ -106,7 +73,6 @@ df.head(3)
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 X= []
 y=[]
-
 
 #%%
 # --- [CELL 4]: ---
@@ -132,17 +98,13 @@ for i in range(df.shape[0]):
 
     path = InputPath+df.laterality[i]+'-'+df.view_position[i]+'/'+df.image_id[i]+'.png'
     if os.path.exists(path):
-        img = cv2.imread(path,0)
-        # Check if image was loaded successfully
-        if img is not None:
-            img_size = cv2.resize(img, (100, 100), interpolation = cv2.INTER_LINEAR)
-            # Convert grayscale to 3-channel by repeating the image 3 times
-            img_size = cv2.cvtColor(img_size, cv2.COLOR_GRAY2BGR)
+        img = cv2.imread(path)  # Load as color (3 channels)
+        img_size = cv2.resize(img, (100, 100), interpolation = cv2.INTER_LINEAR)
 
 
-            X.append(img_size)
+        X.append(img_size)
 
-            y.append(df.breast_birads[i])
+        y.append(df.breast_birads[i])
 
 #%%
 # --- [CELL 5]: ---
@@ -233,9 +195,8 @@ model.add(Dense(20, activation = 'softmax'))
 model.compile(optimizer=Adam(0.00001), loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics = ['accuracy'])
 model.summary()
 
-
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 history = model.fit(train_images, train_labels, batch_size = 16, epochs=2, validation_data=(val_images, val_labels), verbose = 1)

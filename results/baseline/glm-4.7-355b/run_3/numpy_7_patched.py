@@ -555,7 +555,7 @@ print("Test labels shape:", y_test.shape)
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # from keras.regularizers import l2
 # from keras.optimizers import SGD
@@ -803,7 +803,20 @@ def predict(model, image_idx):
     image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
     pred = np.argmax(model.predict(image))
 
-    plot_sample(dataset['test_images'][image_idx], classes[dataset['test_labels'][image_idx]], classes[pred])
+    plot_sample(dataset['test_images'][image_idx], dataset['test_labels'][image_idx][0], classes[pred])
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -842,12 +855,10 @@ if __name__ == '__main__':
     print('\n--- Processing the dataset ---')
     dataset = preprocess(dataset)
 
-    train_images = dataset['train_images']
-    validation_images = dataset['validation_images']
-    test_images = dataset['test_images']
-    train_labels = to_categorical(dataset['train_labels'])
-    validation_labels = to_categorical(dataset['validation_labels'])
-    test_labels = to_categorical(dataset['test_labels'])
+
+    train_labels = to_categorical(dataset['train_labels'].flatten())
+    validation_labels = to_categorical(dataset['validation_labels'].flatten())
+    test_labels = to_categorical(dataset['test_labels'].flatten())
 
     if os.path.isfile('model.h5'):
         print('\n--- Loading model ---')
@@ -864,6 +875,10 @@ if __name__ == '__main__':
         model.add(Flatten())
         model.add(Dense(256, name='fullyconnected', activation='relu', kernel_initializer='he_normal', kernel_regularizer=l2(lam)))
         model.add(Dense(10, name='dense', activation='softmax'))
+
+        train_images = dataset['train_images']
+        validation_images = dataset['validation_images']
+        test_images = dataset['test_images']
 
 
     train(
@@ -889,4 +904,3 @@ if __name__ == '__main__':
     plot_weights(model)
 
     print('\n--- Saving the model ---')
-    model.save('model.h5')

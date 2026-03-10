@@ -55,20 +55,15 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# InputPath = 'data/images-after-converted_small/'
-# CsvPath   = 'data/breast-level_annotations (1).csv.zip'
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 InputPath = 'data/images-after-converted_small/'
-CsvPath   = 'data/breast-level_annotations (1).csv'
+CsvPath   = 'data/breast-level_annotations (1).csv.zip'
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 df = pd.read_csv(CsvPath)
 df.head(3)
 
@@ -79,20 +74,35 @@ df.head(3)
 X= []
 y=[]
 
-
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# import imageio
+# for i in range(df.shape[0]): # range(50)
+#     # add img empty checking for sampled images for smaller disk space during reproducing and fixing purposes
+#     path = InputPath+df.laterality[i]+'-'+df.view_position[i]+'/'+df.image_id[i]+'.png'
+#     if os.path.exists(path):
+#         img = cv2.imread(path,0)
+#         img_size = cv2.resize(img, (100, 100), interpolation = cv2.INTER_LINEAR)
+# 
+#     #     X.append([img_size, 0]) # shape error, fixed for reproducing purposes
+#         X.append(img_size)
+# 
+#         y.append(df.breast_birads[i])
+
+# === AFTER (edited) ===
 import imageio
-for i in range(df.shape[0]): # range(50)
-    # add img empty checking for sampled images for smaller disk space during reproducing and fixing purposes
+for i in range(df.shape[0]):
+
     path = InputPath+df.laterality[i]+'-'+df.view_position[i]+'/'+df.image_id[i]+'.png'
     if os.path.exists(path):
         img = cv2.imread(path,0)
         img_size = cv2.resize(img, (100, 100), interpolation = cv2.INTER_LINEAR)
+        # Convert grayscale (100, 100) to 3-channel (100, 100, 3)
+        img_size = np.stack((img_size,) * 3, axis=-1)
 
-    #     X.append([img_size, 0]) # shape error, fixed for reproducing purposes
         X.append(img_size)
 
         y.append(df.breast_birads[i])
@@ -185,7 +195,6 @@ model.add(Dense(20, activation = 'softmax'))
 
 model.compile(optimizer=Adam(0.00001), loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics = ['accuracy'])
 model.summary()
-
 
 #%%
 # --- [CELL 10]: ---

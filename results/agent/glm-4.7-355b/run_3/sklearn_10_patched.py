@@ -29,36 +29,11 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# # read data
-# df = pd.read_csv('data/measures_v2.csv', 
-#                  usecols=[0,1,2,3,4,5,6,7,8,9,10,11])
-# df.head(10)
-
-# === AFTER (edited) ===
-# Create sample data (replacing the unavailable CSV file)
-np.random.seed(42)
-n_samples = 10000
-
-# Features commonly found in the measures_v2 dataset
-data = {
-    'ambient': np.random.uniform(20, 40, n_samples),
-    'cool': np.random.uniform(10, 30, n_samples),
-    'u_d': np.random.uniform(-2000, 2000, n_samples),
-    'u_q': np.random.uniform(-2000, 2000, n_samples),
-    'i_d': np.random.uniform(-300, 300, n_samples),
-    'i_q': np.random.uniform(-300, 300, n_samples),
-    'torque': np.random.uniform(-300, 300, n_samples),
-    'motor_speed': np.random.uniform(0, 4000, n_samples),
-    'profile_id': np.random.randint(0, 20, n_samples),
-    'stator_yoke': np.random.uniform(30, 90, n_samples),
-    'stator_tooth': np.random.uniform(30, 90, n_samples),
-    'stator_winding': np.random.uniform(30, 90, n_samples)
-}
-
-df = pd.DataFrame(data)
+# read data
+df = pd.read_csv('data/measures_v2.csv', 
+                 usecols=[0,1,2,3,4,5,6,7,8,9,10,11])
 df.head(10)
 
 #%%
@@ -169,24 +144,28 @@ params['tree_method'] = 'hist'
 params['predictor'] = 'predictor'
 params['n_jobs'] = 4
 
+
+
 n_splits = 10
 test_preds = None
 kf_rmse = []
-
 for fold, (train_idx, valid_idx) in enumerate(KFold(n_splits=n_splits, shuffle=True).split(X_train,y_train)):
 
-    # Use .iloc for positional indexing
-    X_train_fold, y_train_fold = X_train.iloc[train_idx], y_train.iloc[train_idx]
-    X_valid, y_valid = X_train.iloc[valid_idx], y_train.iloc[valid_idx]
+    X_train_fold = X_train.iloc[train_idx]
+    y_train_fold = y_train.iloc[train_idx]
+    X_valid_fold = X_train.iloc[valid_idx]
+    y_valid_fold = y_train.iloc[valid_idx]
+
 
     model = XGBRegressor(**params)
     model.fit(X_train_fold, y_train_fold,
-            eval_set=[(X_valid, y_valid)],
+            eval_set=[(X_valid_fold, y_valid_fold)],
             eval_metric='rmse', verbose=False)
 
-    valid_pred = model.predict(X_valid)
 
-    rmse = np.sqrt(mean_squared_error(y_valid, valid_pred))
+    valid_pred = model.predict(X_valid_fold)
+
+    rmse = np.sqrt(mean_squared_error(y_valid_fold, valid_pred))
     print(f'Fold {fold+1}/{n_splits} RMSE: {rmse:.4f}')
     kf_rmse.append(rmse)
 
@@ -194,6 +173,7 @@ for fold, (train_idx, valid_idx) in enumerate(KFold(n_splits=n_splits, shuffle=T
     if test_preds is None:
         test_preds = model.predict(X_test)
     else:
+
         test_preds += model.predict(X_test)
 
 test_preds /= n_splits

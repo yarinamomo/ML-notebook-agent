@@ -31,63 +31,25 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# #By Ranamalla Nithin Reddy https://www.kaggle.com/code/nithinreddy90/chatpgpt-prompts
-# 
-# from transformers import AutoTokenizer
-# 
-# df = pd.read_csv('data/train.csv')
-# 
-# tokenizer = AutoTokenizer.from_pretrained("gpt2")
-# 
-# # Preprocess the data
-# df.drop_duplicates(inplace=True)
-# df.dropna(subset=['output', 'instruction'], inplace=True)
-# 
-# # Tokenize prompts and actions
-# df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(x)))
-# df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(x)))
-# 
-# # Display the preprocessed and tokenized dataframe
-# print(df.head())
+#By Ranamalla Nithin Reddy https://www.kaggle.com/code/nithinreddy90/chatpgpt-prompts
 
-# === AFTER (edited) ===
 from transformers import AutoTokenizer
-import pandas as pd
 
-# Create sample data since the original data file doesn't exist
-data = {
-    'instruction': [
-        'Write a poem about nature',
-        'Explain quantum computing',
-        'Translate to Spanish: Hello',
-        'Summarize the history of AI',
-        'Write a recipe for pasta'
-    ],
-    'output': [
-        'The trees whisper in the breeze, flowers bloom with sweet ease.',
-        'Quantum computing uses quantum bits to perform complex calculations.',
-        'Hola',
-        'AI has evolved from early logic machines to modern neural networks.',
-        'Boil pasta, add tomatoes and basil, cook for 10 minutes.'
-    ]
-}
-
-df = pd.DataFrame(data)
+df = pd.read_csv('data/train.csv')
 
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
-
+# Preprocess the data
 df.drop_duplicates(inplace=True)
 df.dropna(subset=['output', 'instruction'], inplace=True)
 
-
+# Tokenize prompts and actions
 df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(x)))
 df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(x)))
 
-
+# Display the preprocessed and tokenized dataframe
 print(df.head())
 
 #%%
@@ -138,13 +100,13 @@ model_name = "gpt2"
 model = GPT2LMHeadModel.from_pretrained(model_name)
 tokenizer = GPT2Tokenizer.from_pretrained(model_name)
 
-# GPT2 doesn't have a pad token by default, so we set it to eos_token_id
-tokenizer.pad_token_id = tokenizer.eos_token_id
-model.config.pad_token_id = model.config.eos_token_id
+# GPT2 doesn't have a pad token by default, so we set it to the EOS token
+tokenizer.pad_token = tokenizer.eos_token
 
 generated_responses = []
 
-for index, row in df.iterrows():
+# Limit to first 5 rows to avoid timeout
+for index, row in df.head(5).iterrows():
     prompt = row['instruction']
     input_ids = tokenizer.encode(prompt, return_tensors="pt")
 
@@ -163,3 +125,8 @@ for index, row in df.iterrows():
 
     response = tokenizer.decode(padded_output[0], skip_special_tokens=True)
     generated_responses.append(response)
+
+print("Generated responses for first 5 examples:")
+for i, response in enumerate(generated_responses):
+    print(f"\nExample {i+1}:")
+    print(response[:200] + "...")

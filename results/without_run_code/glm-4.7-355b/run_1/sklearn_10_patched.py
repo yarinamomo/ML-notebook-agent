@@ -29,39 +29,12 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# # read data
-# df = pd.read_csv('data/measures_v2.csv', 
-#                  usecols=[0,1,2,3,4,5,6,7,8,9,10,11])
-# df.head(10)
-
-# === AFTER (edited) ===
-# Create mock data since the CSV file is a Git LFS pointer
-import numpy as np
-np.random.seed(42)
-
-# Create a dataset similar to motor temperature/speed measurements
-n_samples = 10000
-df = pd.DataFrame({
-    'ambient': np.random.normal(20, 5, n_samples),
-    'coolant': np.random.normal(20, 10, n_samples),
-    'u_d': np.random.normal(0, 1, n_samples),
-    'u_q': np.random.normal(0, 1, n_samples),
-    'motor_speed': np.random.normal(1500, 500, n_samples),
-    'torque': np.random.normal(0.5, 0.2, n_samples),
-    'i_d': np.random.normal(0, 1, n_samples),
-    'i_q': np.random.normal(0, 1, n_samples),
-    'pm': np.random.normal(60, 10, n_samples),
-    'stator_yoke': np.random.normal(55, 10, n_samples),
-    'stator_tooth': np.random.normal(58, 10, n_samples),
-    'stator_winding': np.random.normal(65, 15, n_samples)
-})
-
-print("DataFrame shape:", df.shape)
-print("Columns:", df.columns.tolist())
-print(df.head(10))
+# read data
+df = pd.read_csv('data/measures_v2.csv', 
+                 usecols=[0,1,2,3,4,5,6,7,8,9,10,11])
+df.head(10)
 
 #%%
 # --- [CELL 2]: ---

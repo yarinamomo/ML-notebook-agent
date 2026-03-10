@@ -106,102 +106,11 @@ CLASSES = [
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# # Datasets utility functions
-# AUTO = tf.data.experimental.AUTOTUNE # instructs the API to read from multiple files if available.
-# 
-# def decode_image(image_data):
-#     image = tf.image.decode_jpeg(image_data, channels=3)
-#     image = tf.cast(image, tf.float32) / 255.0
-#     image = tf.reshape(image, [HEIGHT, WIDTH, 3])
-#     return image
-# 
-# def read_labeled_tfrecord(example):
-#     LABELED_TFREC_FORMAT = {
-#         "image": tf.io.FixedLenFeature([], tf.string), # tf.string means bytestring
-#         "class": tf.io.FixedLenFeature([], tf.int64),  # shape [] means single element
-#     }
-#     example = tf.io.parse_single_example(example, LABELED_TFREC_FORMAT)
-#     image = decode_image(example['image'])
-#     label = tf.cast(example['class'], tf.int32)
-#     return image, label
-# 
-# def read_unlabeled_tfrecord(example):
-#     UNLABELED_TFREC_FORMAT = {
-#         "image": tf.io.FixedLenFeature([], tf.string), # tf.string means bytestring
-#         "id": tf.io.FixedLenFeature([], tf.string),  # shape [] means single element
-#         # class is missing, this competitions's challenge is to predict flower classes for the test dataset
-#     }
-#     example = tf.io.parse_single_example(example, UNLABELED_TFREC_FORMAT)
-#     image = decode_image(example['image'])
-#     idnum = example['id']
-#     return image, idnum # returns a dataset of image(s)
-# 
-# def load_dataset(filenames, labeled=True, ordered=False):
-#     ignore_order = tf.data.Options()
-#     if not ordered:
-#         ignore_order.experimental_deterministic = False # disable order, increase speed
-# 
-#     dataset = tf.data.TFRecordDataset(filenames, num_parallel_reads=AUTO) # automatically interleaves reads from multiple files
-#     dataset = dataset.with_options(ignore_order) # uses data as soon as it streams in, rather than in its original order
-#     dataset = dataset.map(read_labeled_tfrecord if labeled else read_unlabeled_tfrecord, num_parallel_calls=AUTO)
-#     # returns a dataset of (image, label) pairs if labeled=True or (image, id) pairs if labeled=False
-#     return dataset
-# 
-# def data_augment(image, label):
-#     crop_size = tf.random.uniform([], int(HEIGHT*.7), HEIGHT, dtype=tf.int32)
-#         
-#     image = tf.image.random_flip_left_right(image)
-#     image = tf.image.random_flip_up_down(image)
-#     image = tf.image.random_saturation(image, lower=0, upper=2)
-# 
-# #     image = tf.image.random_saturation(image, lower=0, upper=2)
-# #     image = tf.image.random_contrast(image, lower=.8, upper=2)
-# #     image = tf.image.random_brightness(image, max_delta=.2)
-# #     image = tf.image.adjust_gamma(image, gamma=.6)
-# 
-#     image = tf.image.random_crop(image, size=[crop_size, crop_size, CHANNELS])
-#     image = tf.image.resize(image, size=[HEIGHT, WIDTH])
-# 
-#     return image, label
-# 
-# def get_training_dataset():
-#     dataset = load_dataset(TRAINING_FILENAMES, labeled=True)
-#     dataset = dataset.map(data_augment, num_parallel_calls=AUTO)
-#     dataset = dataset.repeat() # the training dataset must repeat for several epochs
-#     dataset = dataset.shuffle(2048)
-#     dataset = dataset.batch(BATCH_SIZE)
-#     dataset = dataset.prefetch(AUTO) # prefetch next batch while training (autotune prefetch buffer size)
-#     return dataset
-# 
-# def get_training_dataset_preview(ordered=True):
-#     dataset = load_dataset(TRAINING_FILENAMES, labeled=True, ordered=ordered)
-#     dataset = dataset.batch(BATCH_SIZE)
-#     dataset = dataset.cache()
-#     dataset = dataset.prefetch(AUTO)
-#     return dataset
-# 
-# def get_validation_dataset(ordered=False):
-#     dataset = load_dataset(VALIDATION_FILENAMES, labeled=True, ordered=ordered)
-#     dataset = dataset.batch(BATCH_SIZE)
-#     dataset = dataset.cache()
-#     dataset = dataset.prefetch(AUTO)
-#     return dataset
-# 
-# def get_test_dataset(ordered=False):
-#     dataset = load_dataset(TEST_FILENAMES, labeled=False, ordered=ordered)
-#     dataset = dataset.batch(BATCH_SIZE)
-#     dataset = dataset.prefetch(AUTO)
-#     return dataset
-# 
-# def count_data_items(filenames):
-#     # the number of data items is written in the name of the .tfrec files, i.e. flowers00-230.tfrec = 230 data items
-#     n = [int(re.compile(r"-([0-9]*)\.").search(filename).group(1)) for filename in filenames]
-#     return np.sum(n)
+# Datasets utility functions
+AUTO = tf.data.experimental.AUTOTUNE # instructs the API to read from multiple files if available.
 
-# === AFTER (edited) ===
 def decode_image(image_data):
     image = tf.image.decode_jpeg(image_data, channels=3)
     image = tf.cast(image, tf.float32) / 255.0
@@ -210,8 +119,8 @@ def decode_image(image_data):
 
 def read_labeled_tfrecord(example):
     LABELED_TFREC_FORMAT = {
-        "image": tf.io.FixedLenFeature([], tf.string),
-        "class": tf.io.FixedLenFeature([], tf.int64),
+        "image": tf.io.FixedLenFeature([], tf.string), # tf.string means bytestring
+        "class": tf.io.FixedLenFeature([], tf.int64),  # shape [] means single element
     }
     example = tf.io.parse_single_example(example, LABELED_TFREC_FORMAT)
     image = decode_image(example['image'])
@@ -220,35 +129,37 @@ def read_labeled_tfrecord(example):
 
 def read_unlabeled_tfrecord(example):
     UNLABELED_TFREC_FORMAT = {
-        "image": tf.io.FixedLenFeature([], tf.string),
-        "id": tf.io.FixedLenFeature([], tf.string),
-
+        "image": tf.io.FixedLenFeature([], tf.string), # tf.string means bytestring
+        "id": tf.io.FixedLenFeature([], tf.string),  # shape [] means single element
+        # class is missing, this competitions's challenge is to predict flower classes for the test dataset
     }
     example = tf.io.parse_single_example(example, UNLABELED_TFREC_FORMAT)
     image = decode_image(example['image'])
     idnum = example['id']
-    return image, idnum
+    return image, idnum # returns a dataset of image(s)
 
 def load_dataset(filenames, labeled=True, ordered=False):
     ignore_order = tf.data.Options()
     if not ordered:
-        ignore_order.experimental_deterministic = False
+        ignore_order.experimental_deterministic = False # disable order, increase speed
 
-    dataset = tf.data.TFRecordDataset(filenames, num_parallel_reads=AUTO)
-    dataset = dataset.with_options(ignore_order)
+    dataset = tf.data.TFRecordDataset(filenames, num_parallel_reads=AUTO) # automatically interleaves reads from multiple files
+    dataset = dataset.with_options(ignore_order) # uses data as soon as it streams in, rather than in its original order
     dataset = dataset.map(read_labeled_tfrecord if labeled else read_unlabeled_tfrecord, num_parallel_calls=AUTO)
-
+    # returns a dataset of (image, label) pairs if labeled=True or (image, id) pairs if labeled=False
     return dataset
 
 def data_augment(image, label):
     crop_size = tf.random.uniform([], int(HEIGHT*.7), HEIGHT, dtype=tf.int32)
-
+        
     image = tf.image.random_flip_left_right(image)
     image = tf.image.random_flip_up_down(image)
     image = tf.image.random_saturation(image, lower=0, upper=2)
 
-
-
+#     image = tf.image.random_saturation(image, lower=0, upper=2)
+#     image = tf.image.random_contrast(image, lower=.8, upper=2)
+#     image = tf.image.random_brightness(image, max_delta=.2)
+#     image = tf.image.adjust_gamma(image, gamma=.6)
 
     image = tf.image.random_crop(image, size=[crop_size, crop_size, CHANNELS])
     image = tf.image.resize(image, size=[HEIGHT, WIDTH])
@@ -258,10 +169,10 @@ def data_augment(image, label):
 def get_training_dataset():
     dataset = load_dataset(TRAINING_FILENAMES, labeled=True)
     dataset = dataset.map(data_augment, num_parallel_calls=AUTO)
-    dataset = dataset.repeat()
+    dataset = dataset.repeat() # the training dataset must repeat for several epochs
     dataset = dataset.shuffle(2048)
     dataset = dataset.batch(BATCH_SIZE)
-    dataset = dataset.prefetch(AUTO)
+    dataset = dataset.prefetch(AUTO) # prefetch next batch while training (autotune prefetch buffer size)
     return dataset
 
 def get_training_dataset_preview(ordered=True):
@@ -285,7 +196,7 @@ def get_test_dataset(ordered=False):
     return dataset
 
 def count_data_items(filenames):
-
+    # the number of data items is written in the name of the .tfrec files, i.e. flowers00-230.tfrec = 230 data items
     n = [int(re.compile(r"-([0-9]*)\.").search(filename).group(1)) for filename in filenames]
     return np.sum(n)
 
@@ -313,7 +224,7 @@ test_dataset = get_test_dataset(ordered=True)
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # === BEFORE (original) ===
 # train_agg = np.asarray([[label, (y_train == index).sum()] for index, label in enumerate(CLASSES)])
 # valid_agg = np.asarray([[label, (y_valid == index).sum()] for index, label in enumerate(CLASSES)])
@@ -331,20 +242,25 @@ test_dataset = get_test_dataset(ordered=True)
 # plt.show()
 
 # === AFTER (edited) ===
-train_agg = np.asarray([[label, int((y_train == index).sum())] for index, label in enumerate(CLASSES)], dtype=object)
-valid_agg = np.asarray([[label, int((y_valid == index).sum())] for index, label in enumerate(CLASSES)], dtype=object)
+import pandas as pd
 
-# Convert counts to numpy int array
-train_counts = train_agg[...,1].astype(np.int64)
-valid_counts = valid_agg[...,1].astype(np.int64)
+train_agg = pd.DataFrame({
+    'label': [label for index, label in enumerate(CLASSES)],
+    'count': [(y_train == index).sum() for index, label in enumerate(CLASSES)]
+})
+
+valid_agg = pd.DataFrame({
+    'label': [label for index, label in enumerate(CLASSES)],
+    'count': [(y_valid == index).sum() for index, label in enumerate(CLASSES)]
+})
 
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(24, 64))
 
-ax1 = sns.barplot(x=train_counts, y=train_agg[...,0], order=CLASSES, ax=ax1)
+ax1 = sns.barplot(x='count', y='label', data=train_agg, order=CLASSES, ax=ax1)
 ax1.set_title('Train', fontsize=30)
 ax1.tick_params(labelsize=16)
 
-ax2 = sns.barplot(x=valid_counts, y=valid_agg[...,0], order=CLASSES, ax=ax2)
+ax2 = sns.barplot(x='count', y='label', data=valid_agg, order=CLASSES, ax=ax2)
 ax2.set_title('Validation', fontsize=30)
 ax2.tick_params(labelsize=16)
 

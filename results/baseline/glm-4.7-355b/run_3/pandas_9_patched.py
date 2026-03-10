@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
@@ -22,17 +22,37 @@ for dirname, _, filenames in os.walk('data'):
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 df = pd.read_csv("data/IMDb_All_Genres_etf_clean1.csv")
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # clean_df = df[(df["Total Gross (millions)"]!="$0.00M") & (df["Total Gross (millions)"]!="Gross Unkown")].copy()
 # clean_df = clean_df[clean_df['Censor']!="(Banned)"]
 
 # === AFTER (edited) ===
-clean_df = df[(df["Total Gross (millions)"].str!="$0.00M") & (df["Total Gross (millions)"].str!="Gross Unkown")]
-clean_df = clean_df[clean_df['Censor'].str!="(Banned)"]
+# Print actual column names to see what they are
+print("Column names in dataframe:")
+print(df.columns.tolist())
+
+# Try to find the correct column name
+gross_col = None
+censor_col = None
+for col in df.columns:
+    if 'Gross' in col and 'Total' in col:
+        gross_col = col
+    if 'Censor' in col:
+        censor_col = col
+
+print(f"\nFound Gross column: '{gross_col}'")
+print(f"Found Censor column: '{censor_col}'")
+
+# Use the actual column names found
+if gross_col and censor_col:
+    clean_df = df[(df[gross_col]!="$0.00M") & (df[gross_col]!="Gross Unkown")].copy()
+    clean_df = clean_df[clean_df[censor_col]!="(Banned)"]
+else:
+    print("Could not find required columns")

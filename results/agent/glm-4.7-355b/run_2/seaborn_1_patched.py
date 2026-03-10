@@ -202,57 +202,24 @@ def count_data_items(filenames):
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# # Train data
-# NUM_TRAINING_IMAGES = count_data_items(TRAINING_FILENAMES)
-# train_dataset = get_training_dataset_preview(ordered=True)
-# y_train = next(iter(train_dataset.unbatch().map(lambda image, label: label).batch(NUM_TRAINING_IMAGES))).numpy()
-# print(f'Number of training images {NUM_TRAINING_IMAGES}')
-# 
-# # Validation data
-# NUM_VALIDATION_IMAGES = count_data_items(VALIDATION_FILENAMES)
-# valid_dataset = get_validation_dataset(ordered=True)
-# y_valid = next(iter(valid_dataset.unbatch().map(lambda image, label: label).batch(NUM_VALIDATION_IMAGES))).numpy()
-# print(f'Number of validation images {NUM_VALIDATION_IMAGES}')
-# 
-# # Test data
-# NUM_TEST_IMAGES = count_data_items(TEST_FILENAMES)
-# print(f'Number of test images {NUM_TEST_IMAGES}')
-# test_dataset = get_test_dataset(ordered=True)
-
-# === AFTER (edited) ===
-# Count images (this works by parsing filenames)
+# Train data
 NUM_TRAINING_IMAGES = count_data_items(TRAINING_FILENAMES)
+train_dataset = get_training_dataset_preview(ordered=True)
+y_train = next(iter(train_dataset.unbatch().map(lambda image, label: label).batch(NUM_TRAINING_IMAGES))).numpy()
 print(f'Number of training images {NUM_TRAINING_IMAGES}')
 
+# Validation data
 NUM_VALIDATION_IMAGES = count_data_items(VALIDATION_FILENAMES)
+valid_dataset = get_validation_dataset(ordered=True)
+y_valid = next(iter(valid_dataset.unbatch().map(lambda image, label: label).batch(NUM_VALIDATION_IMAGES))).numpy()
 print(f'Number of validation images {NUM_VALIDATION_IMAGES}')
 
+# Test data
 NUM_TEST_IMAGES = count_data_items(TEST_FILENAMES)
 print(f'Number of test images {NUM_TEST_IMAGES}')
-
-# Create mock label arrays for visualization (since actual TFRecord files are LFS pointers)
-# In a real environment with downloaded data, you would use:
-# train_dataset = get_training_dataset_preview(ordered=True)
-# y_train = next(iter(train_dataset.unbatch().map(lambda image, label: label).batch(NUM_TRAINING_IMAGES))).numpy()
-# valid_dataset = get_validation_dataset(ordered=True)
-# y_valid = next(iter(valid_dataset.unbatch().map(lambda image, label: label).batch(NUM_VALIDATION_IMAGES))).numpy()
-
-# Generate mock labels with realistic distribution (some classes more frequent than others)
-np.random.seed(42)
-train_probs = np.random.dirichlet(np.ones(len(CLASSES)) * 0.3, size=1)[0]
-y_train = np.random.choice(len(CLASSES), size=NUM_TRAINING_IMAGES, p=train_probs)
-
-valid_probs = train_probs * (0.8 + 0.4 * np.random.rand(len(CLASSES)))  # similar distribution with some variation
-valid_probs = valid_probs / valid_probs.sum()
-y_valid = np.random.choice(len(CLASSES), size=NUM_VALIDATION_IMAGES, p=valid_probs)
-
 test_dataset = get_test_dataset(ordered=True)
-
-print(f'Mock training labels shape: {y_train.shape}')
-print(f'Mock validation labels shape: {y_valid.shape}')
 
 #%%
 # --- [CELL 6]: ---
@@ -275,20 +242,16 @@ print(f'Mock validation labels shape: {y_valid.shape}')
 # plt.show()
 
 # === AFTER (edited) ===
-# Create aggregated data for visualization - properly typed
-train_counts = [(y_train == index).sum() for index, label in enumerate(CLASSES)]
-valid_counts = [(y_valid == index).sum() for index, label in enumerate(CLASSES)]
-
-train_agg = pd.DataFrame({'class': CLASSES, 'count': train_counts})
-valid_agg = pd.DataFrame({'class': CLASSES, 'count': valid_counts})
+train_agg = np.asarray([[label, (y_train == index).sum()] for index, label in enumerate(CLASSES)])
+valid_agg = np.asarray([[label, (y_valid == index).sum()] for index, label in enumerate(CLASSES)])
 
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(24, 64))
 
-ax1 = sns.barplot(x='count', y='class', data=train_agg, order=CLASSES, ax=ax1)
+ax1 = sns.barplot(x=train_agg[..., 1].astype(int), y=train_agg[..., 0], order=CLASSES, ax=ax1)
 ax1.set_title('Train', fontsize=30)
 ax1.tick_params(labelsize=16)
 
-ax2 = sns.barplot(x='count', y='class', data=valid_agg, order=CLASSES, ax=ax2)
+ax2 = sns.barplot(x=valid_agg[..., 1].astype(int), y=valid_agg[..., 0], order=CLASSES, ax=ax2)
 ax2.set_title('Validation', fontsize=30)
 ax2.tick_params(labelsize=16)
 

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 from torchvision.io import read_image
 from torchvision.models import vit_b_16, ViT_B_16_Weights, list_models
 from torchvision.datasets import ImageNet, ImageFolder
@@ -12,134 +12,63 @@ from torchvision.transforms import transforms
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# img = read_image("data_small/10/ILSVRC2012_val_00037698.jpeg")
-# print(img.shape[0])
-# if img.shape[0] == 1:
-#      img = img.expand(3, -1, -1)
-# print(img.size())
-# 
-# # Step 1: Initialize model with the best available weights
-# weights =ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
-# model = vit_b_16(weights=weights)
-# model.eval()
-# 
-# # Step 2: Initialize the inference transforms
-# preprocess = weights.transforms()
-# 
-# # Step 3: Apply inference preprocessing transforms
-# batch = preprocess(img).unsqueeze(0)
-# 
-# # Step 4: Use the model and print the predicted category
-# prediction = model(batch).squeeze(0).softmax(0)
-# class_id = prediction.argmax().item()
-# print(class_id)
-# score = prediction[class_id].item()
-# category_name = weights.meta["categories"][class_id]
-# print(f"{category_name}: {100 * score:.1f}%")
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+img = read_image("data_small/10/ILSVRC2012_val_00037698.jpeg")
+print(img.shape[0])
+if img.shape[0] == 1:
+     img = img.expand(3, -1, -1)
+print(img.size())
 
-# === AFTER (edited) ===
-try:
-    img = read_image("data_small/10/ILSVRC2012_val_00037698.jpeg")
-    print(img.shape[0])
-    if img.shape[0] == 1:
-        img = img.expand(3, -1, -1)
-    print(img.size())
-except RuntimeError as e:
-    print(f"Error reading image: {e}")
-    print("Note: Image files appear to be Git LFS pointers, not actual image data.")
-    print("Skipping single image demonstration.")
-
-
-weights = ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
+# Step 1: Initialize model with the best available weights
+weights =ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
 model = vit_b_16(weights=weights)
 model.eval()
 
-
+# Step 2: Initialize the inference transforms
 preprocess = weights.transforms()
 
-# Only proceed with preprocessing if img was successfully loaded
-try:
-    batch = preprocess(img).unsqueeze(0)
-    prediction = model(batch).squeeze(0).softmax(0)
-    class_id = prediction.argmax().item()
-    print(class_id)
-    score = prediction[class_id].item()
-    category_name = weights.meta["categories"][class_id]
-    print(f"{category_name}: {100 * score:.1f}%")
-except NameError:
-    print("Skipping single image prediction demo due to image loading error.")
+# Step 3: Apply inference preprocessing transforms
+batch = preprocess(img).unsqueeze(0)
+
+# Step 4: Use the model and print the predicted category
+prediction = model(batch).squeeze(0).softmax(0)
+class_id = prediction.argmax().item()
+print(class_id)
+score = prediction[class_id].item()
+category_name = weights.meta["categories"][class_id]
+print(f"{category_name}: {100 * score:.1f}%")
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# # Move model and data to GPU if available
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# print("Device used is: " + str(device))
-# 
-# # create a metric for accuracy
-# metric = MulticlassAccuracy(num_classes=1000).to(device)
-# 
-# # Step 2: Initialize the inference transforms
-# preprocess = weights.transforms(antialias=True)
-# 
-# preprocess_w_gray2rgb = transforms.Compose([
-#     lambda x: x.expand(3, -1, -1) if x.shape[0] == 1 else x,
-#     preprocess
-# ])
-# imagenet_val_dir = 'data_small'
-# dataset = ImageFolder(root=imagenet_val_dir, loader=read_image, transform=preprocess_w_gray2rgb)
-# class_dict = dataset.class_to_idx
-# class_dict = {value: key for key, value in class_dict.items()}
-# 
-# # Create a DataLoader to load the images in batches
-# dataloader = DataLoader(dataset, batch_size=8, shuffle=False)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+# Move model and data to GPU if available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device used is: " + str(device))
 
-
+# create a metric for accuracy
 metric = MulticlassAccuracy(num_classes=1000).to(device)
 
-
+# Step 2: Initialize the inference transforms
 preprocess = weights.transforms(antialias=True)
 
 preprocess_w_gray2rgb = transforms.Compose([
     lambda x: x.expand(3, -1, -1) if x.shape[0] == 1 else x,
     preprocess
 ])
-
-# Custom loader to handle Git LFS pointer files
-def safe_image_loader(path):
-    """Load image or return a dummy image if file is a Git LFS pointer or invalid."""
-    try:
-        img = read_image(path)
-        return img
-    except RuntimeError as e:
-        # If the file is a Git LFS pointer or invalid, create a dummy 3-channel image
-        # This allows the notebook to run without crashing for demonstration purposes
-        import warnings
-        warnings.warn(f"Could not load image {path}. Using dummy image. Error: {e}")
-        # Return a dummy RGB image (3, 224, 224) filled with zeros
-        return torch.zeros(3, 224, 224, dtype=torch.uint8)
-
 imagenet_val_dir = 'data_small'
-dataset = ImageFolder(root=imagenet_val_dir, loader=safe_image_loader, transform=preprocess_w_gray2rgb)
+dataset = ImageFolder(root=imagenet_val_dir, loader=read_image, transform=preprocess_w_gray2rgb)
 class_dict = dataset.class_to_idx
 class_dict = {value: key for key, value in class_dict.items()}
 
-
+# Create a DataLoader to load the images in batches
 dataloader = DataLoader(dataset, batch_size=8, shuffle=False)
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # def check_label_name(predictions, weights):
 #     for prediction in predictions:
@@ -204,7 +133,6 @@ dataloader = DataLoader(dataset, batch_size=8, shuffle=False)
 #     duration = (end_time - start_time) / 60
 #     
 #     return accuracy, duration
-#     
 
 # === AFTER (edited) ===
 def check_label_name(predictions, weights):
@@ -214,25 +142,17 @@ def check_label_name(predictions, weights):
         score = prediction[class_id].item()
         category_name = weights.meta["categories"][class_id]
         print(f"{category_name}: {100 * score:.1f}%")
-        print("\\n")
+        print("\n")
 
 
 def model_quantization(model, backend='x86', save=False):
-    """
-    Quantize a model dynamically.
-    Note: torch.jit.script is not used as it doesn't work with Vision Transformer models
-    due to components like MultiheadAttention that cannot be scripted.
-    """
+
     model.qconfig = torch.quantization.get_default_qconfig(backend)
     torch.backends.quantized.engine = backend
 
     quantized_model = torch.quantization.quantize_dynamic(model, qconfig_spec={torch.nn.Linear}, dtype=torch.qint8)
-    
-    # Note: Skipping torch.jit.script as it's not compatible with ViT models
     if save:
-        torch.save(quantized_model.state_dict(), "vit_quantized.pt")
-        print("Quantized model state saved to vit_quantized.pt")
-    
+        torch.save(quantized_model, "vit_quantized.pt")
     return quantized_model
 
 
@@ -270,7 +190,7 @@ def inference(model, dataloader, class_dict, device, image_num_stop=40000):
 
             if index == index_stop:
                 print("Number of images processed: {} stopping now".format(index_stop*8))
-                print("stopped checking because of errors for the entire dataset \\n ")
+                print("stopped checking because of errors for the entire dataset \n ")
                 break
 
     accuracy = total_correct / total_samples
@@ -282,7 +202,7 @@ def inference(model, dataloader, class_dict, device, image_num_stop=40000):
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # Step 1: Initialize model with the best available weights
 weights = ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
 model = vit_b_16(weights=weights)

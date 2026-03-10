@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import os
 import shutil
 import itertools
@@ -33,7 +33,7 @@ warnings.filterwarnings('ignore')
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 # Paths to training and testing datasets
 train_dir = 'data_small/Training'
 test_dir = 'data_small/Testing'
@@ -41,7 +41,7 @@ test_dir = 'data_small/Testing'
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # Data augmentation
 train_datagen = ImageDataGenerator(
     rescale=1./255,
@@ -53,7 +53,7 @@ train_datagen = ImageDataGenerator(
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 test_datagen = ImageDataGenerator(rescale=1./255)
 
 # Load and preprocess training and testing data
@@ -75,53 +75,29 @@ test_generator = test_datagen.flow_from_directory(
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# from tensorflow.keras.applications import InceptionV3
-# from tensorflow.keras.layers import GlobalAveragePooling2D
-# from tensorflow.keras.models import Model
-# 
-# base_model = InceptionV3(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-# 
-# # Freeze layers in the base model
-# for layer in base_model.layers:
-#     layer.trainable = False
-# 
-# # Add a global average pooling layer
-# x = base_model.output
-# x = GlobalAveragePooling2D()(x)
-# 
-# # Define the model with InceptionV3 features
-# inception_model = Model(inputs=base_model.input, outputs=x)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
 from tensorflow.keras.applications import InceptionV3
 from tensorflow.keras.layers import GlobalAveragePooling2D
 from tensorflow.keras.models import Model
 
 base_model = InceptionV3(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
 
-
+# Freeze layers in the base model
 for layer in base_model.layers:
     layer.trainable = False
 
-
+# Add a global average pooling layer
 x = base_model.output
 x = GlobalAveragePooling2D()(x)
 
-
+# Define the model with InceptionV3 features
 inception_model = Model(inputs=base_model.input, outputs=x)
-
-# Verify the model was created successfully
-print(f"Inception model created successfully!")
-print(f"Model input shape: {inception_model.input_shape}")
-print(f"Model output shape: {inception_model.output_shape}")
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 train_features = inception_model.predict(train_generator)
 test_features = inception_model.predict(test_generator)
 
@@ -242,20 +218,42 @@ tuner.search(
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
-# Plot the architecture of the best model
+# === BEFORE (original) ===
+# # Plot the architecture of the best model
+# best_model = tuner.get_best_models(1)[0]
+# best_model.summary()
+# 
+# # Extract information about the best trials
+# best_trials = tuner.oracle.get_best_trials(5)
+# 
+# # Plot the results
+# plt.figure(figsize=(10, 6))
+# for trial in best_trials:
+#     val_accuracy_history = trial.metrics.get_history(name='val_accuracy')
+#     plt.plot(val_accuracy_history, label=f'Trial {trial.trial_id}')
+# 
+# plt.title('Validation Accuracy of Best Trials')
+# plt.xlabel('Epochs')
+# plt.ylabel('Validation Accuracy')
+# plt.legend()
+# plt.show()
+
+# === AFTER (edited) ===
 best_model = tuner.get_best_models(1)[0]
 best_model.summary()
 
-# Extract information about the best trials
+
 best_trials = tuner.oracle.get_best_trials(5)
 
-# Plot the results
+
 plt.figure(figsize=(10, 6))
 for trial in best_trials:
     val_accuracy_history = trial.metrics.get_history(name='val_accuracy')
-    plt.plot(val_accuracy_history, label=f'Trial {trial.trial_id}')
+    # Extract numeric values from MetricObservation objects
+    val_accuracy_values = [obs.value for obs in val_accuracy_history]
+    plt.plot(val_accuracy_values, label=f'Trial {trial.trial_id}')
 
 plt.title('Validation Accuracy of Best Trials')
 plt.xlabel('Epochs')

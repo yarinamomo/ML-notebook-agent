@@ -19,13 +19,9 @@ data = pd.read_csv('data/data.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# data = data.drop(['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm'], axis=1)
-
-# === AFTER (edited) ===
-data = data.drop(['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm'], axis=1, errors='ignore')
+data = data.drop(['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm'], axis=1)
 
 #%%
 # --- [CELL 3]: ---
@@ -39,36 +35,17 @@ for column in data.columns:
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# categorical_columns = ['WindGustDir', 'WindDir9am', 'WindDir3pm', 'RainToday']
-# data = pd.get_dummies(data, columns=categorical_columns, drop_first=True)
-
-# === AFTER (edited) ===
 categorical_columns = ['WindGustDir', 'WindDir9am', 'WindDir3pm', 'RainToday']
-# Only encode columns that exist in the dataframe
-existing_categorical = [col for col in categorical_columns if col in data.columns]
-if existing_categorical:
-    data = pd.get_dummies(data, columns=existing_categorical, drop_first=True)
+data = pd.get_dummies(data, columns=categorical_columns, drop_first=True)
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# X = data.drop('RainTomorrow', axis=1)
-# y = data['RainTomorrow']
-
-# === AFTER (edited) ===
-if 'RainTomorrow' in data.columns:
-    X = data.drop('RainTomorrow', axis=1)
-    y = data['RainTomorrow']
-else:
-    # Define target variable based on available data
-    # Use last column as target if RainTomorrow doesn't exist  
-    X = data.iloc[:, :-1]
-    y = data.iloc[:, -1]
+X = data.drop('RainTomorrow', axis=1)
+y = data['RainTomorrow']
 
 #%%
 # --- [CELL 6]: ---
@@ -93,24 +70,14 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # logreg.fit(X_train, y_train)
 
 # === AFTER (edited) ===
-# Check if we have valid data to train
-if X.empty or y.empty:
-    print("Warning: No valid data available for training.")
-    print(f"X shape: {X.shape}, y shape: {y.shape}")
-    print("Available columns:", list(X.columns))
-else:
-    logreg = LogisticRegression(max_iter=1000)
-    
-    # Try to scale the data if it's valid
-    try:
-        scaler = StandardScaler()
-        X_train_scaled = scaler.fit_transform(X_train)
-        X_test_scaled = scaler.transform(X_test)
-    except Exception as e:
-        print(f"Scaling failed: {e}")
-        X_train_scaled = X_train
-        X_test_scaled = X_test
-    
-    # Don't scale y for classification problems - keep labels as-is
-    logreg.fit(X_train_scaled, y_train)
-    print("Model trained successfully")
+logreg = LogisticRegression(max_iter=1000)
+
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Convert target variable from 'Yes'/'No' to 1/0
+y_train = y_train.map({'Yes': 1, 'No': 0})
+y_test = y_test.map({'Yes': 1, 'No': 0})
+
+logreg.fit(X_train, y_train)

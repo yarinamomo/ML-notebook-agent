@@ -44,59 +44,26 @@ import tensorflow as tf
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train = pd.read_csv("data/train.csv")
-# test = pd.read_csv("data/test.csv")
-
-# === AFTER (edited) ===
-import numpy as np
-import pandas as pd
-from sklearn.datasets import fetch_openml
-
-# Since the CSV files are LFS pointers, we'll use the built-in MNIST dataset
-mnist = fetch_openml('mnist_784', version=1, as_frame=True, parser='auto')
-
-# Create train and test dataframes
-train = mnist.data.iloc[:60000].copy()
-train['label'] = mnist.target.iloc[:60000].astype(int)
-
-# For test data, we'll use the remaining samples
-test_df = mnist.data.iloc[60000:].copy()
-test = test_df
-
-print(f"Train shape: {train.shape}")
-print(f"Test shape: {test.shape}")
+train = pd.read_csv("data/train.csv")
+test = pd.read_csv("data/test.csv")
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# Y_train = train["label"]#得到训练集标签
-# 
-# # Drop 'label' column
-# X_train = train.drop(labels = ["label"],axis = 1) #得到训练集特征列
-# 
-# # free some space
-# del train #删除train变量
-# 
-# g = sns.countplot(Y_train)#画图，统计数量
-# 
-# Y_train.value_counts()#计算每个值的数量
+Y_train = train["label"]#得到训练集标签
 
-# === AFTER (edited) ===
-Y_train = train["label"]
+# Drop 'label' column
+X_train = train.drop(labels = ["label"],axis = 1) #得到训练集特征列
 
-X_train = train.drop(labels = ["label"],axis = 1)
+# free some space
+del train #删除train变量
 
+g = sns.countplot(Y_train)#画图，统计数量
 
-del train
-
-g = sns.countplot(Y_train)
-
-Y_train.value_counts()
+Y_train.value_counts()#计算每个值的数量
 
 #%%
 # --- [CELL 4]: ---
@@ -127,7 +94,6 @@ Y_train = to_categorical(Y_train, num_classes = 10)
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 random_seed = 2
 X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size = 0.1, random_state=random_seed)
-
 
 #%%
 # --- [CELL 8]: ---

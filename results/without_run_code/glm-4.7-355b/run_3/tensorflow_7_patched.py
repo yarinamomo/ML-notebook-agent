@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from transformers import BertTokenizer, TFBertModel
 
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
@@ -41,51 +40,12 @@ print(tf.__version__)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# import pandas as pd
-# 
-# train = pd.read_csv("data/train.csv")
-# train = train[:8] # for faster reproducing and fixing purposes --- make a smaller dataset
-
-# === AFTER (edited) ===
 import pandas as pd
-import numpy as np
 
-# Read the CSV file
 train = pd.read_csv("data/train.csv")
-train = train[:8]
-
-# The CSV appears to be a Git LFS pointer file, so let's create sample data
-# with the expected columns: 'premise', 'hypothesis', and 'label'
-train = pd.DataFrame({
-    'premise': [
-        'A man is playing guitar.',
-        'A woman is dancing.',
-        'A dog is running.',
-        'Two children are playing.',
-        'The sun is shining.',
-        'A car is moving fast.',
-        'People are walking.',
-        'A bird is flying.'
-    ],
-    'hypothesis': [
-        'A man is playing music.',
-        'A man is dancing.',
-        'An animal is running.',
-        'Two children are working.',
-        'The sun is bright.',
-        'A car is moving slowly.',
-        'People are running.',
-        'A plane is flying.'
-    ],
-    'label': [1, 0, 1, 0, 1, 0, 1, 0]  # Assuming 3 classes: 0, 1, 2 (entailment, contradiction, neutral)
-})
-
-print("Columns:", train.columns.tolist())
-print("\nFirst few rows:")
-print(train.head())
+train = train[:8] # for faster reproducing and fixing purposes --- make a smaller dataset
 
 #%%
 # --- [CELL 3]: ---
@@ -138,19 +98,9 @@ def bert_encode(hypotheses, premises, tokenizer):
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer)
-
-# === AFTER (edited) ===
 train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer)
-
-# Check the shape of the encoded input
-print("Input shapes:")
-print(f"input_word_ids shape: {train_input['input_word_ids'].shape}")
-print(f"input_mask shape: {train_input['input_mask'].shape}")
-print(f"input_type_ids shape: {train_input['input_type_ids'].shape}")
 
 #%%
 # --- [CELL 7]: ---
@@ -176,10 +126,7 @@ print(f"input_type_ids shape: {train_input['input_type_ids'].shape}")
 #     return model
 
 # === AFTER (edited) ===
-# Determine the correct max_len from the encoded data
-max_len = train_input['input_word_ids'].shape[1]
-print(f"Using max_len = {max_len}")
-
+max_len = 172
 from transformers import BertTokenizer, TFBertModel
 
 
@@ -193,7 +140,7 @@ def build_model():
     output = tf.keras.layers.Dense(3, activation='softmax')(embedding[:,0,:])
 
     model = tf.keras.Model(inputs=[input_word_ids, input_mask, input_type_ids], outputs=output)
-    model.compile(tf.keras.optimizers.Adam(learning_rate=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    model.compile(tf.keras.optimizers.Adam(lr=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     return model
 

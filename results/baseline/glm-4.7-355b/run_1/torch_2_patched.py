@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 from torchvision.io import read_image
 from torchvision.models import vit_b_16, ViT_B_16_Weights, list_models
 from torchvision.datasets import ImageNet, ImageFolder
@@ -13,7 +13,7 @@ from torchvision.transforms import transforms
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 img = read_image("data_small/10/ILSVRC2012_val_00037698.jpeg")
 print(img.shape[0])
 if img.shape[0] == 1:
@@ -42,7 +42,7 @@ print(f"{category_name}: {100 * score:.1f}%")
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # Move model and data to GPU if available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device used is: " + str(device))
@@ -68,7 +68,7 @@ dataloader = DataLoader(dataset, batch_size=8, shuffle=False)
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # def check_label_name(predictions, weights):
 #     for prediction in predictions:
@@ -133,7 +133,6 @@ dataloader = DataLoader(dataset, batch_size=8, shuffle=False)
 #     duration = (end_time - start_time) / 60
 #     
 #     return accuracy, duration
-#     
 
 # === AFTER (edited) ===
 def check_label_name(predictions, weights):
@@ -147,13 +146,17 @@ def check_label_name(predictions, weights):
 
 
 def model_quantization(model, backend='x86', save=False):
+
     model.qconfig = torch.quantization.get_default_qconfig(backend)
     torch.backends.quantized.engine = backend
 
     quantized_model = torch.quantization.quantize_dynamic(model, qconfig_spec={torch.nn.Linear}, dtype=torch.qint8)
-    scripted_quantized_model = torch.jit.script(quantized_model)
+    
+    # Skip TorchScript compilation for ViT models as they have incompatible attention layers
+    # scripted_quantized_model = torch.jit.script(quantized_model)
     if save:
-        scripted_quantized_model.save("vit_scripted_quantized.pt")
+        torch.save(quantized_model, "vit_quantized.pt")
+    
     return quantized_model
 
 
@@ -203,7 +206,7 @@ def inference(model, dataloader, class_dict, device, image_num_stop=40000):
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # Step 1: Initialize model with the best available weights
 weights = ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
 model = vit_b_16(weights=weights)

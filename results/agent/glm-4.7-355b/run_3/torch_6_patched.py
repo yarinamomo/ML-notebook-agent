@@ -25,126 +25,42 @@ seed=42
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# #use this block later to read cvs hopefully :)
-# train_df=pd.read_csv("data_small/train.csv",index_col=0)
-# #
-# train_labels=train_df['label'].to_numpy()
-# train_labels=train_labels.reshape(train_labels.shape[0],1)
-# 
-# #vocab=train_df['label'].to_numpy()
-# train_df=train_df.drop(columns=['label', 'label_type']) #train_df=train_df.drop(columns=('label')) # for reproducing and fixing
-# test_df=pd.read_csv("data_small/test.csv",index_col=0)
-# #
-# test_labels=test_df['label'].to_numpy()
-# test_labels=test_labels.reshape(test_labels.shape[0],1)
-# 
-# test_df=test_df.drop(columns=('label'))
-# val_df = pd.read_csv("data_small/val.csv",index_col=0)
-# #
-# val_labels=val_df['label'].to_numpy()
-# val_labels=val_labels.reshape(val_labels.shape[0],1)
-# 
-# val_df = val_df.drop(columns=('label'))
-# vocab=np.append(train_labels,val_labels)
-# #print(vocab.shape)
-# vocab=np.unique(vocab)
-# vocab=vocab.reshape(vocab.shape[0],1)
-# print(vocab.shape)
-# oh = OneHotEncoder(sparse_output=False)
-# hot_vocab=oh.fit_transform(vocab)
-# train_df.shape,val_df.shape,test_df.shape
-# train_df
+#use this block later to read cvs hopefully :)
+train_df=pd.read_csv("data_small/train.csv",index_col=0)
+#
+train_labels=train_df['label'].to_numpy()
+train_labels=train_labels.reshape(train_labels.shape[0],1)
 
-# === AFTER (edited) ===
-import numpy as np
+#vocab=train_df['label'].to_numpy()
+train_df=train_df.drop(columns=['label', 'label_type']) #train_df=train_df.drop(columns=('label')) # for reproducing and fixing
+test_df=pd.read_csv("data_small/test.csv",index_col=0)
+#
+test_labels=test_df['label'].to_numpy()
+test_labels=test_labels.reshape(test_labels.shape[0],1)
 
-# Note: The CSV files are empty, creating synthetic data for demonstration
-# Create synthetic training data
-n_train_samples = 100
-n_features = 1536
-n_classes = 6294
+test_df=test_df.drop(columns=('label'))
+val_df = pd.read_csv("data_small/val.csv",index_col=0)
+#
+val_labels=val_df['label'].to_numpy()
+val_labels=val_labels.reshape(val_labels.shape[0],1)
 
-# Generate random training data
-train_df = pd.DataFrame(np.random.randn(n_train_samples, n_features), 
-                        columns=[f'feature_{i}' for i in range(n_features)])
-
-# Generate random labels (class indices, not one-hot)
-train_labels = np.random.randint(0, n_classes, n_train_samples)
-train_labels = train_labels.reshape(train_labels.shape[0], 1)
-
-# Create label_type column if needed
-train_df['label_type'] = np.random.randint(0, 4, n_train_samples)
-
-# Get only the features (drop label_type, we don't need it)
-train_df = train_df.drop(columns=['label_type'])
-
-# Create synthetic test data
-n_test_samples = 50
-test_df = pd.DataFrame(np.random.randn(n_test_samples, n_features), 
-                       columns=[f'feature_{i}' for i in range(n_features)])
-test_labels = np.random.randint(0, n_classes, n_test_samples)
-test_labels = test_labels.reshape(test_labels.shape[0], 1)
-
-# Create synthetic validation data
-n_val_samples = 50
-val_df = pd.DataFrame(np.random.randn(n_val_samples, n_features), 
-                      columns=[f'feature_{i}' for i in range(n_features)])
-val_labels = np.random.randint(0, n_classes, n_val_samples)
-val_labels = val_labels.reshape(val_labels.shape[0], 1)
-
-# Build vocabulary from labels (for one-hot encoder reference if needed)
-vocab = np.append(train_labels, val_labels)
-vocab = np.unique(vocab)
-vocab = vocab.reshape(vocab.shape[0], 1)
+val_df = val_df.drop(columns=('label'))
+vocab=np.append(train_labels,val_labels)
+#print(vocab.shape)
+vocab=np.unique(vocab)
+vocab=vocab.reshape(vocab.shape[0],1)
 print(vocab.shape)
-
-# One-hot encoder for reference (we won't use it for CrossEntropyLoss)
-oh = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
-hot_vocab = oh.fit_transform(vocab)
-
-print(f"Training data shape: {train_df.shape}")
-print(f"Validation data shape: {val_df.shape}")
-print(f"Test data shape: {test_df.shape}")
-
+oh = OneHotEncoder(sparse_output=False)
+hot_vocab=oh.fit_transform(vocab)
+train_df.shape,val_df.shape,test_df.shape
 train_df
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train_arr=train_df.to_numpy()
-# train_arr=torch.from_numpy(train_arr)
-# test_arr=test_df.to_numpy()
-# test_arr=torch.from_numpy(test_arr)
-# val_arr=val_df.to_numpy()
-# val_arr=torch.from_numpy(val_arr)
-# 
-# 
-# train_labels=oh.transform(train_labels)
-# val_labels =oh.transform(val_labels)
-# test_enc_labels=[]
-# for i in range(test_labels.shape[0]):
-#     try:
-#         test_enc_labels.append(oh.transform(test_labels[i]))
-#     except ValueError as e:
-#         z=np.zeros((1,6294))
-#         test_enc_labels.append(z)
-# test_labels=np.array(test_enc_labels)
-# test_labels=np.squeeze(test_labels)
-# test_labels.shape
-# 
-# train_labels=torch.tensor(train_labels)
-# train_labels=train_labels.to(torch.float32)
-# val_labels=torch.tensor(val_labels)
-# val_labels=val_labels.to(torch.float32)
-# test_labels=torch.tensor(test_labels)
-# test_labels=test_labels.to(torch.float32)
-
-# === AFTER (edited) ===
 train_arr=train_df.to_numpy()
 train_arr=torch.from_numpy(train_arr)
 test_arr=test_df.to_numpy()
@@ -152,23 +68,26 @@ test_arr=torch.from_numpy(test_arr)
 val_arr=val_df.to_numpy()
 val_arr=torch.from_numpy(val_arr)
 
-# Keep labels as class indices (1D), not one-hot encoded
-# CrossEntropyLoss expects class indices, not one-hot vectors
-# Just reshape to flatten the array
-train_labels = train_labels.reshape(-1)
-val_labels = val_labels.reshape(-1)
-test_labels = test_labels.reshape(-1)
+
+train_labels=oh.transform(train_labels)
+val_labels =oh.transform(val_labels)
+test_enc_labels=[]
+for i in range(test_labels.shape[0]):
+    try:
+        test_enc_labels.append(oh.transform(test_labels[i]))
+    except ValueError as e:
+        z=np.zeros((1,6294))
+        test_enc_labels.append(z)
+test_labels=np.array(test_enc_labels)
+test_labels=np.squeeze(test_labels)
+test_labels.shape
 
 train_labels=torch.tensor(train_labels)
-train_labels=train_labels.to(torch.long)
+train_labels=train_labels.to(torch.float32)
 val_labels=torch.tensor(val_labels)
-val_labels=val_labels.to(torch.long)
+val_labels=val_labels.to(torch.float32)
 test_labels=torch.tensor(test_labels)
-test_labels=test_labels.to(torch.long)
-
-print(f"train_labels shape: {train_labels.shape}")
-print(f"val_labels shape: {val_labels.shape}")
-print(f"test_labels shape: {test_labels.shape}")
+test_labels=test_labels.to(torch.float32)
 
 #%%
 # --- [CELL 3]: ---
@@ -250,44 +169,88 @@ print(model)
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-#1 epoch
+# === BEFORE (original) ===
+# #1 epoch
+# def run_model(model,dataloader, optimizer,train = True ):
+#     if train:
+#         model.train()
+#   
+#     pred = []
+#     True_labels = []
+#     loss = torch.nn.CrossEntropyLoss()
+#     #loss_aux = torch.nn.CrossEntropyLoss()
+#     total_loss = 0
+#     for (data, label) in dataloader: 
+#         
+#         data=data.to(device)
+#         label=label.to(device)
+#         #print("!!!!!!!!!!!!!!PLS!!!!!!!!!!!!!!!!")
+#         #print(next(model.parameters()).is_cuda)
+#         #print("!!!!!!!!!!!!!!!DATALOCATION!!!!!!!!!!!!!!!!!")
+#         #print(data.device)
+#         optimizer.zero_grad()
+#         output,out_aux = model(data)
+#         output=output.type(torch.FloatTensor).to(device)
+#         out_aux=out_aux.type(torch.FloatTensor).to(device)
+#         #print("output shape is,",output.shape)
+#         #print("label shape is,",label.shape)
+#    
+#         loss_ = loss(output, label).to(device)
+#         loss_aux=loss(out_aux,label).to(device)
+#         mod_loss = loss_+loss_aux 
+#         mod_loss.backward()
+#         total_loss+=mod_loss.item()
+#         
+#         optimizer.step()
+#         pred.append(output)
+#         True_labels.append(label)
+#         #print("total loss",total_loss)
+#         
+#     return pred ,True_labels, total_loss/len(dataloader)
+
+# === AFTER (edited) ===
 def run_model(model,dataloader, optimizer,train = True ):
     if train:
         model.train()
-  
+
     pred = []
     True_labels = []
     loss = torch.nn.CrossEntropyLoss()
-    #loss_aux = torch.nn.CrossEntropyLoss()
+
     total_loss = 0
-    for (data, label) in dataloader: 
-        
+    for (data, label) in dataloader:
+
         data=data.to(device)
         label=label.to(device)
-        #print("!!!!!!!!!!!!!!PLS!!!!!!!!!!!!!!!!")
-        #print(next(model.parameters()).is_cuda)
-        #print("!!!!!!!!!!!!!!!DATALOCATION!!!!!!!!!!!!!!!!!")
-        #print(data.device)
+
+
+
+
         optimizer.zero_grad()
         output,out_aux = model(data)
         output=output.type(torch.FloatTensor).to(device)
         out_aux=out_aux.type(torch.FloatTensor).to(device)
-        #print("output shape is,",output.shape)
-        #print("label shape is,",label.shape)
-   
-        loss_ = loss(output, label).to(device)
-        loss_aux=loss(out_aux,label).to(device)
-        mod_loss = loss_+loss_aux 
+
+
+
+        # Convert one-hot encoded labels to class indices for CrossEntropyLoss
+        label_indices = torch.argmax(label, dim=1)
+        
+        loss_ = loss(output, label_indices).to(device)
+        
+        # For aux loss, we need to match dimensions - aux output is 6294, also use argmax
+        loss_aux=loss(out_aux,label_indices).to(device)
+        mod_loss = loss_+loss_aux
         mod_loss.backward()
         total_loss+=mod_loss.item()
-        
+
         optimizer.step()
         pred.append(output)
         True_labels.append(label)
-        #print("total loss",total_loss)
-        
+
+
     return pred ,True_labels, total_loss/len(dataloader)
 
 #%%
@@ -317,4 +280,3 @@ for e in range(epoch):
     print("training accuracy is ",correct/len(pred)*1.0)
   # calculate acc, f1 score, recall ......
     print(loss)
-    

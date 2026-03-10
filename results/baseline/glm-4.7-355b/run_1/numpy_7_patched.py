@@ -393,7 +393,7 @@ def to_gray(image_name):
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 import numpy as np
 import time
 
@@ -533,7 +533,7 @@ class Network:
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 dataset = load_cifar()
 
 # Access the data and labels
@@ -555,7 +555,7 @@ print("Test labels shape:", y_test.shape)
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # from keras.regularizers import l2
 # from keras.optimizers import SGD
@@ -741,11 +741,9 @@ from keras.utils import to_categorical
 from keras.callbacks import Callback
 from keras import Model
 from keras.models import load_model
-from keras.datasets import cifar10
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 class History(Callback):
@@ -769,77 +767,6 @@ class History(Callback):
         self.accuracy.append(logs.get('accuracy'))
         self.val_loss.append(scores[0])
         self.val_accuracy.append(scores[1])
-
-
-def load_cifar():
-    (X_train, y_train), (X_test, y_test) = cifar10.load_data()
-
-    indices = np.random.permutation(X_train.shape[0])
-    training_idx, validation_idx = indices[:49000], indices[49000:]
-    X_train, X_val = X_train[training_idx, :], X_train[validation_idx, :]
-    y_train, y_val = y_train[training_idx], y_train[validation_idx]
-
-    return {
-        'train_images': X_train,
-        'train_labels': y_train,
-        'validation_images': X_val,
-        'validation_labels': y_val,
-        'test_images': X_test,
-        'test_labels': y_test
-    }
-
-
-def minmax_normalize(x):
-    min_val = np.min(x)
-    max_val = np.max(x)
-    x = (x - min_val) / (max_val - min_val)
-    return x
-
-
-def preprocess(dataset):
-    dataset['train_images'] = np.array([minmax_normalize(x) for x in dataset['train_images']])
-    dataset['validation_images'] = np.array([minmax_normalize(x) for x in dataset['validation_images']])
-    dataset['test_images'] = np.array([minmax_normalize(x) for x in dataset['test_images']])
-    return dataset
-
-
-def plot_accuracy_curve(accuracy_history, val_accuracy_history):
-    plt.plot(accuracy_history, 'b', linewidth=3.0, label='Training accuracy')
-    plt.plot(val_accuracy_history, 'r', linewidth=3.0, label='Validation accuracy')
-    plt.xlabel('Iteration', fontsize=16)
-    plt.ylabel('Accuracy rate', fontsize=16)
-    plt.legend()
-    plt.title('Training Accuracy', fontsize=16)
-    plt.savefig('training_accuracy.png')
-    plt.show()
-
-
-def plot_learning_curve(loss_history):
-    plt.plot(loss_history, 'b', linewidth=3.0, label='Cross entropy')
-    plt.xlabel('Iteration', fontsize=16)
-    plt.ylabel('Loss', fontsize=16)
-    plt.legend()
-    plt.title('Learning Curve', fontsize=16)
-    plt.savefig('learning_curve.png')
-    plt.show()
-
-
-def plot_sample(image, true_label, predicted_label):
-    plt.imshow(image)
-    if true_label and predicted_label is not None:
-        if type(true_label) == 'int':
-            plt.title('True label: %d, Predicted Label: %d' % (true_label, predicted_label))
-        else:
-            plt.title('True label: %s, Predicted Label: %s' % (true_label, predicted_label))
-    plt.show()
-
-
-def plot_histogram(layer_name, layer_weights):
-    plt.hist(layer_weights)
-    plt.title('Histogram of ' + str(layer_name))
-    plt.xlabel('Value')
-    plt.ylabel('Number')
-    plt.show()
 
 
 def train(model, train_images, train_labels, validation_images, validation_labels, batch_size, num_epochs, learning_rate, verbose):
@@ -866,7 +793,7 @@ def evaluate(model):
     print('Test accuracy:', scores[1])
 
 
-def predict(model, image_idx):
+def predict(model, image_idx, test_images, class_names):
     layer_names = ['conv1', 'conv2', 'conv3', 'conv4']
     num_features = 4
 
@@ -876,7 +803,24 @@ def predict(model, image_idx):
     image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
     pred = np.argmax(model.predict(image))
 
-    plot_sample(dataset['test_images'][image_idx], classes[dataset['test_labels'][image_idx]], classes[pred])
+    true_label_idx = dataset['test_labels'][image_idx].item()
+    plot_sample(dataset['test_images'][image_idx], class_names[true_label_idx], class_names[pred])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def plot_weights(model):
     for layer in model.layers:
@@ -887,7 +831,7 @@ def plot_weights(model):
 
 if __name__ == '__main__':
 
-    classes = [
+    class_names = [
         "airplane",
         "automobile",
         "bird",
@@ -906,7 +850,7 @@ if __name__ == '__main__':
     lam = 0.01
     verbose = 1
 
-    print('\n--- Loading cifar dataset ---')
+    print('\n--- Loading mnist dataset ---')
     dataset = load_cifar()
 
     print('\n--- Processing the dataset ---')
@@ -915,9 +859,11 @@ if __name__ == '__main__':
     train_images = np.moveaxis(dataset['train_images'], 1, 3)
     validation_images = np.moveaxis(dataset['validation_images'], 1, 3)
     test_images = np.moveaxis(dataset['test_images'], 1, 3)
-    train_labels = to_categorical(dataset['train_labels'])
-    validation_labels = to_categorical(dataset['validation_labels'])
-    test_labels = to_categorical(dataset['test_labels'])
+    train_labels = to_categorical(dataset['train_labels'].flatten())
+    validation_labels = to_categorical(dataset['validation_labels'].flatten())
+    test_labels = to_categorical(dataset['test_labels'].flatten())
+
+    print(train_images.shape, train_labels.shape, validation_images.shape, validation_labels.shape, test_images.shape, test_labels.shape)
 
     if os.path.isfile('model.h5'):
         print('\n--- Loading model ---')
@@ -934,10 +880,6 @@ if __name__ == '__main__':
         model.add(Flatten())
         model.add(Dense(256, name='fullyconnected', activation='relu', kernel_initializer='he_normal', kernel_regularizer=l2(lam)))
         model.add(Dense(10, name='dense', activation='softmax'))
-
-        train_images = np.moveaxis(train_images, -1, 1)
-        validation_images = np.moveaxis(validation_images, -1, 1)
-        test_images = np.moveaxis(test_images, -1, 1)
 
 
     train(
@@ -957,7 +899,7 @@ if __name__ == '__main__':
 
     print('\n--- Predicting image from test set ---')
     image_idx = 40
-    predict(model, image_idx)
+    predict(model, image_idx, test_images, class_names)
 
     print('\n--- Plotting weight distributions ---')
     plot_weights(model)

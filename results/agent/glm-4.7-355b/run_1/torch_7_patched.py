@@ -186,7 +186,7 @@ class Inception(nn.Module):
         branch3 = self.branch3(x)
         branch4 = self.branch4(x)
 
-        outputs = torch.cat([branch1, branch2, branch3, branch4], dim=1)
+        outputs = torch.cat([branch1, branch2, branch3, branch4], 1)
         return outputs
 
 #%%
@@ -288,7 +288,6 @@ preprocess = transforms.Compose([
 torch_img = Image.open("dog.jpg")
 torch_img = preprocess(dog_image)
 torch_img = torch.unsqueeze(torch_img, 0)
-
 
 #%%
 # --- [CELL 9]: ---

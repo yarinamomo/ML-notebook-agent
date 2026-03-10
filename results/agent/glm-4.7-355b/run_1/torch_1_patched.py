@@ -111,7 +111,7 @@ class SiameseDataset(Dataset):
     def __init__(self,training_csv,training_dir,transform=None):
 
         self.train_df=pd.read_csv(training_csv)
-        self.train_df = self.train_df.drop(columns=['Unnamed: 0'], errors='ignore')
+        self.train_df = self.train_df.drop(columns=['Unnamed: 0'])
         self.train_df.columns =["image1","image2","label"]
         self.train_dir = training_dir
         self.transform = transform
@@ -123,8 +123,6 @@ class SiameseDataset(Dataset):
 
         img0 = Image.open(image1_path)
         img1 = Image.open(image2_path)
-        img0 = img0.convert("L")
-        img1 = img1.convert("L")
 
         if self.transform is not None:
             img0 = self.transform(img0)
@@ -227,7 +225,7 @@ class SiameseNetwork(nn.Module):
         self.fc1 = nn.Sequential(
             nn.Linear(27648, 500),
             nn.ReLU(inplace=True),
-            nn.Dropout2d(p=0.5),
+            nn.Dropout(p=0.5),
 
             nn.Linear(500, 128),
             nn.ReLU(inplace=True),
@@ -273,7 +271,6 @@ class ContrastiveLoss(torch.nn.Module):
         loss = y * dist_sq + (1 - y) * torch.pow(dist, 2)
         loss = torch.sum(loss) / 2.0 / x0.size()[0]
         return loss
-
 
 #%%
 # --- [CELL 10]: ---

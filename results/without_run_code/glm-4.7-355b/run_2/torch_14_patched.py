@@ -57,58 +57,6 @@ from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.models.detection.rpn import AnchorGenerator
 from torchvision.transforms import transforms
 from torch.utils.data import DataLoader
-import warnings
-warnings.filterwarnings('ignore')
-
-
-class VOCDetectionTargetTransform:
-    """Transform VOC detection targets to format expected by Faster R-CNN."""
-    def __call__(self, target):
-        # VOC format: target is a dict with 'annotation' containing 'object' list
-        # Each object has 'name', 'bndbox' with 'xmin', 'ymin', 'xmax', 'ymax'
-        annotation = target['annotation']
-        objects = annotation['object']
-        
-        # Build the target dictionary for Faster R-CNN
-        boxes = []
-        labels = []
-        
-        # VOC labels
-        VOC_CLASSES = [
-            'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 
-            'bus', 'car', 'cat', 'chair', 'cow', 
-            'diningtable', 'dog', 'horse', 'motorbike', 'person', 
-            'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'
-        ]
-        
-        if not isinstance(objects, list):
-            objects = [objects]
-        
-        for obj in objects:
-            class_name = obj['name']
-            if class_name in VOC_CLASSES:
-                class_idx = VOC_CLASSES.index(class_name) + 1  # 0 is background
-                bndbox = obj['bndbox']
-                xmin = float(bndbox['xmin'])
-                ymin = float(bndbox['ymin'])
-                xmax = float(bndbox['xmax'])
-                ymax = float(bndbox['ymax'])
-                boxes.append([xmin, ymin, xmax, ymax])
-                labels.append(class_idx)
-        
-        if len(boxes) == 0:
-            # Handle empty annotations
-            boxes = torch.zeros((0, 4), dtype=torch.float32)
-            labels = torch.zeros((0,), dtype=torch.int64)
-        else:
-            boxes = torch.as_tensor(boxes, dtype=torch.float32)
-            labels = torch.as_tensor(labels, dtype=torch.int64)
-        
-        target_dict = {
-            'boxes': boxes,
-            'labels': labels
-        }
-        return target_dict
 
 
 transform = transforms.Compose([
@@ -117,20 +65,15 @@ transform = transforms.Compose([
 ])
 
 
-def collate_fn(batch):
-    """Custom collate function for object detection datasets."""
-    return tuple(zip(*batch))
+trainset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='train', download=False, transform=transform)
+testset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='val', download=False, transform=transform)
 
 
-trainset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='train', download=True, transform=transform, target_transform=VOCDetectionTargetTransform())
-testset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='val', download=True, transform=transform, target_transform=VOCDetectionTargetTransform())
+trainloader = DataLoader(trainset, batch_size=1, shuffle=True, num_workers=0)
+testloader = DataLoader(testset, batch_size=1, shuffle=False, num_workers=0)
 
 
-trainloader = DataLoader(trainset, batch_size=4, shuffle=True, num_workers=0, collate_fn=collate_fn)
-testloader = DataLoader(testset, batch_size=4, shuffle=False, num_workers=0, collate_fn=collate_fn)
-
-
-model = fasterrcnn_resnet50_fpn(pretrained=True)
+model = fasterrcnn_resnet50_fpn(weights='DEFAULT')
 
 
 num_classes = 21
@@ -141,12 +84,62 @@ model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCN
 optimizer = torch.optim.SGD(model.parameters(), lr=0.005, momentum=0.9, weight_decay=0.0005)
 
 
-# Just verify one batch works
-print("Testing one batch...")
-data = next(iter(trainloader))
-inputs, labels = data
-outputs = model(inputs, labels)
-loss = sum(loss for loss in outputs.values())
-print('Initial batch loss: %.3f' % loss.item())
+# VOC class names
+voc_classes = [
+    'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 
+    'bus', 'car', 'cat', 'chair', 'cow', 
+    'diningtable', 'dog', 'horse', 'motorbike', 'person', 
+    'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'
+]
 
-print('Setup verified successfully - code runs without crashes!')
+model.train()
+num_epochs = 1
+max_batches = 10  # Limit to 10 batches for demonstration
+for epoch in range(num_epochs):
+    for i, data in enumerate(trainloader, 0):
+        if i >= max_batches:
+            break
+            
+        inputs, labels = data
+        # Unwrap since DataLoader wraps everything in a list
+        inputs = inputs[0]
+        annotation = labels['annotation']
+        
+        # Extract boxes and labels from VOC format
+        objects = annotation['object']
+        if isinstance(objects, dict):
+            objects = [objects]
+        
+        boxes = []
+        class_labels = []
+        for obj in objects:
+            bbox = obj['bndbox']
+            # bbox values are already in format ['value']
+            xmin = float(bbox['xmin'][0]) if isinstance(bbox['xmin'], list) else float(bbox['xmin'])
+            ymin = float(bbox['ymin'][0]) if isinstance(bbox['ymin'], list) else float(bbox['ymin'])
+            xmax = float(bbox['xmax'][0]) if isinstance(bbox['xmax'], list) else float(bbox['xmax'])
+            ymax = float(bbox['ymax'][0]) if isinstance(bbox['ymax'], list) else float(bbox['ymax'])
+            boxes.append([xmin, ymin, xmax, ymax])
+            
+            # Get class label from name
+            name = obj['name'][0] if isinstance(obj['name'], list) else obj['name']
+            class_idx = voc_classes.index(name) + 1 if name in voc_classes else 0
+            class_labels.append(class_idx)
+        
+        if len(boxes) == 0:
+            # Skip images with no objects
+            continue
+            
+        target = {}
+        target['boxes'] = torch.tensor(boxes, dtype=torch.float32)
+        target['labels'] = torch.tensor(class_labels, dtype=torch.int64)
+        
+        optimizer.zero_grad()
+        loss_dict = model([inputs], [target])
+        losses = sum(loss for loss in loss_dict.values())
+        losses.backward()
+        optimizer.step()
+
+        print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, losses.item()))
+
+print('Finished Training')

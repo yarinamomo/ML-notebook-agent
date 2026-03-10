@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 
@@ -23,24 +23,16 @@ print(os.listdir("data"))
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# data = pd.read_csv('data/fer2013.csv')
-# #check data shape
-# data.shape
-
-# === AFTER (edited) ===
-data = pd.read_csv('data/fer2013.csv', header=0)
-
-print(data.shape)
-print(data.columns.tolist())
-print(data.head())
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+data = pd.read_csv('data/fer2013.csv')
+#check data shape
+data.shape
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 import pandas as pd
 
 # créer une nouvelle colonne nommée "disgust_images"
@@ -56,7 +48,6 @@ data.drop(data[data['emotion'] == 1].index, inplace=True)
 # afficher la nouvelle forme du DataFrame
 print(data.shape)
 
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
@@ -70,26 +61,52 @@ emotion_counts
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# def row2image(row):
+#     pixels, emotion = row['pixels'], emotion_map[row['emotion']]#extrait les pixels et l'émotion de la ligne de données. Les pixels sont stockés en tant que chaîne de caractères contenant tous les pixels séparés par des espaces.
+#     img = np.array(pixels.split(), dtype=np.uint8)
+#     img = img.reshape((48, 48))
+#     image = np.zeros((48, 48, 3), dtype=np.uint8)
+#     image[:, :, 0] = img
+#     image[:, :, 1] = img
+#     image[:, :, 2] = img
+#     # fix to reproduce the crash: tensor shape mismatch (this line would also crash)
+#     return image, emotion  # return np.array([image, emotion])
+# 
+# plt.figure(0, figsize=(16,10))
+# for i in range(1,8):
+#     face = data[data['emotion'] == i-1].iloc[0]
+#     # fix 1 (corresponding fixes)
+#     img, label = row2image(face) # img = row2image(face)
+#     plt.subplot(2,4,i)
+#     plt.imshow(img[0])
+#     plt.title(label) # plt.title(img[1])
+# 
+# plt.show()
+
+# === AFTER (edited) ===
 def row2image(row):
-    pixels, emotion = row['pixels'], emotion_map[row['emotion']]#extrait les pixels et l'émotion de la ligne de données. Les pixels sont stockés en tant que chaîne de caractères contenant tous les pixels séparés par des espaces.
+    pixels, emotion = row['pixels'], emotion_map[row['emotion']]
     img = np.array(pixels.split(), dtype=np.uint8)
     img = img.reshape((48, 48))
     image = np.zeros((48, 48, 3), dtype=np.uint8)
     image[:, :, 0] = img
     image[:, :, 1] = img
     image[:, :, 2] = img
-    # fix to reproduce the crash: tensor shape mismatch (this line would also crash)
-    return image, emotion  # return np.array([image, emotion])
+
+    return image, emotion
 
 plt.figure(0, figsize=(16,10))
 for i in range(1,8):
+    if i-1 == 1:  # Skip disgust (emotion 1 was removed)
+        continue
     face = data[data['emotion'] == i-1].iloc[0]
-    # fix 1 (corresponding fixes)
-    img, label = row2image(face) # img = row2image(face)
+
+    img, label = row2image(face)
     plt.subplot(2,4,i)
     plt.imshow(img[0])
-    plt.title(label) # plt.title(img[1])
+    plt.title(label)
 
-plt.show()  
+plt.show()

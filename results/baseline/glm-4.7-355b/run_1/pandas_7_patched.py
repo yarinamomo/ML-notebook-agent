@@ -21,36 +21,29 @@ game_df.head(5)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# import pandas as pd
-# 
-# # Fill missing 'genres' values with the mode (most frequent) genres
-# game_df['genres'] = game_df['genres'].fillna(game_df['genres'].mode()[0])
-# 
-# # Verify the missing values have been filled
-# game_df['genres'].isnull().sum()
-
-# === AFTER (edited) ===
 import pandas as pd
 
+# Fill missing 'genres' values with the mode (most frequent) genres
+game_df['genres'] = game_df['genres'].fillna(game_df['genres'].mode()[0])
 
-if 'genres' in game_df.columns:
-    game_df['genres'] = game_df['genres'].fillna(game_df['genres'].mode()[0])
-    print(f"Null values in 'genres' after fill: {game_df['genres'].isnull().sum()}")
-else:
-    print("Column 'genres' not found in dataframe. Available columns:", list(game_df.columns))
+# Verify the missing values have been filled
+game_df['genres'].isnull().sum()
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 game_df = game_df.drop(['website', 'tba', 'publishers', 'platforms', 'slug','updated'], axis=1)
 game_df.head(5)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-game_df['released'] = game_df['released'].apply(lambda x: str(x).split('-')[0]).astype('int')
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# === BEFORE (original) ===
+# game_df['released'] = game_df['released'].apply(lambda x: str(x).split('-')[0]).astype('int')
+
+# === AFTER (edited) ===
+game_df['released'] = pd.to_numeric(game_df['released'].apply(lambda x: str(x).split('-')[0]), errors='coerce')

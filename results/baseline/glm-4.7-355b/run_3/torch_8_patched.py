@@ -85,42 +85,22 @@ for i in tp_nonwatermarked:
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# === BEFORE (original) ===
-# # dimension to resize to 
-# width = 196 # only certain dimensions work due to UpSampling (196x196 works, 148x148 works)
-# height = 196
-# dim = (width, height) # set the dimensions
-# def createPixelArr(files):
-#     data = []
-#     for image in files:
-#         try: # take each image and use imread to get the pixel values in a matrix 
-#             img_arr = cv2.imread(image, cv2.IMREAD_COLOR)
-#             img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
-#             resized_arr = cv2.resize(img_arr, (width, height)) # rescale the image so every image is of the same dimension
-#             data.append(resized_arr) # add the matrix of pixel values 
-#         except Exception as e:
-#             print(e) # some error thrown in imread or resize
-#     return np.array(data)
-
-# === AFTER (edited) ===
-width = 196
+# dimension to resize to 
+width = 196 # only certain dimensions work due to UpSampling (196x196 works, 148x148 works)
 height = 196
-dim = (width, height)
+dim = (width, height) # set the dimensions
 def createPixelArr(files):
     data = []
     for image in files:
-        try:
+        try: # take each image and use imread to get the pixel values in a matrix 
             img_arr = cv2.imread(image, cv2.IMREAD_COLOR)
-            if img_arr is not None:
-                img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
-                resized_arr = cv2.resize(img_arr, (width, height))
-                data.append(resized_arr)
-            else:
-                print(f"Failed to load image: {image}")
+            img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
+            resized_arr = cv2.resize(img_arr, (width, height)) # rescale the image so every image is of the same dimension
+            data.append(resized_arr) # add the matrix of pixel values 
         except Exception as e:
-            print(e)
+            print(e) # some error thrown in imread or resize
     return np.array(data)
 
 #%%
@@ -132,14 +112,23 @@ train_nwms_pixVals = createPixelArr(out_array_nwm[:90]) # 1000
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
-X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1) 
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# === BEFORE (original) ===
+# X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1)
+
+# === AFTER (edited) ===
+# Combine watermarked and non-watermarked data
+X_all = np.concatenate([train_wms_pixVals, train_nwms_pixVals], axis=0)
+y_all = np.concatenate([np.ones(len(train_wms_pixVals)), np.zeros(len(train_nwms_pixVals))], axis=0)
+
+# Split into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X_all, y_all, train_size=0.8, random_state=1)
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -164,7 +153,7 @@ from timm.models.registry import register_model
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 model_ft = timm.create_model(
     'efficientnet_b3a', pretrained=True, num_classes=2
 )
@@ -180,7 +169,7 @@ model_ft.classifier = nn.Sequential(
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 device = torch.device('cpu') # 'cuda:0'
 
 def train_model(model, train_loader, test_loader, criterion, optimizer, num_epochs=80):
@@ -264,18 +253,17 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
     model.load_state_dict(best_model_wts)
     return model, train_acc_history, val_acc_history
 
-
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = optim.AdamW(params=model_ft.parameters(), lr=0.2e-5)
 
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 class MyDataset(Dataset):
     def __init__(self, X, y):
         self.X = X
@@ -290,21 +278,21 @@ class MyDataset(Dataset):
 #%%
 # --- [CELL 15]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
 train_dataset = MyDataset(X_train, y_train)
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 
 #%%
 # --- [CELL 16]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
 test_dataset = MyDataset(X_test, y_test)
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
 #%%
 # --- [CELL 17]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 18}
 import warnings
 warnings.filterwarnings("ignore")
 

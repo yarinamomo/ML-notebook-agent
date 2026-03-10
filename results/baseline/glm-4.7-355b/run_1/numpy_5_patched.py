@@ -18,12 +18,10 @@ import os
 import glob
 from tensorflow.keras.callbacks import LambdaCallback
 
-
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 def Load_Pprepr_Data():
     Data = tf.keras.datasets.cifar10.load_data()
     (train_images , train_labels) , (test_images , test_labels) = Data
@@ -88,7 +86,7 @@ def scale_image_to_uint8(image):
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 class AC_GAN:
 
         
@@ -402,21 +400,10 @@ class AC_GAN:
 
         return np.array(generated)
 
-        
-        
-        
-        
-        
-        
-    
-        
-    
-
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 train_images ,train_labels ,test_images ,test_labels = Load_Pprepr_Data()
 train_img_f32 = scale_image_to_float(train_images)
 train_dataset = create_train_dataset(train_img_f32, train_labels, 25)
@@ -458,13 +445,11 @@ if(generator_files_exist and discriminator_files_exist):
 else:
     print('no wieght found')
     images = acgn.train(train_dataset_small,100,10,20,1,25) # for fast reproducing and fixing purposes
-    
-
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # === BEFORE (original) ===
 # np.savetxt('images.txt', images, delimiter=',', fmt='%d')
 

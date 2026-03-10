@@ -28,37 +28,9 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# jsdf = pd.read_json('data/train_annotations')
-# jsdf.head()
-
-# === AFTER (edited) ===
-import os
-import json
-
-# Extract image IDs from the filenames
-image_ids = []
-for dirname, _, filenames in os.walk('data/train/train'):
-    for filename in filenames:
-        if filename.endswith('.jpg'):
-            # Extract the numeric ID from filename like "image_id_311.jpg"
-            image_id = filename.replace('image_id_', '').replace('.jpg', '')
-            image_ids.append(int(image_id))
-
-# Create dummy annotation data with 'image_id' and 'category_id' columns
-# Assign random categories (1 or 2) since we don't have actual labels
-import numpy as np
-import pandas as pd
-np.random.seed(42)
-
-# Create dummy annotations DataFrame
-jsdf = pd.DataFrame({
-    'image_id': sorted(image_ids),
-    'category_id': np.random.choice([1, 2], size=len(image_ids))
-})
-
+jsdf = pd.read_json('data/train_annotations')
 jsdf.head()
 
 #%%
@@ -117,67 +89,52 @@ transform = transforms.Compose([
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 26}
-# === BEFORE (original) ===
-# data_path = 'data/train/train'
-# images = []
-# targets = []
-# 
-# for i,annotation in train_data.iterrows():
-#     image_name = annotation['filename']
-#     target = annotation['label']
-#     image_path = os.path.join(data_path, image_name)
-#     image = Image.open(image_path).convert("RGB")
-#     image = transform(image)
-#     images.append(image)
-#     targets.append(torch.tensor(target))
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 data_path = 'data/train/train'
 images = []
 targets = []
 
-# Since the image files are Git LFS pointers (placeholder files), create dummy random images
-for i, annotation in train_data.iterrows():
+for i,annotation in train_data.iterrows():
+    image_name = annotation['filename']
     target = annotation['label']
-    # Create a dummy random image tensor with shape (3, 512, 512) matching the transform output
-    dummy_image = torch.randn(3, 512, 512)
-    images.append(dummy_image)
-    # Ensure target has shape (1,) to match model output (batch_size, 1)
-    targets.append(torch.tensor([[target]], dtype=torch.float32))
+    image_path = os.path.join(data_path, image_name)
+    image = Image.open(image_path).convert("RGB")
+    image = transform(image)
+    images.append(image)
+    targets.append(torch.tensor(target))
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 28}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 image_tensor = torch.stack(images)
 target_tensor = torch.stack(targets)
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 dataset = torch.utils.data.TensorDataset(image_tensor, target_tensor)
 
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 from torch.utils.data import random_split
 train_dataset, test_dataset = random_split(dataset, [400, 100])
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 train_loader = DataLoader(train_dataset,batch_size=32,shuffle=True)
 test_loader = DataLoader(test_dataset,batch_size=32,shuffle=True)
 
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 class CNN(nn.Module):
     def __init__(self):
         super().__init__()
@@ -218,7 +175,7 @@ optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 def test_model(model):
     model.eval()
     correct = 0
@@ -241,18 +198,37 @@ test_model(model)
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 21}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# === BEFORE (original) ===
+# n_epoch = 1
+# for epoch in range(n_epoch):
+#     model.train()  
+# 
+#     for batch_idx, (sekil, netice) in enumerate(train_loader):
+#         #sekil, netice = sekil.to('cuda'), netice.to('cuda')
+#         optimizer.zero_grad()
+# 
+#         outputs = model(sekil)
+#         loss = loss_fn(outputs, netice)
+# 
+#         loss.backward()
+#         optimizer.step()
+# 
+#         if (batch_idx + 1) % 4 == 0:
+#             print(f"Epoch [{epoch+1}/{n_epoch}], Step [{batch_idx+1}/{len(train_loader)}], Loss: {loss.item()}")
+
+# === AFTER (edited) ===
 n_epoch = 1
 for epoch in range(n_epoch):
-    model.train()  
+    model.train()
 
     for batch_idx, (sekil, netice) in enumerate(train_loader):
-        #sekil, netice = sekil.to('cuda'), netice.to('cuda')
+
         optimizer.zero_grad()
 
         outputs = model(sekil)
-        loss = loss_fn(outputs, netice)
+        loss = loss_fn(outputs, netice.unsqueeze(1).float())
 
         loss.backward()
         optimizer.step()

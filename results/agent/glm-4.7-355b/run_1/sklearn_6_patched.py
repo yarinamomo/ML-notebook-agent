@@ -38,13 +38,9 @@ test_ds = pd.read_csv("data/test.csv")
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
-
-# === AFTER (edited) ===
-train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True, errors='ignore')
+train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 #%%
 # --- [CELL 4]: ---
@@ -67,29 +63,16 @@ for column in string_columns:
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# X = train_ds.drop(['SalePrice'], axis = 1)
-# y = train_ds['SalePrice']
-
-# === AFTER (edited) ===
-X = train_ds.drop(['SalePrice'], axis = 1, errors='ignore')
-y = train_ds.get('SalePrice')
+X = train_ds.drop(['SalePrice'], axis = 1)
+y = train_ds['SalePrice']
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# === BEFORE (original) ===
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 42)
-
-# === AFTER (edited) ===
-if y is None:
-    print("Warning: y is None, skipping train_test_split")
-    X_train, X_test, y_train, y_test = None, None, None, None
-else:
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 42)
 
 #%%
 # --- [CELL 8]: ---
@@ -100,61 +83,50 @@ FReg = RandomForestRegressor(n_estimators = 100, random_state = 42)
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-# === BEFORE (original) ===
-# FReg.fit(X_train, y_train)
-
-# === AFTER (edited) ===
-if y_train is not None:
-    FReg.fit(X_train, y_train)
-else:
-    print("Warning: Skipping model training due to None data")
+FReg.fit(X_train, y_train)
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
-# === BEFORE (original) ===
-# y_pred = FReg.predict(X_test)
-# mse = mean_squared_error(y_test, y_pred)
-# r2 = r2_score(y_test, y_pred)
-# print(f'R2 Score: {r2}')
-# print(f'MSE: {mse}')
-
-# === AFTER (edited) ===
-try:
-    y_pred = FReg.predict(X_test)
-    mse = mean_squared_error(y_test, y_pred)
-    r2 = r2_score(y_test, y_pred)
-    print(f'R2 Score: {r2}')
-    print(f'MSE: {mse}')
-except Exception as e:
-    print(f"Warning: Cannot make predictions due to {type(e).__name__}: {e}")
+y_pred = FReg.predict(X_test)
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+print(f'R2 Score: {r2}')
+print(f'MSE: {mse}')
 
 #%%
 # --- [CELL 11]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
-# === BEFORE (original) ===
-# test_ds_ids = test_ds['Id'] # fix for crash isolation purpose
-# test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
-
-# === AFTER (edited) ===
-if 'Id' in test_ds.columns:
-    test_ds_ids = test_ds['Id']
-else:
-    test_ds_ids = []
-    print("Warning: 'Id' column not found in test_ds")
-test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True, errors='ignore')
+test_ds_ids = test_ds['Id'] # fix for crash isolation purpose
+test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
-for column in test_ds:
-    null_count = test_ds[column].isnull().sum()
-    if null_count > 1:
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# for column in test_ds:
+#     null_count = test_ds[column].isnull().sum()
+#     if null_count > 1:
+#         print(f"Dropping column {column} with {null_count} missing values.")
+#         test_ds.drop(column, axis = 1, inplace = True)
+
+# === AFTER (edited) ===
+# Drop the same columns from test_ds that were dropped from train_ds
+# These are the columns with >1 null values that were dropped in cell 4
+cols_to_drop = [
+    'LotFrontage', 'Alley', 'MasVnrType', 'MasVnrArea', 'BsmtQual', 'BsmtCond',
+    'BsmtExposure', 'BsmtFinType1', 'BsmtFinType2', 'FireplaceQu', 'GarageType',
+    'GarageFinish', 'GarageQual', 'GarageCond', 'PoolQC', 'Fence', 'MiscFeature'
+]
+
+for column in cols_to_drop:
+    if column in test_ds.columns:
+        null_count = test_ds[column].isnull().sum()
         print(f"Dropping column {column} with {null_count} missing values.")
         test_ds.drop(column, axis = 1, inplace = True)
 
@@ -170,7 +142,7 @@ for column in string_columns:
 #%%
 # --- [CELL 14]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # predictions = FReg.predict(test_ds)
 # submissions_df = pd.DataFrame({
@@ -181,11 +153,8 @@ for column in string_columns:
 # # submissions_df.to_csv('submission_csv', index = False)
 
 # === AFTER (edited) ===
-try:
-    predictions = FReg.predict(test_ds)
-    submissions_df = pd.DataFrame({
-        "ID" : test_ds_ids,
-        "Predictions" : predictions
-    })
-except Exception as e:
-    print(f"Warning: Cannot make predictions due to {type(e).__name__}: {e}")
+predictions = FReg.predict(test_ds)
+submissions_df = pd.DataFrame({
+    "ID" : test_ds_ids,
+    "Predictions" : predictions
+})

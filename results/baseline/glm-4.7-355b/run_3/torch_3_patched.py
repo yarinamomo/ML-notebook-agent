@@ -44,7 +44,6 @@ from torch import nn
 #             loss_func = nn.NLLLoss()
 #             loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))
 #         return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states= None,attentions =None)
-#             
 
 # === AFTER (edited) ===
 class CustomModelMultichoice(nn.Module):
@@ -61,8 +60,8 @@ class CustomModelMultichoice(nn.Module):
         logits = self.sigmoid(outputs.logits)
         loss = None
         if labels is not None:
-            loss_func = nn.BCELoss()
-            loss = loss_func(logits, labels.float())
+            loss_func = nn.NLLLoss()
+            loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))
         return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states = None,attentions =None)
 
 #%%
@@ -82,7 +81,6 @@ candidate1 = "Việt Nam"
 candidate2 = "Mỹ"
 candidate3 = 'Việt Nam'
 
-
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
@@ -91,7 +89,6 @@ from transformers import AutoTokenizer
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_CHOICE)
 inputs = tokenizer([[prompt, candidate1], [prompt, candidate2],[prompt, candidate3]], return_tensors="pt", padding=True)
-
 
 #%%
 # --- [CELL 8]: ---
@@ -124,5 +121,5 @@ target
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 out = CustomModel(**inputs,labels = target)

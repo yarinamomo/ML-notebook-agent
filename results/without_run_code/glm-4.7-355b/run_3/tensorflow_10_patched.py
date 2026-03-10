@@ -6,33 +6,11 @@ from transformers import TFAutoModel
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# import pandas as pd
-# import json
-# df_psytar = pd.read_csv("data/PsyTAR.csv")
-# df_psytar.head(5)
-
-# === AFTER (edited) ===
 import pandas as pd
 import json
-
-# Create a sample DataFrame with the expected structure for demonstration
-data = {
-    'sentences': [
-        'This medication works well for me',
-        'I experienced severe side effects after taking this drug',
-        'The treatment was effective and had no adverse reactions',
-        'Patient reported nausea and dizziness after medication',
-        'Good response with minimal side effects',
-        'Adverse drug reaction include skin rash and itching',
-        'No adverse events observed during treatment',
-        'Headache and fatigue experienced after dosage'
-    ],
-    'ADR': [0, 1, 0, 1, 0, 1, 0, 1]
-}
-df_psytar = pd.DataFrame(data)
+df_psytar = pd.read_csv("data/PsyTAR.csv")
 df_psytar.head(5)
 
 #%%
@@ -101,23 +79,10 @@ for i in range(len(df[:1000])):
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-# === BEFORE (original) ===
-# train_data = df["sentences"]
-# train_labels = df['ADR']
-
-# === AFTER (edited) ===
-# Prepare training data from processed_data - extract input_ids, attention_mask, and labels
-new_df = pd.DataFrame(processed_data)
-
-# Extract the features needed for BERT model
-train_data = {
-    'input_ids': [list(x) for x in new_df['input_ids']],
-    'attention_mask': [list(x) for x in new_df['attention_mask']],
-    'token_type_ids': [list(x) for x in new_df['token_type_ids']]
-}
-train_labels = new_df['label'].values
+train_data = df["sentences"]
+train_labels = df['ADR']
 
 #%%
 # --- [CELL 10]: ---
@@ -183,18 +148,55 @@ class HuggingFaceLayer(tf.keras.layers.Layer):
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+model_name = 'bert-base-uncased'
+model = tf.keras.Sequential()
+model.add(HuggingFaceLayer(model_name=model_name))
+model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
+
+#%%
+# --- [CELL 14]: ---
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 # === BEFORE (original) ===
-# model_name = 'bert-base-uncased'
-# model = tf.keras.Sequential()
-# model.add(HuggingFaceLayer(model_name=model_name))
-# model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
+# # Compile and train the model
+# model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+# model.fit(train_data, train_labels, epochs=10)
 
 # === AFTER (edited) ===
-# Use Functional API which is more compatible with HuggingFace models
-import tensorflow as tf
+# Prepare training data - use tokenized inputs from train_hg
+# BERT expects input_ids as integers, attention_mask, and token_type_ids
+def prepare_inputs(batch):
+    return {
+        'input_ids': tf.stack([tf.cast(x, tf.int32) for x in batch['input_ids']]),
+        'attention_mask': tf.stack([tf.cast(x, tf.int32) for x in batch['attention_mask']]),
+        'token_type_ids': tf.stack([tf.cast(x, tf.int32) for x in batch['token_type_ids']])
+    }
 
+def prepare_labels(batch):
+    return tf.cast(batch['label'], tf.float32)
+
+# Create tf.data.Dataset
+train_tf = tf.data.Dataset.from_tensor_slices((
+    {
+        'input_ids': tf.cast(list(train_hg['input_ids']), tf.int32),
+        'attention_mask': tf.cast(list(train_hg['attention_mask']), tf.int32),
+        'token_type_ids': tf.cast(list(train_hg['token_type_ids']), tf.int32)
+    },
+    tf.cast(list(train_hg['label']), tf.float32)
+))
+
+valid_tf = tf.data.Dataset.from_tensor_slices((
+    {
+        'input_ids': tf.cast(list(valid_hg['input_ids']), tf.int32),
+        'attention_mask': tf.cast(list(valid_hg['attention_mask']), tf.int32),
+        'token_type_ids': tf.cast(list(valid_hg['token_type_ids']), tf.int32)
+    },
+    tf.cast(list(valid_hg['label']), tf.float32)
+))
+
+# Build the model correctly for BERT classification
 class HuggingFaceLayer(tf.keras.layers.Layer):
     def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):
         super(HuggingFaceLayer, self).__init__(**kwargs)
@@ -209,59 +211,15 @@ class HuggingFaceLayer(tf.keras.layers.Layer):
 
     def call(self, inputs):
         outputs = self.model(inputs)
-        # Return the pooled output (CLS token representation)
-        return outputs.pooler_output
+        # Use the [CLS] token representation (first token) for classification
+        return outputs.last_hidden_state[:, 0, :]
 
-# Define input layer
-input_ids = tf.keras.layers.Input(shape=(128,), dtype=tf.int32, name='input_ids')
-attention_mask = tf.keras.layers.Input(shape=(128,), dtype=tf.int32, name='attention_mask')
-token_type_ids = tf.keras.layers.Input(shape=(128,), dtype=tf.int32, name='token_type_ids')
+# Rebuild model
+model_name = 'bert-base-uncased'
+model = tf.keras.Sequential()
+model.add(HuggingFaceLayer(model_name=model_name))
+model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
 
-# Create the model using Functional API
-bert_output = HuggingFaceLayer(model_name='bert-base-uncased')({
-    'input_ids': input_ids,
-    'attention_mask': attention_mask,
-    'token_type_ids': token_type_ids
-})
-
-# Add classification head
-output = tf.keras.layers.Dense(1, activation='sigmoid')(bert_output)
-
-model = tf.keras.Model(
-    inputs={'input_ids': input_ids, 'attention_mask': attention_mask, 'token_type_ids': token_type_ids},
-    outputs=output
-)
-
-#%%
-# --- [CELL 14]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-# === BEFORE (original) ===
-# # Compile and train the model
-# model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-# model.fit(train_data, train_labels, epochs=10)
-
-# === AFTER (edited) ===
-# Prepare TensorFlow datasets from the HuggingFace datasets
-def prepare_tf_dataset(hf_dataset):
-    # Convert to TensorFlow format
-    tf_dataset = hf_dataset.to_tf_dataset(
-        columns=['input_ids', 'attention_mask', 'token_type_ids'],
-        label_cols='label',
-        batch_size=4,
-        shuffle=True
-    )
-    return tf_dataset
-
-# Since train_hg and valid_hg are defined in cell 11, we use them directly
-# First, let's confirm they exist and have the right structure
-print("Training dataset samples:", len(train_hg))
-print("Validation dataset samples:", len(valid_hg))
-
-# Prepare TensorFlow datasets
-train_tf = prepare_tf_dataset(train_hg)
-valid_tf = prepare_tf_dataset(valid_hg)
-
-# Now fit the model using the prepared datasets
+# Compile and train the model
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-model.fit(train_tf, validation_data=valid_tf, epochs=10)
+model.fit(train_tf.batch(8), validation_data=valid_tf.batch(8), epochs=10)

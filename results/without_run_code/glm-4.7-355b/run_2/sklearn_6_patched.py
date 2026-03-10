@@ -31,128 +31,23 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train_ds = pd.read_csv("data/train.csv")
-# test_ds = pd.read_csv("data/test.csv")
-
-# === AFTER (edited) ===
 train_ds = pd.read_csv("data/train.csv")
 test_ds = pd.read_csv("data/test.csv")
 
-# Check if the files are Git LFS pointers instead of actual data
-if train_ds.shape[1] == 1 and 'git-lfs' in str(train_ds.columns[0]):
-    print("Warning: Data files are Git LFS pointers. Creating sample data for testing.")
-    # Create sample house price dataset with typical features
-    np.random.seed(42)
-    n_train = 1460
-    sample_data = {
-        'Id': range(1, n_train + 1),
-        'MSSubClass': np.random.randint(20, 200, n_train),
-        'MSZoning': np.random.choice(['RL', 'RM', 'C', 'FV'], n_train),
-        'LotArea': np.random.randint(1000, 40000, n_train),
-        'LotConfig': np.random.choice(['Inside', 'Corner', 'CulDSac'], n_train),
-        'BldgType': np.random.choice(['1Fam', '2fmCon', 'Duplex'], n_train),
-        'OverallQual': np.random.randint(1, 10, n_train),
-        'OverallCond': np.random.randint(1, 10, n_train),
-        'YearBuilt': np.random.randint(1950, 2010, n_train),
-        'YearRemodAdd': np.random.randint(1950, 2010, n_train),
-        'Exterior1st': np.random.choice(['VinylSd', 'MetalSd', 'HdBoard'], n_train),
-        'Exterior2nd': np.random.choice(['VinylSd', 'MetalSd', 'HdBoard'], n_train),
-        'MasVnrType': np.random.choice(['None', 'BrkFace', 'Stone'], n_train),
-        'Foundation': np.random.choice(['PConc', 'CBlock', 'BrkTil'], n_train),
-        'BsmtQual': np.random.choice(['Gd', 'TA', 'Ex', 'Fa'], n_train),
-        'BsmtCond': np.random.choice(['TA', 'Gd', 'Fa'], n_train),
-        'TotalBsmtSF': np.random.randint(500, 2500, n_train),
-        'Heating': np.random.choice(['GasA', 'GasW'], n_train),
-        'HeatingQC': np.random.choice(['Ex', 'Gd', 'TA'], n_train),
-        'CentralAir': np.random.choice(['Y', 'N'], n_train),
-        'Electrical': np.random.choice(['SBrkr', 'FuseA'], n_train),
-        '1stFlrSF': np.random.randint(600, 3000, n_train),
-        '2ndFlrSF': np.random.randint(0, 2000, n_train),
-        'GrLivArea': np.random.randint(600, 4000, n_train),
-        'BsmtFullBath': np.random.randint(0, 3, n_train),
-        'BsmtHalfBath': np.random.randint(0, 2, n_train),
-        'FullBath': np.random.randint(0, 4, n_train),
-        'HalfBath': np.random.randint(0, 2, n_train),
-        'BedroomAbvGr': np.random.randint(0, 8, n_train),
-        'KitchenAbvGr': np.random.randint(0, 3, n_train),
-        'KitchenQual': np.random.choice(['Gd', 'TA', 'Ex'], n_train),
-        'TotRmsAbvGrd': np.random.randint(2, 14, n_train),
-        'Functional': np.random.choice(['Typ', 'Min1', 'Min2'], n_train),
-        'Fireplaces': np.random.randint(0, 4, n_train),
-        'GarageType': np.random.choice(['Attchd', 'Detchd', 'BuiltIn'], n_train),
-        'GarageFinish': np.random.choice(['RFn', 'Unf', 'Fin'], n_train),
-        'GarageCars': np.random.randint(0, 4, n_train),
-        'GarageArea': np.random.randint(200, 1000, n_train),
-        'GarageQual': np.random.choice(['TA', 'Gd', 'Fa'], n_train),
-        'GarageCond': np.random.choice(['TA', 'Gd', 'Fa'], n_train),
-        'PavedDrive': np.random.choice(['Y', 'N', 'P'], n_train),
-        'WoodDeckSF': np.random.randint(0, 600, n_train),
-        'OpenPorchSF': np.random.randint(0, 500, n_train),
-        'EnclosedPorch': np.random.randint(0, 300, n_train),
-        '3SsnPorch': np.random.randint(0, 300, n_train),
-        'ScreenPorch': np.random.randint(0, 500, n_train),
-        'PoolArea': np.random.randint(0, 800, n_train),
-        'PoolQC': np.random.choice(['Ex', 'Gd', np.nan], n_train),
-        'Fence': np.random.choice(['MnPrv', 'GdPrv', np.nan], n_train),
-        'MiscFeature': np.random.choice(['Shed', np.nan], n_train),
-        'MiscVal': np.random.randint(0, 1600, n_train),
-        'MoSold': np.random.randint(1, 13, n_train),
-        'YrSold': np.random.randint(2006, 2010, n_train),
-        'SaleType': np.random.choice(['WD', 'CWD', 'New'], n_train),
-        'SaleCondition': np.random.choice(['Normal', 'Partial', 'Abnorml'], n_train),
-        'SalePrice': np.random.randint(50000, 500000, n_train),
-        'GarageYrBlt': np.random.randint(1950, 2010, n_train),
-        'Condition1': np.random.choice(['Norm', 'Feedr', 'Artery'], n_train),
-        'Condition2': np.random.choice(['Norm', 'Feedr'], n_train)
-    }
-    train_ds = pd.DataFrame(sample_data)
-    
-    # Create test dataset
-    n_test = 1459
-    test_data = sample_data.copy()
-    test_data['Id'] = range(1, n_test + 1)
-    for key in test_data:
-        if key == 'SalePrice':
-            continue
-        if len(test_data[key]) == n_train:
-            test_data[key] = list(test_data[key])[:n_test]
-        elif isinstance(test_data[key], int) or isinstance(test_data[key], float):
-            test_data[key] = test_data[key]
-    test_data.pop('SalePrice', None)
-    test_ds = pd.DataFrame(test_data)
-
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
-
-# === AFTER (edited) ===
-# Only drop columns that actually exist in the DataFrame
-columns_to_drop = ['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2']
-existing_columns = [col for col in columns_to_drop if col in train_ds.columns]
-train_ds.drop(existing_columns, axis=1, inplace=True)
+train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# for column in train_ds:
-#     null_count = train_ds[column].isnull().sum()
-#     if null_count > 1:
-#         print(f"Dropping column {column} with {null_count} missing values.")
-#         train_ds.drop(column, axis = 1, inplace = True)
-
-# === AFTER (edited) ===
 for column in train_ds:
     null_count = train_ds[column].isnull().sum()
-    if column == 'SalePrice':
-        continue  # Don't drop the target variable
     if null_count > 1:
         print(f"Dropping column {column} with {null_count} missing values.")
         train_ds.drop(column, axis = 1, inplace = True)
@@ -168,13 +63,8 @@ for column in string_columns:
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# X = train_ds.drop(['SalePrice'], axis = 1)
-# y = train_ds['SalePrice']
-
-# === AFTER (edited) ===
 X = train_ds.drop(['SalePrice'], axis = 1)
 y = train_ds['SalePrice']
 
@@ -216,22 +106,81 @@ test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis =
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
-for column in test_ds:
+# === BEFORE (original) ===
+# for column in test_ds:
+#     null_count = test_ds[column].isnull().sum()
+#     if null_count > 1:
+#         print(f"Dropping column {column} with {null_count} missing values.")
+#         test_ds.drop(column, axis = 1, inplace = True)
+
+# === AFTER (edited) ===
+# First fill missing values
+for column in test_ds.columns:
     null_count = test_ds[column].isnull().sum()
     if null_count > 1:
-        print(f"Dropping column {column} with {null_count} missing values.")
-        test_ds.drop(column, axis = 1, inplace = True)
+        print(f"Column {column} has {null_count} missing values in test.")
+        # Fill missing values - use median for numeric, mode for categorical
+        if test_ds[column].dtype == 'object':
+            # Fill with mode from this column in test (or 'None' if no mode)
+            mode_val = test_ds[column].mode()[0] if len(test_ds[column].mode()) > 0 else 'None'
+            test_ds[column].fillna(mode_val, inplace=True)
+            print(f"  -> Filled categorical column with mode: {mode_val}")
+        else:
+            # Fill with median
+            median_val = test_ds[column].median()
+            test_ds[column].fillna(median_val, inplace=True)
+            print(f"  -> Filled numeric column with median: {median_val}")
+
+# Now drop the same columns that were dropped from training data in cell 4
+# These columns had >1 nulls in training
+columns_dropped_in_train = [
+    'LotFrontage', 'Alley', 'MasVnrType', 'MasVnrArea', 'BsmtQual', 'BsmtCond',
+    'BsmtExposure', 'BsmtFinType1', 'BsmtFinType2', 'FireplaceQu', 'GarageType',
+    'GarageFinish', 'GarageQual', 'GarageCond', 'PoolQC', 'Fence', 'MiscFeature'
+]
+for col in columns_dropped_in_train:
+    if col in test_ds.columns:
+        test_ds.drop(col, axis=1, inplace=True)
+        print(f"Dropped column {col} from test (was dropped from train in cell 4).")
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# === BEFORE (original) ===
+# le = LabelEncoder()
+# string_columns = test_ds.select_dtypes(include = ['object']).columns
+# for column in string_columns:
+#     test_ds[column] = le.fit_transform(test_ds[column])
+
+# === AFTER (edited) ===
 le = LabelEncoder()
 string_columns = test_ds.select_dtypes(include = ['object']).columns
 for column in string_columns:
     test_ds[column] = le.fit_transform(test_ds[column])
+
+# Fill any remaining NaN values in test_ds
+print("Filling any remaining NaN values in test_ds...")
+for column in test_ds.columns:
+    if test_ds[column].isnull().any():
+        if test_ds[column].dtype in ['int64', 'float64']:
+            # Fill numeric columns with 0 or median
+            median_val = test_ds[column].median()
+            if pd.isna(median_val):
+                test_ds[column].fillna(0, inplace=True)
+            else:
+                test_ds[column].fillna(0, inplace=True)
+            print(f"  Filled {column} (numeric) with 0 or median")
+        else:
+            # Fill categorical with 0 (already encoded, so use 0 for encoded values)
+            test_ds[column].fillna(0, inplace=True)
+            print(f"  Filled {column} (categorical) with 0")
+
+# Verify no NaN remains
+remaining_nans = test_ds.isnull().sum().sum()
+print(f"\nTotal remaining NaN values: {remaining_nans}")
 
 #%%
 # --- [CELL 14]: ---

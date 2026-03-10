@@ -10,70 +10,27 @@ sns.set(style='whitegrid')
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train=pd.read_csv('data/train.csv')
-# test=pd.read_csv('data/train.csv')
-
-# === AFTER (edited) ===
-import numpy as np
-import pandas as pd
-
-# Create mock training and test data since actual data files are Git LFS pointers
-np.random.seed(42)
-
-# Generate mock training data
-n_train = 1000
-train = pd.DataFrame({
-    'id': range(n_train),
-    'Gender': np.random.choice(['Male', 'Female'], n_train),
-    'Age': np.random.randint(20, 80, n_train),
-    'Driving_License': np.random.choice([0, 1], n_train, p=[0.01, 0.99]),
-    'Region_Code': np.random.randint(0, 53, n_train),
-    'Previously_Insured': np.random.choice([0, 1], n_train),
-    'Vehicle_Age': np.random.choice(['< 1 Year', '1-2 Year', '> 2 Years'], n_train),
-    'Vehicle_Damage': np.random.choice(['Yes', 'No'], n_train),
-    'Annual_Premium': np.random.uniform(10000, 100000, n_train),
-    'Policy_Sales_Channel': np.random.randint(1, 160, n_train),
-    'Vintage': np.random.randint(10, 300, n_train),
-    'Response': np.random.choice([0, 1], n_train, p=[0.87, 0.13])
-})
-
-# Generate mock test data (same columns except Response)
-n_test = 200
-test = pd.DataFrame({
-    'id': range(n_train, n_train + n_test),
-    'Gender': np.random.choice(['Male', 'Female'], n_test),
-    'Age': np.random.randint(20, 80, n_test),
-    'Driving_License': np.random.choice([0, 1], n_test, p=[0.01, 0.99]),
-    'Region_Code': np.random.randint(0, 53, n_test),
-    'Previously_Insured': np.random.choice([0, 1], n_test),
-    'Vehicle_Age': np.random.choice(['< 1 Year', '1-2 Year', '> 2 Years'], n_test),
-    'Vehicle_Damage': np.random.choice(['Yes', 'No'], n_test),
-    'Annual_Premium': np.random.uniform(10000, 100000, n_test),
-    'Policy_Sales_Channel': np.random.randint(1, 160, n_test),
-    'Vintage': np.random.randint(10, 300, n_test),
-})
-
-print(f"Train data shape: {train.shape}")
-print(f"Test data shape: {test.shape}")
+train=pd.read_csv('data/train.csv')
+test=pd.read_csv('data/train.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-num_feat = ['Age','Vintage']
-cat_feat = ['Gender', 'Driving_License', 'Previously_Insured', 'Vehicle_Age_lt_1_Year','Vehicle_Age_gt_2_Years','Vehicle_Damage_Yes','Region_Code','Policy_Sales_Channel']
+# === BEFORE (original) ===
+# num_feat = ['Age','Vintage']
+# cat_feat = ['Gender', 'Driving_License', 'Previously_Insured', 'Vehicle_Age_lt_1_Year','Vehicle_Age_gt_2_Years','Vehicle_Damage_Yes','Region_Code','Policy_Sales_Channel']
+
+# === AFTER (edited) ===
+num_feat = ['Age','Vintage','Region_Code','Policy_Sales_Channel']
+cat_feat = ['Gender', 'Driving_License', 'Previously_Insured', 'Vehicle_Age_lt_1_Year','Vehicle_Age_gt_2_Years','Vehicle_Damage_Yes']
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train['Gender'] = train['Gender'].map( {'Female': 0, 'Male': 1} ).astype(int)
-
-# === AFTER (edited) ===
 train['Gender'] = train['Gender'].map( {'Female': 0, 'Male': 1} ).astype(int)
 
 #%%

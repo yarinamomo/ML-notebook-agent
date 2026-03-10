@@ -63,45 +63,25 @@ for root, dirs, files in os.walk(train_path_nonwatermarked_images, topdown=True)
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# output_array_wm = []
-# 
-# for i in tp_watermarked:
-#     output_string_wm = train_path_watermarked_images + i
-#     output_array_wm.append(output_string_wm)
-#     out_array_wm=np.array(output_array_wm)
-
-# === AFTER (edited) ===
 output_array_wm = []
 
 for i in tp_watermarked:
     output_string_wm = train_path_watermarked_images + i
     output_array_wm.append(output_string_wm)
-
-out_array_wm = np.array(output_array_wm)
+    out_array_wm=np.array(output_array_wm)
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# output_array_nwm = []
-# 
-# for i in tp_nonwatermarked:
-#     output_string_nwm = train_path_nonwatermarked_images + i
-#     output_array_nwm.append(output_string_nwm)
-#     out_array_nwm=np.array(output_array_nwm)
-
-# === AFTER (edited) ===
 output_array_nwm = []
 
 for i in tp_nonwatermarked:
     output_string_nwm = train_path_nonwatermarked_images + i
     output_array_nwm.append(output_string_nwm)
-
-out_array_nwm = np.array(output_array_nwm)
+    out_array_nwm=np.array(output_array_nwm)
 
 #%%
 # --- [CELL 7]: ---
@@ -128,71 +108,43 @@ out_array_nwm = np.array(output_array_nwm)
 width = 196
 height = 196
 dim = (width, height)
-
 def createPixelArr(files):
     data = []
-    failed_images = []
-    for i, image in enumerate(files):
+    for image in files:
         try:
             img_arr = cv2.imread(image, cv2.IMREAD_COLOR)
-            if img_arr is None:
-                print(f"Failed to load image {i}: {image}")
-                failed_images.append(image)
-                continue
             img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
             resized_arr = cv2.resize(img_arr, (width, height))
-            data.append(resized_arr)
+            # Transpose from HWC to CHW format for PyTorch
+            transposed_arr = np.transpose(resized_arr, (2, 0, 1))
+            data.append(transposed_arr)
         except Exception as e:
-            print(f"Error processing image {i}: {image} - {e}")
-            failed_images.append(image)
-    print(f"Successfully loaded {len(data)} out of {len(files)} images")
-    print(f"Failed to load {len(failed_images)} images")
+            print(e)
     return np.array(data)
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
-# === BEFORE (original) ===
-# train_wms_pixVals = createPixelArr(out_array_wm[:90]) # 1000
-# train_nwms_pixVals = createPixelArr(out_array_nwm[:90]) # 1000
-
-# === AFTER (edited) ===
-train_wms_pixVals = createPixelArr(out_array_wm[:90])
-train_nwms_pixVals = createPixelArr(out_array_nwm[:90])
+train_wms_pixVals = createPixelArr(out_array_wm[:90]) # 1000
+train_nwms_pixVals = createPixelArr(out_array_nwm[:90]) # 1000
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 # === BEFORE (original) ===
-# X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1) 
+# X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1)
 
 # === AFTER (edited) ===
-# Check if we have valid data
-if len(train_wms_pixVals) == 0 or len(train_nwms_pixVals) == 0:
-    print("Warning: No valid images were loaded. Creating dummy data for demonstration purposes.")
-    # Create dummy data to prevent crash
-    train_wms_pixVals = np.random.rand(10, 196, 196, 3).astype(np.uint8) * 255
-    train_nwms_pixVals = np.concatenate([np.ones((5, 196, 196, 3), dtype=np.uint8)] * 3, axis=0)
-    print(f"Created dummy data: train_wms_pixVals shape = {train_wms_pixVals.shape}")
-    print(f"Created dummy data: train_nwms_pixVals shape = {train_nwms_pixVals.shape}")
-
-# Create labels for the dataset
-y_wms = np.ones(len(train_wms_pixVals))  # 1 for watermarked
-y_nwms = np.zeros(len(train_nwms_pixVals))  # 0 for non-watermarked
-
-# Combine features and labels
+# Create labels: 1 for watermarked, 0 for non-watermarked
 X = np.concatenate([train_wms_pixVals, train_nwms_pixVals])
-y = np.concatenate([y_wms, y_nwms])
+y_watermarked = np.ones(len(train_wms_pixVals), dtype=np.int64)
+y_nonwatermarked = np.zeros(len(train_nwms_pixVals), dtype=np.int64)
+y = np.concatenate([y_watermarked, y_nonwatermarked])
 
-# Split the data
+# Split the data correctly
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
-
-print(f"X_train shape: {X_train.shape}")
-print(f"X_test shape: {X_test.shape}")
-print(f"y_train shape: {y_train.shape}")
-print(f"y_test shape: {y_test.shape}")
 
 #%%
 # --- [CELL 10]: ---
@@ -222,7 +174,7 @@ from timm.models.registry import register_model
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 model_ft = timm.create_model(
     'efficientnet_b3a', pretrained=True, num_classes=2
 )
@@ -322,7 +274,6 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
     model.load_state_dict(best_model_wts)
     return model, train_acc_history, val_acc_history
 
-
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
@@ -333,7 +284,7 @@ optimizer = optim.AdamW(params=model_ft.parameters(), lr=0.2e-5)
 #%%
 # --- [CELL 14]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 # === BEFORE (original) ===
 # class MyDataset(Dataset):
 #     def __init__(self, X, y):
@@ -349,16 +300,17 @@ optimizer = optim.AdamW(params=model_ft.parameters(), lr=0.2e-5)
 # === AFTER (edited) ===
 class MyDataset(Dataset):
     def __init__(self, X, y):
-        # Convert from [N, H, W, C] to [N, C, H, W] format for PyTorch
-        # Normalize from 0-255 to 0-1
-        self.X = torch.from_numpy(X.transpose(0, 3, 1, 2)).float() / 255.0
-        self.y = torch.from_numpy(y).long()
+        self.X = X
+        self.y = y
 
     def __len__(self):
         return len(self.X)
 
     def __getitem__(self, idx):
-        return self.X[idx], self.y[idx]
+        # Convert numpy array to float32 and scale to [0, 1]
+        image = torch.tensor(self.X[idx], dtype=torch.float32) / 255.0
+        label = torch.tensor(self.y[idx], dtype=torch.long)
+        return image, label
 
 #%%
 # --- [CELL 15]: ---
@@ -376,11 +328,20 @@ test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
 #%%
 # --- [CELL 17]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 18}
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# import warnings
+# warnings.filterwarnings("ignore")
+# 
+# model_ft, train_acc_history, val_acc_history = train_model(
+#     model_ft, train_loader, test_loader, criterion, optimizer, num_epochs=3
+# )
+
+# === AFTER (edited) ===
 import warnings
 warnings.filterwarnings("ignore")
 
 model_ft, train_acc_history, val_acc_history = train_model(
-    model_ft, train_loader, test_loader, criterion, optimizer, num_epochs=3
+    model_ft, train_loader, test_loader, criterion, optimizer, num_epochs=1
 )

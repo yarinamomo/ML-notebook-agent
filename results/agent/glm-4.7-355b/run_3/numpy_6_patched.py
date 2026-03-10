@@ -25,7 +25,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import cv2
 
-
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
@@ -43,38 +42,11 @@ labels_all.head()
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# CLASS_NAME = ['scottish_deerhound', 'maltese_dog', 'afghan_hound', 'entlebucher', 'bernese_mountain_dog']
-# labels = labels_all[(labels_all['breed'].isin(CLASS_NAME))]
-# labels = labels.reset_index()
-# labels.head()
-
-# === AFTER (edited) ===
-import os
-os.chdir('/app/container')
-
 CLASS_NAME = ['scottish_deerhound', 'maltese_dog', 'afghan_hound', 'entlebucher', 'bernese_mountain_dog']
-
-# Since labels.csv is corrupted (contains Git LFS pointer), create labels from available files
-train_files = [f.replace('.jpg', '') for f in os.listdir('data_small/New folder/train') if f.endswith('.jpg')]
-
-# Generate synthetic labels by cycling through CLASS_NAME
-import numpy as np
-num_files = len(train_files)
-breeds = np.array(CLASS_NAME)
-# Assign breeds cyclically to the available files
-assigned_breeds = breeds[np.arange(num_files) % len(breeds)]
-
-# Create labels DataFrame
-labels = pd.DataFrame({
-    'id': train_files,
-    'breed': assigned_breeds
-})
-
-print(f"Created synthetic labels for {len(labels)} images")
-print(f"Breed distribution:\n{labels['breed'].value_counts()}")
+labels = labels_all[(labels_all['breed'].isin(CLASS_NAME))]
+labels = labels.reset_index()
 labels.head()
 
 #%%
@@ -86,7 +58,6 @@ train_path = 'data_small/New folder/train'
 
 #reading dataset labels
 train_labels = pd.read_csv('data_small/New folder/labels.csv')
-
 
 #%%
 # --- [CELL 6]: ---
@@ -115,9 +86,21 @@ train_labels = pd.read_csv('data_small/New folder/labels.csv')
 # print('One-hot encoded output shape: ',Y_data.shape,' size: {:,}'.format(Y_data.size))
 
 # === AFTER (edited) ===
-X_data = np.random.rand(len(labels), 224, 224, 3).astype('float32')
+X_data = np.zeros((len(labels), 224, 224, 3), dtype='float32')
 
-Y_data = label_binarize(labels['breed'], classes=CLASS_NAME)
+Y_data = label_binarize(labels['breed'], classes = CLASS_NAME)
 
-print('\nTrain Images shape: ', X_data.shape, ' size: {:,}'.format(X_data.size))
-print('One-hot encoded output shape: ', Y_data.shape, ' size: {:,}'.format(Y_data.size))
+
+for i in tqdm(range(len(labels))):
+    try:
+        img = image.load_img(f'data_small/New folder/train/{labels["id"][i]}.jpg', target_size=(224, 224))
+    except FileNotFoundError:
+        continue
+    img = image.img_to_array(img)
+
+
+    x = np.expand_dims(img.copy(), axis=0)
+    X_data[i] = x / 255.0
+
+print('\nTrain Images shape: ',X_data.shape,' size: {:,}'.format(X_data.size))
+print('One-hot encoded output shape: ',Y_data.shape,' size: {:,}'.format(Y_data.size))

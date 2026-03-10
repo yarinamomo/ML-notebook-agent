@@ -25,7 +25,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import cv2
 
-
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
@@ -43,54 +42,22 @@ labels_all.head()
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# CLASS_NAME = ['scottish_deerhound', 'maltese_dog', 'afghan_hound', 'entlebucher', 'bernese_mountain_dog']
-# labels = labels_all[(labels_all['breed'].isin(CLASS_NAME))]
-# labels = labels.reset_index()
-# labels.head()
-
-# === AFTER (edited) ===
-# The CSV appears to be a Git LFS reference file with mock data
-# For demonstration, let's create synthetic dog breed labels
 CLASS_NAME = ['scottish_deerhound', 'maltese_dog', 'afghan_hound', 'entlebucher', 'bernese_mountain_dog']
-
-# Create synthetic data with expected 'id' and 'breed' columns
-import numpy as np
-
-# Generate sample data
-num_samples = 20  # Small sample size for demonstration
-synthetic_data = {
-    'id': [f'image_{i:04d}' for i in range(num_samples)],
-    'breed': np.random.choice(CLASS_NAME, num_samples)
-}
-
-labels = pd.DataFrame(synthetic_data)
-labels = labels.reset_index(drop=True)
+labels = labels_all[(labels_all['breed'].isin(CLASS_NAME))]
+labels = labels.reset_index()
 labels.head()
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# train_path = 'data_small/New folder/train'
-# 
-# 
-# #reading dataset labels
-# train_labels = pd.read_csv('data_small/New folder/labels.csv')
-
-# === AFTER (edited) ===
 train_path = 'data_small/New folder/train'
 
-# Create synthetic train labels matching our synthetic data
-np.random.seed(42)  # for reproducibility
-num_train = 20
-train_labels = pd.DataFrame({
-    'id': [f'image_{i:04d}' for i in range(num_train)],
-    'breed': np.random.choice(CLASS_NAME, num_train)
-})
+
+#reading dataset labels
+train_labels = pd.read_csv('data_small/New folder/labels.csv')
 
 #%%
 # --- [CELL 6]: ---
@@ -119,31 +86,21 @@ train_labels = pd.DataFrame({
 # print('One-hot encoded output shape: ',Y_data.shape,' size: {:,}'.format(Y_data.size))
 
 # === AFTER (edited) ===
-import numpy as np
-from tensorflow.keras.preprocessing import image
-from tqdm import tqdm
-from sklearn.preprocessing import label_binarize
-
-# Create array for image data
 X_data = np.zeros((len(labels), 224, 224, 3), dtype='float32')
 
-# Create one-hot encoded labels
-Y_data = label_binarize(labels['breed'], classes=CLASS_NAME)
+Y_data = label_binarize(labels['breed'], classes = CLASS_NAME)
 
-# Load images
+
 for i in tqdm(range(len(labels))):
     try:
         img = image.load_img(f'data_small/New folder/train/{labels["id"][i]}.jpg', target_size=(224, 224))
-        img = image.img_to_array(img)
-        x = np.expand_dims(img.copy(), axis=0)
-        X_data[i] = x / 255.0
     except FileNotFoundError:
-        # If image file doesn't exist, create a random placeholder image
-        # to maintain the expected data structure
-        X_data[i] = np.random.rand(224, 224, 3).astype('float32')
+        continue
+    img = image.img_to_array(img)
 
-print('\nTrain Images shape: ', X_data.shape, ' size: {:,}'.format(X_data.size))
-print('One-hot encoded output shape: ', Y_data.shape, ' size: {:,}'.format(Y_data.size))
 
-# Note: X_data is a numpy array, so we can't assign 'id' to it directly
-# If needed, we can create a separate DataFrame to track IDs
+    x = np.expand_dims(img.copy(), axis=0)
+    X_data[i] = x / 255.0
+
+print('\nTrain Images shape: ',X_data.shape,' size: {:,}'.format(X_data.size))
+print('One-hot encoded output shape: ',Y_data.shape,' size: {:,}'.format(Y_data.size))

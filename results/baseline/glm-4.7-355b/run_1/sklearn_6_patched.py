@@ -38,19 +38,9 @@ test_ds = pd.read_csv("data/test.csv")
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
-
-# === AFTER (edited) ===
-columns_to_drop = ['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2']
-existing_cols = [col for col in columns_to_drop if col in train_ds.columns]
-if existing_cols:
-    train_ds.drop(existing_cols, axis = 1, inplace = True)
-    print(f"Dropped columns: {existing_cols}")
-else:
-    print("None of the specified columns found in the dataset.")
+train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 #%%
 # --- [CELL 4]: ---
@@ -74,33 +64,33 @@ for column in string_columns:
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 X = train_ds.drop(['SalePrice'], axis = 1)
 y = train_ds['SalePrice']
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 42)
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 from sklearn.ensemble import RandomForestRegressor
 FReg = RandomForestRegressor(n_estimators = 100, random_state = 42)
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 FReg.fit(X_train, y_train)
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 y_pred = FReg.predict(X_test)
 mse = mean_squared_error(y_test, y_pred)
 r2 = r2_score(y_test, y_pred)
@@ -110,24 +100,37 @@ print(f'MSE: {mse}')
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 test_ds_ids = test_ds['Id'] # fix for crash isolation purpose
 test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# === BEFORE (original) ===
+# for column in test_ds:
+#     null_count = test_ds[column].isnull().sum()
+#     if null_count > 1:
+#         print(f"Dropping column {column} with {null_count} missing values.")
+#         test_ds.drop(column, axis = 1, inplace = True)
+
+# === AFTER (edited) ===
 for column in test_ds:
     null_count = test_ds[column].isnull().sum()
     if null_count > 1:
         print(f"Dropping column {column} with {null_count} missing values.")
         test_ds.drop(column, axis = 1, inplace = True)
 
+# Ensure test_ds has the same columns as train_ds
+# Keep only columns that exist in train_ds
+columns_to_keep = [col for col in test_ds.columns if col in train_ds.columns]
+test_ds = test_ds[columns_to_keep]
+
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 le = LabelEncoder()
 string_columns = test_ds.select_dtypes(include = ['object']).columns
 for column in string_columns:
@@ -136,7 +139,7 @@ for column in string_columns:
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 15}
 predictions = FReg.predict(test_ds)
 submissions_df = pd.DataFrame({
     "ID" : test_ds_ids, # test_data['ID'], # fix for crash isolation purpose

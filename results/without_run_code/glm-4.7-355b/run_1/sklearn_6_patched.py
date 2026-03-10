@@ -31,79 +31,24 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train_ds = pd.read_csv("data/train.csv")
-# test_ds = pd.read_csv("data/test.csv")
-
-# === AFTER (edited) ===
-import pandas as pd
-import numpy as np
-
-# Load data files
 train_ds = pd.read_csv("data/train.csv")
 test_ds = pd.read_csv("data/test.csv")
 
-# Check if the data contains real data or LFS pointers (LFS files have only one column)
-if len(train_ds.columns) == 1 and 'git-lfs.github.com' in str(train_ds.columns[0]):
-    # Create sample data for testing
-    print("Note: Data files appear to be Git LFS pointers. Creating sample data for testing.")
-    train_ds = pd.DataFrame({
-        'Id': range(1, 101),
-        'MSSubClass': np.random.randint(20, 200, 100),
-        'MSZoning': np.random.choice(['RL', 'RM', 'C'], 100),
-        'LotFrontage': np.random.randint(40, 120, 100),
-        'LotArea': np.random.randint(5000, 20000, 100),
-        'SalePrice': np.random.randint(100000, 500000, 100),
-        'MoSold': np.random.randint(1, 13, 100),
-        'GarageYrBlt': np.random.randint(1950, 2010, 100),
-        'Condition1': np.random.choice(['Norm', 'Artery', 'Feedr'], 100),
-        'Condition2': np.random.choice(['Norm', 'Artery', 'Feedr'], 100),
-    })
-    test_ds = pd.DataFrame({
-        'Id': range(1, 51),
-        'MSSubClass': np.random.randint(20, 200, 50),
-        'MSZoning': np.random.choice(['RL', 'RM', 'C'], 50),
-        'LotFrontage': np.random.randint(40, 120, 50),
-        'LotArea': np.random.randint(5000, 20000, 50),
-        'MoSold': np.random.randint(1, 13, 50),
-        'GarageYrBlt': np.random.randint(1950, 2010, 50),
-        'Condition1': np.random.choice(['Norm', 'Artery', 'Feedr'], 50),
-        'Condition2': np.random.choice(['Norm', 'Artery', 'Feedr'], 50),
-    })
-    # Add some columns with null values for testing
-    train_ds.loc[0:2, 'LotFrontage'] = np.nan
-    train_ds.loc[5:7, 'GarageYrBlt'] = np.nan
-
-print("Train dataset columns:", train_ds.columns.tolist())
-print("SalePrice present:", 'SalePrice' in train_ds.columns)
-
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
-
-# === AFTER (edited) ===
-train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True, errors='ignore')
+train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# for column in train_ds:
-#     null_count = train_ds[column].isnull().sum()
-#     if null_count > 1:
-#         print(f"Dropping column {column} with {null_count} missing values.")
-#         train_ds.drop(column, axis = 1, inplace = True)
-
-# === AFTER (edited) ===
 for column in train_ds:
     null_count = train_ds[column].isnull().sum()
-    if null_count > 1 and column != 'SalePrice':
+    if null_count > 1:
         print(f"Dropping column {column} with {null_count} missing values.")
         train_ds.drop(column, axis = 1, inplace = True)
 
@@ -118,18 +63,10 @@ for column in string_columns:
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# X = train_ds.drop(['SalePrice'], axis = 1)
-# y = train_ds['SalePrice']
-
-# === AFTER (edited) ===
-if 'SalePrice' in train_ds.columns:
-    X = train_ds.drop(['SalePrice'], axis = 1)
-    y = train_ds['SalePrice']
-else:
-    raise ValueError("SalePrice column not found in train_ds. The data may not have been loaded correctly.")
+X = train_ds.drop(['SalePrice'], axis = 1)
+y = train_ds['SalePrice']
 
 #%%
 # --- [CELL 7]: ---
@@ -169,45 +106,59 @@ test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis =
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
-# === BEFORE (original) ===
-# for column in test_ds:
-#     null_count = test_ds[column].isnull().sum()
-#     if null_count > 1:
-#         print(f"Dropping column {column} with {null_count} missing values.")
-#         test_ds.drop(column, axis = 1, inplace = True)
-
-# === AFTER (edited) ===
 for column in test_ds:
     null_count = test_ds[column].isnull().sum()
     if null_count > 1:
         print(f"Dropping column {column} with {null_count} missing values.")
         test_ds.drop(column, axis = 1, inplace = True)
 
-# Ensure test_ds has the same columns as train_ds (except SalePrice which is the target)
-# Drop columns from test_ds that were dropped from train_ds
-train_features = set(train_ds.columns) - {'SalePrice'}
-test_features = set(test_ds.columns)
-
-# Drop columns in test_ds that are not in train_ds
-for col in test_features - train_features:
-    print(f"Dropping column {col} from test_ds to match training features.")
-    test_ds.drop(col, axis = 1, inplace = True)
-
-# Add columns to test_ds that are in train_ds but missing (fill with 0)
-for col in train_features - test_features:
-    print(f"Adding column {col} to test_ds with default value 0.")
-    test_ds[col] = 0
-
 #%%
 # --- [CELL 13]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# === BEFORE (original) ===
+# le = LabelEncoder()
+# string_columns = test_ds.select_dtypes(include = ['object']).columns
+# for column in string_columns:
+#     test_ds[column] = le.fit_transform(test_ds[column])
+
+# === AFTER (edited) ===
 le = LabelEncoder()
 string_columns = test_ds.select_dtypes(include = ['object']).columns
 for column in string_columns:
     test_ds[column] = le.fit_transform(test_ds[column])
+
+# Restore columns that were dropped from test_ds but exist in X_train
+# These columns had <=1 missing values in train_ds but >1 in test_ds
+missing_cols = ['MSZoning', 'Utilities', 'BsmtFullBath', 'BsmtHalfBath', 'Functional']
+for col in missing_cols:
+    if col in X_train.columns and col not in test_ds.columns:
+        # Add the column with imputed value from training data
+        if train_ds[col].dtype == 'object':
+            # For categorical columns, use the mode
+            train_ds[col] = le.fit_transform(train_ds[col])
+            imputed_val = train_ds[col].mode()[0]
+        else:
+            # For numeric columns, use the mean
+            imputed_val = train_ds[col].mean()
+        test_ds[col] = imputed_val
+
+# Ensure test_ds has the same columns as training data
+test_ds = test_ds[X_train.columns]
+
+# Fill any remaining NaN values in test_ds
+for column in test_ds.columns:
+    if test_ds[column].isnull().any():
+        if test_ds[column].dtype in ['int64', 'float64']:
+            # Fill numeric columns with median
+            test_ds[column].fillna(train_ds[column].median(), inplace=True)
+        else:
+            # Fill categorical columns with mode
+            if not train_ds[column].empty:
+                mode_val = train_ds[column].mode()[0]
+                test_ds[column].fillna(mode_val, inplace=True)
 
 #%%
 # --- [CELL 14]: ---

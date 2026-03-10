@@ -35,45 +35,10 @@ transformer = transforms.Compose([
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# dataset = ImageFolder(root = "data_small/celeba_hq_256", 
-#                       transform = transformer) 
-
-# === AFTER (edited) ===
-from torchvision.datasets import ImageFolder
-from PIL import Image
-
-class SafeImageFolder(ImageFolder):
-    def __getitem__(self, index):
-        path, target = self.samples[index]
-        sample = None
-        # Try to load the requested image
-        try:
-            sample = self.loader(path)
-        except (OSError, IOError, Image.DecompressionBombError, Exception):
-            # If that fails, try to find a valid image in the dataset
-            for i in range(len(self.samples)):
-                try:
-                    path, target = self.samples[i]
-                    sample = self.loader(path)
-                    break
-                except:
-                    continue
-        
-        # If still no valid sample, create a default black image
-        if sample is None:
-            sample = Image.new('RGB', (64, 64), color=0)
-            
-        if self.transform is not None:
-            sample = self.transform(sample)
-        if self.target_transform is not None:
-            target = self.target_transform(target)
-        return sample, target
-
-dataset = SafeImageFolder(root="data_small/celeba_hq_256",
-                          transform=transformer)
+dataset = ImageFolder(root = "data_small/celeba_hq_256", 
+                      transform = transformer)
 
 #%%
 # --- [CELL 4]: ---

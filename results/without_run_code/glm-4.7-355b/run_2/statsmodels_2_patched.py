@@ -1,30 +1,6 @@
 # --- [CELL 0]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# import pandas as pd
-# import numpy as np
-# import matplotlib.pyplot as plt
-# import xgboost as xgb
-# import seaborn as sns
-# from statsmodels.tsa.arima.model import ARIMA
-# from statsmodels.tsa.statespace.sarimax import SARIMAX
-# from statsmodels.tsa.stattools import adfuller
-# from sklearn.model_selection import train_test_split
-# from sklearn.metrics import mean_squared_error
-# from sklearn.model_selection import GridSearchCV
-# from statsmodels.tsa.seasonal import seasonal_decompose
-# from matplotlib.ticker import MultipleLocator
-# # from fbprophet import Prophet
-# 
-# train_csv_path = "data/train.csv"
-# train = pd.read_csv(train_csv_path)
-# 
-# test_csv_path = "data/test.csv"
-# test = pd.read_csv(test_csv_path)
-# 
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -38,62 +14,18 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV
 from statsmodels.tsa.seasonal import seasonal_decompose
 from matplotlib.ticker import MultipleLocator
-import os
+# from fbprophet import Prophet
 
 train_csv_path = "data/train.csv"
+train = pd.read_csv(train_csv_path)
+
 test_csv_path = "data/test.csv"
-
-# Check if files are valid CSVs or Git LFS pointers
-def is_valid_csv(filepath):
-    with open(filepath, 'r') as f:
-        first_line = f.readline()
-        return 'version https://git-lfs.github.com/spec/v1' not in first_line
-
-if is_valid_csv(train_csv_path) and is_valid_csv(test_csv_path):
-    train = pd.read_csv(train_csv_path)
-    test = pd.read_csv(test_csv_path)
-else:
-    # Create synthetic data for demonstration
-    np.random.seed(42)
-    dates = pd.date_range(start='2013-01-01', end='2017-12-31', freq='D')
-    n_rows = len(dates) * 10  # 10 stores * 50 items (to accommodate item 20)
-    
-    data = []
-    for date in dates:
-        for store in range(1, 11):
-            for item in range(1, 51):
-                # Create some synthetic sales data with seasonality
-                base_sales = 20 + 10 * np.sin(2 * np.pi * date.month / 12)
-                trend = (date.year - 2013) * 5
-                noise = np.random.randn() * 5
-                sales = max(0, base_sales + trend + noise)
-                data.append({
-                    'date': date.strftime('%Y-%m-%d'),
-                    'store': store,
-                    'item': item,
-                    'sales': sales
-                })
-    
-    train = pd.DataFrame(data)
-    
-    # Create a simple test dataframe
-    test = pd.DataFrame({
-        'date': ['2018-01-01'],
-        'store': [1],
-        'item': [1]
-    })
-    
-    print("Note: Using synthetic data as actual data files are not available")
-
-print("Train columns:", train.columns.tolist())
-print("Train shape:", train.shape)
-print("Train head:")
-print(train.head())
+test = pd.read_csv(test_csv_path)
 
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 train['date'] = pd.to_datetime(train['date'])
 train['day'] = train['date'].dt.day
 train['month'] = train['date'].dt.month
@@ -128,28 +60,26 @@ train['sales_lag_365'] = train['sales'].shift(365)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # Filter for a specific store-item combination, say store 1 and item 1
 train_subset = train[(train['store'] == 8) & (train['item'] == 20)]
 train_subset.set_index('date', inplace=True)
 train_subset.index.freq = 'D'
 train_subset.head()
 
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 sarima_data = train_subset[['sales']]
 
 print(sarima_data.index)
 sarima_data.head()
 
-
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # Data Splitting
 train_end_date = '2017-09-30'
 pred_start_date = '2017-10-01'
@@ -184,7 +114,7 @@ print(f'RMSE: {rmse}')
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 residuals = y_val - y_pred
 plt.figure(figsize=(12, 6))
 plt.plot(residuals.index, residuals, label='Residuals')
@@ -197,7 +127,7 @@ plt.show()
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # === BEFORE (original) ===
 # from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 # 
@@ -215,13 +145,10 @@ plt.show()
 # === AFTER (edited) ===
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
-# Calculate max lags based on residuals length (typically use nobs//2 or less)
-max_lags = min(46, len(residuals) // 2)  # Use at most half the observations
-
 plt.figure(figsize=(12, 6))
-plot_acf(residuals, lags=max_lags, title='ACF of Residuals')
+plot_acf(residuals, lags=40, title='ACF of Residuals')
 plt.show()
 
 plt.figure(figsize=(12, 6))
-plot_pacf(residuals, lags=max_lags, title='PACF of Residuals')
+plot_pacf(residuals, lags=40, title='PACF of Residuals')
 plt.show()

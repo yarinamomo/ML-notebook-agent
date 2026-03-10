@@ -76,67 +76,39 @@ train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# #preprocessing and loading the data set
-# class SiameseDataset(Dataset):
-#     def __init__(self,training_csv,training_dir,transform=None):
-#         # used to prepare the labels and images path
-#         self.train_df=pd.read_csv(training_csv)
-#         self.train_df = self.train_df.drop(columns=['Unnamed: 0'])
-#         self.train_df.columns =["image1","image2","label"]
-#         self.train_dir = training_dir   
-#         self.transform = transform
-# 
-#     def __getitem__(self,index):
-#         # getting the image path
-#         image1_path=os.path.join(self.train_dir,self.train_df.iat[index,0])
-#         image2_path=os.path.join(self.train_dir,self.train_df.iat[index,1])
-#         # Loading the image
-#         img0 = Image.open(image1_path)
-#         img1 = Image.open(image2_path)
-#         img0 = img0.convert("L")
-#         img1 = img1.convert("L")
-#         # Apply image transformations
-#         if self.transform is not None:
-#             img0 = self.transform(img0)
-#             img1 = self.transform(img1)
-#         return img0, img1 , th.from_numpy(np.array([int(self.train_df.iat[index,2])],dtype=np.float32))
-#     def __len__(self):
-#         return len(self.train_df)
-
-# === AFTER (edited) ===
+#preprocessing and loading the data set
 class SiameseDataset(Dataset):
     def __init__(self,training_csv,training_dir,transform=None):
-
+        # used to prepare the labels and images path
         self.train_df=pd.read_csv(training_csv)
-        self.train_df = self.train_df.drop(columns=['Unnamed: 0'], errors='ignore')
+        self.train_df = self.train_df.drop(columns=['Unnamed: 0'])
         self.train_df.columns =["image1","image2","label"]
-        self.train_dir = training_dir
+        self.train_dir = training_dir   
         self.transform = transform
 
     def __getitem__(self,index):
-
+        # getting the image path
         image1_path=os.path.join(self.train_dir,self.train_df.iat[index,0])
         image2_path=os.path.join(self.train_dir,self.train_df.iat[index,1])
-
+        # Loading the image
         img0 = Image.open(image1_path)
         img1 = Image.open(image2_path)
         img0 = img0.convert("L")
         img1 = img1.convert("L")
-
+        # Apply image transformations
         if self.transform is not None:
             img0 = self.transform(img0)
             img1 = self.transform(img1)
-        return img0, img1 , torch.from_numpy(np.array([int(self.train_df.iat[index,2])],dtype=np.float32))
+        return img0, img1 , th.from_numpy(np.array([int(self.train_df.iat[index,2])],dtype=np.float32))
     def __len__(self):
         return len(self.train_df)
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 training_csv="data_small/pairs.csv"
 training_dir="data_small/archive/images_labeled/"
 resize = transform=transforms.Compose([transforms.Resize(size),
@@ -146,18 +118,69 @@ siamese_dataset = SiameseDataset(training_csv, training_dir, transform=resize)
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# === BEFORE (original) ===
+# class SiameseNetwork(nn.Module):
+#     def __init__(self):
+#         super(SiameseNetwork, self).__init__()
+#         # Setting up the Sequential of CNN Layers
+#         self.cnn1 = nn.Sequential(
+#             nn.Conv2d(3, 96, kernel_size=5,stride=1),
+#             nn.ReLU(inplace=True),
+#             nn.LocalResponseNorm(5,alpha=0.0001,beta=0.75,k=2),
+#             nn.MaxPool2d(3, stride=2),
+#            
+#             nn.Conv2d(96, 256, kernel_size=5,stride=1,padding=2),
+#             nn.ReLU(inplace=True),
+#             nn.LocalResponseNorm(5,alpha=0.0001,beta=0.75,k=2),
+#             nn.MaxPool2d(3, stride=2),
+#             nn.Dropout2d(p=0.3),
+# 
+#             nn.Conv2d(256,384 , kernel_size=3,stride=1,padding=1),
+#             nn.ReLU(inplace=True),
+#            
+#             nn.Conv2d(384,256 , kernel_size=3,stride=1,padding=1),
+#             nn.ReLU(inplace=True),
+#             nn.MaxPool2d(3, stride=2),
+#             nn.Dropout2d(p=0.3),
+#         )
+#         # Defining the fully connected layers
+#         self.fc1 = nn.Sequential(
+#             nn.Linear(4500, 500),
+#             nn.ReLU(inplace=True),
+#             nn.Dropout2d(p=0.5),
+#            
+#             nn.Linear(1024, 128),
+#             nn.ReLU(inplace=True),
+#            
+#             nn.Linear(128,2))
+#        
+#     def forward_once(self, x):
+#         # Forward pass
+#         output = self.cnn1(x)
+#         output = output.view(output.size()[0], -1)
+#         output = self.fc1(output)
+#         return output
+# 
+#     def forward(self, input1, input2):
+#         # forward pass of input 1
+#         output1 = self.forward_once(input1)
+#         # forward pass of input 2
+#         output2 = self.forward_once(input2)
+#         return output1, output2
+
+# === AFTER (edited) ===
 class SiameseNetwork(nn.Module):
     def __init__(self):
         super(SiameseNetwork, self).__init__()
-        # Setting up the Sequential of CNN Layers
+
         self.cnn1 = nn.Sequential(
             nn.Conv2d(3, 96, kernel_size=5,stride=1),
             nn.ReLU(inplace=True),
             nn.LocalResponseNorm(5,alpha=0.0001,beta=0.75,k=2),
             nn.MaxPool2d(3, stride=2),
-           
+
             nn.Conv2d(96, 256, kernel_size=5,stride=1,padding=2),
             nn.ReLU(inplace=True),
             nn.LocalResponseNorm(5,alpha=0.0001,beta=0.75,k=2),
@@ -166,41 +189,39 @@ class SiameseNetwork(nn.Module):
 
             nn.Conv2d(256,384 , kernel_size=3,stride=1,padding=1),
             nn.ReLU(inplace=True),
-           
+
             nn.Conv2d(384,256 , kernel_size=3,stride=1,padding=1),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(3, stride=2),
             nn.Dropout2d(p=0.3),
         )
-        # Defining the fully connected layers
+
         self.fc1 = nn.Sequential(
-            nn.Linear(4500, 500),
+            nn.Linear(2816, 500),
             nn.ReLU(inplace=True),
-            nn.Dropout2d(p=0.5),
-           
-            nn.Linear(1024, 128),
+            nn.Dropout(p=0.5),
+            nn.Linear(500, 128),
             nn.ReLU(inplace=True),
-           
             nn.Linear(128,2))
-       
+
     def forward_once(self, x):
-        # Forward pass
+
         output = self.cnn1(x)
         output = output.view(output.size()[0], -1)
         output = self.fc1(output)
         return output
 
     def forward(self, input1, input2):
-        # forward pass of input 1
+
         output1 = self.forward_once(input1)
-        # forward pass of input 2
+
         output2 = self.forward_once(input2)
         return output1, output2
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 class ContrastiveLoss(torch.nn.Module):
     """
     Contrastive loss function.
@@ -223,11 +244,10 @@ class ContrastiveLoss(torch.nn.Module):
         loss = torch.sum(loss) / 2.0 / x0.size()[0]
         return loss
 
-
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 11}
 net = SiameseNetwork()#.cuda()
 # Decalre Loss Function
 criterion = ContrastiveLoss()

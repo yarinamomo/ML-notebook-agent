@@ -8,53 +8,11 @@ import pandas as pd
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# # Reading dataset
-# 
-# df=pd.read_csv('data/data.csv')
+# Reading dataset
 
-# === AFTER (edited) ===
-# Generate synthetic housing data since the original file is a Git LFS pointer
-import numpy as np
-import pandas as pd
-
-np.random.seed(42)
-n_samples = 100
-
-cities = ['Seattle', 'Renton', 'Bellevue', 'Redmond', 'Issaquah', 'Kirkland', 'Kent', 
-          'Auburn', 'Sammamish', 'Federal Way', 'Shoreline', 'Woodinville', 'Maple Valley',
-          'Mercer Island', 'Burien', 'Snoqualmie', 'Kenmore', 'Des Moines', 'North Bend',
-          'Covington', 'Duvall', 'Lake Forest Park', 'Bothell', 'Newcastle', 'SeaTac',
-          'Tukwila', 'Vashon', 'Enumclaw', 'Carnation', 'Normandy Park', 'Clyde Hill',
-          'Medina', 'Fall City', 'Black Diamond', 'Ravensdale', 'Pacific', 'Algona',
-          'Yarrow Point', 'Skykomish', 'Preston', 'Milton', 'Inglewood-Finn Hill',
-          'Snoqualmie Pass', 'Beaux Arts Village']
-
-data = {
-    'price': np.random.uniform(200000, 2000000, n_samples),
-    'bedrooms': np.random.randint(1, 7, n_samples),
-    'bathrooms': np.random.uniform(1, 5, n_samples),
-    'sqft_living': np.random.uniform(800, 5000, n_samples),
-    'sqft_lot': np.random.uniform(1000, 20000, n_samples),
-    'floors': np.random.uniform(1, 3, n_samples),
-    'waterfront': np.random.randint(0, 2, n_samples),
-    'view': np.random.randint(0, 5, n_samples),
-    'condition': np.random.randint(1, 6, n_samples),
-    'sqft_above': np.random.uniform(600, 4000, n_samples),
-    'sqft_basement': np.random.uniform(0, 1500, n_samples),
-    'yr_built': np.random.randint(1950, 2020, n_samples),
-    'yr_renovated': np.random.choice([0, *range(2000, 2020)], n_samples),
-    'street': [f'{i} Main St' for i in np.random.randint(1, 10000, n_samples)],
-    'city': np.random.choice(cities, n_samples),
-    'statezip': [f'WA 98{np.random.randint(10, 100):02d}' for _ in range(n_samples)],
-    'country': ['USA'] * n_samples
-}
-
-df = pd.DataFrame(data)
-print(f"Created synthetic dataset with {len(df)} samples")
-print(df.head())
+df=pd.read_csv('data/data.csv')
 
 #%%
 # --- [CELL 2]: ---

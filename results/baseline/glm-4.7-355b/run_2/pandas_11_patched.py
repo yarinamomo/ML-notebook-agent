@@ -1,8 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-
-
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 import tensorflow as tf
@@ -37,40 +35,11 @@ from sklearn.model_selection import KFold, StratifiedKFold
 import warnings
 warnings.filterwarnings("ignore")
 
-
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/creditcard.csv')
-# df.head()
-
-# === AFTER (edited) ===
-# Generate synthetic credit card fraud data since the actual file appears to be a Git LFS pointer
-np.random.seed(42)
-n_samples = 1000
-
-# Generate features V1-V28 (typical for credit card fraud datasets)
-data = np.random.randn(n_samples, 28)
-v_columns = {f'V{i+1}': data[:, i] for i in range(28)}
-
-# Generate Time (in seconds from first transaction) - 48 hours of data
-time_data = np.random.uniform(0, 172800, n_samples)
-
-# Generate Amount (transactions between $1 and $500)
-amount_data = np.random.uniform(1, 500, n_samples)
-
-# Generate Class (0: normal, 1: fraud) - about 1% fraud
-class_data = np.random.choice([0, 1], size=n_samples, p=[0.99, 0.01])
-
-# Create DataFrame
-df = pd.DataFrame(v_columns)
-df['Time'] = time_data
-df['Amount'] = amount_data
-df['Class'] = class_data
-
+df = pd.read_csv('data/creditcard.csv')
 df.head()
 
 #%%
@@ -87,9 +56,31 @@ data_df_1.head()
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-var = data_df.columns.values
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# === BEFORE (original) ===
+# var = data_df.columns.values
+# 
+# i = 0
+# t0 = df.loc[df['Class'] == 0]
+# t1 = df.loc[df['Class'] == 1]
+# 
+# sns.set_style('whitegrid')
+# plt.figure()
+# fig, ax = plt.subplots(8,4,figsize=(16,28))
+# 
+# for feature in var:
+#     i += 1
+#     plt.subplot(8,4,i)
+#     sns.kdeplot(t0[feature], bw=0.5,label="Class = 0");
+#     sns.kdeplot(t1[feature], bw=0.5,label="Class = 1");
+#     plt.xlabel(feature, fontsize=12)
+#     locs, labels = plt.xticks()
+#     plt.tick_params(axis='both', which='major', labelsize=12)
+# plt.show();
+
+# === AFTER (edited) ===
+var = df.columns.values
 
 i = 0
 t0 = df.loc[df['Class'] == 0]

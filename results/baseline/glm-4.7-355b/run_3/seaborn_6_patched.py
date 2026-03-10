@@ -25,26 +25,16 @@ df=df.dropna()
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
-
-# === AFTER (edited) ===
-# Find the sex column (case-insensitive check)
-sex_col = None
-for col in df.columns:
-    if col.lower().strip() == 'sex':
-        sex_col = col
-        break
-
-if sex_col:
-    df[sex_col] = df[sex_col].map({"male" : 0,"female" : 1})
-else:
-    print("Warning: 'sex' column not found in dataframe")
+df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
-sns.violinplot(df, x='species')
+# === BEFORE (original) ===
+# sns.violinplot(df, x='species')
+
+# === AFTER (edited) ===
+sns.violinplot(df, y='species')

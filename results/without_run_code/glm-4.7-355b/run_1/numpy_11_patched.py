@@ -93,31 +93,20 @@ if not os.path.isfile(training_binary_path):
 
   training_data = []
   faces_path = 'data/apple_disease_classification/Train/Blotch_Apple'
-  files = os.listdir(faces_path)
-  for filename in tqdm(files):
+  for filename in tqdm(os.listdir(faces_path)):
       path = os.path.join(faces_path,filename)
-      try:
-          image = Image.open(path).resize((GENERATE_SQUARE,
-                GENERATE_SQUARE),Image.LANCZOS)
-          training_data.append(np.asarray(image))
-      except Exception as e:
-          print(f"Skipping {filename}: {e}")
-          continue
-  
-  if len(training_data) > 0:
-      training_data = np.reshape(training_data,(-1,GENERATE_SQUARE,
+      image = Image.open(path).resize((GENERATE_SQUARE,
+            GENERATE_SQUARE),Image.LANCZOS).convert('RGB')
+      training_data.append(np.asarray(image))
+  training_data = np.reshape(training_data,(-1,GENERATE_SQUARE,
             GENERATE_SQUARE,3))
-      training_data = training_data.astype(np.float32)
-      training_data = training_data / 127.5 - 1.
+  training_data = training_data.astype(np.float32)
+  training_data = training_data / 127.5 - 1.
 
-      print("Saving training image binary...")
-      np.save(training_binary_path, training_data)
 
-      elapsed = time.time()-start
-      print(f"Loaded {len(training_data)} images in {elapsed:.2f}s")
-  else:
-      print("Warning: No valid training images found!")
-      training_data = np.array([])
+  print("Saving training image binary...")
+
+  elapsed = time.time()-start
 
 else:
   print("Loading previous training pickle...")

@@ -28,44 +28,9 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# jsdf = pd.read_json('data/train_annotations')
-# jsdf.head()
-
-# === AFTER (edited) ===
-import os
-
-file_path = 'data/train_annotations'
-if os.path.isfile(file_path):
-    try:
-        # Try reading as NDJSON (lines format) - common for annotations
-        jsdf = pd.read_json(file_path, lines=True)
-        print(f"Successfully read train_annotations, shape: {jsdf.shape}")
-    except ValueError as e:
-        try:
-            # Try reading as regular JSON
-            jsdf = pd.read_json(file_path)
-            print(f"Successfully read train_annotations, shape: {jsdf.shape}")
-        except Exception as e2:
-            print(f"Warning: Could not parse '{file_path}'")
-            print("This appears to be a Git LFS pointer file - the actual data isn't available.")
-            print("Creating a sample DataFrame for demonstration purposes...")
-            # Create sample data structure matching expected schema for merge
-            # The merge expects 'image_id' column
-            jsdf = pd.DataFrame({
-                'image_id': [311, 136, 139, 40, 449],
-                'category_id': [0, 1, 0, 1, 0]
-            })
-            print(f"Created sample DataFrame with {len(jsdf)} rows")
-elif os.path.isdir(file_path):
-    print(f"'{file_path}' is a directory, not a file")
-    jsdf = pd.DataFrame()
-else:
-    print(f"File not found: {file_path}")
-    jsdf = pd.DataFrame()
-
+jsdf = pd.read_json('data/train_annotations')
 jsdf.head()
 
 #%%
@@ -124,62 +89,20 @@ transform = transforms.Compose([
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
-# === BEFORE (original) ===
-# data_path = 'data/train/train'
-# images = []
-# targets = []
-# 
-# for i,annotation in train_data.iterrows():
-#     image_name = annotation['filename']
-#     target = annotation['label']
-#     image_path = os.path.join(data_path, image_name)
-#     image = Image.open(image_path).convert("RGB")
-#     image = transform(image)
-#     images.append(image)
-#     targets.append(torch.tensor(target))
-
-# === AFTER (edited) ===
 data_path = 'data/train/train'
 images = []
 targets = []
 
-for i, annotation in train_data.iterrows():
+for i,annotation in train_data.iterrows():
     image_name = annotation['filename']
     target = annotation['label']
     image_path = os.path.join(data_path, image_name)
-    try:
-        image = Image.open(image_path).convert("RGB")
-        image = transform(image)
-        images.append(image)
-        targets.append(torch.tensor(target))
-    except Exception as e:
-        # Suppress print statements for cleaner output
-        pass
-    if len(images) < 5 and i >= 0:
-        pass  # Allow first few errors silently
-
-# If all images failed (Git LFS issue), create sample data
-if len(images) == 0 or len(images) < len(train_data):
-    print(f"Warning: Image files are Git LFS pointers. Creating sample tensors.")
-    # After CenterCrop(512,512) and ToTensor: (3, 512, 512)
-    # After normalizing, still (3, 512, 512)
-    dummy_image = torch.zeros(3, 512, 512)
-    # Fill with some variation
-    dummy_image[0] = 0.5 + torch.randn(512, 512) * 0.1
-    dummy_image[1] = 0.5 + torch.randn(512, 512) * 0.1
-    dummy_image[2] = 0.5 + torch.randn(512, 512) * 0.1
-    
-    # Replace or fill with dummy images
-    needed = len(train_data) - len(images)
-    for i in range(needed):
-        images.append(torch.randn(3, 512, 512) * 0.5 + 0.5)
-        idx = len(images) - 1
-        if idx < len(train_data):
-            targets.append(torch.tensor(train_data.iloc[idx]['label']))
-
-print(f"Loaded {len(images)} images")
+    image = Image.open(image_path).convert("RGB")
+    image = transform(image)
+    images.append(image)
+    targets.append(torch.tensor(target))
 
 #%%
 # --- [CELL 9]: ---
@@ -276,7 +199,7 @@ test_model(model)
 #%%
 # --- [CELL 15]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
 # === BEFORE (original) ===
 # n_epoch = 1
 # for epoch in range(n_epoch):
@@ -305,8 +228,7 @@ for epoch in range(n_epoch):
         optimizer.zero_grad()
 
         outputs = model(sekil)
-        # Reshape targets to match output shape (batch_size, 1)
-        netice = netice.unsqueeze(1).float()
+        netice = netice.unsqueeze(1).float()  # Reshape and convert to float
         loss = loss_fn(outputs, netice)
 
         loss.backward()

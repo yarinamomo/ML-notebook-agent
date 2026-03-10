@@ -30,8 +30,6 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.width', None)
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
 
-
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
@@ -97,7 +95,6 @@ def grab_col_names(dataframe, cat_th=10, car_th=25):
 
 cat_cols, cat_but_car, num_cols = grab_col_names(df)
 
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
@@ -145,7 +142,6 @@ for col in num_cols:
 
 for col in num_cols:
     sns.barplot(data=df, x=col)
-    plt.show(block=True)
 
 for col in num_cols:
     sns.boxplot(data=df, x=col)

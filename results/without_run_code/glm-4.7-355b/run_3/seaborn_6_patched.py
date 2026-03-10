@@ -25,14 +25,9 @@ df=df.dropna()
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
-
-# === AFTER (edited) ===
-if "sex" in df.columns:
-    df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
+df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
 
 #%%
 # --- [CELL 4]: ---
@@ -42,5 +37,4 @@ if "sex" in df.columns:
 # sns.violinplot(df, x='species')
 
 # === AFTER (edited) ===
-if "species" in df.columns:
-    sns.violinplot(df, x='species')
+sns.violinplot(df, x='species', y='bill_length_mm')

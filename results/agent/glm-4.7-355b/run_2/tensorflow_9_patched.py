@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,51 +17,22 @@ import string
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/train.csv')
-# test_df = pd.read_csv('data/test.csv')
-# df.sample(5)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
 df = pd.read_csv('data/train.csv')
 test_df = pd.read_csv('data/test.csv')
-
-# Check if the expected columns exist, if not create dummy data
-if 'text' not in df.columns:
-    # Create dummy data since the actual data file appears to be a Git LFS pointer
-    df = pd.DataFrame({
-        'text': [
-            'There is a forest fire reported in the area',
-            'Just saw a car accident on the highway',
-            'Beautiful sunset today #nature',
-            'Earthquake reported in California',
-            'Having a great weekend with friends'
-        ],
-        'target': [1, 1, 0, 1, 0],
-        'id': [1, 2, 3, 4, 5]
-    })
-    test_df = pd.DataFrame({
-        'text': [
-            'Explosion reported downtown',
-            'Nice weather today'
-        ],
-        'id': [6, 7]
-    })
-
-df.sample(min(5, len(df)))
+df.sample(5)
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 class_names =['Not a disaster', 'Disaster']
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 # word_count
 df['word_count'] = df['text'].apply(lambda x: len(str(x).split()))
 
@@ -92,7 +63,7 @@ df['mention_count'] = df['text'].apply(lambda x: len([c for c in str(x) if c == 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 ## Truncate some extreme values for better visuals ##
 df['word_count'].loc[df['word_count']>60] = 60 #truncation for better visuals
 df['char_count'].loc[df['char_count']>350] = 350 #truncation for better visuals
@@ -115,7 +86,7 @@ axes[2].set_title("Number of punctuations in each class", fontsize=15)
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 df['hashtag_count'].loc[df['hashtag_count']>60] = 60 #truncation for better visuals
 df['mention_count'].loc[df['mention_count']>60] = 60 #truncation for better visuals
 
@@ -137,7 +108,7 @@ plt.show()
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 exclude = string.punctuation
 def remove_url(text):
     pattern = re.compile(r'https?://\S+|www\.\S+')
@@ -149,7 +120,7 @@ def remove_punc(text):
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'not run'}
 text1 = 'Check out my notebook https://www.kaggle.com/campusx/notebook8223fc1abb'
 text2 = '!hello *world@ 1'
 df['text'] = df['text'].apply(remove_url)
@@ -160,7 +131,7 @@ test_df['text'] = test_df['text'].apply(remove_url)
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'not run'}
 from transformers import BertModel, BertTokenizer
 import torch
 from torch import nn
@@ -172,13 +143,13 @@ from sklearn.metrics import confusion_matrix, classification_report
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'not run'}
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'not run'}
 example_text = 'I will watch #Memento tonight!'
 bert_input = tokenizer(example_text, padding='max_length', max_length = 15,
                       truncation = True, return_tensors = 'pt')
@@ -186,7 +157,7 @@ bert_input = tokenizer(example_text, padding='max_length', max_length = 15,
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'not run'}
 input_ids = torch.tensor(bert_input.input_ids)
 attention_mask = torch.tensor(bert_input.attention_mask)
 bert_model = BertModel.from_pretrained('bert-base-uncased')
@@ -198,15 +169,28 @@ print(bert_model.config.hidden_size)
 #%%
 # --- [CELL 12]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # import tensorflow as tf
 # tf.keras.utils.plot_model(bert_model)
 
 # === AFTER (edited) ===
 import tensorflow as tf
+from transformers import BertModel, BertTokenizer
+import torch
 
-# Note: plot_model is for TensorFlow/Keras models, not PyTorch models
-# To visualize a PyTorch BERT model architecture, we can print the model instead
+# Recreate the bert input from the previous cell to get the model
+example_text = 'I will watch #Memento tonight!'
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+bert_input = tokenizer(example_text, padding='max_length', max_length = 15,
+                      truncation = True, return_tensors = 'pt')
+
+input_ids = bert_input.input_ids
+attention_mask = bert_input.attention_mask
+bert_model = BertModel.from_pretrained('bert-base-uncased')
+
+# Print the BERT model architecture (PyTorch model doesn't work with tf.keras)
 print("BERT Model Architecture:")
 print(bert_model)
+print("\nBERT Model Configuration:")
+print(bert_model.config)

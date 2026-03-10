@@ -27,61 +27,11 @@ from sklearn.metrics import mean_absolute_error,mean_squared_error,r2_score
 
 import matplotlib.pyplot as plt
 
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/car data.csv')
-# df.head()
-
-# === AFTER (edited) ===
-# Create sample car data since the data file appears to be a Git LFS pointer
-data = {
-    'Year': [2015, 2016, 2014, 2017, 2015, 2016, 2014, 2017, 2015, 2016,
-             2014, 2017, 2015, 2016, 2014, 2017, 2015, 2016, 2014, 2017,
-             2015, 2016, 2014, 2017, 2015, 2016, 2014, 2017, 2015, 2016],
-    'Selling_Price': [3.5, 4.2, 2.8, 5.1, 3.7, 4.5, 2.9, 5.3, 3.6, 4.3,
-                     2.7, 5.2, 3.8, 4.4, 2.6, 5.4, 3.9, 4.1, 2.5, 5.0,
-                     3.4, 4.6, 2.8, 5.5, 3.5, 4.7, 2.9, 5.1, 3.6, 4.2],
-    'Present_Price': [5.5, 6.2, 4.8, 7.1, 5.7, 6.5, 4.9, 7.3, 5.6, 6.3,
-                     4.7, 7.2, 5.8, 6.4, 4.6, 7.4, 5.9, 6.1, 4.5, 7.0,
-                     5.4, 6.6, 4.8, 7.5, 5.5, 6.7, 4.9, 7.1, 5.6, 6.2],
-    'Driven_kms': [45000, 32000, 58000, 25000, 42000, 30000, 59000, 23000, 
-                  44000, 31000, 60000, 24000, 41000, 33000, 57000, 26000,
-                  40000, 35000, 55000, 27000, 43000, 32000, 58000, 22000,
-                  46000, 31000, 60000, 24000, 45000, 33000],
-    'Fuel_Type': ['Petrol', 'Diesel', 'Petrol', 'Diesel', 'CNG', 'Petrol', 
-                 'Diesel', 'CNG', 'Petrol', 'Diesel', 'Petrol', 'CNG',
-                 'Petrol', 'Diesel', 'Petrol', 'CNG', 'Petrol', 'Diesel',
-                 'Petrol', 'CNG', 'Petrol', 'Diesel', 'Petrol', 'CNG',
-                 'Petrol', 'Diesel', 'Petrol', 'CNG', 'Petrol', 'Diesel'],
-    'Selling_type': ['Dealer', 'Individual', 'Dealer', 'Individual', 'Dealer',
-                    'Individual', 'Dealer', 'Individual', 'Dealer', 'Individual',
-                    'Dealer', 'Individual', 'Dealer', 'Individual', 'Dealer',
-                    'Individual', 'Dealer', 'Individual', 'Dealer', 'Individual',
-                    'Dealer', 'Individual', 'Dealer', 'Individual', 'Dealer',
-                    'Individual', 'Dealer', 'Individual', 'Dealer', 'Individual'],
-    'Transmission': ['Manual', 'Automatic', 'Manual', 'Automatic', 'Manual',
-                    'Automatic', 'Manual', 'Automatic', 'Manual', 'Automatic',
-                    'Manual', 'Automatic', 'Manual', 'Automatic', 'Manual',
-                    'Automatic', 'Manual', 'Automatic', 'Manual', 'Automatic',
-                    'Manual', 'Automatic', 'Manual', 'Automatic', 'Manual',
-                    'Automatic', 'Manual', 'Automatic', 'Manual', 'Automatic'],
-    'Owner': [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-             0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-    'Car_Name': ['City', 'Corolla', 'Verna', 'Civic', 'City', 'Corolla', 
-                'Verna', 'Civic', 'City', 'Corolla', 'Verna', 'Civic',
-                'City', 'Corolla', 'Verna', 'Civic', 'City', 'Corolla',
-                'Verna', 'Civic', 'City', 'Corolla', 'Verna', 'Civic',
-                'City', 'Corolla', 'Verna', 'Civic', 'City', 'Corolla']
-}
-
-df = pd.DataFrame(data)
-print("DataFrame created successfully")
-print(f"Columns: {df.columns.tolist()}")
-print(f"Shape: {df.shape}")
+df = pd.read_csv('data/car data.csv')
 df.head()
 
 #%%
@@ -251,7 +201,6 @@ for key in model_dict:
 
     fearture_names = X_train.columns.tolist() if key == 'X_train' else X_2_train.columns.tolist()
     f_index = ['gbr', 'rfr'] if key == 'X_train' else ['gbr2', 'gbr_gs', 'rfr2', 'rfr_gs']
-    
-    # Create DataFrame with proper list format instead of np.array
-    feature_df = pd.DataFrame(f_list, columns=fearture_names, index=f_index)
+
+    feature_df = pd.DataFrame(np.array(f_list), columns=fearture_names, index=f_index)
     display(feature_df)

@@ -38,13 +38,9 @@ test_ds = pd.read_csv("data/test.csv")
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
-
-# === AFTER (edited) ===
-train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True, errors='ignore')
+train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 #%%
 # --- [CELL 4]: ---
@@ -67,33 +63,16 @@ for column in string_columns:
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# X = train_ds.drop(['SalePrice'], axis = 1)
-# y = train_ds['SalePrice']
-
-# === AFTER (edited) ===
-X = train_ds.drop(['SalePrice'], axis = 1, errors='ignore')
-y = train_ds['SalePrice'] if 'SalePrice' in train_ds.columns else None
+X = train_ds.drop(['SalePrice'], axis = 1)
+y = train_ds['SalePrice']
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# === BEFORE (original) ===
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 42)
-
-# === AFTER (edited) ===
-if y is not None:
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 42)
-else:
-    print("Warning: No target variable 'SalePrice' found. Creating dummy data for demonstration.")
-    # Create properly sized dummy data based on actual X shape
-    n_samples = len(X)
-    split_idx = max(1, int(n_samples * 0.7))
-    X_train, X_test = X[:split_idx], X[split_idx:]
-    y_train, y_test = np.random.randn(split_idx), np.random.randn(n_samples - split_idx)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 42)
 
 #%%
 # --- [CELL 8]: ---
@@ -120,23 +99,35 @@ print(f'MSE: {mse}')
 
 #%%
 # --- [CELL 11]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
-# === BEFORE (original) ===
-# test_ds_ids = test_ds['Id'] # fix for crash isolation purpose
-# test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
-
-# === AFTER (edited) ===
-test_ds_ids = test_ds['Id'] if 'Id' in test_ds.columns else range(len(test_ds))
-test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True, errors='ignore')
+test_ds_ids = test_ds['Id'] # fix for crash isolation purpose
+test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# === BEFORE (original) ===
+# for column in test_ds:
+#     null_count = test_ds[column].isnull().sum()
+#     if null_count > 1:
+#         print(f"Dropping column {column} with {null_count} missing values.")
+#         test_ds.drop(column, axis = 1, inplace = True)
+
+# === AFTER (edited) ===
+# Fill columns with few missing values instead of dropping them
 for column in test_ds:
     null_count = test_ds[column].isnull().sum()
-    if null_count > 1:
+    if 0 < null_count <= 10:
+        # Fill with mode for categorical columns or median for numerical columns
+        if test_ds[column].dtype == 'object':
+            fill_value = test_ds[column].mode()[0]
+        else:
+            fill_value = test_ds[column].median()
+        test_ds[column].fillna(fill_value, inplace=True)
+        print(f"Filling column {column} with {null_count} missing values.")
+    elif null_count > 10:
         print(f"Dropping column {column} with {null_count} missing values.")
         test_ds.drop(column, axis = 1, inplace = True)
 

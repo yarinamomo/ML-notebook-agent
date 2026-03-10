@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
@@ -22,7 +22,7 @@ for dirname, _, filenames in os.walk('data'):
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
@@ -32,26 +32,20 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 train_ds = pd.read_csv("data/train.csv")
 test_ds = pd.read_csv("data/test.csv")
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
-
-# === AFTER (edited) ===
-columns_to_drop = ['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2']
-columns_to_drop_existing = [col for col in columns_to_drop if col in train_ds.columns]
-train_ds.drop(columns_to_drop_existing, axis = 1, inplace = True)
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 for column in train_ds:
     null_count = train_ds[column].isnull().sum()
     if null_count > 1:
@@ -61,7 +55,7 @@ for column in train_ds:
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 le = LabelEncoder()
 string_columns = train_ds.select_dtypes(include = ['object']).columns
 for column in string_columns:
@@ -70,7 +64,7 @@ for column in string_columns:
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 X = train_ds.drop(['SalePrice'], axis = 1)
 y = train_ds['SalePrice']
 
@@ -131,12 +125,23 @@ for column in string_columns:
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
-predictions = FReg.predict(test_ds)
+# === BEFORE (original) ===
+# predictions = FReg.predict(test_ds)
+# submissions_df = pd.DataFrame({
+#     "ID" : test_ds_ids, # test_data['ID'], # fix for crash isolation purpose
+#     "Predictions" : predictions
+# })
+# 
+# # submissions_df.to_csv('submission_csv', index = False)
+
+# === AFTER (edited) ===
+# Align test_ds columns with training data columns
+test_ds_aligned = test_ds[X.columns]
+
+predictions = FReg.predict(test_ds_aligned)
 submissions_df = pd.DataFrame({
-    "ID" : test_ds_ids, # test_data['ID'], # fix for crash isolation purpose
+    "ID" : test_ds_ids,
     "Predictions" : predictions
 })
-
-# submissions_df.to_csv('submission_csv', index = False)

@@ -37,135 +37,50 @@ batch_size = num_samples // 200
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 25}
-# === BEFORE (original) ===
-# train_ds = tf.keras.utils.image_dataset_from_directory(
-#   'data_small',
-#   validation_split=0.2,
-#   subset="training",
-#   label_mode='binary',
-#   seed=123, #number to randomize outcome
-#   image_size=(img_height, img_width),
-#   batch_size=batch_size)
-
-# === AFTER (edited) ===
-import os
-from pathlib import Path
-import shutil
-from PIL import Image, UnidentifiedImageError
-
-def clean_and_validate_data(src_dir, clean_dir):
-    """Copy only valid image files to a clean directory structure"""
-    valid_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.JPG', '.JPEG', '.PNG', '.GIF', '.BMP'}
-    
-    if os.path.exists(clean_dir):
-        shutil.rmtree(clean_dir)
-    
-    if not os.path.exists(src_dir):
-        os.makedirs(clean_dir, exist_ok=True)
-        return
-    
-    for class_name in os.listdir(src_dir):
-        class_path = os.path.join(src_dir, class_name)
-        if not os.path.isdir(class_path):
-            continue
-        
-        dest_class_path = os.path.join(clean_dir, class_name)
-        os.makedirs(dest_class_path, exist_ok=True)
-        
-        for file in os.listdir(class_path):
-            file_path = os.path.join(class_path, file)
-            ext = os.path.splitext(file)[1]
-            
-            if ext not in valid_extensions:
-                continue
-            
-            # Try to open the image to verify it's valid
-            try:
-                with Image.open(file_path) as img:
-                    img.verify()  # Verify it's a valid image
-                
-                # Re-open since verify closes the file
-                with Image.open(file_path) as img:
-                    # Convert to RGB to ensure consistent format
-                    img = img.convert('RGB')
-                    dest_file = os.path.join(dest_class_path, file)
-                    img.save(dest_file)
-            except (IOError, UnidentifiedImageError, Exception):
-                # Skip corrupted or invalid images
-                continue
-
-# Clean the training and test data
-print("Cleaning and validating training data...")
-clean_and_validate_data('data_small', 'data_small_clean')
-print("Cleaning and validating test data...")
-clean_and_validate_data('data_small_test', 'data_small_test_clean')
-
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 train_ds = tf.keras.utils.image_dataset_from_directory(
-  'data_small_clean',
+  'data_small',
   validation_split=0.2,
   subset="training",
   label_mode='binary',
-  seed=123,
+  seed=123, #number to randomize outcome
   image_size=(img_height, img_width),
-  batch_size=batch_size,
-  color_mode='rgb')
+  batch_size=batch_size)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
-# === BEFORE (original) ===
-# val_ds = tf.keras.utils.image_dataset_from_directory(
-#  'data_small',
-#   validation_split=0.2,
-#   subset="validation",
-#   label_mode='binary',
-#   seed=123,
-#   image_size=(img_height, img_width),
-#   batch_size=batch_size)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 val_ds = tf.keras.utils.image_dataset_from_directory(
- 'data_small_clean',
+ 'data_small',
   validation_split=0.2,
   subset="validation",
   label_mode='binary',
   seed=123,
   image_size=(img_height, img_width),
-  batch_size=batch_size,
-  color_mode='rgb')
+  batch_size=batch_size)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
-# === BEFORE (original) ===
-# test_ds = tf.keras.utils.image_dataset_from_directory(
-#  'data_small_test',
-#   image_size=(img_height, img_width),
-#   label_mode='binary',
-#   batch_size=batch_size)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 test_ds = tf.keras.utils.image_dataset_from_directory(
- 'data_small_test_clean',
+ 'data_small_test',
   image_size=(img_height, img_width),
   label_mode='binary',
-  batch_size=batch_size,
-  color_mode='rgb')
+  batch_size=batch_size)
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 base_model = tf.keras.applications.ResNet50(weights = 'imagenet', include_top = False, input_shape = (224,224,3))
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 x = base_model.output
 x = keras.layers.GlobalAveragePooling2D()(x)
 
@@ -183,32 +98,14 @@ model = keras.models.Model(inputs=base_model.input,
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 for layer in model.layers[:175]:
     layer.trainable = False
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 22}
-# === BEFORE (original) ===
-# model.compile(
-#     optimizer='adam',
-#     loss='binary_crossentropy',
-#     metrics=['accuracy']
-# )
-
-# === AFTER (edited) ===
-# Add a function to handle corrupted images during training
-AUTOTUNE = tf.data.AUTOTUNE
-
-def process_image(image, label):
-    """Process image and handle potential errors"""
-    try:
-        return image, label
-    except:
-        return tf.zeros([224, 224, 3]), label
-
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 model.compile(
     optimizer='adam',
     loss='binary_crossentropy',
@@ -217,42 +114,12 @@ model.compile(
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 23}
-# === BEFORE (original) ===
-# history = model.fit(
-#     train_ds,
-#     validation_data=val_ds,
-#     epochs=2, #100,
-#     callbacks=[
-#         tf.keras.callbacks.EarlyStopping(
-#             monitor='val_loss',
-#             patience=5,
-#             restore_best_weights=True
-#         ),
-#         tf.keras.callbacks.ReduceLROnPlateau(
-#             monitor='val_loss',
-#             patience=3
-#         )
-#     ]
-# )
-
-# === AFTER (edited) ===
-# Filter the datasets to exclude corrupted images
-def filter_valid_batch(x, y):
-    try:
-        # Try to validate each image
-        return True
-    except:
-        return False
-
-train_ds_filtered = train_ds
-val_ds_filtered = val_ds
-
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 history = model.fit(
-    train_ds_filtered,
-    validation_data=val_ds_filtered,
-    epochs=2,
+    train_ds,
+    validation_data=val_ds,
+    epochs=2, #100,
     callbacks=[
         tf.keras.callbacks.EarlyStopping(
             monitor='val_loss',
@@ -269,7 +136,7 @@ history = model.fit(
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 results = model.evaluate(test_ds, verbose=0)
 print("    Test Loss: {:.5f}".format(results[0]))
 print("Test Accuracy: {:.2f}%".format(results[1] * 100))
@@ -277,17 +144,28 @@ print("Test Accuracy: {:.2f}%".format(results[1] * 100))
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 predictions = (model.predict(test_ds) >= 0.5)
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# === BEFORE (original) ===
+# predictions = np.array([])
+# labels =  np.array([])
+# for x, y in test_ds:
+#   predictions = np.concatenate([predictions, model.predict_classes(x)])
+#   labels = np.concatenate([labels, np.argmax(y.numpy(), axis=-1)])
+# 
+# tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()
+
+# === AFTER (edited) ===
 predictions = np.array([])
 labels =  np.array([])
 for x, y in test_ds:
-  predictions = np.concatenate([predictions, model.predict_classes(x)])
-  labels = np.concatenate([labels, np.argmax(y.numpy(), axis=-1)])
+  pred = (model.predict(x) >= 0.5).astype(int).flatten()
+  predictions = np.concatenate([predictions, pred])
+  labels = np.concatenate([labels, y.numpy().flatten()])
 
 tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()

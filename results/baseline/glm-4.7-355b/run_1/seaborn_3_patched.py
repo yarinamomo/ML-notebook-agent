@@ -30,56 +30,23 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.width', None)
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
 
-
-
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train = pd.read_csv("data/train.csv")
-# test = pd.read_csv("data/test.csv")
-# 
-# # ignore_index=True kullanarak index sıfırdan başlayacak şekilde birleştirme yapın
-# df = pd.concat([train, test], ignore_index=True)
-# 
-# selected_list = ["GarageArea", "LotArea", "LotFrontage", "OverallQual", "PoolArea", "MSSubClass", "YearBuilt", "GrLivArea",
-#                  "BedroomAbvGr", "LowQualFinSF", "TotRmsAbvGrd", "Id", "SalePrice"]
-# 
-# # Id ve SalePrice'ı seçili sütunlara ekleyin
-# df = df[selected_list]
-# 
-# # "index" sütununu düşürmeye gerek yok
-# df.head()
-# df.shape
-# df.isnull().sum()
-
-# === AFTER (edited) ===
 train = pd.read_csv("data/train.csv")
 test = pd.read_csv("data/test.csv")
 
-
+# ignore_index=True kullanarak index sıfırdan başlayacak şekilde birleştirme yapın
 df = pd.concat([train, test], ignore_index=True)
-
-print("Available columns in the dataset:")
-print(df.columns.tolist())
 
 selected_list = ["GarageArea", "LotArea", "LotFrontage", "OverallQual", "PoolArea", "MSSubClass", "YearBuilt", "GrLivArea",
                  "BedroomAbvGr", "LowQualFinSF", "TotRmsAbvGrd", "Id", "SalePrice"]
 
-# Only select columns that actually exist in the dataframe
-available_cols = [col for col in selected_list if col in df.columns]
-missing_cols = set(selected_list) - set(available_cols)
+# Id ve SalePrice'ı seçili sütunlara ekleyin
+df = df[selected_list]
 
-if missing_cols:
-    print(f"\nWarning: The following expected columns are missing: {missing_cols}")
-    
-if available_cols:
-    df = df[available_cols]
-else:
-    print("\nError: None of the expected columns are found in the dataset using all available columns instead.")
-    df = df.copy()
-
+# "index" sütununu düşürmeye gerek yok
 df.head()
 df.shape
 df.isnull().sum()
@@ -128,11 +95,35 @@ def grab_col_names(dataframe, cat_th=10, car_th=25):
 
 cat_cols, cat_but_car, num_cols = grab_col_names(df)
 
-
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# === BEFORE (original) ===
+# def num_summary(dataframe, numerical_col, plot=False):
+#     quantiles = [0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99]
+#     print(dataframe[numerical_col].describe(quantiles).T)
+# 
+#     if plot:
+#         dataframe[numerical_col].hist(bins=50)
+#         plt.xlabel(numerical_col)
+#         plt.title(numerical_col)
+#         plt.show(block=True)
+# 
+#     print("#####################################")
+# 
+# 
+# for col in num_cols:
+#     num_summary(df, col, True)
+# 
+# for col in num_cols:
+#     sns.barplot(col,df)
+# 
+# for col in num_cols:
+#     sns.boxplot(data=df, x=col)
+#     plt.show(block=True)
+
+# === AFTER (edited) ===
 def num_summary(dataframe, numerical_col, plot=False):
     quantiles = [0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99]
     print(dataframe[numerical_col].describe(quantiles).T)
@@ -149,8 +140,6 @@ def num_summary(dataframe, numerical_col, plot=False):
 for col in num_cols:
     num_summary(df, col, True)
 
-for col in num_cols:
-    sns.barplot(col,df)
 
 for col in num_cols:
     sns.boxplot(data=df, x=col)

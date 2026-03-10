@@ -18,8 +18,6 @@ import os
 import glob
 from tensorflow.keras.callbacks import LambdaCallback
 
-
-
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
@@ -402,17 +400,6 @@ class AC_GAN:
 
         return np.array(generated)
 
-        
-        
-        
-        
-        
-        
-    
-        
-    
-
-
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
@@ -458,8 +445,6 @@ if(generator_files_exist and discriminator_files_exist):
 else:
     print('no wieght found')
     images = acgn.train(train_dataset_small,100,10,20,1,25) # for fast reproducing and fixing purposes
-    
-
 
 #%%
 # --- [CELL 5]: ---
@@ -469,4 +454,4 @@ else:
 # np.savetxt('images.txt', images, delimiter=',', fmt='%d')
 
 # === AFTER (edited) ===
-np.save('images.npy', images)
+np.savetxt('images.txt', images.reshape(images.shape[0], -1), delimiter=',', fmt='%d')

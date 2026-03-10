@@ -32,47 +32,12 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn import svm
 
-
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# data =pd.read_csv("data/train.csv")
-# # print(data)
-# data.head()
-
-# === AFTER (edited) ===
-# Create sample Titanic dataset since the train.csv file is a Git LFS pointer
-import numpy as np
-import pandas as pd
-
-np.random.seed(42)
-n_samples = 891
-
-data = pd.DataFrame({
-    'PassengerId': range(1, n_samples + 1),
-    'Survived': np.random.randint(0, 2, n_samples),
-    'Pclass': np.random.randint(1, 4, n_samples),
-    'Name': [f'Passenger {i}' for i in range(n_samples)],
-    'Sex': np.random.choice(['male', 'female'], n_samples),
-    'Age': np.random.uniform(18, 80, n_samples),
-    'SibSp': np.random.randint(0, 5, n_samples),
-    'Parch': np.random.randint(0, 5, n_samples),
-    'Ticket': [f'T{i}' for i in range(n_samples)],
-    'Fare': np.random.uniform(10, 100, n_samples),
-    'Cabin': [np.nan if np.random.random() > 0.3 else f'C{i}' for i in range(n_samples)],
-    'Embarked': np.random.choice(['S', 'C', 'Q'], n_samples)
-})
-
-# Add some missing values as expected in real Titanic data
-data.loc[data.sample(50).index, 'Age'] = np.nan
-data.loc[data.sample(20).index, 'Fare'] = np.nan
-data.loc[data.sample(10).index, 'Embarked'] = np.nan
-
-print("Data shape:", data.shape)
-print("\nColumns in data:", list(data.columns))
-
+data =pd.read_csv("data/train.csv")
+# print(data)
 data.head()
 
 #%%
@@ -156,7 +121,6 @@ model.fit(X_train, y_train)
 acc = evaluate(model)
 print(f'SVC (accuracy): {acc}%')
 
-
 #%%
 # --- [CELL 7]: ---
 # cell_state: edited
@@ -169,11 +133,10 @@ print(f'SVC (accuracy): {acc}%')
 
 # === AFTER (edited) ===
 from pandas import Series
-from sklearn.ensemble import RandomForestClassifier
 
-# Train a RandomForest model to get feature importances (SVC doesn't have feature_importances_)
-model_rf = RandomForestClassifier(n_estimators=100)
-model_rf.fit(X_train, y_train)
-feature_importance = model_rf.feature_importances_
+# Use RandomForest for feature importance (SVC doesn't have feature_importances_)
+model = RandomForestClassifier(n_estimators=100)
+model.fit(X_train, y_train)
+
+feature_importance = model.feature_importances_
 Series_feat_imp = Series(feature_importance, index=features.columns)
-print(Series_feat_imp.sort_values(ascending=False))

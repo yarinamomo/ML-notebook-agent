@@ -26,126 +26,13 @@ import torch.nn.functional as F
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# def load_transform_images(images_path, presplit, train_split, test_split, val_split, batch_size, threads, mean, std):
-#     train_transform = transforms.Compose([
-#                                          #transforms.RandomRotation(degrees=15),
-#                                          #transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-#                                          #transforms.RandomResizedCrop((224,224)),
-#                                          transforms.Resize((224,224)),
-#                                          transforms.RandomHorizontalFlip(),
-#                                          transforms.ToTensor(),
-#                                          transforms.Normalize(torch.Tensor(mean),
-#                                                               torch.Tensor(std))])
-# 
-#     test_transform = transforms.Compose([
-#                                         transforms.Resize((224,224)),
-#                                         #transforms.CenterCrop((224,224)),
-#                                         transforms.ToTensor(),
-#                                         transforms.Normalize(torch.Tensor(mean),
-#                                                              torch.Tensor(std))])
-# 
-#     val_transform = transforms.Compose([
-#                                        transforms.Resize((224,224)),
-#                                        #transforms.CenterCrop((224,224)),
-#                                        transforms.ToTensor(),
-#                                        transforms.Normalize(torch.Tensor(mean),
-#                                                             torch.Tensor(std))])
-#     if presplit:
-#         try:
-#             training_set = datasets.ImageFolder(root=images_path+'/train', transform=train_transform)
-#             validation_set = datasets.ImageFolder(root=images_path+'/val', transform=val_transform)
-#         except FileNotFoundError:
-#             raise Exception('Not presplit into Training and Validation sets')
-#         try:
-#             testing_set = datasets.ImageFolder(root=images_path+'/test', transform=test_transform)
-#         except:
-#             testing_set = validation_set
-#         dataset = training_set
-#     else:
-#         dataset = datasets.ImageFolder(root=images_path, transform=train_transform)
-#         train_size = int(train_split * len(dataset))
-#         test_size = int(test_split * len(dataset))
-#         val_size = len(dataset) - train_size - test_size
-#         training_set, testing_set, validation_set = torch.utils.data.random_split(dataset, [train_size, test_size, val_size])
-# 
-#     training_set_loader = DataLoader(training_set, batch_size=batch_size, num_workers=threads, shuffle=True)
-#     validation_set_loader = DataLoader(validation_set, batch_size=batch_size, num_workers=threads, shuffle=True)
-#     testing_set_loader = DataLoader(testing_set, batch_size=batch_size, num_workers=threads, shuffle=False)
-# 
-#     return training_set_loader, testing_set_loader, validation_set_loader, dataset, training_set, testing_set, validation_set
-# 
-# images_path = 'data_small/images/Images/'
-# results_path = images_path+'_results'
-# presplit = False
-# train_split = 0.5
-# val_split = 0.25
-# test_split = 0.25
-# batch_size = 128
-# threads = 0
-# mean = [0.485, 0.456, 0.406]
-# std = [0.229, 0.224, 0.225]
-# 
-# training_set_loader, testing_set_loader, validation_set_loader, dataset, training_set, testing_set, validation_set = \
-#                   load_transform_images(images_path, presplit, train_split, test_split, val_split, batch_size, threads, mean, std)
-# 
-# 
-# 
-# class_names = dataset.classes
-# class_names = [classes[10:] for classes in class_names]
-# classes = ('Chihuahua', 'Japanese_spaniel', 'Maltese_dog', 'Pekinese', 'Shih-Tzu', 'Blenheim_spaniel', 'papillon', 'toy_terrier', 'Rhodesian_ridgeback', 'Afghan_hound', 'basset', 'beagle', 'bloodhound', 'bluetick', 'black-and-tan_coonhound', 'Walker_hound', 'English_foxhound', 'redbone', 'borzoi', 'Irish_wolfhound', 'Italian_greyhound', 'whippet', 'Ibizan_hound', 'Norwegian_elkhound', 'otterhound', 'Saluki', 'Scottish_deerhound', 'Weimaraner', 'Staffordshire_bullterrier', 'American_Staffordshire_terrier', 'Bedlington_terrier', 'Border_terrier', 'Kerry_blue_terrier', 'Irish_terrier', 'Norfolk_terrier', 'Norwich_terrier', 'Yorkshire_terrier', 'wire-haired_fox_terrier', 'Lakeland_terrier', 'Sealyham_terrier', 'Airedale', 'cairn', 'Australian_terrier', 'Dandie_Dinmont', 'Boston_bull', 'miniature_schnauzer', 'giant_schnauzer', 'standard_schnauzer', 'Scotch_terrier', 'Tibetan_terrier', 'silky_terrier', 'soft-coated_wheaten_terrier', 'West_Highland_white_terrier', 'Lhasa', 'flat-coated_retriever', 'curly-coated_retriever', 'golden_retriever', 'Labrador_retriever', 'Chesapeake_Bay_retriever', 'German_short-haired_pointer', 'vizsla', 'English_setter', 'Irish_setter', 'Gordon_setter', 'Brittany_spaniel', 'clumber', 'English_springer', 'Welsh_springer_spaniel', 'cocker_spaniel', 'Sussex_spaniel', 'Irish_water_spaniel', 'kuvasz', 'schipperke', 'groenendael', 'malinois', 'briard', 'kelpie', 'komondor', 'Old_English_sheepdog', 'Shetland_sheepdog', 'collie', 'Border_collie', 'Bouvier_des_Flandres', 'Rottweiler', 'German_shepherd', 'Doberman', 'miniature_pinscher', 'Greater_Swiss_Mountain_dog', 'Bernese_mountain_dog', 'Appenzeller', 'EntleBucher', 'boxer', 'bull_mastiff', 'Tibetan_mastiff', 'French_bulldog', 'Great_Dane', 'Saint_Bernard', 'Eskimo_dog', 'malamute', 'Siberian_husky', 'affenpinscher', 'basenji', 'pug', 'Leonberg', 'Newfoundland', 'Great_Pyrenees', 'Samoyed', 'Pomeranian', 'chow', 'keeshond', 'Brabancon_griffon', 'Pembroke', 'Cardigan', 'toy_poodle', 'miniature_poodle', 'standard_poodle', 'Mexican_hairless', 'dingo', 'dhole', 'African_hunting_dog')
-# print(class_names)
-
-# === AFTER (edited) ===
-import os, time
-import numpy as np
-import random
-random.seed(42)
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, classification_report
-
-import torch
-torch.manual_seed(42)
-from torch import nn
-from torch.optim import SGD, Adam
-from torch.utils.data import DataLoader, RandomSampler
-from torch.utils.data.dataset import Dataset
-from torchvision.models import resnet
-from torchvision import transforms, datasets, models
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-import torch
-import torch.nn as nn
-import torchvision
-import torch.nn.functional as F
-
 def load_transform_images(images_path, presplit, train_split, test_split, val_split, batch_size, threads, mean, std):
-    from PIL import Image, ImageFile
-    import io
-    ImageFile.LOAD_TRUNCATED_IMAGES = True
-    
-    def pil_loader(path):
-        try:
-            with open(path, 'rb') as f:
-                img = Image.open(f)
-                return img.convert('RGB')
-        except Exception as e:
-            return Image.new('RGB', (224, 224), color='black')
-    
-    def default_loader(path):
-        from torchvision import get_image_backend
-        if get_image_backend() == 'accimage':
-            return accimage_loader(path)
-        else:
-            return pil_loader(path)
-    
     train_transform = transforms.Compose([
-
-
-
+                                         #transforms.RandomRotation(degrees=15),
+                                         #transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+                                         #transforms.RandomResizedCrop((224,224)),
                                          transforms.Resize((224,224)),
                                          transforms.RandomHorizontalFlip(),
                                          transforms.ToTensor(),
@@ -154,30 +41,30 @@ def load_transform_images(images_path, presplit, train_split, test_split, val_sp
 
     test_transform = transforms.Compose([
                                         transforms.Resize((224,224)),
-
+                                        #transforms.CenterCrop((224,224)),
                                         transforms.ToTensor(),
                                         transforms.Normalize(torch.Tensor(mean),
                                                              torch.Tensor(std))])
 
     val_transform = transforms.Compose([
                                        transforms.Resize((224,224)),
-
+                                       #transforms.CenterCrop((224,224)),
                                        transforms.ToTensor(),
                                        transforms.Normalize(torch.Tensor(mean),
                                                             torch.Tensor(std))])
     if presplit:
         try:
-            training_set = datasets.ImageFolder(root=images_path+'/train', transform=train_transform, loader=default_loader)
-            validation_set = datasets.ImageFolder(root=images_path+'/val', transform=val_transform, loader=default_loader)
+            training_set = datasets.ImageFolder(root=images_path+'/train', transform=train_transform)
+            validation_set = datasets.ImageFolder(root=images_path+'/val', transform=val_transform)
         except FileNotFoundError:
             raise Exception('Not presplit into Training and Validation sets')
         try:
-            testing_set = datasets.ImageFolder(root=images_path+'/test', transform=test_transform, loader=default_loader)
+            testing_set = datasets.ImageFolder(root=images_path+'/test', transform=test_transform)
         except:
             testing_set = validation_set
         dataset = training_set
     else:
-        dataset = datasets.ImageFolder(root=images_path, transform=train_transform, loader=default_loader)
+        dataset = datasets.ImageFolder(root=images_path, transform=train_transform)
         train_size = int(train_split * len(dataset))
         test_size = int(test_split * len(dataset))
         val_size = len(dataset) - train_size - test_size
@@ -200,7 +87,8 @@ threads = 0
 mean = [0.485, 0.456, 0.406]
 std = [0.229, 0.224, 0.225]
 
-training_set_loader, testing_set_loader, validation_set_loader, dataset, training_set, testing_set, validation_set =                  load_transform_images(images_path, presplit, train_split, test_split, val_split, batch_size, threads, mean, std)
+training_set_loader, testing_set_loader, validation_set_loader, dataset, training_set, testing_set, validation_set = \
+                  load_transform_images(images_path, presplit, train_split, test_split, val_split, batch_size, threads, mean, std)
 
 
 
@@ -257,7 +145,7 @@ import torch.nn.functional as F
 
 
 class Network(nn.Module):
-    def __init__(self):
+    def __init__(self, num_classes=120):
         super(Network, self).__init__()
 
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=12, kernel_size=5, stride=1, padding=1)
@@ -269,11 +157,8 @@ class Network(nn.Module):
         self.bn4 = nn.BatchNorm2d(24)
         self.conv5 = nn.Conv2d(in_channels=24, out_channels=24, kernel_size=5, stride=1, padding=1)
         self.bn5 = nn.BatchNorm2d(24)
-        self.conv6 = nn.Conv2d(in_channels=24, out_channels=24, kernel_size=5, stride=1, padding=1)
-        self.bn6 = nn.BatchNorm2d(24)
         self.pool2 = nn.MaxPool2d(2,2)
-        # 224 -> 222 -> 220 -> 110 -> 108 -> 106 -> 104 -> 52
-        self.fc1 = nn.Linear(24*52*52, 120)
+        self.fc1 = nn.Linear(24*53*53, num_classes)
 
     def forward(self, input):
         output = F.relu(self.bn1(self.conv1(input)))
@@ -281,32 +166,22 @@ class Network(nn.Module):
         output = self.pool(output)
         output = F.relu(self.bn4(self.conv4(output)))
         output = F.relu(self.bn5(self.conv5(output)))
-        output = F.relu(self.bn6(self.conv6(output)))
         output = self.pool2(output)
-        output = output.view(-1, 24*52*52)
+        output = output.view(-1, 24*53*53)
         output = self.fc1(output)
 
         return output
 
 
-model = Network()
+model = Network(len(class_names))
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# from torch.optim import Adam
-#  
-# # Define the loss function with Classification Cross-Entropy loss and an optimizer with Adam optimizer
-# loss_fn = nn.CrossEntropyLoss()
-# optimizer = Adam(model.parameters(), lr=0.001, weight_decay=0.0001)
-
-# === AFTER (edited) ===
 from torch.optim import Adam
-import torch.nn as nn
-
-
+ 
+# Define the loss function with Classification Cross-Entropy loss and an optimizer with Adam optimizer
 loss_fn = nn.CrossEntropyLoss()
 optimizer = Adam(model.parameters(), lr=0.001, weight_decay=0.0001)
 
@@ -405,7 +280,7 @@ def saveModel():
     torch.save(model.state_dict(), path)
 
 
-def testAccuracy(device):
+def testAccuracy():
 
     model.eval()
     accuracy = 0.0
@@ -415,7 +290,6 @@ def testAccuracy(device):
         for data in testing_set_loader:
             images, labels = data
 
-            images = images.to(device)
             outputs = model(images)
 
             _, predicted = torch.max(outputs.data, 1)
@@ -432,6 +306,7 @@ def train(num_epochs):
 
     best_accuracy = 0.0
 
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("The model will be running on", device, "device")
 
@@ -446,7 +321,8 @@ def train(num_epochs):
 
             images = Variable(images.to(device))
 
-            classes = classes.to(device)
+            classes = torch.tensor(classes)
+            classes = Variable(classes.to(device))
 
 
             optimizer.zero_grad()
@@ -469,7 +345,7 @@ def train(num_epochs):
                 running_loss = 0.0
 
 
-        accuracy = testAccuracy(device)
+        accuracy = testAccuracy()
         print('For epoch', epoch+1,'the test accuracy over the whole test set is %d %%' % (accuracy))
 
 
@@ -517,7 +393,7 @@ def testBatch():
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # === BEFORE (original) ===
 # if __name__ == "__main__":
 #     
@@ -544,11 +420,10 @@ if __name__ == "__main__":
     print('Finished Training')
 
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    testAccuracy(device)
+    testAccuracy()
 
 
-    model = Network()
+    model = Network(len(class_names))
     path = "data_small/myFirstModel.pth"
     model.load_state_dict(torch.load(path))
 

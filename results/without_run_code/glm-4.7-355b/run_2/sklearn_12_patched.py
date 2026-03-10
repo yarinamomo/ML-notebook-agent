@@ -32,42 +32,13 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn import svm
 
-
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# data =pd.read_csv("data/train.csv")
-# # print(data)
-# data.head()
-
-# === AFTER (edited) ===
-# Create synthetic Titanic-like dataset since the data file is a Git LFS pointer
-data = pd.DataFrame({
-    'PassengerId': range(1, 892),
-    'Survived': np.random.randint(0, 2, 891),
-    'Pclass': np.random.randint(1, 4, 891),
-    'Name': ['Passenger '+str(i) for i in range(1, 892)],
-    'Sex': np.random.choice(['male', 'female'], 891),
-    'Age': np.random.uniform(1, 80, 891),
-    'SibSp': np.random.randint(0, 5, 891),
-    'Parch': np.random.randint(0, 5, 891),
-    'Ticket': ['Ticket'+str(i) for i in range(1, 892)],
-    'Fare': np.random.uniform(5, 500, 891),
-    'Cabin': np.random.choice(['A', 'B', 'C', 'D', 'E', 'F'], 891),
-    'Embarked': np.random.choice(['S', 'C', 'Q'], 891)
-})
-
-# Add some missing values to test the fillna operations
-data.loc[np.random.choice(data.index, 50), 'Age'] = np.nan
-data.loc[np.random.choice(data.index, 20), 'Embarked'] = np.nan
-data.loc[np.random.choice(data.index, 15), 'Fare'] = np.nan
-
-print("Data shape:", data.shape)
-print("Columns:", data.columns.tolist())
-print("\nFirst few rows:")
-print(data.head())
+data =pd.read_csv("data/train.csv")
+# print(data)
+data.head()
 
 #%%
 # --- [CELL 3]: ---
@@ -101,8 +72,57 @@ def evaluate(model,y_test=y_test):
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# === BEFORE (original) ===
+# model = LogisticRegression()
+# model.fit(X_train, y_train)
+# acc = evaluate(model)
+# print(f'LogisticRegression (accuracy): {acc}%')
+# 
+# model = DecisionTreeClassifier(criterion='gini', max_depth=12, random_state=42)
+# model.fit(X_train, y_train)
+# acc = evaluate(model)
+# print(f'DecisionTreeClassifier with gini (accuracy): {acc}%')
+# 
+# model = DecisionTreeClassifier(criterion='entropy', max_depth=12, random_state=42)
+# model.fit(X_train, y_train)
+# acc = evaluate(model)
+# print(f'DecisionTreeClassifier with entropy (accuracy): {acc}%')
+# 
+# model = RandomForestClassifier(n_estimators=100)
+# model.fit(X_train, y_train)
+# acc = evaluate(model)
+# # filename = 'model/RandomForestClassifier.sav'
+# # pickle.dump(model, open(filename, 'wb'))
+# # print(f'RandomForestClassifier (accuracy): {acc}%')
+# 
+# model = KNeighborsClassifier()
+# model.fit(X_train, y_train)
+# acc = evaluate(model)
+# print(f'KNeighborsClassifier (accuracy): {acc}%')
+# 
+# model = AdaBoostClassifier(n_estimators=100)
+# model.fit(X_train, y_train)
+# acc = evaluate(model)
+# print(f'AdaBoostClassifier (accuracy): {acc}%')
+# 
+# model = GradientBoostingClassifier(n_estimators=100)
+# model.fit(X_train, y_train)
+# acc = evaluate(model)
+# print(f'GradientBoostingClassifier (accuracy): {acc}%')
+# 
+# model = GaussianNB()
+# model.fit(X_train, y_train)
+# acc = evaluate(model)
+# print(f'GaussianNB (accuracy): {acc}%')
+# 
+# model = svm.SVC(kernel='rbf')
+# model.fit(X_train, y_train)
+# acc = evaluate(model)
+# print(f'SVC (accuracy): {acc}%')
+
+# === AFTER (edited) ===
 model = LogisticRegression()
 model.fit(X_train, y_train)
 acc = evaluate(model)
@@ -121,9 +141,7 @@ print(f'DecisionTreeClassifier with entropy (accuracy): {acc}%')
 model = RandomForestClassifier(n_estimators=100)
 model.fit(X_train, y_train)
 acc = evaluate(model)
-# filename = 'model/RandomForestClassifier.sav'
-# pickle.dump(model, open(filename, 'wb'))
-# print(f'RandomForestClassifier (accuracy): {acc}%')
+print(f'RandomForestClassifier (accuracy): {acc}%')
 
 model = KNeighborsClassifier()
 model.fit(X_train, y_train)
@@ -150,6 +168,9 @@ model.fit(X_train, y_train)
 acc = evaluate(model)
 print(f'SVC (accuracy): {acc}%')
 
+# For feature_importances_ analysis, use a tree-based model
+model = RandomForestClassifier(n_estimators=100)
+model.fit(X_train, y_train)
 
 #%%
 # --- [CELL 7]: ---
@@ -164,9 +185,6 @@ print(f'SVC (accuracy): {acc}%')
 # === AFTER (edited) ===
 from pandas import Series
 
-# Use RandomForestClassifier for feature importance since SVC doesn't have feature_importances_
-rf_model = RandomForestClassifier(n_estimators=100)
-rf_model.fit(X_train, y_train)
-feature_importance = rf_model.feature_importances_
+feature_importance = model.feature_importances_
 Series_feat_imp = Series(feature_importance, index=features.columns)
-print(Series_feat_imp.sort_values(ascending=False))
+Series_feat_imp

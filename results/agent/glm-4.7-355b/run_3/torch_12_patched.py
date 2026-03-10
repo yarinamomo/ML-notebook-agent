@@ -31,46 +31,25 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# #By Ranamalla Nithin Reddy https://www.kaggle.com/code/nithinreddy90/chatpgpt-prompts
-# 
-# from transformers import AutoTokenizer
-# 
-# df = pd.read_csv('data/train.csv')
-# 
-# tokenizer = AutoTokenizer.from_pretrained("gpt2")
-# 
-# # Preprocess the data
-# df.drop_duplicates(inplace=True)
-# df.dropna(subset=['output', 'instruction'], inplace=True)
-# 
-# # Tokenize prompts and actions
-# df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(x)))
-# df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(x)))
-# 
-# # Display the preprocessed and tokenized dataframe
-# print(df.head())
+#By Ranamalla Nithin Reddy https://www.kaggle.com/code/nithinreddy90/chatpgpt-prompts
 
-# === AFTER (edited) ===
 from transformers import AutoTokenizer
 
 df = pd.read_csv('data/train.csv')
 
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
-# Check if the dataframe contains the expected columns
-if 'output' in df.columns and 'instruction' in df.columns:
-    df.drop_duplicates(inplace=True)
-    df.dropna(subset=['output', 'instruction'], inplace=True)
-    
-    df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(x)))
-    df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(x)))
-else:
-    print("Warning: Expected columns 'output' and 'instruction' not found in dataframe.")
-    print(f"Available columns: {df.columns.tolist()}")
+# Preprocess the data
+df.drop_duplicates(inplace=True)
+df.dropna(subset=['output', 'instruction'], inplace=True)
 
+# Tokenize prompts and actions
+df['instruction_tokens'] = df['instruction'].apply(lambda x: len(tokenizer.tokenize(x)))
+df['output_tokens'] = df['output'].apply(lambda x: len(tokenizer.tokenize(x)))
+
+# Display the preprocessed and tokenized dataframe
 print(df.head())
 
 #%%
@@ -121,30 +100,31 @@ model_name = "gpt2"
 model = GPT2LMHeadModel.from_pretrained(model_name)
 tokenizer = GPT2Tokenizer.from_pretrained(model_name)
 
+# GPT2 doesn't have a pad token by default, so we need to set one
+tokenizer.pad_token = tokenizer.eos_token
+
 
 generated_responses = []
 
-# Check if the dataframe contains the expected columns
-if 'instruction' in df.columns and 'output' in df.columns:
-    for index, row in df.iterrows():
-        prompt = row['instruction']
-        input_ids = tokenizer.encode(prompt, return_tensors="pt")
+# Process only first 3 rows to avoid timeout
+for index, row in df.head(3).iterrows():
+    prompt = row['instruction']
+    input_ids = tokenizer.encode(prompt, return_tensors="pt")
 
 
-        with torch.no_grad():
-            output = model.generate(
-                input_ids,
-                max_length=input_ids.size(1) + 50,
-                num_return_sequences=1,
-                pad_token_id=tokenizer.eos_token_id,
-                attention_mask=input_ids.ne(tokenizer.pad_token_id)
-            )
+    with torch.no_grad():
+        output = model.generate(
+            input_ids,
+            max_length=input_ids.size(1) + 50,
+            num_return_sequences=1,
+            pad_token_id=tokenizer.eos_token_id,
+            attention_mask=input_ids.ne(tokenizer.pad_token_id)
+        )
 
 
-        padded_output = output[:, input_ids.size(1):]
+    padded_output = output[:, input_ids.size(1):]
 
-        response = tokenizer.decode(padded_output[0], skip_special_tokens=True)
-        generated_responses.append(response)
-else:
-    print("Skipping generation: Expected column 'instruction' not found in dataframe.")
-    print(f"Available columns: {df.columns.tolist()}")
+    response = tokenizer.decode(padded_output[0], skip_special_tokens=True)
+    generated_responses.append(response)
+
+print(generated_responses)

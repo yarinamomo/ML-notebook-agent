@@ -7,7 +7,7 @@ from tensorflow import keras
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 from tensorflow import keras
 
 (train_images, train_labels), (test_images, test_labels) = keras.datasets.cifar10.load_data()
@@ -16,7 +16,7 @@ train_images.shape, train_labels.shape, test_images.shape, test_labels.shape
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # import matplotlib.pyplot as plt
 # 

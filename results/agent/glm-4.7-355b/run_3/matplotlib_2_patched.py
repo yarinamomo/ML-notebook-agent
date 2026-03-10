@@ -58,68 +58,14 @@ import torch.nn.functional as F
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# import numpy as np
-# import pandas as pd
-# import pyarrow.parquet as pq
-# import matplotlib.pyplot as plt
-# 
-# # Function to convert to 3D
-# def to_3d(arr):
-#     douaa = []
-#     for i in range(0, 3):
-#         dou = np.stack(np.stack(arr)[i], axis=-1)
-#         douaa.append(dou)
-#     douaa = np.array(douaa)
-#     return douaa
-# 
-# # Load Parquet file
-# parquet_file_path = 'data/QCDToGGQQ_IMGjet_RH1all_jet0_run0_n36272.test.snappy.parquet'
-# parquet_file = pq.ParquetFile(parquet_file_path)
-# 
-# # Get the total number of rows
-# total_rows = parquet_file.metadata.num_rows
-# 
-# # Initialize arrays to store images and labels
-# images_array = []
-# labels_array = []
-# 
-# # Loop over the file in chunks
-# chunk_size = 50
-# for i in range(0, total_rows, chunk_size):
-#     # Read a chunk of rows from the file
-#     chunk = parquet_file.read_row_group(i)
-#     df = chunk.to_pandas()
-# 
-#     # Initialize arrays inside the loop
-#     chunk_images_array = []
-#     chunk_labels_array = []
-# 
-#     # Loop over rows in the chunk
-#     for j in range(len(df)):
-#         # Convert 'X_jets' to 3D
-#         df['X_jets'][j] = to_3d(df['X_jets'][j].copy())  # Use .copy() to create a copy
-# 
-#         # Append image and label to arrays
-#         chunk_images_array.append(df['X_jets'][j])
-#         chunk_labels_array.append(df['y'][j])
-# 
-#     # Append chunk data to the main arrays
-#     images_array.extend(chunk_images_array)
-#     labels_array.extend(chunk_labels_array)
-# 
-# # Convert arrays to NumPy arrays
-# images_array = np.array(images_array)
-# labels_array = np.array(labels_array)
-
-# === AFTER (edited) ===
 import numpy as np
 import pandas as pd
+import pyarrow.parquet as pq
 import matplotlib.pyplot as plt
 
-
+# Function to convert to 3D
 def to_3d(arr):
     douaa = []
     for i in range(0, 3):
@@ -128,24 +74,44 @@ def to_3d(arr):
     douaa = np.array(douaa)
     return douaa
 
+# Load Parquet file
+parquet_file_path = 'data/QCDToGGQQ_IMGjet_RH1all_jet0_run0_n36272.test.snappy.parquet'
+parquet_file = pq.ParquetFile(parquet_file_path)
 
-# Generate synthetic data to replace the missing parquet file
-# The data structure should be: (n_samples, channels, height, width)
-# where channels = 3 (like RGB images from jet physics data)
+# Get the total number of rows
+total_rows = parquet_file.metadata.num_rows
 
-np.random.seed(42)
+# Initialize arrays to store images and labels
+images_array = []
+labels_array = []
 
-# Create synthetic dataset simulating jet images
-num_samples = 100  # Reasonable number for testing
-height = 32
-width = 32
-channels = 3
+# Loop over the file in chunks
+chunk_size = 50
+for i in range(0, total_rows, chunk_size):
+    # Read a chunk of rows from the file
+    chunk = parquet_file.read_row_group(i)
+    df = chunk.to_pandas()
 
-# Generate random image data with shape (num_samples, 3, height, width)
-images_array = np.random.rand(num_samples, channels, height, width).astype(np.float32)
-labels_array = np.random.randint(0, 2, num_samples)  # Binary classification labels
+    # Initialize arrays inside the loop
+    chunk_images_array = []
+    chunk_labels_array = []
 
-print(f"Data loaded - images shape: {images_array.shape}, labels shape: {labels_array.shape}")
+    # Loop over rows in the chunk
+    for j in range(len(df)):
+        # Convert 'X_jets' to 3D
+        df['X_jets'][j] = to_3d(df['X_jets'][j].copy())  # Use .copy() to create a copy
+
+        # Append image and label to arrays
+        chunk_images_array.append(df['X_jets'][j])
+        chunk_labels_array.append(df['y'][j])
+
+    # Append chunk data to the main arrays
+    images_array.extend(chunk_images_array)
+    labels_array.extend(chunk_labels_array)
+
+# Convert arrays to NumPy arrays
+images_array = np.array(images_array)
+labels_array = np.array(labels_array)
 
 #%%
 # --- [CELL 2]: ---
@@ -158,45 +124,28 @@ train_images, test_images, train_labels, test_labels = train_test_split(
 print(train_images.shape)
 print(train_labels.shape)
 
-
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# 
-# import numpy as np
-# import matplotlib.pyplot as plt
-# 
-# # Assuming images_array has shape (726, 3, 125, 125)
-# # Reduce dimensions for plotting (taking the mean across channels)
-# reduced_images_array = np.mean(train_images, axis=1)
-# 
-# # Plotting example images
-# num_images_to_plot = 1
-# for i in range(num_images_to_plot):
-#     plt.imshow(reduced_images_array[i], cmap='gray')  # Displaying the mean across channels
-#     plt.title(f"Label: {labels_array[i]}")
-#     plt.show()
-
-# === AFTER (edited) ===
 import numpy as np
 import matplotlib.pyplot as plt
 
-
+# Assuming images_array has shape (726, 3, 125, 125)
+# Reduce dimensions for plotting (taking the mean across channels)
 reduced_images_array = np.mean(train_images, axis=1)
 
-
+# Plotting example images
 num_images_to_plot = 1
 for i in range(num_images_to_plot):
-    plt.imshow(reduced_images_array[i], cmap='gray')
-    plt.title(f"Label: {train_labels[i]}")
+    plt.imshow(reduced_images_array[i], cmap='gray')  # Displaying the mean across channels
+    plt.title(f"Label: {labels_array[i]}")
     plt.show()
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 import numpy as np
 from scipy.ndimage import zoom
 
@@ -279,9 +228,12 @@ train_loader = DataLoader(custom_dataset, batch_size=batch_size, shuffle=shuffle
 # plt.show()
 
 # === AFTER (edited) ===
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+
 plt.imshow(custom_dataset.images[1][0, :, :])
-# Labels are scalar values, not images, so we shouldn't use imshow on them
-# plt.imshow(custom_dataset.labels[0])  # This line is incorrect
 
 plt.title(f"Label: {labels_array[1]}")
 plt.show()

@@ -6,47 +6,15 @@ INPUT_DIR = 'data'
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# import numpy as np
-# import pandas as pd
-# 
-# rating_df = pd.read_csv(INPUT_DIR + '/rating_complete.csv', 
-#                         low_memory=False, 
-#                         usecols=["user_id", "anime_id", "rating"]
-#                         )
-# rating_df.head(4)
-
-# === AFTER (edited) ===
 import numpy as np
 import pandas as pd
 
-# The CSV file appears to be a Git LFS pointer, not actual data
-# Creating synthetic data matching the expected schema for demonstration purposes
-np.random.seed(42)
-
-# Generate synthetic rating data with users having >= 400 ratings
-n_users = 200
-n_animes = 500
-
-# Create data where some users have many ratings
-# Each user will have at least 400 ratings to pass the filtering
-ratings_per_user = np.random.randint(400, 600, n_users)  # 400-600 ratings per user
-
-data = {
-    'user_id': [],
-    'anime_id': [],
-    'rating': []
-}
-
-for user_id in range(1, n_users + 1):
-    n_ratings = ratings_per_user[user_id - 1]
-    data['user_id'].extend([user_id] * n_ratings)
-    data['anime_id'].extend(np.random.randint(1, n_animes + 1, n_ratings))
-    data['rating'].extend(np.random.randint(1, 11, n_ratings))
-
-rating_df = pd.DataFrame(data)
+rating_df = pd.read_csv(INPUT_DIR + '/rating_complete.csv', 
+                        low_memory=False, 
+                        usecols=["user_id", "anime_id", "rating"]
+                        )
 rating_df.head(4)
 
 #%%
@@ -91,12 +59,24 @@ print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rati
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# Shuffle
+# === BEFORE (original) ===
+# # Shuffle
+# rating_df = rating_df.sample(frac=1, random_state=73)
+# 
+# rating_df= rating_df.head(1000)
+# 
+# X = rating_df[['user', 'anime']].values
+# y = rating_df["rating"]
+
+# === AFTER (edited) ===
 rating_df = rating_df.sample(frac=1, random_state=73)
 
-rating_df= rating_df.head(1000)
+# Filter to only keep rows with valid user and anime embeddings (remove NaN)
+rating_df = rating_df[rating_df['user'].notna() & rating_df['anime'].notna()]
+
+rating_df = rating_df.head(1000)
 
 X = rating_df[['user', 'anime']].values
 y = rating_df["rating"]

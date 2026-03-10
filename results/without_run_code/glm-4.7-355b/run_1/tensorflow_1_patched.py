@@ -25,27 +25,11 @@ image_count
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# import PIL
-# princess = list(data_dir.glob('princess/*'))
-# PIL.Image.open(str(princess[1]))
-
-# === AFTER (edited) ===
 import PIL
-
-# Try to open an image (this cell may fail, but we'll handle errors)
 princess = list(data_dir.glob('princess/*'))
-
-try:
-    valid_img = PIL.Image.open(str(princess[0]))
-    print(f"Successfully opened: {princess[0]}")
-    valid_img
-except Exception as e:
-    print(f"Error opening image: {e}")
-    # If no valid image can be opened, we'll set dimensions in the next cell
-    valid_img = None
+PIL.Image.open(str(princess[1]))
 
 #%%
 # --- [CELL 4]: ---
@@ -56,20 +40,13 @@ except Exception as e:
 # batch_size,epochs = 64,10
 
 # === AFTER (edited) ===
-# Set image dimensions
-if valid_img is not None:
-    image_height, image_width = valid_img.size
-else:
-    # Set default image dimensions if no valid image found
-    image_height, image_width = 180, 180
-    print(f"Using default image size: {image_height}x{image_width}")
-
-batch_size, epochs = 64, 10
+image_width, image_height = PIL.Image.open(str(princess[1])).size
+batch_size,epochs = 64,10
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # === BEFORE (original) ===
 # train_ds = tf.keras.utils.image_dataset_from_directory(
 #     data_dir,
@@ -82,78 +59,67 @@ batch_size, epochs = 64, 10
 # )
 
 # === AFTER (edited) ===
-# Custom dataset creation with error handling
-import random
-import tensorflow as tf
-import pathlib
+import os
 
-def create_dataset_from_directory(directory, validation_split=0.2, subset='training', 
-                                  image_size=(180, 180), batch_size=32, seed=1):
-    """Create image dataset with error handling for corrupted files"""
-    
-    # Get all image files and their labels
-    all_files = []
-    class_names = sorted([d.name for d in directory.iterdir() if d.is_dir()])
-    
-    for class_idx, class_name in enumerate(class_names):
-        class_dir = directory / class_name
-        for img_file in class_dir.glob('*.jpg'):
-            all_files.append((str(img_file), class_idx))
-    
-    # Shuffle with fixed seed
-    random.seed(seed)
-    random.shuffle(all_files)
-    
-    # Split into train/val
-    split_idx = int(len(all_files) * (1 - validation_split))
-    
-    if subset == 'training':
-        file_label_pairs = all_files[:split_idx]
-    else:
-        file_label_pairs = all_files[split_idx:]
-    
-    print(f"Found {len(file_label_pairs)} files for {subset}")
-    
-    def decode_image(image_path):
-        """Decode image with error handling"""
+class_names = sorted(os.listdir(data_dir))
+valid_files = []
+
+# Check each image file for validity
+for class_name in class_names:
+    class_dir = os.path.join(data_dir, class_name)
+    if os.path.isdir(class_dir):
+        for filename in os.listdir(class_dir):
+            file_path = os.path.join(class_dir, filename)
+            try:
+                with PIL.Image.open(file_path) as img:
+                    img.verify()  # Verify the image is valid and not corrupted
+                    valid_files.append(class_name)
+            except Exception as e:
+                print(f"Skipping invalid image: {file_path} - {e}")
+
+# Create filtered dataset
+file_list = []
+label_list = []
+for class_name in class_names:
+    class_dir = os.path.join(data_dir, class_name)
+    if os.path.isdir(class_dir):
+        for filename in os.listdir(class_dir):
+            file_path = os.path.join(class_dir, filename)
+            try:
+                with PIL.Image.open(file_path) as img:
+                    img.load()  # Load to verify
+                    file_list.append(file_path)
+                    label_list.append(class_names.index(class_name))
+            except Exception as e:
+                print(f"Skipping invalid image: {file_path} - {e}")
+
+# Create dataset programmatically
+def load_images(file_paths, labels):
+    images = []
+    final_labels = []
+    for path, label in zip(file_paths, labels):
         try:
-            img = tf.io.read_file(image_path)
-            img = tf.io.decode_image(img, channels=3, expand_animations=False)
-            img = tf.image.resize(img, image_size)
-            return img
-        except:
-            # Return a black image if decoding fails
-            return tf.zeros((image_size[0], image_size[1], 3), dtype=tf.float32)
-    
-    def process_path(image_path, label):
-        img = decode_image(image_path)
-        # Normalize to [0, 1]
-        img = img / 255.0
-        return img, tf.cast(label, tf.int64)
-    
-    # Create dataset
-    image_paths, labels = zip(*file_label_pairs)
-    ds = tf.data.Dataset.from_tensor_slices((list(image_paths), list(labels)))
-    ds = ds.map(process_path, num_parallel_calls=tf.data.AUTOTUNE)
-    ds = ds.shuffle(buffer_size=1000, seed=seed)
-    ds = ds.batch(batch_size)
-    ds = ds.prefetch(tf.data.AUTOTUNE)
-    
-    return ds
+            img = tf.keras.preprocessing.image.load_img(
+                path, target_size=(image_height, image_width)
+            )
+            img_array = tf.keras.preprocessing.image.img_to_array(img)
+            images.append(img_array)
+            final_labels.append(label)
+        except Exception as e:
+            print(f"Failed to load {path}: {e}")
+    return np.array(images), np.array(final_labels)
 
-train_ds = create_dataset_from_directory(
-    data_dir,
-    validation_split=0.2,
-    subset='training',
-    image_size=(image_height, image_width),
-    seed = 1,
-    batch_size=batch_size
-)
+# Load all images
+train_images, train_labels = load_images(file_list, label_list)
+
+# Create tf.data.Dataset
+train_ds = tf.data.Dataset.from_tensor_slices((train_images, train_labels))
+train_ds = train_ds.shuffle(buffer_size=len(train_images)).batch(batch_size)
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # === BEFORE (original) ===
 # val_ds = tf.keras.utils.image_dataset_from_directory(
 #     data_dir,
@@ -166,24 +132,30 @@ train_ds = create_dataset_from_directory(
 # )
 
 # === AFTER (edited) ===
-val_ds = create_dataset_from_directory(
-    data_dir,
-    validation_split=0.2,
-    subset='validation',
-    image_size=(image_height, image_width),
-    seed = 1,
-    batch_size=batch_size
-)
+# Split the loaded data into train and validation sets
+num_train = int(0.8 * len(train_images))
+num_val = len(train_images) - num_train
+
+train_images_final = train_images[:num_train]
+train_labels_final = train_labels[:num_train]
+
+val_images_final = train_images[num_train:]
+val_labels_final = train_labels[num_train:]
+
+# Create training dataset
+train_ds = tf.data.Dataset.from_tensor_slices((train_images_final, train_labels_final))
+train_ds = train_ds.shuffle(buffer_size=len(train_images_final)).batch(batch_size)
+
+# Create validation dataset
+val_ds = tf.data.Dataset.from_tensor_slices((val_images_final, val_labels_final))
+val_ds = val_ds.batch(batch_size)
+
+print(f"Training samples: {len(train_images_final)}, Validation samples: {len(val_images_final)}")
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# normalization_layer = layers.Rescaling(1./255)
-
-# === AFTER (edited) ===
-# Normalization layer (already applied in dataset creation, kept for reference)
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 normalization_layer = layers.Rescaling(1./255)
 
 #%%
@@ -204,9 +176,14 @@ data_augmentation = keras.Sequential(
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-num_of_classes = len(train_ds.class_names)
+# === BEFORE (original) ===
+# num_of_classes = len(train_ds.class_names)
+# num_of_classes
+
+# === AFTER (edited) ===
+num_of_classes = len(class_names)
 num_of_classes
 
 #%%
@@ -237,5 +214,5 @@ model.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentro
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 history = model.fit(train_ds,validation_data=val_ds, epochs=1)

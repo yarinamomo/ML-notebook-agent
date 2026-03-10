@@ -40,4 +40,5 @@ print("No of columns after dropping high missing value column: ",len(train.colum
 # test=test.drop(['Alley','PoolQC','Fence','MiscFeature','Id'],axis=1)
 
 # === AFTER (edited) ===
-test=test.drop(['Alley','PoolQC','Fence','MiscFeature','Id'],axis=1, errors='ignore')
+# Only drop Id column - other columns were already dropped in Cell 2
+test = test.drop(['Id'], axis=1)

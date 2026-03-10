@@ -15,43 +15,18 @@ df_psytar.head(5)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# # for reproducing and fixing purposes, due to the cadec dataset not found
-# # df = pd.concat([df_psytar.iloc[:df_psytar.shape[0]+1], df_cadec])
-# df=df_psytar
-
-# === AFTER (edited) ===
+# for reproducing and fixing purposes, due to the cadec dataset not found
+# df = pd.concat([df_psytar.iloc[:df_psytar.shape[0]+1], df_cadec])
 df=df_psytar
-print(df.columns.tolist())
-print(df.head())
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# df_1 = df[df['ADR']==1]
-# df_0 = df[df['ADR']==0]
-
-# === AFTER (edited) ===
-# Check if 'ADR' column exists in dataframe
-if 'ADR' in df.columns:
-    df_1 = df[df['ADR']==1]
-    df_0 = df[df['ADR']==0]
-else:
-    # If 'ADR' column doesn't exist, create sample data for demonstration
-    import numpy as np
-    df_1 = pd.DataFrame({
-        'sentences': ['This is a positive example with ADR label 1'] * 10,
-        'ADR': [1] * 10
-    })
-    df_0 = pd.DataFrame({
-        'sentences': ['This is a negative example with ADR label 0'] * 10,
-        'ADR': [0] * 10
-    })
-    print("Warning: 'ADR' column not found in dataframe. Using sample data.")
+df_1 = df[df['ADR']==1]
+df_0 = df[df['ADR']==0]
 
 #%%
 # --- [CELL 4]: ---
@@ -104,20 +79,10 @@ for i in range(len(df[:1000])):
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-# === BEFORE (original) ===
-# train_data = df["sentences"]
-# train_labels = df['ADR']
-
-# === AFTER (edited) ===
-# Use processed data which already has proper tokenization
-train_data = {
-    'input_ids': [item['input_ids'] for item in processed_data],
-    'attention_mask': [item['attention_mask'] for item in processed_data],
-    'token_type_ids': [item['token_type_ids'] for item in processed_data]
-}
-train_labels = [item['label'] for item in processed_data]
+train_data = df["sentences"]
+train_labels = df['ADR']
 
 #%%
 # --- [CELL 10]: ---
@@ -179,41 +144,17 @@ class HuggingFaceLayer(tf.keras.layers.Layer):
 
     def call(self, inputs):
         outputs = self.model(inputs)
-        # Return the last hidden state (a tensor)
-        return outputs.last_hidden_state
+        # Extract [CLS] token embedding: [batch_size, hidden_size]
+        return outputs.last_hidden_state[:, 0, :]
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
-# === BEFORE (original) ===
-# model_name = 'bert-base-uncased'
-# model = tf.keras.Sequential()
-# model.add(HuggingFaceLayer(model_name=model_name))
-# model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
-
-# === AFTER (edited) ===
 model_name = 'bert-base-uncased'
-
-# Use Functional API to handle multiple inputs
-input_ids = tf.keras.layers.Input(shape=(128,), dtype=tf.int32, name='input_ids')
-attention_mask = tf.keras.layers.Input(shape=(128,), dtype=tf.int32, name='attention_mask')
-token_type_ids = tf.keras.layers.Input(shape=(128,), dtype=tf.int32, name='token_type_ids')
-
-# Create HuggingFace layer instance
-bert_layer = HuggingFaceLayer(model_name=model_name)
-
-# Get BERT outputs - now returns last_hidden_state directly
-sequence_output = bert_layer({'input_ids': input_ids, 'attention_mask': attention_mask, 'token_type_ids': token_type_ids})
-
-# Add pooling layer to get a single vector per example
-pooled_output = tf.keras.layers.GlobalAveragePooling1D()(sequence_output)
-
-# Add dense layer for classification
-output = tf.keras.layers.Dense(1, activation='sigmoid')(pooled_output)
-
-# Create the model
-model = tf.keras.Model(inputs=[input_ids, attention_mask, token_type_ids], outputs=output)
+model = tf.keras.Sequential()
+model.add(HuggingFaceLayer(model_name=model_name))
+model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
 
 #%%
 # --- [CELL 14]: ---
@@ -225,32 +166,53 @@ model = tf.keras.Model(inputs=[input_ids, attention_mask, token_type_ids], outpu
 # model.fit(train_data, train_labels, epochs=10)
 
 # === AFTER (edited) ===
-# Prepare training data from HuggingFace dataset format
+import tensorflow as tf
 import numpy as np
 
-# Convert lists to numpy arrays
-train_input_ids_array = np.array(train_df['input_ids'].tolist())
-train_attention_mask_array = np.array(train_df['attention_mask'].tolist())
-train_token_type_ids_array = np.array(train_df['token_type_ids'].tolist())
+# Set format to numpy arrays
+train_hg.set_format(type='numpy', columns=['input_ids', 'attention_mask', 'token_type_ids', 'label'])
+valid_hg.set_format(type='numpy', columns=['input_ids', 'attention_mask', 'token_type_ids', 'label'])
 
-train_inputs = {
-    'input_ids': train_input_ids_array,
-    'attention_mask': train_attention_mask_array,
-    'token_type_ids': train_token_type_ids_array
-}
-train_labels_array = np.array(train_df['label'], dtype=np.float32)
+# Create tf.data.Dataset objects
+def to_tf_dataset(dataset, batch_size=16, shuffle=False):
+    def generator():
+        for i in range(len(dataset)):
+            yield (
+                {
+                    'input_ids': dataset[i]['input_ids'],
+                    'attention_mask': dataset[i]['attention_mask'],
+                    'token_type_ids': dataset[i]['token_type_ids']
+                },
+                dataset[i]['label']
+            )
+    
+    ds = tf.data.Dataset.from_generator(
+        generator,
+        output_signature=(
+            {
+                'input_ids': tf.TensorSpec(shape=(128,), dtype=tf.int64),
+                'attention_mask': tf.TensorSpec(shape=(128,), dtype=tf.int64),
+                'token_type_ids': tf.TensorSpec(shape=(128,), dtype=tf.int64)
+            },
+            tf.TensorSpec(shape=(), dtype=tf.int64)
+        )
+    )
+    
+    if shuffle:
+        ds = ds.shuffle(buffer_size=len(dataset))
+    
+    return ds.batch(batch_size)
 
-val_input_ids_array = np.array(valid_df['input_ids'].tolist())
-val_attention_mask_array = np.array(valid_df['attention_mask'].tolist())
-val_token_type_ids_array = np.array(valid_df['token_type_ids'].tolist())
+# Prepare training and validation datasets
+train_tf = to_tf_dataset(train_hg, batch_size=16, shuffle=True)
+valid_tf = to_tf_dataset(valid_hg, batch_size=16)
 
-val_inputs = {
-    'input_ids': val_input_ids_array,
-    'attention_mask': val_attention_mask_array,
-    'token_type_ids': val_token_type_ids_array
-}
-val_labels_array = np.array(valid_df['label'], dtype=np.float32)
-
-# Compile and train the model
+# Compile the model
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-model.fit(train_inputs, train_labels_array, epochs=10, validation_data=(val_inputs, val_labels_array))
+
+# Train the model
+history = model.fit(
+    train_tf,
+    validation_data=valid_tf,
+    epochs=10
+)

@@ -27,33 +27,47 @@ greeks_df = pd.read_csv('data/greeks_synthetic.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train_df = pd.merge(train_df, greeks_df, on="Id")
-
-# === AFTER (edited) ===
-# Merge train and greeks dataframes on index
-greeks_df = greeks_df.drop("Id", axis=1)
-train_df = pd.concat([train_df, greeks_df], axis=1)
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+train_df = pd.merge(train_df, greeks_df, on="Id")
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # Remove the first column
 train_df = train_df.drop("Id", axis=1)
 test_df = test_df.drop("Id", axis=1)
 
-
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-# One-hot encoding
-encoder = OneHotEncoder(handle_unknown="ignore")
-train_df = pd.get_dummies(train_df, columns=list(train_df))
-test_df = pd.get_dummies(test_df, columns=list(test_df))
+# cell_state: edited
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# === BEFORE (original) ===
+# # One-hot encoding
+# encoder = OneHotEncoder(handle_unknown="ignore")
+# train_df = pd.get_dummies(train_df, columns=list(train_df))
+# test_df = pd.get_dummies(test_df, columns=list(test_df))
+
+# === AFTER (edited) ===
+# Identify categorical columns (object dtype)
+categorical_cols = train_df.select_dtypes(include=['object']).columns.tolist()
+
+# Use OneHotEncoder to consistently encode both train and test
+encoder = OneHotEncoder(handle_unknown="ignore", sparse=False)
+train_encoded = encoder.fit_transform(train_df[categorical_cols])
+test_encoded = encoder.transform(test_df[categorical_cols])
+
+# Get encoded feature names
+encoded_feature_names = encoder.get_feature_names_out(categorical_cols)
+
+# Create dataframes with encoded features
+train_encoded_df = pd.DataFrame(train_encoded, columns=encoded_feature_names, index=train_df.index)
+test_encoded_df = pd.DataFrame(test_encoded, columns=encoded_feature_names, index=test_df.index)
+
+# Drop original categorical columns and add encoded ones
+train_df = pd.concat([train_df.drop(categorical_cols, axis=1), train_encoded_df], axis=1)
+test_df = pd.concat([test_df.drop(categorical_cols, axis=1), test_encoded_df], axis=1)
 
 #%%
 # --- [CELL 5]: ---

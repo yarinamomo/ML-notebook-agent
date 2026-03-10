@@ -15,7 +15,7 @@ from tensorflow.keras.optimizers import Adam
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 import pathlib
 data_dir = "data_small/Training_Handwritten_marathi_Character_Fusion/Data_set"
 data_dir = pathlib.Path(data_dir)
@@ -23,21 +23,8 @@ print(data_dir)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# img_height,img_width=200,200
-# batch_size=32
-# train_ds = tf.keras.preprocessing.image_dataset_from_directory(
-#   data_dir,
-#   validation_split=0.25,
-#   subset="training",
-#   seed=123,
-#   label_mode ='categorical',
-#   image_size=(img_height, img_width),
-#   batch_size=batch_size)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 img_height,img_width=200,200
 batch_size=32
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
@@ -51,19 +38,8 @@ train_ds = tf.keras.preprocessing.image_dataset_from_directory(
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# val_ds = tf.keras.preprocessing.image_dataset_from_directory(
-#   data_dir,
-#   validation_split=0.25,
-#   subset="validation",
-#   seed=123,
-#   label_mode ='categorical',
-#   image_size=(img_height, img_width),
-#   batch_size=batch_size)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 val_ds = tf.keras.preprocessing.image_dataset_from_directory(
   data_dir,
   validation_split=0.25,
@@ -75,22 +51,16 @@ val_ds = tf.keras.preprocessing.image_dataset_from_directory(
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# class_names = train_ds.class_names
-# print(class_names)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 class_names = train_ds.class_names
 print(class_names)
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # === BEFORE (original) ===
-# 
 # import matplotlib.pyplot as plt
 # 
 # plt.figure(figsize=(10, 10))
@@ -104,19 +74,12 @@ print(class_names)
 # === AFTER (edited) ===
 import matplotlib.pyplot as plt
 
-# Visualization of sample images
-# Note: Some batches may contain corrupted files that can't be decoded
-try:
-    plt.figure(figsize=(10, 10))
-    for images, labels in train_ds.take(1):
-        for i in range(6):
-            ax = plt.subplot(3, 3, i + 1)
-            plt.imshow(images[i].numpy().astype("uint8"))
-            # Get class name from one-hot encoding
-            label_idx = tf.argmax(labels[i]).numpy()
-            plt.title(class_names[label_idx])
-            plt.axis("off")
-except Exception as e:
-    print(f"Note: Could not display sample images due to corrupted files in dataset.")
-    print(f"Error: {str(e)[:100]}...")
-    print("Continuing with model training...")
+plt.figure(figsize=(10, 10))
+for images, labels in train_ds.take(1):
+  for i in range(6):
+    ax = plt.subplot(3, 3, i + 1)
+    plt.imshow(images[i].numpy().astype("uint8"))
+    # Get the class index from the one-hot encoded label
+    class_idx = np.argmax(labels[i])
+    plt.title(class_names[class_idx])
+    plt.axis("off")

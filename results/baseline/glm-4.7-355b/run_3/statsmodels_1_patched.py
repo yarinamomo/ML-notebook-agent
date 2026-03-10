@@ -19,7 +19,6 @@ from sklearn.metrics import accuracy_score
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 train=pd.read_csv('data/train.csv')
 
-
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
@@ -28,29 +27,28 @@ test  = pd.read_csv('data/test.csv')
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train=train.drop(columns=['id'])
-
-# === AFTER (edited) ===
-if 'id' in train.columns:
-    train = train.drop(columns=['id'])
+train=train.drop(columns=['id'])
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 train = train[train['gravity']<1.036]
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 train = train[train['ph']<7.1]
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-fig = sm.qqplot(train['gravity'],line=45,fit=True)
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# === BEFORE (original) ===
+# fig = sm.qqplot(train['gravity'],line=45,fit=True)
+
+# === AFTER (edited) ===
+fig = sm.qqplot(train['gravity'],line='45',fit=True)

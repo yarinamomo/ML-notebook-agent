@@ -533,7 +533,7 @@ class Network:
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
 dataset = load_cifar()
 
 # Access the data and labels
@@ -555,7 +555,7 @@ print("Test labels shape:", y_test.shape)
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # from keras.regularizers import l2
 # from keras.optimizers import SGD
@@ -733,8 +733,6 @@ print("Test labels shape:", y_test.shape)
 # #     model.save('model.h5')
 
 # === AFTER (edited) ===
-# --- [CELL 4]: ---
-
 from keras.regularizers import l2
 from keras.optimizers import SGD
 from keras.models import Sequential
@@ -804,11 +802,21 @@ def predict(model, image_idx):
     image = test_images[image_idx]
     image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
     pred = np.argmax(model.predict(image))
-    
-    # Convert the dataset label to integer for proper indexing
-    true_label_idx = int(dataset['test_labels'][image_idx].ravel()[0])
 
-    plot_sample(dataset['test_images'][image_idx], classes[true_label_idx], classes[pred])
+    plot_sample(dataset['test_images'][image_idx], classes[dataset['test_labels'][image_idx]], classes[pred])
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -850,9 +858,9 @@ if __name__ == '__main__':
     train_images = np.moveaxis(dataset['train_images'], 1, 3)
     validation_images = np.moveaxis(dataset['validation_images'], 1, 3)
     test_images = np.moveaxis(dataset['test_images'], 1, 3)
-    train_labels = to_categorical(dataset['train_labels'])
-    validation_labels = to_categorical(dataset['validation_labels'])
-    test_labels = to_categorical(dataset['test_labels'])
+    train_labels = to_categorical(dataset['train_labels'].flatten())
+    validation_labels = to_categorical(dataset['validation_labels'].flatten())
+    test_labels = to_categorical(dataset['test_labels'].flatten())
 
     if os.path.isfile('model.h5'):
         print('\n--- Loading model ---')

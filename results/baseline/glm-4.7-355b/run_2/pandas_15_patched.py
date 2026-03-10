@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,7 +9,7 @@ import seaborn as sns
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 train=pd.read_csv('data/train.csv')
 test=pd.read_csv('data/test.csv')
 submission=pd.read_csv('data/sample_submission.csv')
@@ -17,7 +17,7 @@ submission=pd.read_csv('data/sample_submission.csv')
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 hmv_col=[]
 for col in train.columns:
     if train[col].isnull().sum()/train.shape[0] > 0.46:
@@ -35,12 +35,9 @@ print("No of columns after dropping high missing value column: ",len(train.colum
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # test=test.drop(['Alley','PoolQC','Fence','MiscFeature','Id'],axis=1)
 
 # === AFTER (edited) ===
-cols_to_drop = ['Alley','PoolQC','Fence','MiscFeature','Id']
-# Only drop columns that exist in the dataframe
-cols_to_drop_existing = [col for col in cols_to_drop if col in test.columns]
-test = test.drop(cols_to_drop_existing, axis=1)
+test=test.drop(['Id'],axis=1)

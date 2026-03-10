@@ -1,27 +1,9 @@
 # --- [CELL 0]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# import numpy as np
-# 
-# # Load GloVe embeddings
-# def load_glove_embeddings(embeddings_file):
-#     embeddings_index = dict()
-#     with open(embeddings_file, 'r', encoding='utf-8') as f:
-#         for line in f:
-#             values = line.split()
-#             word = values[0]
-#             coefs = np.asarray(values[1:], dtype='float32')
-#             embeddings_index[word] = coefs
-#     return embeddings_index
-# 
-# glove_embeddings_file = 'data/glove.6B.50d.txt'
-# glove_embeddings = load_glove_embeddings(glove_embeddings_file)
-
-# === AFTER (edited) ===
 import numpy as np
 
-
+# Load GloVe embeddings
 def load_glove_embeddings(embeddings_file):
     embeddings_index = dict()
     with open(embeddings_file, 'r', encoding='utf-8') as f:
@@ -33,7 +15,7 @@ def load_glove_embeddings(embeddings_file):
     return embeddings_index
 
 glove_embeddings_file = 'data/glove.6B.50d.txt'
-# glove_embeddings = load_glove_embeddings(glove_embeddings_file)
+glove_embeddings = load_glove_embeddings(glove_embeddings_file)
 
 #%%
 # --- [CELL 1]: ---
@@ -54,7 +36,6 @@ def tokenize_text(text):
 # Example usage
 text = "This is an example sentence."
 input_ids = tokenize_text(text)
-
 
 #%%
 # --- [CELL 2]: ---
@@ -93,4 +74,4 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 
 max_length = 768
 
-docs = np.array([pad_sequences([tokenize_text(i)], maxlen=max_length)[0] for i in docs])
+docs = np.array([np.array(pad_sequences([tokenize_text(i)], maxlen=max_length)[0]) for i in docs])

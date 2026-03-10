@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import os
 import shutil
 import itertools
@@ -33,27 +33,16 @@ warnings.filterwarnings('ignore')
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # Paths to training and testing datasets
 train_dir = 'data_small/Training'
 test_dir = 'data_small/Testing'
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# # Data augmentation
-# train_datagen = ImageDataGenerator(
-#     rescale=1./255,
-#     rotation_range=20,
-#     shear_range=0.2,
-#     zoom_range=0.2,
-#     horizontal_flip=True)
-
-# === AFTER (edited) ===
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# Data augmentation
 train_datagen = ImageDataGenerator(
     rescale=1./255,
     rotation_range=20,
@@ -63,29 +52,11 @@ train_datagen = ImageDataGenerator(
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
-# === BEFORE (original) ===
-# test_datagen = ImageDataGenerator(rescale=1./255)
-# 
-# # Load and preprocess training and testing data
-# train_generator = train_datagen.flow_from_directory(
-#     train_dir,
-#     target_size=(224, 224),
-#     batch_size=32,
-#     class_mode='categorical',
-#     shuffle=False
-# )
-# 
-# test_generator = test_datagen.flow_from_directory(
-#     test_dir,
-#     target_size=(224, 224),
-#     batch_size=32,
-#     class_mode='categorical',
-#     shuffle=False
-# )
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+test_datagen = ImageDataGenerator(rescale=1./255)
 
-# === AFTER (edited) ===
+# Load and preprocess training and testing data
 train_generator = train_datagen.flow_from_directory(
     train_dir,
     target_size=(224, 224),
@@ -102,13 +73,10 @@ test_generator = test_datagen.flow_from_directory(
     shuffle=False
 )
 
-print(f"Found {train_generator.samples} images for training")
-print(f"Found {test_generator.samples} images for testing")
-
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 from tensorflow.keras.applications import InceptionV3
 from tensorflow.keras.layers import GlobalAveragePooling2D
 from tensorflow.keras.models import Model
@@ -128,53 +96,15 @@ inception_model = Model(inputs=base_model.input, outputs=x)
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
-# === BEFORE (original) ===
-# train_features = inception_model.predict(train_generator)
-# test_features = inception_model.predict(test_generator)
-
-# === AFTER (edited) ===
-import numpy as np
-import tensorflow as tf
-
-# Function to safely extract features from generator
-def safe_extract_features(model, generator):
-    all_features = []
-    all_labels = []
-    
-    # Get generator parameters
-    batch_size = generator.batch_size
-    num_samples = len(generator)
-    
-    for i in range(num_samples):
-        try:
-            # Predict on the generator batch
-            x_batch, y_batch = next(generator)
-            features = model.predict(x_batch, verbose=0)
-            all_features.append(features)
-            all_labels.append(y_batch)
-        except Exception as e:
-            print(f"Skipping batch {i} due to error: {e}")
-            # Skip this batch
-            continue
-    
-    if all_features:
-        return np.vstack(all_features), np.vstack(all_labels)
-    else:
-        return np.array([]), None
-
-# Extract features
-train_features, train_labels_temp = safe_extract_features(inception_model, train_generator)
-test_features, test_labels_temp = safe_extract_features(inception_model, test_generator)
-
-print(f"Train features shape: {train_features.shape}")
-print(f"Test features shape: {test_features.shape}")
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+train_features = inception_model.predict(train_generator)
+test_features = inception_model.predict(test_generator)
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 from keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Reshape
 from keras.layers import Bidirectional, LSTM # fix for reproducing and fixing purposes
 from tensorflow.keras.models import Model
@@ -182,7 +112,7 @@ from tensorflow.keras.models import Model
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 from tensorflow.keras.utils import to_categorical
 
 # Convert integer labels to one-hot encoding
@@ -192,7 +122,7 @@ test_labels_one_hot = to_categorical(test_generator.classes, num_classes=4)
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 from tensorflow.keras.callbacks import EarlyStopping
 
 # Define early stopping criteria
@@ -201,7 +131,7 @@ early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weig
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Reshape, Conv2D, MaxPooling2D, Bidirectional, LSTM, Dropout, Flatten, Dense
 from tensorflow.keras.optimizers import Adam
@@ -213,7 +143,7 @@ from tensorflow.keras.optimizers import Adam, RMSprop, SGD
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 # Define the input shape
 input_features = Input(shape=(2048,), name='input_features')
 
@@ -240,7 +170,7 @@ bi_lstm_output_flatten = Flatten()(bi_lstm_output)
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 # Hyperparameters tuning
 def build_model(hp):
     dense_units = hp.Int('dense_units', min_value=64, max_value=256, step=32)
@@ -267,7 +197,7 @@ def build_model(hp):
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # Hyperparameter search
 tuner = RandomSearch(
     build_model,
@@ -288,20 +218,40 @@ tuner.search(
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-# Plot the architecture of the best model
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# === BEFORE (original) ===
+# # Plot the architecture of the best model
+# best_model = tuner.get_best_models(1)[0]
+# best_model.summary()
+# 
+# # Extract information about the best trials
+# best_trials = tuner.oracle.get_best_trials(5)
+# 
+# # Plot the results
+# plt.figure(figsize=(10, 6))
+# for trial in best_trials:
+#     val_accuracy_history = trial.metrics.get_history(name='val_accuracy')
+#     plt.plot(val_accuracy_history, label=f'Trial {trial.trial_id}')
+# 
+# plt.title('Validation Accuracy of Best Trials')
+# plt.xlabel('Epochs')
+# plt.ylabel('Validation Accuracy')
+# plt.legend()
+# plt.show()
+
+# === AFTER (edited) ===
 best_model = tuner.get_best_models(1)[0]
 best_model.summary()
 
-# Extract information about the best trials
+
 best_trials = tuner.oracle.get_best_trials(5)
 
-# Plot the results
+
 plt.figure(figsize=(10, 6))
 for trial in best_trials:
     val_accuracy_history = trial.metrics.get_history(name='val_accuracy')
-    plt.plot(val_accuracy_history, label=f'Trial {trial.trial_id}')
+    plt.plot([m.value for m in val_accuracy_history], label=f'Trial {trial.trial_id}')
 
 plt.title('Validation Accuracy of Best Trials')
 plt.xlabel('Epochs')

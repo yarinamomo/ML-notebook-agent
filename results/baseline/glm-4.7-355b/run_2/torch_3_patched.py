@@ -25,7 +25,7 @@ from torch import nn
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # class CustomModelMultichoice(nn.Module):
 #     def __init__(self,config,num_choice):
@@ -44,7 +44,6 @@ from torch import nn
 #             loss_func = nn.NLLLoss()
 #             loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))
 #         return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states= None,attentions =None)
-#             
 
 # === AFTER (edited) ===
 class CustomModelMultichoice(nn.Module):
@@ -61,6 +60,10 @@ class CustomModelMultichoice(nn.Module):
         loss = None
         if labels is not None:
             loss_func = nn.CrossEntropyLoss()
+            # labels should be class indices: convert from shape (batch, num_choice) to (batch,)
+            if labels.dim() == 2 and labels.size(1) > 1:
+                # If labels are one-hot encoded or have multiple columns, get argmax for class indices
+                labels = labels.argmax(dim=1)
             loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))
         return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states = None,attentions =None)
 
@@ -81,7 +84,6 @@ candidate1 = "Việt Nam"
 candidate2 = "Mỹ"
 candidate3 = 'Việt Nam'
 
-
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
@@ -90,7 +92,6 @@ from transformers import AutoTokenizer
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_CHOICE)
 inputs = tokenizer([[prompt, candidate1], [prompt, candidate2],[prompt, candidate3]], return_tensors="pt", padding=True)
-
 
 #%%
 # --- [CELL 8]: ---

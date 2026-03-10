@@ -61,7 +61,6 @@ print(class_names)
 # cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # === BEFORE (original) ===
-# 
 # import matplotlib.pyplot as plt
 # 
 # plt.figure(figsize=(10, 10))
@@ -76,14 +75,9 @@ print(class_names)
 import matplotlib.pyplot as plt
 
 plt.figure(figsize=(10, 10))
-try:
-    for images, labels in train_ds.take(1):
-      for i in range(min(6, len(images))):
-        ax = plt.subplot(3, 3, i + 1)
-        plt.imshow(images[i].numpy().astype("uint8"))
-        plt.title(class_names[tf.argmax(labels[i])])
-        plt.axis("off")
-except Exception as e:
-    print(f"Could not display images due to dataset format issue: {e}")
-    print("Note: Image files may not be properly downloaded or may be in a format that cannot be decoded.")
-    plt.close()
+for images, labels in train_ds.take(1):
+  for i in range(6):
+    ax = plt.subplot(3, 3, i + 1)
+    plt.imshow(images[i].numpy().astype("uint8"))
+    plt.title(class_names[tf.argmax(labels[i]).numpy()])
+    plt.axis("off")

@@ -49,7 +49,7 @@ print(f"Will generate {GENERATE_SQUARE}px square images.")
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # training_binary_path = os.path.join(DATA_PATH,
 #         f'training_data_{GENERATE_SQUARE}_{GENERATE_SQUARE}.npy')
@@ -82,9 +82,6 @@ print(f"Will generate {GENERATE_SQUARE}px square images.")
 #   training_data = np.load(training_binary_path)
 
 # === AFTER (edited) ===
-# --- [CELL 2]: ---
-
-
 training_binary_path = os.path.join(DATA_PATH,
         f'training_data_{GENERATE_SQUARE}_{GENERATE_SQUARE}.npy')
 
@@ -98,27 +95,18 @@ if not os.path.isfile(training_binary_path):
   faces_path = 'data/apple_disease_classification/Train/Blotch_Apple'
   for filename in tqdm(os.listdir(faces_path)):
       path = os.path.join(faces_path,filename)
-      try:
-          image = Image.open(path).resize((GENERATE_SQUARE,
-                GENERATE_SQUARE),Image.LANCZOS)
-          training_data.append(np.asarray(image))
-      except (IOError, OSError, UnidentifiedImageError):
-          print(f"Skipping corrupted file: {path}")
-          continue
-  
-  if len(training_data) == 0:
-      raise ValueError("No valid images found in the directory!")
-  
+      image = Image.open(path).convert('RGB').resize((GENERATE_SQUARE,
+            GENERATE_SQUARE),Image.LANCZOS)
+      training_data.append(np.asarray(image))
   training_data = np.reshape(training_data,(-1,GENERATE_SQUARE,
             GENERATE_SQUARE,3))
   training_data = training_data.astype(np.float32)
   training_data = training_data / 127.5 - 1.
 
 
-  print(f"Saving training image binary ({len(training_data)} images)...")
-  np.save(training_binary_path, training_data)
-  elapsed = time.time() - start
-  print(f"Processed {len(training_data)} images in {elapsed:.2f} seconds")
+  print("Saving training image binary...")
+
+  elapsed = time.time()-start
 
 else:
   print("Loading previous training pickle...")

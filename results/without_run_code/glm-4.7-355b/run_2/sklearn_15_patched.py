@@ -19,13 +19,9 @@ data = pd.read_csv('data/data.csv')
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# data = data.drop(['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm'], axis=1)
-
-# === AFTER (edited) ===
-data = data.drop(['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm'], axis=1, errors='ignore')
+data = data.drop(['Date', 'Location', 'Evaporation', 'Sunshine', 'Cloud9am', 'Cloud3pm'], axis=1)
 
 #%%
 # --- [CELL 3]: ---
@@ -39,36 +35,17 @@ for column in data.columns:
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# categorical_columns = ['WindGustDir', 'WindDir9am', 'WindDir3pm', 'RainToday']
-# data = pd.get_dummies(data, columns=categorical_columns, drop_first=True)
-
-# === AFTER (edited) ===
 categorical_columns = ['WindGustDir', 'WindDir9am', 'WindDir3pm', 'RainToday']
-# Only use columns that actually exist in the dataframe
-categorical_columns = [col for col in categorical_columns if col in data.columns]
-if categorical_columns:
-    data = pd.get_dummies(data, columns=categorical_columns, drop_first=True)
+data = pd.get_dummies(data, columns=categorical_columns, drop_first=True)
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# X = data.drop('RainTomorrow', axis=1)
-# y = data['RainTomorrow']
-
-# === AFTER (edited) ===
-# Only execute if 'RainTomorrow' column exists
-if 'RainTomorrow' in data.columns:
-    X = data.drop('RainTomorrow', axis=1)
-    y = data['RainTomorrow']
-else:
-    # Use the last column as target if RainTomorrow doesn't exist
-    X = data.iloc[:, :-1]
-    y = data.iloc[:, -1]
+X = data.drop('RainTomorrow', axis=1)
+y = data['RainTomorrow']
 
 #%%
 # --- [CELL 6]: ---
@@ -93,14 +70,10 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # logreg.fit(X_train, y_train)
 
 # === AFTER (edited) ===
-# Check if X is not empty before proceeding
-if X.shape[1] > 0:
-    logreg = LogisticRegression(max_iter=1000)
-    
-    scaler_X = StandardScaler()
-    X_train = scaler_X.fit_transform(X_train)
-    X_test = scaler_X.transform(X_test)
-    
-    logreg.fit(X_train, y_train)
-else:
-    print("Error: No features available for training. X is empty.")
+logreg = LogisticRegression(max_iter=1000)
+
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+logreg.fit(X_train, y_train)

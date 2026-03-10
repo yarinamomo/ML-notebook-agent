@@ -29,27 +29,10 @@ test_df_path = 'data/sample_submission.csv'
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# df_train = pd.read_csv(train_df_path)
-# df_test=pd.read_csv(test_df_path)
-
-# === AFTER (edited) ===
-# Load the data
-# Since the actual CSV files contain Git LFS pointers, create sample data for demonstration
-df_train = pd.DataFrame({
-    'image': [f'{i}.jpg' for i in range(100)],
-    'labels': ['healthy'] * 25 + ['scab'] * 20 + ['frog_eye_leaf_spot'] * 15 + 
-              ['rust'] * 20 + ['complex'] * 15 + ['powdery_mildew'] * 5
-})
-
-df_test = pd.DataFrame({
-    'image': [f'test_{i}.jpg' for i in range(10)]
-})
-
-print("Train DataFrame shape:", df_train.shape)
-print("Test DataFrame shape:", df_test.shape)
+df_train = pd.read_csv(train_df_path)
+df_test=pd.read_csv(test_df_path)
 
 #%%
 # --- [CELL 3]: ---
@@ -63,6 +46,6 @@ print("Test DataFrame shape:", df_test.shape)
 
 # === AFTER (edited) ===
 plt.figure(figsize=(15,12))
-labels = sns.barplot(x=df_train['labels'].value_counts().index, y=df_train['labels'].value_counts())
+labels = sns.barplot(x=df_train.labels.value_counts().index, y=df_train.labels.value_counts())
 for item in labels.get_xticklabels():
     item.set_rotation(45)

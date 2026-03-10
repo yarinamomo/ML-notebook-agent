@@ -24,7 +24,6 @@ import matplotlib.pyplot as plt
 # --- [CELL 1]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-
 PATH = 'data_small/cats_and_dogs'
 
 # Get number of files in each directory. The train and validation directories
@@ -79,49 +78,18 @@ test_data_gen  = test_image_generator.flow_from_directory(
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# # 4
-# def plotImages(images_arr, probabilities = False):
-#     fig, axes = plt.subplots(len(images_arr), 1, figsize=(5,len(images_arr) * 3))
-#     if probabilities is False:
-#       for img, ax in zip( images_arr, axes):
-#           ax.imshow(img)
-#           ax.axis('off')
-#     else:
-#       for img, probability, ax in zip( images_arr, probabilities, axes):
-#           ax.imshow(img)
-#           ax.axis('off')
-#           if probability > 0.5:
-#               ax.set_title("%.2f" % (probability*100) + "% dog")
-#           else:
-#               ax.set_title("%.2f" % ((1-probability)*100) + "% cat")
-#     plt.show()
-# 
-# sample_training_images, _ = next(train_data_gen)
-# plotImages(sample_training_images[:5])
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# 4
 def plotImages(images_arr, probabilities = False):
     fig, axes = plt.subplots(len(images_arr), 1, figsize=(5,len(images_arr) * 3))
     if probabilities is False:
       for img, ax in zip( images_arr, axes):
-          # Convert float images (0-1) to uint8 (0-255) for display
-          if img.dtype == np.float32 or img.dtype == np.float64:
-              img_display = (img * 255).astype(np.uint8)
-          else:
-              img_display = img
-          ax.imshow(img_display)
+          ax.imshow(img)
           ax.axis('off')
     else:
       for img, probability, ax in zip( images_arr, probabilities, axes):
-          # Convert float images (0-1) to uint8 (0-255) for display
-          if img.dtype == np.float32 or img.dtype == np.float64:
-              img_display = (img * 255).astype(np.uint8)
-          else:
-              img_display = img
-          ax.imshow(img_display)
+          ax.imshow(img)
           ax.axis('off')
           if probability > 0.5:
               ax.set_title("%.2f" % (probability*100) + "% dog")
@@ -135,7 +103,7 @@ plotImages(sample_training_images[:5])
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # 5
 train_image_generator = ImageDataGenerator(
     rescale=1./255,
@@ -149,11 +117,10 @@ train_image_generator = ImageDataGenerator(
     channel_shift_range=0.2, # Add channel shift augmentation
 )
 
-
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # 6
 train_data_gen = train_image_generator.flow_from_directory(batch_size=batch_size,
                                                      directory=train_dir,
@@ -167,7 +134,7 @@ plotImages(augmented_images)
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # 7
 from tensorflow.keras.optimizers import Adam
 model = Sequential()
@@ -191,7 +158,7 @@ model.compile(optimizer=optimizer,
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # 8
 history = model.fit(
     train_data_gen,
@@ -202,11 +169,15 @@ history = model.fit(
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 model.save("train.h5")
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-model.load ("train.h5")
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# === BEFORE (original) ===
+# model.load ("train.h5")
+
+# === AFTER (edited) ===
+model = tf.keras.models.load_model("train.h5")

@@ -29,22 +29,10 @@ test_df_path = 'data/sample_submission.csv'
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# df_train = pd.read_csv(train_df_path)
-# df_test=pd.read_csv(test_df_path)
-
-# === AFTER (edited) ===
-# Create mock data for demonstration since actual CSV files are Git LFS pointers
-# This allows the notebook to run without errors
-df_train = pd.DataFrame({
-    'image': [f'train_{i}.jpg' for i in range(100)],
-    'labels': np.random.choice(['healthy', 'rust', 'scab', 'frog_eye_leaf_spot', 'complex', 'powdery_mildew'], 100)
-})
-df_test = pd.DataFrame({
-    'image': [f'test_{i}.jpg' for i in range(10)]
-})
+df_train = pd.read_csv(train_df_path)
+df_test=pd.read_csv(test_df_path)
 
 #%%
 # --- [CELL 3]: ---
@@ -58,6 +46,6 @@ df_test = pd.DataFrame({
 
 # === AFTER (edited) ===
 plt.figure(figsize=(15,12))
-labels = sns.barplot(x=df_train.labels.value_counts().index, y=df_train.labels.value_counts(), data=df_train)
+labels = sns.barplot(x=df_train.labels.value_counts().index, y=df_train.labels.value_counts())
 for item in labels.get_xticklabels():
     item.set_rotation(45)

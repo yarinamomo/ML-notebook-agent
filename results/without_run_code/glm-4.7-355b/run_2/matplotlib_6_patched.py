@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import warnings
 
 import numpy as np
@@ -24,13 +24,13 @@ filterwarnings('ignore')
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 df=pd.read_csv('data/3711.csv');df
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # sns.set_style('darkgrid')
 # fig, ax = plt.subplots(6, 1, figsize=(5, 20))#Original was 9,1
@@ -42,9 +42,9 @@ df=pd.read_csv('data/3711.csv');df
 
 # === AFTER (edited) ===
 sns.set_style('darkgrid')
-fig, ax = plt.subplots(6, 1, figsize=(5, 20))
+fig, ax = plt.subplots(len(df.columns.values), 1, figsize=(5, len(df.columns.values)*3))
 
-for i, col in enumerate(list(df.select_dtypes(include=[np.number]).columns.values)):
+for i, col in enumerate(list(df.columns.values)):
     axes_box  = ax[i]
     sns.boxplot(data=df, x=col, ax=axes_box,color='#a5c687')
     ax[i].set_title(col,fontsize=15,color='magenta')

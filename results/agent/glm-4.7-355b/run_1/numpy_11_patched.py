@@ -95,25 +95,16 @@ if not os.path.isfile(training_binary_path):
   faces_path = 'data/apple_disease_classification/Train/Blotch_Apple'
   for filename in tqdm(os.listdir(faces_path)):
       path = os.path.join(faces_path,filename)
-      try:
-          image = Image.open(path).resize((GENERATE_SQUARE,
-                GENERATE_SQUARE),Image.LANCZOS)
-          training_data.append(np.asarray(image))
-      except Exception as e:
-          continue
-  
-  if len(training_data) == 0:
-      print("Warning: No valid images found in the directory.")
-      print("This might be because Git LFS files are not downloaded.")
-      print("Skipping training data loading.")
-      training_data = None
-  else:
-      training_data = np.reshape(training_data,(-1,GENERATE_SQUARE,
-                GENERATE_SQUARE,3))
-      training_data = training_data.astype(np.float32)
-      training_data = training_data / 127.5 - 1.
-      
-      print("Saving training image binary...")
+      image = Image.open(path).convert('RGB').resize((GENERATE_SQUARE,
+            GENERATE_SQUARE),Image.LANCZOS)
+      training_data.append(np.asarray(image))
+  training_data = np.reshape(training_data,(-1,GENERATE_SQUARE,
+            GENERATE_SQUARE,3))
+  training_data = training_data.astype(np.float32)
+  training_data = training_data / 127.5 - 1.
+
+
+  print("Saving training image binary...")
 
   elapsed = time.time()-start
 

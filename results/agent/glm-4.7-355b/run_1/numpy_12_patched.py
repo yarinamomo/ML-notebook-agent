@@ -1,33 +1,10 @@
 # --- [CELL 0]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# import pandas
-# import matplotlib.pyplot as plt
-# dataset = pandas.read_csv('data/international-airline-passengers.csv', usecols=[1], engine='python')
-# plt.plot(dataset)
-# plt.show()
-
-# === AFTER (edited) ===
 import pandas
 import matplotlib.pyplot as plt
-import numpy as np
-
-# Creating sample data for international airline passengers (classic time series dataset)
-# Typically contains monthly passenger counts from 1949-1960
-np.random.seed(42)
-months = np.arange(1, 145)  # 12 months * 12 years + 1
-trend = np.linspace(100, 600, 144)
-seasonal = 50 * np.sin(2 * np.pi * months / 12)
-noise = np.random.normal(0, 20, 144)
-passengers = trend + seasonal + noise
-passengers = passengers[:144]  # 144 data points (12 years x 12 months)
-
-dataset = pandas.DataFrame({'Passengers': passengers})
-plt.plot(dataset.values.flatten())
-plt.title('International Airline Passengers')
-plt.xlabel('Month')
-plt.ylabel('Passengers')
+dataset = pandas.read_csv('data/international-airline-passengers.csv', usecols=[1], engine='python')
+plt.plot(dataset)
 plt.show()
 
 #%%
@@ -133,7 +110,7 @@ testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
 
 
 model = Sequential()
-model.add(LSTM(4, input_shape=(1, look_back)))
+model.add(LSTM(4, input_shape=(1, look_back), return_sequences=False))
 model.add(Dense(1))
 model.compile(loss='mean_squared_error', optimizer='adam')
 model.fit(trainX, trainY, epochs=10, batch_size=1, verbose=2)

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # import os
 # import numpy as np
@@ -79,27 +79,9 @@ import torch
 
 def load_loss_weights_from_directory(directory_path):
     weight_files = [filename for filename in os.listdir(directory_path) if filename.endswith(".npy")]
-    weights = []
-    for filename in weight_files:
-        try:
-            # Try loading as regular numpy array first
-            w = np.load(os.path.join(directory_path, filename), allow_pickle=False)
-            weights.append(w)
-        except ValueError:
-            # If that fails, try with allow_pickle=True
-            try:
-                w = np.load(os.path.join(directory_path, filename), allow_pickle=True)
-                weights.append(w)
-            except Exception:
-                # If that also fails, skip this file
-                print(f"Warning: Could not load {filename}, skipping...")
-                continue
-    
-    # If no weights could be loaded, create placeholder weights
-    if len(weights) == 0:
-        print("Warning: No weights could be loaded. Creating placeholder weights.")
-        weights = [np.array([0.5] * 10)]  # Create placeholder weights
-    
+    weights = [np.load(os.path.join(directory_path, filename)) for filename in weight_files]
+    # Ensure all arrays have at least 1 dimension before concatenating
+    weights = [w if w.ndim > 0 else np.array([w]) for w in weights]
     return np.concatenate(weights)
 
 
@@ -148,7 +130,6 @@ for epoch in range(num_epochs_update_regression):
 
 
     save_weights_to_directory(output_directory, regression_weight.cpu().numpy())
-
 
 
 

@@ -22,48 +22,25 @@ import matplotlib.pyplot as plt
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# 
-# PATH = 'data_small/cats_and_dogs'
-# 
-# # Get number of files in each directory. The train and validation directories
-# # each have the subdirecories "dogs" and "cats".
-# train_dir      = os.path.join(PATH, 'train')
-# validation_dir = os.path.join(PATH, 'validation')
-# test_dir       = os.path.join(PATH, 'test')
-# 
-# # -1 because of DS_Store
-# total_train = sum([len(files) for r, d, files in os.walk(train_dir)])#-1
-# total_val   = sum([len(files) for r, d, files in os.walk(validation_dir)])#-1
-# total_test  = len(os.listdir(test_dir))#-1
-# 
-# print('Train:', total_train) 
-# print('Validation:', total_val)
-# print('Test:', total_test)
-# # Variables for pre-processing and training.
-# batch_size = 128
-# epochs = 30
-# IMG_HEIGHT = 150
-# IMG_WIDTH = 150
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 PATH = 'data_small/cats_and_dogs'
 
+# Get number of files in each directory. The train and validation directories
+# each have the subdirecories "dogs" and "cats".
 train_dir      = os.path.join(PATH, 'train')
 validation_dir = os.path.join(PATH, 'validation')
 test_dir       = os.path.join(PATH, 'test')
 
+# -1 because of DS_Store
+total_train = sum([len(files) for r, d, files in os.walk(train_dir)])#-1
+total_val   = sum([len(files) for r, d, files in os.walk(validation_dir)])#-1
+total_test  = len(os.listdir(test_dir))#-1
 
-total_train = sum([len(files) for r, d, files in os.walk(train_dir)]) if os.path.exists(train_dir) else 0
-total_val   = sum([len(files) for r, d, files in os.walk(validation_dir)]) if os.path.exists(validation_dir) else 0
-total_test  = len(os.listdir(test_dir)) if os.path.exists(test_dir) else 0
-
-print('Train:', total_train)
+print('Train:', total_train) 
 print('Validation:', total_val)
 print('Test:', total_test)
-
+# Variables for pre-processing and training.
 batch_size = 128
 epochs = 30
 IMG_HEIGHT = 150
@@ -72,7 +49,7 @@ IMG_WIDTH = 150
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # 3
 
 train_image_generator = ImageDataGenerator(rescale = 1./255)
@@ -102,7 +79,7 @@ test_data_gen  = test_image_generator.flow_from_directory(
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # 4
 def plotImages(images_arr, probabilities = False):
     fig, axes = plt.subplots(len(images_arr), 1, figsize=(5,len(images_arr) * 3))
@@ -123,11 +100,10 @@ def plotImages(images_arr, probabilities = False):
 sample_training_images, _ = next(train_data_gen)
 plotImages(sample_training_images[:5])
 
-
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # 5
 train_image_generator = ImageDataGenerator(
     rescale=1./255,
@@ -141,11 +117,10 @@ train_image_generator = ImageDataGenerator(
     channel_shift_range=0.2, # Add channel shift augmentation
 )
 
-
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # 6
 train_data_gen = train_image_generator.flow_from_directory(batch_size=batch_size,
                                                      directory=train_dir,
@@ -159,7 +134,7 @@ plotImages(augmented_images)
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # 7
 from tensorflow.keras.optimizers import Adam
 model = Sequential()
@@ -183,7 +158,7 @@ model.compile(optimizer=optimizer,
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # 8
 history = model.fit(
     train_data_gen,
@@ -194,11 +169,16 @@ history = model.fit(
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 model.save("train.h5")
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-model.load ("train.h5")
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# === BEFORE (original) ===
+# model.load ("train.h5")
+
+# === AFTER (edited) ===
+from tensorflow.keras.models import load_model
+model = load_model("train.h5")

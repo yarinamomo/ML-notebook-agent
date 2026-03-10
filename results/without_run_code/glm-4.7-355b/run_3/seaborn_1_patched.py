@@ -68,76 +68,40 @@ ES_PATIENCE = 5
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# model_path = f'model_{HEIGHT}x{WIDTH}.h5'
-# 
-# # GCS_PATH = KaggleDatasets().get_gcs_path('tpu-getting-started') + f'/tfrecords-jpeg-{HEIGHT}x{WIDTH}'
-# GCS_PATH = "data/tfrecords-jpeg-{}x{}".format(HEIGHT, WIDTH) # get data from local disk (reproducing purposes)
-# 
-# TRAINING_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/train/*.tfrec')
-# VALIDATION_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/val/*.tfrec')
-# TEST_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/test/*.tfrec')
-# 
-# CLASSES = [
-#     'pink primrose', 'hard-leaved pocket orchid', 'canterbury bells', 'sweet pea', 
-#     'wild geranium', 'tiger lily', 'moon orchid', 'bird of paradise', 'monkshood', 
-#     'globe thistle', 'snapdragon', "colt's foot", 'king protea', 'spear thistle', 
-#     'yellow iris', 'globe-flower', 'purple coneflower', 'peruvian lily', 
-#     'balloon flower', 'giant white arum lily', 'fire lily', 'pincushion flower', 
-#     'fritillary', 'red ginger', 'grape hyacinth', 'corn poppy', 
-#     'prince of wales feathers', 'stemless gentian', 'artichoke', 'sweet william', 
-#     'carnation', 'garden phlox', 'love in the mist', 'cosmos',  'alpine sea holly', 
-#     'ruby-lipped cattleya', 'cape flower', 'great masterwort',  'siam tulip', 
-#     'lenten rose', 'barberton daisy', 'daffodil',  'sword lily', 'poinsettia', 
-#     'bolero deep blue',  'wallflower', 'marigold', 'buttercup', 'daisy', 
-#     'common dandelion', 'petunia', 'wild pansy', 'primula',  'sunflower', 
-#     'lilac hibiscus', 'bishop of llandaff', 'gaura',  'geranium', 'orange dahlia', 
-#     'pink-yellow dahlia', 'cautleya spicata',  'japanese anemone', 
-#     'black-eyed susan', 'silverbush', 'californian poppy',  'osteospermum', 
-#     'spring crocus', 'iris', 'windflower',  'tree poppy', 'gazania', 'azalea', 
-#     'water lily',  'rose', 'thorn apple', 'morning glory', 'passion flower',  
-#     'lotus', 'toad lily', 'anthurium', 'frangipani',  'clematis', 'hibiscus', 
-#     'columbine', 'desert-rose', 'tree mallow', 'magnolia', 'cyclamen ', 
-#     'watercress',  'canna lily', 'hippeastrum ', 'bee balm', 'pink quill',  
-#     'foxglove', 'bougainvillea', 'camellia', 'mallow',  'mexican petunia',  
-#     'bromelia', 'blanket flower', 'trumpet creeper',  'blackberry lily', 
-#     'common tulip', 'wild rose']
-
-# === AFTER (edited) ===
 model_path = f'model_{HEIGHT}x{WIDTH}.h5'
 
-
-GCS_PATH = "data/tfrecords-jpeg-{}x{}".format(HEIGHT, WIDTH)
+# GCS_PATH = KaggleDatasets().get_gcs_path('tpu-getting-started') + f'/tfrecords-jpeg-{HEIGHT}x{WIDTH}'
+GCS_PATH = "data/tfrecords-jpeg-{}x{}".format(HEIGHT, WIDTH) # get data from local disk (reproducing purposes)
 
 TRAINING_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/train/*.tfrec')
 VALIDATION_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/val/*.tfrec')
 TEST_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/test/*.tfrec')
 
 CLASSES = [
-    'pink primrose', 'hard-leaved pocket orchid', 'canterbury bells', 'sweet pea',
-    'wild geranium', 'tiger lily', 'moon orchid', 'bird of paradise', 'monkshood',
-    'globe thistle', 'snapdragon', "colt's foot", 'king protea', 'spear thistle',
-    'yellow iris', 'globe-flower', 'purple coneflower', 'peruvian lily',
-    'balloon flower', 'giant white arum lily', 'fire lily', 'pincushion flower',
-    'fritillary', 'red ginger', 'grape hyacinth', 'corn poppy',
-    'prince of wales feathers', 'stemless gentian', 'artichoke', 'sweet william',
-    'carnation', 'garden phlox', 'love in the mist', 'cosmos',  'alpine sea holly',
-    'ruby-lipped cattleya', 'cape flower', 'great masterwort',  'siam tulip',
-    'lenten rose', 'barberton daisy', 'daffodil',  'sword lily', 'poinsettia',
-    'bolero deep blue',  'wallflower', 'marigold', 'buttercup', 'daisy',
-    'common dandelion', 'petunia', 'wild pansy', 'primula',  'sunflower',
-    'lilac hibiscus', 'bishop of llandaff', 'gaura',  'geranium', 'orange dahlia',
-    'pink-yellow dahlia', 'cautleya spicata',  'japanese anemone',
-    'black-eyed susan', 'silverbush', 'californian poppy',  'osteospermum',
-    'spring crocus', 'iris', 'windflower',  'tree poppy', 'gazania', 'azalea',
-    'water lily',  'rose', 'thorn apple', 'morning glory', 'passion flower',
-    'lotus', 'toad lily', 'anthurium', 'frangipani',  'clematis', 'hibiscus',
-    'columbine', 'desert-rose', 'tree mallow', 'magnolia', 'cyclamen ',
-    'watercress',  'canna lily', 'hippeastrum ', 'bee balm', 'pink quill',
-    'foxglove', 'bougainvillea', 'camellia', 'mallow',  'mexican petunia',
-    'bromelia', 'blanket flower', 'trumpet creeper',  'blackberry lily',
+    'pink primrose', 'hard-leaved pocket orchid', 'canterbury bells', 'sweet pea', 
+    'wild geranium', 'tiger lily', 'moon orchid', 'bird of paradise', 'monkshood', 
+    'globe thistle', 'snapdragon', "colt's foot", 'king protea', 'spear thistle', 
+    'yellow iris', 'globe-flower', 'purple coneflower', 'peruvian lily', 
+    'balloon flower', 'giant white arum lily', 'fire lily', 'pincushion flower', 
+    'fritillary', 'red ginger', 'grape hyacinth', 'corn poppy', 
+    'prince of wales feathers', 'stemless gentian', 'artichoke', 'sweet william', 
+    'carnation', 'garden phlox', 'love in the mist', 'cosmos',  'alpine sea holly', 
+    'ruby-lipped cattleya', 'cape flower', 'great masterwort',  'siam tulip', 
+    'lenten rose', 'barberton daisy', 'daffodil',  'sword lily', 'poinsettia', 
+    'bolero deep blue',  'wallflower', 'marigold', 'buttercup', 'daisy', 
+    'common dandelion', 'petunia', 'wild pansy', 'primula',  'sunflower', 
+    'lilac hibiscus', 'bishop of llandaff', 'gaura',  'geranium', 'orange dahlia', 
+    'pink-yellow dahlia', 'cautleya spicata',  'japanese anemone', 
+    'black-eyed susan', 'silverbush', 'californian poppy',  'osteospermum', 
+    'spring crocus', 'iris', 'windflower',  'tree poppy', 'gazania', 'azalea', 
+    'water lily',  'rose', 'thorn apple', 'morning glory', 'passion flower',  
+    'lotus', 'toad lily', 'anthurium', 'frangipani',  'clematis', 'hibiscus', 
+    'columbine', 'desert-rose', 'tree mallow', 'magnolia', 'cyclamen ', 
+    'watercress',  'canna lily', 'hippeastrum ', 'bee balm', 'pink quill',  
+    'foxglove', 'bougainvillea', 'camellia', 'mallow',  'mexican petunia',  
+    'bromelia', 'blanket flower', 'trumpet creeper',  'blackberry lily', 
     'common tulip', 'wild rose']
 
 #%%
@@ -238,77 +202,22 @@ def count_data_items(filenames):
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# # Train data
-# NUM_TRAINING_IMAGES = count_data_items(TRAINING_FILENAMES)
-# train_dataset = get_training_dataset_preview(ordered=True)
-# y_train = next(iter(train_dataset.unbatch().map(lambda image, label: label).batch(NUM_TRAINING_IMAGES))).numpy()
-# print(f'Number of training images {NUM_TRAINING_IMAGES}')
-# 
-# # Validation data
-# NUM_VALIDATION_IMAGES = count_data_items(VALIDATION_FILENAMES)
-# valid_dataset = get_validation_dataset(ordered=True)
-# y_valid = next(iter(valid_dataset.unbatch().map(lambda image, label: label).batch(NUM_VALIDATION_IMAGES))).numpy()
-# print(f'Number of validation images {NUM_VALIDATION_IMAGES}')
-# 
-# # Test data
-# NUM_TEST_IMAGES = count_data_items(TEST_FILENAMES)
-# print(f'Number of test images {NUM_TEST_IMAGES}')
-# test_dataset = get_test_dataset(ordered=True)
-
-# === AFTER (edited) ===
-def create_synthetic_dataset(n_samples, n_classes):
-    """Create synthetic data when real tfrec files are not available"""
-    image = tf.random.uniform([HEIGHT, WIDTH, CHANNELS], minval=0, maxval=1)
-    image = tf.cast(image, tf.float32)
-    labels = tf.random.uniform([n_samples], minval=0, maxval=n_classes, dtype=tf.int32)
-    images = tf.tile(image[tf.newaxis, ...], [n_samples, 1, 1, 1])
-    dataset = tf.data.Dataset.from_tensor_slices((images, labels))
-    dataset = dataset.batch(BATCH_SIZE)
-    return dataset
-
-# Check if files exist, otherwise use synthetic data
-if len(TRAINING_FILENAMES) == 0:
-    print("Warning: Training files not found. Using synthetic data for demonstration.")
-    NUM_TRAINING_IMAGES = 100
-    train_dataset = create_synthetic_dataset(NUM_TRAINING_IMAGES, N_CLASSES)
-    y_train = None
-else:
-    NUM_TRAINING_IMAGES = count_data_items(TRAINING_FILENAMES)
-    train_dataset = get_training_dataset_preview(ordered=True)
-    try:
-        y_train = next(iter(train_dataset.unbatch().map(lambda image, label: label).batch(NUM_TRAINING_IMAGES))).numpy()
-    except Exception as e:
-        print(f"Warning: Could not read training labels ({e}). Using synthetic data.")
-        train_dataset = create_synthetic_dataset(NUM_TRAINING_IMAGES, N_CLASSES)
-        y_train = None
+# Train data
+NUM_TRAINING_IMAGES = count_data_items(TRAINING_FILENAMES)
+train_dataset = get_training_dataset_preview(ordered=True)
+y_train = next(iter(train_dataset.unbatch().map(lambda image, label: label).batch(NUM_TRAINING_IMAGES))).numpy()
 print(f'Number of training images {NUM_TRAINING_IMAGES}')
 
-if len(VALIDATION_FILENAMES) == 0:
-    print("Warning: Validation files not found. Using synthetic data for demonstration.")
-    NUM_VALIDATION_IMAGES = 50
-    valid_dataset = create_synthetic_dataset(NUM_VALIDATION_IMAGES, N_CLASSES)
-    y_valid = None
-else:
-    NUM_VALIDATION_IMAGES = count_data_items(VALIDATION_FILENAMES)
-    valid_dataset = get_validation_dataset(ordered=True)
-    try:
-        y_valid = next(iter(valid_dataset.unbatch().map(lambda image, label: label).batch(NUM_VALIDATION_IMAGES))).numpy()
-    except Exception as e:
-        print(f"Warning: Could not read validation labels ({e}). Using synthetic data.")
-        valid_dataset = create_synthetic_dataset(NUM_VALIDATION_IMAGES, N_CLASSES)
-        y_valid = None
+# Validation data
+NUM_VALIDATION_IMAGES = count_data_items(VALIDATION_FILENAMES)
+valid_dataset = get_validation_dataset(ordered=True)
+y_valid = next(iter(valid_dataset.unbatch().map(lambda image, label: label).batch(NUM_VALIDATION_IMAGES))).numpy()
 print(f'Number of validation images {NUM_VALIDATION_IMAGES}')
 
-
-if len(TEST_FILENAMES) == 0:
-    print("Warning: Test files not found. Using synthetic data for demonstration.")
-    NUM_TEST_IMAGES = 50
-    test_dataset = get_training_dataset_preview()
-else:
-    NUM_TEST_IMAGES = count_data_items(TEST_FILENAMES)
+# Test data
+NUM_TEST_IMAGES = count_data_items(TEST_FILENAMES)
 print(f'Number of test images {NUM_TEST_IMAGES}')
 test_dataset = get_test_dataset(ordered=True)
 
@@ -333,20 +242,21 @@ test_dataset = get_test_dataset(ordered=True)
 # plt.show()
 
 # === AFTER (edited) ===
-if (y_train is not None) and (y_valid is not None):
-    train_agg = np.asarray([[label, (y_train == index).sum()] for index, label in enumerate(CLASSES)])
-    valid_agg = np.asarray([[label, (y_valid == index).sum()] for index, label in enumerate(CLASSES)])
+train_agg = np.asarray([[label, (y_train == index).sum()] for index, label in enumerate(CLASSES)])
+valid_agg = np.asarray([[label, (y_valid == index).sum()] for index, label in enumerate(CLASSES)])
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(24, 64))
+# Convert to DataFrames for seaborn compatibility, ensuring numeric types
+train_df = pd.DataFrame({'class': train_agg[...,0].tolist(), 'count': train_agg[...,1].astype(int)})
+valid_df = pd.DataFrame({'class': valid_agg[...,0].tolist(), 'count': valid_agg[...,1].astype(int)})
 
-    ax1 = sns.barplot(x=train_agg[...,1], y=train_agg[...,0], order=CLASSES, ax=ax1)
-    ax1.set_title('Train', fontsize=30)
-    ax1.tick_params(labelsize=16)
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(24, 64))
 
-    ax2 = sns.barplot(x=valid_agg[...,1], y=valid_agg[...,0], order=CLASSES, ax=ax2)
-    ax2.set_title('Validation', fontsize=30)
-    ax2.tick_params(labelsize=16)
+ax1 = sns.barplot(x='count', y='class', data=train_df, order=CLASSES, ax=ax1)
+ax1.set_title('Train', fontsize=30)
+ax1.tick_params(labelsize=16)
 
-    plt.show()
-else:
-    print("Skipping class distribution plots - real label data not available.")
+ax2 = sns.barplot(x='count', y='class', data=valid_df, order=CLASSES, ax=ax2)
+ax2.set_title('Validation', fontsize=30)
+ax2.tick_params(labelsize=16)
+
+plt.show()

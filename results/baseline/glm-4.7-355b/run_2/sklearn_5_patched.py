@@ -11,16 +11,9 @@ import seaborn as sns
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df= pd.read_csv("data/iris.csv")
-
-# === AFTER (edited) ===
-from sklearn.datasets import load_iris
-iris = load_iris()
-df = pd.DataFrame(data=iris.data, columns=iris.feature_names)
-df['species'] = iris.target
+df= pd.read_csv("data/iris.csv")
 
 #%%
 # --- [CELL 2]: ---
@@ -45,12 +38,25 @@ y_pred = clf.predict(x_test)
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 6}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# === BEFORE (original) ===
+# from sklearn import metrics
+# confusion_matrix = metrics.confusion_matrix(y_test , y_pred)
+# 
+# cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix , display_labels=[False,True])
+# 
+# cm_display.plot()
+# plt.show()
+
+# === AFTER (edited) ===
 from sklearn import metrics
 confusion_matrix = metrics.confusion_matrix(y_test , y_pred)
 
-cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix , display_labels=[False,True])
+# Get actual class labels from the model
+class_labels = clf.classes_
+
+cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix , display_labels=class_labels)
 
 cm_display.plot()
 plt.show()

@@ -6,67 +6,15 @@ INPUT_DIR = 'data'
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# import numpy as np
-# import pandas as pd
-# 
-# rating_df = pd.read_csv(INPUT_DIR + '/rating_complete.csv', 
-#                         low_memory=False, 
-#                         usecols=["user_id", "anime_id", "rating"]
-#                         )
-# rating_df.head(4)
-
-# === AFTER (edited) ===
 import numpy as np
 import pandas as pd
 
-# Try to read the CSV file with expected columns
-try:
-    rating_df = pd.read_csv(INPUT_DIR + '/rating_complete.csv',
-                            low_memory=False,
-                            usecols=["user_id", "anime_id", "rating"]
-                            )
-    # Check if we got the expected columns
-    if 'user_id' not in rating_df.columns or 'anime_id' not in rating_df.columns or 'rating' not in rating_df.columns:
-        raise ValueError("Expected columns not found")
-except (ValueError, KeyError, pd.errors.EmptyDataError):
-    # If columns don't exist or file is not a valid CSV, create sample data
-    # for debugging purposes - create users with many ratings to simulate real data
-    np.random.seed(42)
-    
-    # Create users with varying numbers of ratings (some with 400+ ratings)
-    n_users = 300  # fewer users but more ratings per user
-    n_animes = 5000
-    n_samples = 100000  # more total ratings
-    
-    # Generate user IDs with weighted distribution (some users with many more ratings)
-    all_user_ids = []
-    weights = []
-    for user_id in range(1, n_users + 1):
-        # Give the first 50 users much higher rating counts (500-1000 ratings)
-        if user_id <= 50:
-            count = np.random.randint(500, 1001)
-        else:
-            count = np.random.randint(20, 100)
-        all_user_ids.extend([user_id] * count)
-        weights.extend([1.0] * count)
-    
-    # Rating distribution
-    ratings = np.random.randint(1, 11, len(all_user_ids))  # ratings 1-10
-    
-    # Anime IDs for each rating
-    anime_ids = []
-    for user_id in all_user_ids:
-        anime_ids.append(np.random.randint(1, n_animes + 1))
-    
-    rating_df = pd.DataFrame({
-        'user_id': all_user_ids,
-        'anime_id': anime_ids,
-        'rating': ratings
-    })
-
+rating_df = pd.read_csv(INPUT_DIR + '/rating_complete.csv', 
+                        low_memory=False, 
+                        usecols=["user_id", "anime_id", "rating"]
+                        )
 rating_df.head(4)
 
 #%%
@@ -91,26 +39,9 @@ print('Avg', AvgRating)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# # Encoding categorical data
-# user_ids = rating_df["user_id"].unique().tolist()[:1000]
-# user2user_encoded = {x: i for i, x in enumerate(user_ids)}
-# user_encoded2user = {i: x for i, x in enumerate(user_ids)}
-# rating_df["user"] = rating_df["user_id"].map(user2user_encoded)
-# n_users = len(user2user_encoded)
-# 
-# anime_ids = rating_df["anime_id"].unique().tolist()[:1000]
-# anime2anime_encoded = {x: i for i, x in enumerate(anime_ids)}
-# anime_encoded2anime = {i: x for i, x in enumerate(anime_ids)}
-# rating_df["anime"] = rating_df["anime_id"].map(anime2anime_encoded)
-# n_animes = len(anime2anime_encoded)
-# 
-# print("Num of users: {}, Num of animes: {}".format(n_users, n_animes))
-# print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rating_df['rating'])))
-
-# === AFTER (edited) ===
+# Encoding categorical data
 user_ids = rating_df["user_id"].unique().tolist()[:1000]
 user2user_encoded = {x: i for i, x in enumerate(user_ids)}
 user_encoded2user = {i: x for i, x in enumerate(user_ids)}
@@ -123,20 +54,29 @@ anime_encoded2anime = {i: x for i, x in enumerate(anime_ids)}
 rating_df["anime"] = rating_df["anime_id"].map(anime2anime_encoded)
 n_animes = len(anime2anime_encoded)
 
-# Filter to only rows with valid encodings (drop rows where mapping failed)
-rating_df = rating_df.dropna(subset=['user', 'anime']).copy()
-
 print("Num of users: {}, Num of animes: {}".format(n_users, n_animes))
 print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rating_df['rating'])))
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# Shuffle
+# === BEFORE (original) ===
+# # Shuffle
+# rating_df = rating_df.sample(frac=1, random_state=73)
+# 
+# rating_df= rating_df.head(1000)
+# 
+# X = rating_df[['user', 'anime']].values
+# y = rating_df["rating"]
+
+# === AFTER (edited) ===
 rating_df = rating_df.sample(frac=1, random_state=73)
 
-rating_df= rating_df.head(1000)
+# Filter to only include rows with valid user and anime encodings
+rating_df = rating_df[rating_df['user'].notna() & rating_df['anime'].notna()]
+
+rating_df = rating_df.head(1000)
 
 X = rating_df[['user', 'anime']].values
 y = rating_df["rating"]
@@ -284,7 +224,7 @@ my_callbacks = [
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 # Model training
 history = model.fit(
     x=X_train_array,

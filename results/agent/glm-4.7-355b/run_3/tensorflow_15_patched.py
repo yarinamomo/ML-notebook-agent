@@ -150,7 +150,7 @@ predictions = (model.predict(test_ds) >= 0.5)
 #%%
 # --- [CELL 12]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # === BEFORE (original) ===
 # predictions = np.array([])
 # labels =  np.array([])
@@ -164,10 +164,7 @@ predictions = (model.predict(test_ds) >= 0.5)
 predictions = np.array([])
 labels =  np.array([])
 for x, y in test_ds:
-  # predict_classes was deprecated, use predict() with threshold for binary classification
-  pred_probs = model.predict(x, verbose=0)
-  pred_classes = (pred_probs > 0.5).astype(int).flatten()
-  predictions = np.concatenate([predictions, pred_classes])
+  predictions = np.concatenate([predictions, (model.predict(x) >= 0.5).flatten().astype(int)])
   labels = np.concatenate([labels, y.numpy().flatten()])
 
 tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()

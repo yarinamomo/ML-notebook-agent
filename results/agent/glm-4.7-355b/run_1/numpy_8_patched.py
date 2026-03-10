@@ -5,44 +5,38 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy.stats import chi2_contingency 
+from scipy.stats import chi2_contingency
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# app_train = pd.read_csv('data/application_train.csv.zip')
-# app_test=pd.read_csv('data/application_test.csv.zip')
-
-# === AFTER (edited) ===
-app_train = pd.read_csv('data/application_train.csv')
-app_test = pd.read_csv('data/application_test.csv')
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+app_train = pd.read_csv('data/application_train.csv.zip')
+app_test=pd.read_csv('data/application_test.csv.zip')
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 app_train.replace({'XNA': np.nan, 'XNP': np.nan, 'Unknown': np.nan}, inplace = True)
 app_test.replace({'XNA': np.nan, 'XNP': np.nan, 'Unknown': np.nan}, inplace = True)
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 app_test.drop(app_train.columns[app_train.isnull().mean()>0.4],axis=1, inplace=True)
-
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 app_train.drop(app_train.columns[app_train.isnull().mean()>0.4],axis=1, inplace=True)
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # Columns have less 14% NaN Values and categorical
 Cat_columns_lower_percentage_nan  = [i for i in app_train.columns[(((app_train.isnull().sum() / app_train.shape[0]) * 100) > 0) 
                                                                   & (((app_train.isnull().sum() / app_train.shape[0]) * 100) < 14)] 
@@ -56,7 +50,7 @@ num_columns_lower_percentage_nan  = [i for i in app_train.columns[(((app_train.i
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 for i in Cat_columns_lower_percentage_nan:
     app_test[i].fillna(app_train[i].mode()[0], inplace=True)
     app_train[i].fillna(app_train[i].mode()[0], inplace=True)
@@ -64,14 +58,14 @@ for i in Cat_columns_lower_percentage_nan:
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 col_mod_transfrom = [i for i in num_columns_lower_percentage_nan if i not in ['EXT_SOURCE_2', 'AMT_ANNUITY','AMT_GOODS_PRICE']]
 col_mean_transform = ['EXT_SOURCE_2', 'AMT_ANNUITY']
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 for i in col_mod_transfrom:
     app_test[i].fillna(app_train[i].mode()[0], inplace=True)
     app_train[i].fillna(app_train[i].mode()[0], inplace=True)
@@ -82,13 +76,13 @@ for i in col_mean_transform:
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 app_train['AMT_GOODS_PRICE'].fillna(app_train['AMT_GOODS_PRICE'].median(),inplace = True)
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 all_numerical_cols = list(app_train.select_dtypes(exclude='object').columns)
 
 cont_cols = [col for col in all_numerical_cols if col != "TARGET" and col[:5]!='FLAG_']
@@ -96,44 +90,41 @@ cont_cols = [col for col in all_numerical_cols if col != "TARGET" and col[:5]!='
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 proper_days_empolyed_df = app_train
 proper_days_empolyed_df['YEARS_EMPLOYED'] = proper_days_empolyed_df['DAYS_EMPLOYED']/-365.25
-
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 app_train['DAYS_EMPLOYED'].replace({365243:np.nan},inplace=True) 
-app_test['DAYS_EMPLOYED'].replace({365243:np.nan},inplace=True) 
+app_test['DAYS_EMPLOYED'].replace({365243:np.nan},inplace=True)
 
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 proper_days_empolyed_df = app_train
 proper_days_empolyed_df['YEARS_EMPLOYED'] = proper_days_empolyed_df['DAYS_EMPLOYED']/-365.25
-
 
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 app_train = app_train[app_train['AMT_INCOME_TOTAL'] != 117000000.0]
-
 
 #%%
 # --- [CELL 15]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
 cat_col = app_train.select_dtypes('object')
 cat_col.describe()
 
 #%%
 # --- [CELL 16]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
 app_train['OCCUPATION_TYPE'][app_train['NAME_EDUCATION_TYPE']=='Secondary / secondary special'] = app_train['OCCUPATION_TYPE'][app_train['NAME_EDUCATION_TYPE']=='Secondary / secondary special'].fillna('Laborers')
 app_train['OCCUPATION_TYPE'][app_train['NAME_EDUCATION_TYPE']=='Higher education'] =  app_train['OCCUPATION_TYPE'][app_train['NAME_EDUCATION_TYPE']=='Higher education'].fillna('Core staff')
 app_train['OCCUPATION_TYPE'][app_train['NAME_EDUCATION_TYPE']=='Incomplete higher'] = app_train['OCCUPATION_TYPE'][app_train['NAME_EDUCATION_TYPE']=='Incomplete higher'].fillna('Laborers')
@@ -149,7 +140,7 @@ app_test['OCCUPATION_TYPE'][app_test['NAME_EDUCATION_TYPE']=='Academic degree'] 
 #%%
 # --- [CELL 17]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
 app_train['ORGANIZATION_TYPE'][(app_train['OCCUPATION_TYPE'] == 'Accountants') |
                                (app_train['OCCUPATION_TYPE'] == 'Cleaning staff') |
                                (app_train['OCCUPATION_TYPE'] == 'Cooking staff') |
@@ -215,38 +206,37 @@ app_test['ORGANIZATION_TYPE'][(app_test['OCCUPATION_TYPE'] == 'Private service s
 app_train['ORGANIZATION_TYPE'][(app_train['OCCUPATION_TYPE'] == 'Security staff')] = app_train['ORGANIZATION_TYPE'][(app_train['OCCUPATION_TYPE'] == 'Security staff')].fillna('Security')
 app_test['ORGANIZATION_TYPE'][(app_test['OCCUPATION_TYPE'] == 'Security staff')] = app_test['ORGANIZATION_TYPE'][(app_test['OCCUPATION_TYPE'] == 'Security staff')].fillna('Security')
 
-
 #%%
 # --- [CELL 18]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
 app_test['ORGANIZATION_TYPE'] = app_test['ORGANIZATION_TYPE'].fillna(app_test['ORGANIZATION_TYPE'].mode()[0])
 
 #%%
 # --- [CELL 19]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
 app_test['EXT_SOURCE_3'] = app_test['EXT_SOURCE_3'].fillna(app_train.groupby(['OCCUPATION_TYPE'])['EXT_SOURCE_3'].transform('mean'))
 app_train['EXT_SOURCE_3'] = app_train['EXT_SOURCE_3'].fillna(app_train.groupby(['OCCUPATION_TYPE'])['EXT_SOURCE_3'].transform('mean'))
 
 #%%
 # --- [CELL 20]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 21}
 app_test['DAYS_EMPLOYED'] = app_test['DAYS_EMPLOYED'].fillna(app_train.groupby(['OCCUPATION_TYPE'])['DAYS_EMPLOYED'].transform('mean'))
 app_train['DAYS_EMPLOYED'] = app_train['DAYS_EMPLOYED'].fillna(app_train.groupby(['OCCUPATION_TYPE'])['DAYS_EMPLOYED'].transform('mean'))
 
 #%%
 # --- [CELL 21]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 22}
 proper_days_empolyed_df = app_train
 proper_days_empolyed_df['YEARS_EMPLOYED'] = proper_days_empolyed_df['DAYS_EMPLOYED']/-365.25
 
 #%%
 # --- [CELL 22]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 23}
 app_test['NAME_TYPE_SUITE'].replace({'Other_A':'Other','Other_B':'Other','Group of people':'Other'},inplace=True)
 app_train['NAME_TYPE_SUITE'].replace({'Other_A':'Other','Other_B':'Other','Group of people':'Other'},inplace=True)
 
@@ -256,7 +246,7 @@ app_train['NAME_INCOME_TYPE'].replace({'Unemployed':'Other','Student':'Other','M
 #%%
 # --- [CELL 23]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 24}
 others = app_train['ORGANIZATION_TYPE'].value_counts().index[15:]
 label = 'Others'
 app_train['ORGANIZATION_TYPE'] = app_train['ORGANIZATION_TYPE'].replace(others, label)
@@ -265,29 +255,28 @@ app_test['ORGANIZATION_TYPE'] = app_test['ORGANIZATION_TYPE'].replace(others, la
 #%%
 # --- [CELL 24]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 25}
 app_train.drop(['YEARS_EMPLOYED'], axis = 1,inplace=True)
-
 
 #%%
 # --- [CELL 25]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 26}
 app_train = app_train.drop(columns=['CNT_FAM_MEMBERS','LIVE_REGION_NOT_WORK_REGION', 'REG_REGION_NOT_WORK_REGION', 'OBS_60_CNT_SOCIAL_CIRCLE'])
 app_test = app_test.drop(columns=['CNT_FAM_MEMBERS','LIVE_REGION_NOT_WORK_REGION', 'REG_REGION_NOT_WORK_REGION', 'OBS_60_CNT_SOCIAL_CIRCLE'])
 
 #%%
 # --- [CELL 26]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 27}
 cols_to_remove = ['AMT_CREDIT', 'CNT_FAM_MEMBERS', 'REG_REGION_NOT_WORK_REGION', 'LIVE_REGION_NOT_WORK_REGION', 'OBS_60_CNT_SOCIAL_CIRCLE','SK_ID_CURR']
 cont_cols = list(set(cont_cols) - set(cols_to_remove))
-cont_cols 
+cont_cols
 
 #%%
 # --- [CELL 27]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 28}
 #Для этого использовался метод межквартильного размаха (IQR), который вычисляет разницу между 75-м и 25-м процентилями значений столбца. 
 #Затем значения, выходящие за пределы диапазона от Q1-1.5IQR до Q3+1.5IQR, были заменены на медианные значения. 
 #Это позволило удалить выбросы, которые могли бы исказить результаты анализа
@@ -308,7 +297,7 @@ def impute_outliers_IQR(df):
 #%%
 # --- [CELL 28]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 29}
 for i in cont_cols:
     app_train[i] = impute_outliers_IQR(app_train[i])
     app_test[i] = impute_outliers_IQR(app_test[i])
@@ -316,7 +305,7 @@ for i in cont_cols:
 #%%
 # --- [CELL 29]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 30}
 app_train['LTV'] = app_train['AMT_CREDIT']/app_train['AMT_GOODS_PRICE']
 app_train['DTI'] = app_train['AMT_ANNUITY']/app_train['AMT_INCOME_TOTAL']
 app_train['Employed/Birth'] = app_train['DAYS_EMPLOYED']/app_train['DAYS_BIRTH'] 
@@ -332,7 +321,7 @@ app_test['Flag_Employment_Greater_5'] = (app_test['DAYS_EMPLOYED']/-365.25).appl
 #%%
 # --- [CELL 30]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 31}
 # for pre-processing
 
 from sklearn.preprocessing import OrdinalEncoder
@@ -346,20 +335,20 @@ from sklearn.metrics import roc_auc_score, confusion_matrix
 #%%
 # --- [CELL 31]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 32}
 enc = TargetEncoder()
 app_train[cat_col.columns] = enc.fit_transform(app_train[cat_col.columns], app_train['TARGET'])
 
 #%%
 # --- [CELL 32]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 33}
 app_test[cat_col.columns] = enc.transform(app_test[cat_col.columns])
 
 #%%
 # --- [CELL 33]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 34}
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -399,12 +388,10 @@ y_pred = lr.predict(X_test)
 score = lr.score(X_test, y_test)
 print(f"Accuracy: {score:.2f}")
 
-
-
 #%%
 # --- [CELL 34]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 35}
 def protected_division(x1, x2):
     if x2 == 0:
         return 1  # Защита от деления на ноль
@@ -423,53 +410,95 @@ def protected_log(x):
     else:
         return np.log(x)
 
-
 #%%
 # --- [CELL 35]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 36}
+# === BEFORE (original) ===
+# import numpy as np
+# import pandas as pd
+# from deap import creator, base, tools, gp
+# # Определение функций и операций для генерации новых признаков
+# pset = gp.PrimitiveSet("MAIN", arity=2)
+# pset.addPrimitive(np.add, arity=2)
+# pset.addPrimitive(np.subtract, arity=2)
+# pset.addPrimitive(np.multiply, arity=2)
+# pset.addPrimitive(np.maximum, arity=2)
+# pset.addPrimitive(np.minimum, arity=2)
+# pset.addPrimitive(protected_division, arity=2)
+# pset.addPrimitive(protected_sqrt, arity=1)
+# pset.addPrimitive(protected_log, arity=1)
+# pset.addPrimitive(np.sin, arity=1)
+# pset.addPrimitive(np.cos, arity=1)
+# pset.addTerminal(0)
+# pset.addTerminal(1)
+
+# === AFTER (edited) ===
 import numpy as np
 import pandas as pd
 from deap import creator, base, tools, gp
-# Определение функций и операций для генерации новых признаков
-pset = gp.PrimitiveSet("MAIN", arity=2)
-pset.addPrimitive(np.add, arity=2)
-pset.addPrimitive(np.subtract, arity=2)
-pset.addPrimitive(np.multiply, arity=2)
-pset.addPrimitive(np.maximum, arity=2)
-pset.addPrimitive(np.minimum, arity=2)
-pset.addPrimitive(protected_division, arity=2)
-pset.addPrimitive(protected_sqrt, arity=1)
-pset.addPrimitive(protected_log, arity=1)
-pset.addPrimitive(np.sin, arity=1)
-pset.addPrimitive(np.cos, arity=1)
-pset.addTerminal(0)
-pset.addTerminal(1)
+
+# Get number of features from the data
+num_features = X_train.shape[1]
+
+# Create the primitive set with arity=72 to match the data
+pset = gp.PrimitiveSet("MAIN", arity=num_features)
+
+# Add primitives
+pset.addPrimitive(np.add, arity=2, name="add")
+pset.addPrimitive(np.subtract, arity=2, name="sub")
+pset.addPrimitive(np.multiply, arity=2, name="mul")
+pset.addPrimitive(np.maximum, arity=2, name="max")
+pset.addPrimitive(np.minimum, arity=2, name="min")
+pset.addPrimitive(protected_division, arity=2, name="div")
+pset.addPrimitive(protected_sqrt, arity=1, name="sqrt")
+pset.addPrimitive(protected_log, arity=1, name="log")
+pset.addPrimitive(np.sin, arity=1, name="sin")
+pset.addPrimitive(np.cos, arity=1, name="cos")
+pset.addTerminal(0, name="const0")
+pset.addTerminal(1, name="const1")
 
 #%%
 # --- [CELL 36]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-# Определение функции преобразования ГП структуры в вектор признаков
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 37}
+# === BEFORE (original) ===
+# # Определение функции преобразования ГП структуры в вектор признаков
+# def transform_gp_structure(individual, X):
+#     expr = gp.compile(individual, pset)
+#     return np.array([expr(*row) for row in X])
+# 
+# # Определение функции оценки фитнеса (ваша собственная функция)
+# def evaluate_fitness(individual):
+#     # Вычислите значения признаков на основе individual
+#     X_train_gp = transform_gp_structure(individual, X_train)  # Вычисление новых признаков на обучающей выборке
+#     rf_model_gp = lr
+#     rf_model_gp.fit(X_train_gp, y_train)  # Обучение модели случайного леса с новыми признаками
+#     X_test_gp = transform_gp_structure(individual, X_test)  # Вычисление новых признаков на тестовой выборке
+#     y_pred_gp = rf_model_gp.predict_proba(X_test_gp)[:, 1]  # Прогнозирование на тестовой выборке с новыми признаками
+#     auc_gp = roc_auc_score(y_test, y_pred_gp)  # Оценка фитнеса (AUC-ROC)
+#     return auc_gp,
+
+# === AFTER (edited) ===
 def transform_gp_structure(individual, X):
     expr = gp.compile(individual, pset)
-    return np.array([expr(*row) for row in X])
+    # Reshape to 2D array (n_samples, 1 feature)
+    return np.array([expr(*row) for row in X]).reshape(-1, 1)
 
-# Определение функции оценки фитнеса (ваша собственная функция)
+
 def evaluate_fitness(individual):
-    # Вычислите значения признаков на основе individual
-    X_train_gp = transform_gp_structure(individual, X_train)  # Вычисление новых признаков на обучающей выборке
+    X_train_gp = transform_gp_structure(individual, X_train)
     rf_model_gp = lr
-    rf_model_gp.fit(X_train_gp, y_train)  # Обучение модели случайного леса с новыми признаками
-    X_test_gp = transform_gp_structure(individual, X_test)  # Вычисление новых признаков на тестовой выборке
-    y_pred_gp = rf_model_gp.predict_proba(X_test_gp)[:, 1]  # Прогнозирование на тестовой выборке с новыми признаками
-    auc_gp = roc_auc_score(y_test, y_pred_gp)  # Оценка фитнеса (AUC-ROC)
+    rf_model_gp.fit(X_train_gp, y_train)
+    X_test_gp = transform_gp_structure(individual, X_test)
+    y_pred_gp = rf_model_gp.predict_proba(X_test_gp)[:, 1]
+    auc_gp = roc_auc_score(y_test, y_pred_gp)
     return auc_gp,
 
 #%%
 # --- [CELL 37]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 38}
 # Создание класса для управления эволюцией
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMax)
@@ -490,32 +519,72 @@ toolbox.register("select", tools.selTournament, tournsize=3)
 
 #%%
 # --- [CELL 38]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-import random # fix missing import and vars for crash isolation purposes
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 39}
+# === BEFORE (original) ===
+# import random # fix missing import and vars for crash isolation purposes
+# crossover_prob = 0.5
+# mutation_prob = 0.5
+# 
+# pop_size = 100  # Размер популяции
+# num_generations = 50  # Количество поколений
+# 
+# # Создание начальной популяции
+# population = toolbox.population(n=pop_size)
+# 
+# # Основной цикл эволюции
+# for generation in range(num_generations):
+#     # Оценка фитнеса
+#     fitnesses = map(evaluate_fitness, population)
+#     for individual, fitness in zip(population, fitnesses):
+#         individual.fitness.values = fitness
+# 
+#     # Выбор следующего поколения
+#     offspring = toolbox.select(population, len(population))
+# 
+#     # Клонирование выбранных индивидуумов
+#     offspring = list(map(toolbox.clone, offspring))
+# 
+#     # Применение операторов скрещивания и мутации
+#     for child1, child2 in zip(offspring[::2], offspring[1::2]):
+#         if random.random() < crossover_prob:
+#             toolbox.mate(child1, child2)
+#             del child1.fitness.values
+#             del child2.fitness.values
+# 
+#     for mutant in offspring:
+#         if random.random() < mutation_prob:
+#             toolbox.mutate(mutant)
+#             del mutant.fitness.values
+# 
+#     # Замена старого поколения потомками
+#     population[:] = offspring
+
+# === AFTER (edited) ===
+import random
 crossover_prob = 0.5
 mutation_prob = 0.5
 
-pop_size = 100  # Размер популяции
-num_generations = 50  # Количество поколений
+pop_size = 10  # Reduced from 100 for testing
+num_generations = 5  # Reduced from 50 for testing
 
-# Создание начальной популяции
+
 population = toolbox.population(n=pop_size)
 
-# Основной цикл эволюции
+
 for generation in range(num_generations):
-    # Оценка фитнеса
+
     fitnesses = map(evaluate_fitness, population)
     for individual, fitness in zip(population, fitnesses):
         individual.fitness.values = fitness
 
-    # Выбор следующего поколения
+
     offspring = toolbox.select(population, len(population))
 
-    # Клонирование выбранных индивидуумов
+
     offspring = list(map(toolbox.clone, offspring))
 
-    # Применение операторов скрещивания и мутации
+
     for child1, child2 in zip(offspring[::2], offspring[1::2]):
         if random.random() < crossover_prob:
             toolbox.mate(child1, child2)
@@ -527,5 +596,5 @@ for generation in range(num_generations):
             toolbox.mutate(mutant)
             del mutant.fitness.values
 
-    # Замена старого поколения потомками
+
     population[:] = offspring

@@ -6,49 +6,23 @@ INPUT_DIR = 'data'
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# import numpy as np
-# import pandas as pd
-# 
-# rating_df = pd.read_csv(INPUT_DIR + '/rating_complete.csv', 
-#                         low_memory=False, 
-#                         usecols=["user_id", "anime_id", "rating"]
-#                         )
-# rating_df.head(4)
-
-# === AFTER (edited) ===
 import numpy as np
 import pandas as pd
 
-# Create sample data since the actual file is a Git LFS pointer
-# Generate synthetic user-anime rating data
-np.random.seed(42)
-n_samples = 50000
-n_users = 2000
-n_animes = 500
-
-rating_df = pd.DataFrame({
-    'user_id': np.random.randint(1, n_users+1, n_samples),
-    'anime_id': np.random.randint(1, n_animes+1, n_samples),
-    'rating': np.random.randint(1, 11, n_samples)  # ratings 1-10
-})
-
+rating_df = pd.read_csv(INPUT_DIR + '/rating_complete.csv', 
+                        low_memory=False, 
+                        usecols=["user_id", "anime_id", "rating"]
+                        )
 rating_df.head(4)
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# n_ratings = rating_df['user_id'].value_counts()
-# rating_df = rating_df[rating_df['user_id'].isin(n_ratings[n_ratings >= 400].index)].copy()
-# len(rating_df)
-
-# === AFTER (edited) ===
-# For sample data, we don't need to filter by rating count
-# Keep all data to ensure we have enough samples
+n_ratings = rating_df['user_id'].value_counts()
+rating_df = rating_df[rating_df['user_id'].isin(n_ratings[n_ratings >= 400].index)].copy()
 len(rating_df)
 
 #%%
@@ -66,7 +40,7 @@ print('Avg', AvgRating)
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # # Encoding categorical data
 # user_ids = rating_df["user_id"].unique().tolist()[:1000]
@@ -85,55 +59,35 @@ print('Avg', AvgRating)
 # print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rating_df['rating'])))
 
 # === AFTER (edited) ===
-# Create mappings - but wait to sample first
-user_ids = rating_df["user_id"].unique().tolist()
+user_ids = rating_df["user_id"].unique().tolist()[:1000]
 user2user_encoded = {x: i for i, x in enumerate(user_ids)}
 user_encoded2user = {i: x for i, x in enumerate(user_ids)}
 rating_df["user"] = rating_df["user_id"].map(user2user_encoded)
 n_users = len(user2user_encoded)
 
-anime_ids = rating_df["anime_id"].unique().tolist()
+anime_ids = rating_df["anime_id"].unique().tolist()[:1000]
 anime2anime_encoded = {x: i for i, x in enumerate(anime_ids)}
 anime_encoded2anime = {i: x for i, x in enumerate(anime_ids)}
 rating_df["anime"] = rating_df["anime_id"].map(anime2anime_encoded)
 n_animes = len(anime2anime_encoded)
 
+# Filter to only keep rows with valid encodings (drop NaN values)
+rating_df = rating_df.dropna(subset=['user', 'anime']).copy()
+
 print("Num of users: {}, Num of animes: {}".format(n_users, n_animes))
 print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rating_df['rating'])))
 
-# Check for any NaN values in mapping
-print("NaN in 'user' column:", rating_df["user"].isna().sum())
-print("NaN in 'anime' column:", rating_df["anime"].isna().sum())
-
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-# === BEFORE (original) ===
-# # Shuffle
-# rating_df = rating_df.sample(frac=1, random_state=73)
-# 
-# rating_df= rating_df.head(1000)
-# 
-# X = rating_df[['user', 'anime']].values
-# y = rating_df["rating"]
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# Shuffle
 rating_df = rating_df.sample(frac=1, random_state=73)
 
-rating_df = rating_df.head(1000)
-
-# Check for NaN values after sampling
-print("NaN in 'user' column before mapping:", rating_df["user"].isna().sum())
-print("NaN in 'anime' column before mapping:", rating_df["anime"].isna().sum())
+rating_df= rating_df.head(1000)
 
 X = rating_df[['user', 'anime']].values
 y = rating_df["rating"]
-
-print("X shape:", X.shape)
-print("y shape:", y.shape)
-print("Any NaN in X:", np.isnan(X).sum())
-print("Any NaN in y:", np.isnan(y).sum())
 
 #%%
 # --- [CELL 6]: ---
@@ -278,7 +232,7 @@ my_callbacks = [
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 16}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 # Model training
 history = model.fit(
     x=X_train_array,

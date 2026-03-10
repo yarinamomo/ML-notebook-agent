@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # === BEFORE (original) ===
 # import os
 # import torch
@@ -201,16 +201,18 @@ class AlexNet(nn.Module):
         return x
 
 
-model = AlexNet()
+module = AlexNet()
 if torch.cuda.is_available():
-    model = model.cuda()
+    module = module.cuda()
 
 
 loss_fn = nn.CrossEntropyLoss()
+if torch.cuda.is_available():
+    loss_fn = loss_fn.cuda()
 
 
 learning_rate = 0.001
-optimizer = torch.optim.Adam(model.parameters(),lr = learning_rate)
+optimizer = torch.optim.Adam(module.parameters(),lr = learning_rate)
 
 
 total_train_step = 0
@@ -220,13 +222,13 @@ epoch = 2
 for i in range(epoch):
     print('------第{}轮训练开始------'.format(i+1))
 
-    model.train()
+    module.train()
     for data in train_dataloader:
         imgs,targets = data
         if torch.cuda.is_available():
             imgs = imgs.cuda()
             targets = targets.cuda()
-        outputs = model(imgs)
+        outputs = module(imgs)
         loss = loss_fn(outputs,targets)
 
         optimizer.zero_grad()
@@ -237,7 +239,7 @@ for i in range(epoch):
         if total_train_step % 100 ==0:
             print("训练次数：{}，LOSS：{}".format(total_train_step,loss.item()))
 
-    model.eval()
+    module.eval()
     total_test_loss = 0
     total_accuracy = 0
     with torch.no_grad():
@@ -246,7 +248,7 @@ for i in range(epoch):
             if torch.cuda.is_available():
                 imgs = imgs.cuda()
                 targets = targets.cuda()
-            outputs = model(imgs)
+            outputs = module(imgs)
             loss = loss_fn(outputs,targets)
             total_test_loss = total_test_loss + loss.item()
             accuracy = (outputs.argmax(1) == targets).sum()
@@ -258,7 +260,7 @@ for i in range(epoch):
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # train_data_path = 'data_small/101/train'
 # train_data=torchvision.datasets.ImageFolder(root = train_data_path,transform=transforms)
@@ -280,5 +282,5 @@ for data in train_dataloader:
     if torch.cuda.is_available():
         imgs = imgs.cuda()
         targets = targets.cuda()
-    outputs = model(imgs)
+    outputs = module(imgs)
     loss = loss_fn(outputs,targets)

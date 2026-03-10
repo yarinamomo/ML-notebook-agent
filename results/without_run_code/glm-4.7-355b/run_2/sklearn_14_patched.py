@@ -8,44 +8,11 @@ import pandas as pd
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# # Reading dataset
-# 
-# df=pd.read_csv('data/data.csv')
+# Reading dataset
 
-# === AFTER (edited) ===
-# Create sample synthetic data since the CSV file is a Git LFS pointer
-np.random.seed(42)
-n_samples = 100
-
-# Create synthetic data matching expected columns
-data = {
-    'price': np.random.uniform(200000, 2000000, n_samples),
-    'bedrooms': np.random.randint(1, 6, n_samples),
-    'bathrooms': np.random.uniform(1, 4, n_samples),
-    'sqft_living': np.random.uniform(500, 5000, n_samples),
-    'sqft_lot': np.random.uniform(1000, 20000, n_samples),
-    'floors': np.random.uniform(1, 3, n_samples),
-    'waterfront': np.random.randint(0, 2, n_samples),
-    'view': np.random.randint(0, 5, n_samples),
-    'condition': np.random.randint(1, 6, n_samples),
-    'sqft_above': np.random.uniform(500, 4500, n_samples),
-    'sqft_basement': np.random.uniform(0, 1500, n_samples),
-    'yr_built': np.random.randint(1950, 2020, n_samples),
-    'yr_renovated': np.random.choice([0, np.random.randint(1990, 2020)], n_samples),
-    'street': [f'Street_{i}' for i in range(n_samples)],
-    'city': np.random.choice(['Seattle', 'Renton', 'Bellevue', 'Redmond', 'Issaquah', 'Kirkland'], n_samples),
-    'statezip': [f'WA 98{i:02d}' for i in range(n_samples)],
-    'country': ['USA'] * n_samples
-}
-
-df = pd.DataFrame(data)
-print("DataFrame shape:", df.shape)
-print("Columns:", df.columns.tolist())
-print("\nFirst few rows:")
-print(df.head())
+df=pd.read_csv('data/data.csv')
 
 #%%
 # --- [CELL 2]: ---

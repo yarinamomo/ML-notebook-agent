@@ -13,64 +13,16 @@ import tensorflow.keras.backend as K
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# # Define VGG_FACE_MODEL architecture
-# model = Sequential()
-# model.add(ZeroPadding2D((1,1),input_shape=(224,224, 3)))
-# model.add(Convolution2D(64, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(64, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))	
-# model.add(Convolution2D(128, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(128, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(256, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(ZeroPadding2D((1,1)))
-# model.add(Convolution2D(512, (3, 3), activation='relu'))
-# model.add(MaxPooling2D((2,2), strides=(2,2)))
-# model.add(Convolution2D(4096, (7, 7), activation='relu'))
-# model.add(Dropout(0.5))
-# model.add(Convolution2D(4096, (1, 1), activation='relu'))
-# model.add(Dropout(0.5))
-# model.add(Convolution2D(2622, (1, 1)))
-# model.add(Flatten())
-# model.add(Activation('softmax'))
-# 
-# # Load VGG Face model weights
-# model.load_weights('data/vgg_face_weights.h5')
-
-# === AFTER (edited) ===
-# --- [CELL 1] ---
-
-
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# Define VGG_FACE_MODEL architecture
 model = Sequential()
 model.add(ZeroPadding2D((1,1),input_shape=(224,224, 3)))
 model.add(Convolution2D(64, (3, 3), activation='relu'))
 model.add(ZeroPadding2D((1,1)))
 model.add(Convolution2D(64, (3, 3), activation='relu'))
 model.add(MaxPooling2D((2,2), strides=(2,2)))
-model.add(ZeroPadding2D((1,1)))
+model.add(ZeroPadding2D((1,1)))	
 model.add(Convolution2D(128, (3, 3), activation='relu'))
 model.add(ZeroPadding2D((1,1)))
 model.add(Convolution2D(128, (3, 3), activation='relu'))
@@ -104,18 +56,13 @@ model.add(Convolution2D(2622, (1, 1)))
 model.add(Flatten())
 model.add(Activation('softmax'))
 
-# Load VGG Face model weights if file exists
-import os
-weights_path = 'data/vgg_face_weights.h5'
-if os.path.exists(weights_path):
-    model.load_weights(weights_path)
-else:
-    print(f"Warning: Weights file not found at {weights_path}. Using randomly initialized weights.")
+# Load VGG Face model weights
+model.load_weights('data/vgg_face_weights.h5')
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.applications import VGG16
@@ -198,45 +145,22 @@ train_generator = train_datagen.flow_from_directory(
 )
 
 
-base_model = VGG16(weights='imagenet', include_top=False,classes=7)
-
+base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
 
 for layer in base_model.layers:
     layer.trainable = False
 
 
-base_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+from tensorflow.keras.layers import Flatten, Dense
+from tensorflow.keras.models import Model
 
 
-# Only load pre-trained weights if file exists
-import os
-weights_path = 'data/vgg_face_weights.h5'
-if os.path.exists(weights_path):
-    base_model.load_weights(weights_path)
-else:
-    print(f"Warning: Pre-trained weights file not found at {weights_path}. Using ImageNet weights.")
+x = Flatten()(base_model.output)
+x = Dense(512, activation='relu')(x)
+predictions = Dense(7, activation='softmax')(x)
 
 
-# Only fit if training data is available
-if train_generator.samples > 0:
-    base_model.fit(
-        train_generator,
-        steps_per_epoch=len(train_generator),
-        epochs=10,
-    )
-else:
-    print("Warning: No training data available. Skipping training.")
+model = Model(inputs=base_model.input, outputs=predictions)
 
 
-# Only save if data directory exists, otherwise skip
-save_path = 'data/updated_vgg_face_weights.h5'
-save_dir = os.path.dirname(save_path)
-if save_dir and not os.path.exists(save_dir):
-    os.makedirs(save_dir, exist_ok=True)
-    print(f"Created directory: {save_dir}")
-
-try:
-    base_model.save(save_path)
-    print(f"Model saved successfully to {save_path}")
-except Exception as e:
-    print(f"Warning: Could not save model. Error: {e}")
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])

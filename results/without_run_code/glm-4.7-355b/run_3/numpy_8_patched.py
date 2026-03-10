@@ -1,101 +1,18 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 import numpy as np 
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy.stats import chi2_contingency 
+from scipy.stats import chi2_contingency
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# app_train = pd.read_csv('data/application_train.csv.zip')
-# app_test=pd.read_csv('data/application_test.csv.zip')
-
-# === AFTER (edited) ===
-# Create dummy data for debugging purposes since actual data files are not available
-import numpy as np
-
-# Create sample app_train data with expected columns
-np.random.seed(42)
-n_train = 1000
-n_test = 500
-
-app_train = pd.DataFrame({
-    'TARGET': np.random.randint(0, 2, n_train),
-    'SK_ID_CURR': range(n_train),
-    'NAME_CONTRACT_TYPE': np.random.choice(['Cash loans', 'Revolving loans'], n_train),
-    'CODE_GENDER': np.random.choice(['M', 'F', 'XNA'], n_train),
-    'FLAG_OWN_CAR': np.random.choice(['Y', 'N'], n_train),
-    'FLAG_OWN_REALTY': np.random.choice(['Y', 'N'], n_train),
-    'CNT_CHILDREN': np.random.randint(0, 5, n_train),
-    'AMT_INCOME_TOTAL': np.random.uniform(50000, 300000, n_train),
-    'AMT_CREDIT': np.random.uniform(50000, 500000, n_train),
-    'AMT_ANNUITY': np.random.uniform(5000, 50000, n_train),
-    'AMT_GOODS_PRICE': np.random.uniform(50000, 500000, n_train),
-    'NAME_TYPE_SUITE': np.random.choice(['Unaccompanied', 'Family', 'Spouse', 'Other_A', 'Other_B', 'Group of people'], n_train),
-    'NAME_INCOME_TYPE': np.random.choice(['Working', 'Commercial associate', 'Pensioner', 'State servant', 'Unemployed', 'Student', 'Maternity leave'], n_train),
-    'NAME_EDUCATION_TYPE': np.random.choice(['Lower secondary', 'Secondary / secondary special', 'Incomplete higher', 'Higher education', 'Academic degree'], n_train),
-    'NAME_FAMILY_STATUS': np.random.choice(['Single', 'Married', 'Widow', 'Separated'], n_train),
-    'NAME_HOUSING_TYPE': np.random.choice(['House / apartment', 'With parents', 'Municipal apartment'], n_train),
-    'REGION_POPULATION_RELATIVE': np.random.uniform(0, 1, n_train),
-    'DAYS_BIRTH': -np.random.uniform(7000, 25000, n_train),
-    'DAYS_REGISTRATION': -np.random.uniform(100, 20000, n_train),
-    'DAYS_ID_PUBLISH': -np.random.uniform(100, 10000, n_train),
-    'OWN_CAR_AGE': np.random.uniform(0, 50, n_train),
-    'FLAG_MOBIL': np.random.randint(0, 2, n_train),
-    'FLAG_EMP_PHONE': np.random.randint(0, 2, n_train),
-    'FLAG_WORK_PHONE': np.random.randint(0, 2, n_train),
-    'FLAG_CONT_MOBILE': np.random.randint(0, 2, n_train),
-    'FLAG_PHONE': np.random.randint(0, 2, n_train),
-    'FLAG_EMAIL': np.random.randint(0, 2, n_train),
-    'CNT_FAM_MEMBERS': np.random.uniform(1, 10, n_train),
-    'REGION_RATING_CLIENT': np.random.randint(1, 4, n_train),
-    'REGION_RATING_CLIENT_W_CITY': np.random.randint(1, 4, n_train),
-    'HOUR_APPR_PROCESS_START': np.random.randint(0, 24, n_train),
-    'REG_REGION_NOT_LIVE_REGION': np.random.randint(0, 2, n_train),
-    'REG_REGION_NOT_WORK_REGION': np.random.randint(0, 2, n_train),
-    'LIVE_REGION_NOT_WORK_REGION': np.random.randint(0, 2, n_train),
-    'REG_CITY_NOT_LIVE_CITY': np.random.randint(0, 2, n_train),
-    'REG_CITY_NOT_WORK_CITY': np.random.randint(0, 2, n_train),
-    'LIVE_CITY_NOT_WORK_CITY': np.random.randint(0, 2, n_train),
-    'EXT_SOURCE_1': np.random.uniform(0, 1, n_train),
-    'EXT_SOURCE_2': np.random.uniform(0, 1, n_train),
-    'EXT_SOURCE_3': np.random.uniform(0, 1, n_train),
-    'OBS_30_CNT_SOCIAL_CIRCLE': np.random.uniform(0, 10, n_train),
-    'DEF_30_CNT_SOCIAL_CIRCLE': np.random.uniform(0, 10, n_train),
-    'OBS_60_CNT_SOCIAL_CIRCLE': np.random.uniform(0, 10, n_train),
-    'DEF_60_CNT_SOCIAL_CIRCLE': np.random.uniform(0, 10, n_train),
-    'DAYS_LAST_PHONE_CHANGE': -np.random.uniform(100, 3000, n_train),
-    'AMT_REQ_CREDIT_BUREAU_HOUR': np.random.uniform(0, 5, n_train),
-    'AMT_REQ_CREDIT_BUREAU_DAY': np.random.uniform(0, 10, n_train),
-    'AMT_REQ_CREDIT_BUREAU_WEEK': np.random.uniform(0, 10, n_train),
-    'AMT_REQ_CREDIT_BUREAU_MON': np.random.uniform(0, 10, n_train),
-    'AMT_REQ_CREDIT_BUREAU_QRT': np.random.uniform(0, 10, n_train),
-    'AMT_REQ_CREDIT_BUREAU_YEAR': np.random.uniform(0, 20, n_train),
-    'OCCUPATION_TYPE': np.random.choice(['Accountants', 'Cleaning staff', 'Cooking staff', 'Core staff', 'Drivers', 
-                                         'HR staff', 'High skill tech staff', 'IT staff', 'Laborers', 
-                                         'Low-skill Laborers', 'Managers', 'Medicine staff', 'Private service staff', 
-                                         'Realty agents', 'Sales staff', 'Security staff', 'Secretaries', None], n_train),
-    'ORGANIZATION_TYPE': np.random.choice(['Business Entity Type 3', 'Self-employed', 'Medicine', 'Security'], n_train)
-})
-
-# Create DAYS_EMPLOYED with special value
-days_employed = -np.random.uniform(100, 15000, n_train)
-days_employed[:50] = 365243
-app_train['DAYS_EMPLOYED'] = days_employed
-
-# Set some values to test outlier removal and high null percentage columns
-app_train.loc[0, 'AMT_INCOME_TOTAL'] = 117000000.0
-
-app_test = pd.DataFrame()
-for col in app_train.columns:
-    if col != 'TARGET':
-        app_test[col] = app_train[col].iloc[:n_test].reset_index(drop=True)
-app_test = app_test.reindex(columns=app_train.columns.drop('TARGET'))
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+app_train = pd.read_csv('data/application_train.csv.zip')
+app_test=pd.read_csv('data/application_test.csv.zip')
 
 #%%
 # --- [CELL 2]: ---
@@ -109,7 +26,6 @@ app_test.replace({'XNA': np.nan, 'XNP': np.nan, 'Unknown': np.nan}, inplace = Tr
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 app_test.drop(app_train.columns[app_train.isnull().mean()>0.4],axis=1, inplace=True)
-
 
 #%%
 # --- [CELL 4]: ---
@@ -134,7 +50,7 @@ num_columns_lower_percentage_nan  = [i for i in app_train.columns[(((app_train.i
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 for i in Cat_columns_lower_percentage_nan:
     app_test[i].fillna(app_train[i].mode()[0], inplace=True)
     app_train[i].fillna(app_train[i].mode()[0], inplace=True)
@@ -178,13 +94,12 @@ cont_cols = [col for col in all_numerical_cols if col != "TARGET" and col[:5]!='
 proper_days_empolyed_df = app_train
 proper_days_empolyed_df['YEARS_EMPLOYED'] = proper_days_empolyed_df['DAYS_EMPLOYED']/-365.25
 
-
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 app_train['DAYS_EMPLOYED'].replace({365243:np.nan},inplace=True) 
-app_test['DAYS_EMPLOYED'].replace({365243:np.nan},inplace=True) 
+app_test['DAYS_EMPLOYED'].replace({365243:np.nan},inplace=True)
 
 #%%
 # --- [CELL 13]: ---
@@ -193,13 +108,11 @@ app_test['DAYS_EMPLOYED'].replace({365243:np.nan},inplace=True)
 proper_days_empolyed_df = app_train
 proper_days_empolyed_df['YEARS_EMPLOYED'] = proper_days_empolyed_df['DAYS_EMPLOYED']/-365.25
 
-
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 app_train = app_train[app_train['AMT_INCOME_TOTAL'] != 117000000.0]
-
 
 #%%
 # --- [CELL 15]: ---
@@ -293,7 +206,6 @@ app_test['ORGANIZATION_TYPE'][(app_test['OCCUPATION_TYPE'] == 'Private service s
 app_train['ORGANIZATION_TYPE'][(app_train['OCCUPATION_TYPE'] == 'Security staff')] = app_train['ORGANIZATION_TYPE'][(app_train['OCCUPATION_TYPE'] == 'Security staff')].fillna('Security')
 app_test['ORGANIZATION_TYPE'][(app_test['OCCUPATION_TYPE'] == 'Security staff')] = app_test['ORGANIZATION_TYPE'][(app_test['OCCUPATION_TYPE'] == 'Security staff')].fillna('Security')
 
-
 #%%
 # --- [CELL 18]: ---
 # cell_state: unchanged
@@ -346,7 +258,6 @@ app_test['ORGANIZATION_TYPE'] = app_test['ORGANIZATION_TYPE'].replace(others, la
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 25}
 app_train.drop(['YEARS_EMPLOYED'], axis = 1,inplace=True)
 
-
 #%%
 # --- [CELL 25]: ---
 # cell_state: unchanged
@@ -360,7 +271,7 @@ app_test = app_test.drop(columns=['CNT_FAM_MEMBERS','LIVE_REGION_NOT_WORK_REGION
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 27}
 cols_to_remove = ['AMT_CREDIT', 'CNT_FAM_MEMBERS', 'REG_REGION_NOT_WORK_REGION', 'LIVE_REGION_NOT_WORK_REGION', 'OBS_60_CNT_SOCIAL_CIRCLE','SK_ID_CURR']
 cont_cols = list(set(cont_cols) - set(cols_to_remove))
-cont_cols 
+cont_cols
 
 #%%
 # --- [CELL 27]: ---
@@ -436,50 +347,8 @@ app_test[cat_col.columns] = enc.transform(app_test[cat_col.columns])
 
 #%%
 # --- [CELL 33]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 34}
-# === BEFORE (original) ===
-# import pandas as pd
-# from sklearn.model_selection import train_test_split
-# from sklearn.preprocessing import StandardScaler
-# from sklearn.linear_model import LogisticRegression
-# from imblearn.over_sampling import RandomOverSampler
-# from imblearn.under_sampling import RandomUnderSampler
-# from imblearn.pipeline import Pipeline
-# 
-# # Выделение целевой переменной и признаков
-# y = app_train['TARGET']
-# X = app_train.drop(['TARGET', 'SK_ID_CURR'], axis=1)
-# 
-# # Предобработка данных
-# X = pd.get_dummies(X, dummy_na=True)
-# 
-# # Разделение данных на обучающую и тестовую выборки
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-# 
-# # Масштабирование признаков
-# scaler = StandardScaler()
-# X_train = scaler.fit_transform(X_train)
-# X_test = scaler.transform(X_test)
-# 
-# # Балансировка классов
-# over_sampler = RandomOverSampler(sampling_strategy=0.5, random_state=42)
-# under_sampler = RandomUnderSampler(sampling_strategy=0.5, random_state=42)
-# steps = [('o', over_sampler), ('u', under_sampler)]
-# pipeline = Pipeline(steps=steps)
-# X_train, y_train = pipeline.fit_resample(X_train, y_train)
-# 
-# # Создание и обучение модели логистической регрессии
-# lr = LogisticRegression(random_state=42, max_iter=1000)
-# lr.fit(X_train, y_train)
-# 
-# # Оценка качества модели
-# y_pred = lr.predict(X_test)
-# score = lr.score(X_test, y_test)
-# print(f"Accuracy: {score:.2f}")
-# 
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -488,34 +357,33 @@ from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.pipeline import Pipeline
 
-
+# Выделение целевой переменной и признаков
 y = app_train['TARGET']
 X = app_train.drop(['TARGET', 'SK_ID_CURR'], axis=1)
 
-
+# Предобработка данных
 X = pd.get_dummies(X, dummy_na=True)
 
-
+# Разделение данных на обучающую и тестовую выборки
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-
+# Масштабирование признаков
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-
-# Use 'auto' for automatic balancing
-over_sampler = RandomOverSampler(sampling_strategy='auto', random_state=42)
-under_sampler = RandomUnderSampler(sampling_strategy='auto', random_state=42)
+# Балансировка классов
+over_sampler = RandomOverSampler(sampling_strategy=0.5, random_state=42)
+under_sampler = RandomUnderSampler(sampling_strategy=0.5, random_state=42)
 steps = [('o', over_sampler), ('u', under_sampler)]
 pipeline = Pipeline(steps=steps)
 X_train, y_train = pipeline.fit_resample(X_train, y_train)
 
-
+# Создание и обучение модели логистической регрессии
 lr = LogisticRegression(random_state=42, max_iter=1000)
 lr.fit(X_train, y_train)
 
-
+# Оценка качества модели
 y_pred = lr.predict(X_test)
 score = lr.score(X_test, y_test)
 print(f"Accuracy: {score:.2f}")
@@ -541,7 +409,6 @@ def protected_log(x):
         return 0  # Защита от логарифма от неположительного числа или нуля
     else:
         return np.log(x)
-
 
 #%%
 # --- [CELL 35]: ---
@@ -571,7 +438,10 @@ import numpy as np
 import pandas as pd
 from deap import creator, base, tools, gp
 
-pset = gp.PrimitiveSet("MAIN", arity=2)
+# Get the number of features from X_train (this should run after cell 33)
+n_features = X_train.shape[1] if 'X_train' in locals() else 72
+
+pset = gp.PrimitiveSet("MAIN", arity=n_features)
 pset.addPrimitive(np.add, arity=2)
 pset.addPrimitive(np.subtract, arity=2)
 pset.addPrimitive(np.multiply, arity=2)
@@ -588,7 +458,7 @@ pset.addTerminal(1)
 #%%
 # --- [CELL 36]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 41}
 # === BEFORE (original) ===
 # # Определение функции преобразования ГП структуры в вектор признаков
 # def transform_gp_structure(individual, X):
@@ -607,24 +477,25 @@ pset.addTerminal(1)
 #     return auc_gp,
 
 # === AFTER (edited) ===
-# Use only first 2 features for GP-based feature engineering
-X_train_gp_subset = X_train[:, :2]
-X_test_gp_subset = X_test[:, :2]
-
 def transform_gp_structure(individual, X):
     expr = gp.compile(individual, pset)
-    # X is a 2D array where each row has 2 features (matching GP arity)
-    # Return as 2D array with single column (new feature)
-    result = np.array([expr(*row) for row in X])
+    # Handle both numpy arrays (after scaler) and dataframes
+    # X could be 2D array where each row needs to be unpacked
+    if isinstance(X, np.ndarray):
+        result = np.array([expr(*row) for row in X])
+    else:
+        # Handle DataFrame or other iterable
+        result = np.array([expr(*values) for values in X.values])
+    # Reshape to 2D array (n_samples, 1) for scikit-learn compatibility
     return result.reshape(-1, 1)
 
 
 def evaluate_fitness(individual):
 
-    X_train_gp = transform_gp_structure(individual, X_train_gp_subset)
+    X_train_gp = transform_gp_structure(individual, X_train)
     rf_model_gp = lr
     rf_model_gp.fit(X_train_gp, y_train)
-    X_test_gp = transform_gp_structure(individual, X_test_gp_subset)
+    X_test_gp = transform_gp_structure(individual, X_test)
     y_pred_gp = rf_model_gp.predict_proba(X_test_gp)[:, 1]
     auc_gp = roc_auc_score(y_test, y_pred_gp)
     return auc_gp,
@@ -632,7 +503,7 @@ def evaluate_fitness(individual):
 #%%
 # --- [CELL 37]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 38}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 43}
 # Создание класса для управления эволюцией
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMax)
@@ -654,7 +525,7 @@ toolbox.register("select", tools.selTournament, tournsize=3)
 #%%
 # --- [CELL 38]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 40}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 44}
 # === BEFORE (original) ===
 # import random # fix missing import and vars for crash isolation purposes
 # crossover_prob = 0.5
@@ -699,8 +570,8 @@ import random
 crossover_prob = 0.5
 mutation_prob = 0.5
 
-pop_size = 10  # Reduced for testing
-num_generations = 2  # Reduced for testing
+pop_size = 10  # Reduced from 100 for faster execution
+num_generations = 5  # Reduced from 50 for faster execution
 
 
 population = toolbox.population(n=pop_size)
@@ -708,7 +579,7 @@ population = toolbox.population(n=pop_size)
 
 for generation in range(num_generations):
 
-    fitnesses = list(map(evaluate_fitness, population))
+    fitnesses = map(evaluate_fitness, population)
     for individual, fitness in zip(population, fitnesses):
         individual.fitness.values = fitness
 
@@ -732,7 +603,3 @@ for generation in range(num_generations):
 
 
     population[:] = offspring
-
-# Print best individual from final population
-best_ind = tools.selBest(population, 1)[0]
-print(f"Best fitness: {best_ind.fitness.values[0]:.4f}")

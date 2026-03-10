@@ -13,65 +13,9 @@ from sklearn.metrics import accuracy_score
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df = pd.read_csv('data/iris-data.csv')
-
-# === AFTER (edited) ===
-# Creating the iris dataset manually since the CSV file is a Git LFS pointer
-data = {
-    'sepal_length_cm': [5.1, 4.9, 4.7, 4.6, 5.0, 5.4, 4.6, 5.0, 4.4, 4.9,
-                        5.4, 4.8, 4.8, 4.3, 5.8, 5.7, 5.4, 5.1, 5.7, 5.1,
-                        5.4, 5.1, 4.6, 5.1, 4.8, 5.0, 5.0, 5.2, 5.2, 4.7,
-                        4.8, 5.4, 5.2, 5.5, 4.9, 5.0, 5.5, 4.9, 4.4, 5.1,
-                        5.0, 4.5, 4.4, 5.0, 5.1, 4.8, 5.1, 4.6, 5.3, 5.0,
-                        7.0, 6.4, 6.9, 5.5, 6.5, 5.7, 6.3, 4.9, 6.6, 5.2,
-                        5.0, 5.9, 6.0, 6.1, 5.6, 6.7, 5.6, 5.8, 6.2, 5.6,
-                        5.9, 6.1, 6.3, 6.1, 6.4, 6.6, 6.8, 6.7, 6.0, 5.7,
-                        5.5, 5.5, 5.8, 6.0, 5.4, 6.0, 6.7, 6.3, 5.6, 5.5,
-                        5.5, 6.1, 5.8, 5.0, 5.6, 5.7, 5.7, 6.2, 5.1, 5.7],
-    'sepal_width_cm': [3.5, 3.0, 3.2, 3.1, 3.6, 3.9, 3.4, 3.4, 2.9, 3.1,
-                       3.7, 3.4, 3.0, 3.0, 4.0, 4.4, 3.9, 3.5, 3.8, 3.8,
-                       3.4, 3.7, 3.6, 3.3, 3.4, 3.0, 3.4, 3.5, 3.4, 3.2,
-                       3.1, 3.4, 4.1, 4.2, 3.1, 3.2, 3.5, 3.6, 3.0, 3.4,
-                       3.5, 2.3, 3.2, 3.5, 3.8, 3.0, 3.8, 3.2, 3.7, 3.3,
-                       3.2, 3.2, 3.1, 2.3, 2.8, 2.8, 3.3, 2.4, 2.9, 2.7,
-                       2.0, 3.0, 2.2, 2.9, 2.9, 3.1, 3.0, 2.7, 2.2, 2.5,
-                       3.2, 2.8, 2.5, 2.8, 2.9, 3.0, 2.8, 3.0, 2.9, 2.6,
-                       2.4, 2.4, 2.7, 2.7, 3.0, 3.3, 2.7, 3.0, 2.9, 2.9,
-                       2.5, 2.8, 2.8, 2.4, 2.9, 2.7, 2.6, 2.4, 2.4, 2.5],
-    'petal_length_cm': [1.4, 1.4, 1.3, 1.5, 1.4, 1.7, 1.4, 1.5, 1.4, 1.5,
-                        1.5, 1.6, 1.4, 1.1, 1.2, 1.5, 1.3, 1.4, 1.7, 1.5,
-                        1.7, 1.5, 1.0, 1.7, 1.9, 1.6, 1.6, 1.5, 1.4, 1.6,
-                        1.6, 1.5, 1.5, 1.4, 1.5, 1.2, 1.3, 1.4, 1.3, 1.5,
-                        1.3, 1.3, 1.3, 1.6, 1.9, 1.4, 1.6, 1.4, 1.5, 1.4,
-                        4.7, 4.5, 4.9, 4.0, 4.6, 4.5, 4.7, 3.3, 4.6, 3.9,
-                        3.5, 4.2, 4.0, 4.7, 3.6, 4.4, 4.5, 4.1, 4.5, 3.9,
-                        4.8, 4.0, 4.9, 4.7, 4.3, 4.4, 4.8, 5.0, 4.5, 3.5,
-                        3.8, 3.7, 3.9, 5.1, 4.5, 4.5, 4.7, 4.4, 4.1, 4.0,
-                        4.4, 4.6, 4.0, 3.3, 4.2, 4.2, 4.2, 4.3, 3.0, 4.1],
-    'petal_width_cm': [0.2, 0.2, 0.2, 0.2, 0.2, 0.4, 0.3, 0.2, 0.2, 0.1,
-                       0.2, 0.2, 0.1, 0.1, 0.2, 0.4, 0.4, 0.3, 0.3, 0.3,
-                       0.2, 0.4, 0.2, 0.5, 0.2, 0.2, 0.4, 0.2, 0.2, 0.2,
-                       0.2, 0.4, 0.1, 0.2, 0.2, 0.2, 0.2, 0.1, 0.2, 0.2,
-                       0.3, 0.3, 0.2, 0.6, 0.4, 0.3, 0.2, 0.2, 0.2, 0.2,
-                       1.4, 1.5, 1.5, 1.3, 1.5, 1.3, 1.6, 1.0, 1.3, 1.4,
-                       1.0, 1.5, 1.4, 1.5, 1.5, 1.6, 1.5, 1.5, 1.4, 1.5,
-                       1.2, 1.3, 1.4, 1.4, 1.3, 1.4, 1.5, 1.5, 1.5, 1.3,
-                       1.3, 1.5, 1.3, 1.7, 1.5, 1.4, 1.5, 1.3, 1.5, 1.4,
-                       1.3, 1.7, 1.4, 1.5, 1.4, 1.4, 1.5, 1.1, 1.2, 1.5],
-    'class': ['Iris-setosa'] * 50 + ['Iris-versicolor'] * 50
-}
-
-# Add some null values in petal_width_cm for testing dropna
-import numpy as np
-np.random.seed(42)
-for i in range(5):
-    rand_idx = np.random.randint(0, 100)
-    data['petal_width_cm'][rand_idx] = None
-
-df = pd.DataFrame(data)
+df = pd.read_csv('data/iris-data.csv')
 
 #%%
 # --- [CELL 2]: ---
@@ -136,17 +80,10 @@ y_ts_arr = y_test.values
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
-# === BEFORE (original) ===
-# def weightInitialization(n_features):
-#     w = np.zeros((1,n_features))
-#     b = 0
-#     return w,b
-
-# === AFTER (edited) ===
 def weightInitialization(n_features):
-    w = np.zeros((n_features, 1))
+    w = np.zeros((1,n_features))
     b = 0
     return w,b
 
@@ -178,7 +115,6 @@ def model_optimize(w, b, X, Y):
     grads = {"dw": dw, "db": db}
     
     return grads, cost
-    
 
 #%%
 # --- [CELL 13]: ---
@@ -269,28 +205,59 @@ def predict(final_pred, m):
 
 #%%
 # --- [CELL 16]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
-#Get number of features
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# === BEFORE (original) ===
+# #Get number of features
+# n_features = X_tr_arr.shape[1]
+# print('Number of Features', n_features)
+# w, b = weightInitialization(n_features)
+# #Gradient Descent
+# coeff, gradient, costs = model_predict(w, b, X_tr_arr, y_tr_arr, learning_rate=0.0001,no_iterations=4500)
+# #Final prediction
+# w = coeff["w"]
+# b = coeff["b"]
+# print('Optimized weights', w)
+# print('Optimized intercept',b)
+# #
+# final_train_pred = sigmoid_activation(np.dot(w,X_tr_arr.T)+b)
+# final_test_pred = sigmoid_activation(np.dot(w,X_ts_arr.T)+b)
+# #
+# m_tr =  X_tr_arr.shape[0]
+# m_ts =  X_ts_arr.shape[0]
+# #
+# y_tr_pred = predict(final_train_pred, m_tr)
+# print('Training Accuracy',accuracy_score(y_tr_pred.T, y_tr_arr))
+# #
+# y_ts_pred = predict(final_test_pred, m_ts)
+# print('Test Accuracy',accuracy_score(y_ts_pred.T, y_ts_arr))
+
+# === AFTER (edited) ===
+def weightInitialization(n_features):
+    w = np.zeros((n_features,1))  # Changed from (1,n_features) to (n_features,1)
+    b = 0
+    return w,b
+
+
 n_features = X_tr_arr.shape[1]
 print('Number of Features', n_features)
 w, b = weightInitialization(n_features)
-#Gradient Descent
+
 coeff, gradient, costs = model_predict(w, b, X_tr_arr, y_tr_arr, learning_rate=0.0001,no_iterations=4500)
-#Final prediction
+
 w = coeff["w"]
 b = coeff["b"]
 print('Optimized weights', w)
 print('Optimized intercept',b)
-#
-final_train_pred = sigmoid_activation(np.dot(w,X_tr_arr.T)+b)
-final_test_pred = sigmoid_activation(np.dot(w,X_ts_arr.T)+b)
-#
+
+final_train_pred = sigmoid(np.dot(X_tr_arr, w) + b)  # Fixed for column vector w
+final_test_pred = sigmoid(np.dot(X_ts_arr, w) + b)  # Fixed for column vector w
+
 m_tr =  X_tr_arr.shape[0]
 m_ts =  X_ts_arr.shape[0]
-#
-y_tr_pred = predict(final_train_pred, m_tr)
+
+y_tr_pred = predict(final_train_pred.T, m_tr)  # Transpose to match expected shape (1,m)
 print('Training Accuracy',accuracy_score(y_tr_pred.T, y_tr_arr))
-#
-y_ts_pred = predict(final_test_pred, m_ts)
+
+y_ts_pred = predict(final_test_pred.T, m_ts)  # Transpose to match expected shape (1,m)
 print('Test Accuracy',accuracy_score(y_ts_pred.T, y_ts_arr))

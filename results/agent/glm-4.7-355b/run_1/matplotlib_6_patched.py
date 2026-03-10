@@ -42,20 +42,9 @@ df=pd.read_csv('data/3711.csv');df
 
 # === AFTER (edited) ===
 sns.set_style('darkgrid')
+fig, ax = plt.subplots(6, 1, figsize=(5, 20))
 
-# Get only numeric columns for boxplot
-numeric_df = df.select_dtypes(include=[np.number])
-
-if len(numeric_df.columns) == 0:
-    print("No numeric columns found in the dataset. Skipping boxplots.")
-else:
-    fig, ax = plt.subplots(len(numeric_df.columns), 1, figsize=(5, 20))
-    
-    # If only one subplot, wrap ax in list for consistent iteration
-    if len(numeric_df.columns) == 1:
-        ax = [ax]
-    
-    for i, col in enumerate(list(numeric_df.columns.values)):
-        axes_box = ax[i]
-        sns.boxplot(data=numeric_df, y=col, ax=axes_box, color='#a5c687')
-        ax[i].set_title(col, fontsize=15, color='magenta')
+for i, col in enumerate(list(df.columns.values[:6])):
+    axes_box  = ax[i]
+    sns.boxplot(data=df, x=col, ax=axes_box,color='#a5c687')
+    ax[i].set_title(col,fontsize=15,color='magenta')

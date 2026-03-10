@@ -123,23 +123,18 @@ up_sampled['target'].value_counts()
 # print(X_val.shape)
 
 # === AFTER (edited) ===
-# Since the image files are invalid (they're not real images), 
-# we'll generate synthetic image data to simulate the workflow
-# The model expects 3-channel RGB images based on the input shape in cell 10
-
-print("Generating synthetic RGB images...")
-
-num_samples = up_sampled.shape[0]
 train_image = []
+y = []
 
-for i in tqdm(range(num_samples)):
-    # Generate synthetic RGB image with noise (3 channels instead of 1)
-    img = np.random.rand(size, size, 3).astype(np.float32)
+for i in tqdm(range(up_sampled.shape[0])):
+    img = tf.keras.utils.load_img(up_sampled['image'].iloc[i], target_size=(size,size, 3), color_mode="rgb")
+    img = tf.keras.utils.img_to_array(img)
+    img = img/255
     train_image.append(img)
+
 
 X = np.array(train_image)
 y = up_sampled.iloc[:,-1].values
-
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, test_size=0.2)
 X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, random_state=42, test_size=0.2 , shuffle=True)
 
@@ -147,13 +142,9 @@ Y_train = to_categorical(y_train, 2)
 Y_test = to_categorical(y_test, 2)
 Y_val = to_categorical(y_val, 2)
 
-print(f"\nDataset shapes:")
-print(f"X_train: {X_train.shape}")
-print(f"X_test: {X_test.shape}")
-print(f"X_val: {X_val.shape}")
-print(f"Y_train: {Y_train.shape}")
-print(f"Y_test: {Y_test.shape}")
-print(f"Y_val: {Y_val.shape}")
+print(X_train.shape)
+print(X_test.shape)
+print(X_val.shape)
 
 #%%
 # --- [CELL 7]: ---
@@ -291,7 +282,6 @@ x = Dense(units=2, activation='softmax')(x)
 
 # create model
 model = Model(inputs=inputs, outputs=x)
-
 
 #%%
 # --- [CELL 11]: ---

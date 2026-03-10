@@ -14,16 +14,10 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df= pd.read_csv(r'data/Retailsales.csv')
-# df=df.drop(columns='Unnamed: 0')
-# df.head()
-
-# === AFTER (edited) ===
 df= pd.read_csv(r'data/Retailsales.csv')
-df=df.drop(columns='Unnamed: 0', errors='ignore')
+df=df.drop(columns='Unnamed: 0')
 df.head()
 
 #%%
@@ -36,13 +30,14 @@ df
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # df=df['Order ID'].astype('int')
 # #This Error is occuring due to some string values in Order ID Column
 
 # === AFTER (edited) ===
-if 'Order ID' in df.columns:
-    df=df['Order ID'].astype('int')
-else:
-    print("'Order ID' column not found in dataframe")
+# Remove rows where 'Order ID' appears as a value (duplicate header rows)
+df = df[df['Order ID'] != 'Order ID']
+
+# Now convert 'Order ID' to integer
+df['Order ID'] = df['Order ID'].astype('int')

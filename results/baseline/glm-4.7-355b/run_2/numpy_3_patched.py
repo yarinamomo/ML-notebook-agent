@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import pandas as pd
 import numpy as np
 from pprint import pprint
@@ -17,21 +17,21 @@ warnings.filterwarnings('ignore')
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 df=pd.read_csv('data/hmeq.csv')
 df.head()
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 df.loc[df.BAD == 1, 'STATUS'] = 'DEFAULT'
 df.loc[df.BAD == 0, 'STATUS'] = 'PAID'
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # # %%opts Histogram[width=700 height=400 tools=['hover'] xrotation=0]{+axiswise +framewise}
 # 

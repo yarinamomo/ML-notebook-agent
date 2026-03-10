@@ -44,61 +44,26 @@ import tensorflow as tf
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train = pd.read_csv("data/train.csv")
-# test = pd.read_csv("data/test.csv")
-
-# === AFTER (edited) ===
-# Load the digit recognition dataset (similar structure to MNIST)
-from sklearn.datasets import load_digits
-
-# Load the digits dataset
-digits = load_digits()
-
-# Create train dataframe
-train = pd.DataFrame(digits.data)
-train['label'] = digits.target
-
-# Create test dataframe (using same data for testing purposes)
-test = pd.DataFrame(digits.data)
-
-print("Train head:")
-print(train.head())
-print("\nTrain columns:", train.columns.tolist())
-print("\nTrain shape:", train.shape)
-print("\nTest shape:", test.shape)
+train = pd.read_csv("data/train.csv")
+test = pd.read_csv("data/test.csv")
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# Y_train = train["label"]#得到训练集标签
-# 
-# # Drop 'label' column
-# X_train = train.drop(labels = ["label"],axis = 1) #得到训练集特征列
-# 
-# # free some space
-# del train #删除train变量
-# 
-# g = sns.countplot(Y_train)#画图，统计数量
-# 
-# Y_train.value_counts()#计算每个值的数量
+Y_train = train["label"]#得到训练集标签
 
-# === AFTER (edited) ===
-Y_train = train["label"]
+# Drop 'label' column
+X_train = train.drop(labels = ["label"],axis = 1) #得到训练集特征列
 
+# free some space
+del train #删除train变量
 
-X_train = train.drop(labels = ["label"],axis = 1)
+g = sns.countplot(Y_train)#画图，统计数量
 
-
-del train
-
-g = sns.countplot(Y_train)
-
-Y_train.value_counts()
+Y_train.value_counts()#计算每个值的数量
 
 #%%
 # --- [CELL 4]: ---
@@ -110,17 +75,11 @@ test = test / 255.0
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# # 黑白图  图片只有一个通道 长宽 都是 28 个像素
-# X_train = X_train.values.reshape(-1,28,28,1)
-# test = test.values.reshape(-1,28,28,1)
-
-# === AFTER (edited) ===
-# The sklearn digits dataset has 8x8 images
-X_train = X_train.values.reshape(-1,8,8,1)
-test = test.values.reshape(-1,8,8,1)
+# 黑白图  图片只有一个通道 长宽 都是 28 个像素
+X_train = X_train.values.reshape(-1,28,28,1)
+test = test.values.reshape(-1,28,28,1)
 
 #%%
 # --- [CELL 6]: ---
@@ -135,7 +94,6 @@ Y_train = to_categorical(Y_train, num_classes = 10)
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 random_seed = 2
 X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size = 0.1, random_state=random_seed)
-
 
 #%%
 # --- [CELL 8]: ---
@@ -159,76 +117,43 @@ p.shape
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-# === BEFORE (original) ===
-# # Set the CNN model 
-# # my CNN architechture is（我的CNN架构是） In -> [[Conv2D->relu]*2 -> MaxPool2D -> Dropout]*2 -> Flatten -> Dense -> Dropout -> Out
-# 
-# model = Sequential()
-# 
-# #in -> [Conv2D->relu]*2 -> MaxPool2D -> Dropout] ->
-# # input batch size ,28,28,1
-# model.add(Conv2D(filters = 32, kernel_size = (5,5),padding = 'Same', 
-#                  activation ='relu', input_shape = (28,28,1)))
-# # batch size ,28,28,32
-# model.add(Conv2D(filters = 32, kernel_size = (5,5),padding = 'Same', 
-#                  activation ='relu'))
-# # batch size ,28,28,32
-# model.add(MaxPool2D(pool_size=(2,2)))
-# # batch size ,14,14,32
-# 
-# model.add(Dropout(0.25))
-# #-> [Conv2D->relu]*2 -> MaxPool2D -> Dropout] ->
-# model.add(Conv2D(filters = 64, kernel_size = (3,3),padding = 'Same', 
-#                  activation ='relu'))
-# 
-# # batch size ,14,14,64
-# model.add(Conv2D(filters = 64, kernel_size = (3,3),padding = 'Same', 
-#                  activation ='relu'))
-# # batch size ,14,14,64
-# 
-# model.add(MaxPool2D(pool_size=(2,2), strides=(2,2)))
-# # batch size ,7,7,64
-# 
-# model.add(Dropout(0.25))
-# 
-# #-> Flatten -> Dense -> Dropout -> Out
-# model.add(Flatten())
-# # batch size ,3136
-# 
-# model.add(Dense(256, activation = "relu"))
-# model.add(Dropout(0.5))
-# model.add(Dense(10, activation = "softmax"))
+# Set the CNN model 
+# my CNN architechture is（我的CNN架构是） In -> [[Conv2D->relu]*2 -> MaxPool2D -> Dropout]*2 -> Flatten -> Dense -> Dropout -> Out
 
-# === AFTER (edited) ===
 model = Sequential()
 
-# Update input shape to 8x8x1 for sklearn digits dataset
-model.add(Conv2D(filters = 32, kernel_size = (3,3),padding = 'Same',
-                 activation ='relu', input_shape = (8,8,1)))
-
-model.add(Conv2D(filters = 32, kernel_size = (3,3),padding = 'Same',
+#in -> [Conv2D->relu]*2 -> MaxPool2D -> Dropout] ->
+# input batch size ,28,28,1
+model.add(Conv2D(filters = 32, kernel_size = (5,5),padding = 'Same', 
+                 activation ='relu', input_shape = (28,28,1)))
+# batch size ,28,28,32
+model.add(Conv2D(filters = 32, kernel_size = (5,5),padding = 'Same', 
                  activation ='relu'))
-
+# batch size ,28,28,32
 model.add(MaxPool2D(pool_size=(2,2)))
+# batch size ,14,14,32
 
 model.add(Dropout(0.25))
-
-model.add(Conv2D(filters = 64, kernel_size = (3,3),padding = 'Same',
+#-> [Conv2D->relu]*2 -> MaxPool2D -> Dropout] ->
+model.add(Conv2D(filters = 64, kernel_size = (3,3),padding = 'Same', 
                  activation ='relu'))
 
-model.add(Conv2D(filters = 64, kernel_size = (3,3),padding = 'Same',
+# batch size ,14,14,64
+model.add(Conv2D(filters = 64, kernel_size = (3,3),padding = 'Same', 
                  activation ='relu'))
+# batch size ,14,14,64
 
 model.add(MaxPool2D(pool_size=(2,2), strides=(2,2)))
+# batch size ,7,7,64
 
 model.add(Dropout(0.25))
 
+#-> Flatten -> Dense -> Dropout -> Out
 model.add(Flatten())
+# batch size ,3136
 
-# Update the Dense layer input size
-# After the architecture: 8x8 -> 4x4 (after MaxPool) -> 2x2 (after second MaxPool) = 2*2*64 = 256
 model.add(Dense(256, activation = "relu"))
 model.add(Dropout(0.5))
 model.add(Dense(10, activation = "softmax"))
@@ -261,42 +186,21 @@ model.compile(optimizer = optimizer , loss = "categorical_crossentropy", metrics
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
-# === BEFORE (original) ===
-# # Set a learning rate annealer定义学习率退火算法。定义回调函数，在训练时，相应的回调函数的方法就会被在各自的阶段被调用。
-# # https://keras.io/zh/callbacks/
-# # https://keras.io/zh/callbacks/#reducelronplateau
-# learning_rate_reduction = ReduceLROnPlateau(monitor='val_acc', 
-#                                             patience=3, 
-#                                             verbose=1, 
-#                                             factor=0.5, 
-#                                             min_lr=0.00001)
-# '''
-# 
-# 在您提供的代码中，learningratereduction是ReduceLROnPlateau回调函数的一个实例，用于在模型训练过程中动态地减小学习率。
-# 具体来说，它监视了验证集的准确性（即'monitor'='valacc'），并且如果在3个时期内没有改进，
-# 则减小学习率（即'patience'=3）。该调用还指定了减小因子（即'factor'=0.5）和最小学习率（即'minlr'=0.00001），
-# 以便在执行减少操作时进行限制，从而保持学习率的稳定性和有效性。如果您想要更好地了解ReduceLROnPlateau的工作原理和参数设置，
-# 
-# verbose是ReduceLROnPlateau回调函数的一个可选参数，用于控制输出详细程度的标志。
-# 如果verbose=1，则在执行时期减少操作时将输出一条消息，以指示学习率的更新和当前的状态。
-# 如果verbose=0，则不会输出任何消息。通常情况下，verbose的默认值为0，因为它可以大大减少输出的噪声和干扰。
-# 如果您需要更详细的输出和信息，可以将verbose的值设置为1或更高
-# 可以查看Keras文档：https://keras.io/callbacks/#reducelronplateau。
-# '''
-
-# === AFTER (edited) ===
-learning_rate_reduction = ReduceLROnPlateau(monitor='val_accuracy',
-                                            patience=3,
-                                            verbose=1,
-                                            factor=0.5,
+# Set a learning rate annealer定义学习率退火算法。定义回调函数，在训练时，相应的回调函数的方法就会被在各自的阶段被调用。
+# https://keras.io/zh/callbacks/
+# https://keras.io/zh/callbacks/#reducelronplateau
+learning_rate_reduction = ReduceLROnPlateau(monitor='val_acc', 
+                                            patience=3, 
+                                            verbose=1, 
+                                            factor=0.5, 
                                             min_lr=0.00001)
 '''
 
 在您提供的代码中，learningratereduction是ReduceLROnPlateau回调函数的一个实例，用于在模型训练过程中动态地减小学习率。
-具体来说，它监视了验证集的准确性（即'monitor'='val_acc'），并且如果在3个时期内没有改进，
-则减小学习率（即'patience'=3）。该调用还指定了减小因子（即'factor'=0.5）和最小学习率（即'min_lr'=0.00001），
+具体来说，它监视了验证集的准确性（即'monitor'='valacc'），并且如果在3个时期内没有改进，
+则减小学习率（即'patience'=3）。该调用还指定了减小因子（即'factor'=0.5）和最小学习率（即'minlr'=0.00001），
 以便在执行减少操作时进行限制，从而保持学习率的稳定性和有效性。如果您想要更好地了解ReduceLROnPlateau的工作原理和参数设置，
 
 verbose是ReduceLROnPlateau回调函数的一个可选参数，用于控制输出详细程度的标志。
@@ -308,22 +212,13 @@ verbose是ReduceLROnPlateau回调函数的一个可选参数，用于控制输�
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
-# === BEFORE (original) ===
-# # 定义一个ModelCheckpoint回调函数，用于保存验证集上准确率最高的模型
-# checkpoint_filepath = 'best_model.keras'
-# model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
-#     filepath=checkpoint_filepath,
-#     monitor='val_acc',
-#     mode='max',
-#     save_best_only=True)
-
-# === AFTER (edited) ===
+# 定义一个ModelCheckpoint回调函数，用于保存验证集上准确率最高的模型
 checkpoint_filepath = 'best_model.keras'
 model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
     filepath=checkpoint_filepath,
-    monitor='val_accuracy',
+    monitor='val_acc',
     mode='max',
     save_best_only=True)
 

@@ -11,28 +11,14 @@ import seaborn as sns
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df= pd.read_csv("data/iris.csv")
-
-# === AFTER (edited) ===
-from sklearn.datasets import load_iris
-iris = load_iris()
-df = pd.DataFrame(data=iris.data, columns=iris.feature_names)
-df['species'] = iris.target
-df['species'] = df['species'].map({0: 'setosa', 1: 'versicolor', 2: 'virginica'})
+df= pd.read_csv("data/iris.csv")
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# X = df.drop("species",axis=1)
-# Y = df["species"]
-# x_train, x_test , y_train, y_test=train_test_split (X ,Y , test_size=0.25, random_state=42)
-
-# === AFTER (edited) ===
 X = df.drop("species",axis=1)
 Y = df["species"]
 x_train, x_test , y_train, y_test=train_test_split (X ,Y , test_size=0.25, random_state=42)
@@ -67,7 +53,7 @@ y_pred = clf.predict(x_test)
 from sklearn import metrics
 confusion_matrix = metrics.confusion_matrix(y_test , y_pred)
 
-cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix , display_labels=['setosa', 'versicolor', 'virginica'])
+cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix , display_labels=clf.classes_)
 
 cm_display.plot()
 plt.show()

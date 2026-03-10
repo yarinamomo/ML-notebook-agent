@@ -14,16 +14,10 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# df= pd.read_csv(r'data/Retailsales.csv')
-# df=df.drop(columns='Unnamed: 0')
-# df.head()
-
-# === AFTER (edited) ===
 df= pd.read_csv(r'data/Retailsales.csv')
-df=df.drop(columns='Unnamed: 0', errors='ignore')
+df=df.drop(columns='Unnamed: 0')
 df.head()
 
 #%%
@@ -35,7 +29,14 @@ df
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
-df=df['Order ID'].astype('int')
-#This Error is occuring due to some string values in Order ID Column
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# === BEFORE (original) ===
+# df=df['Order ID'].astype('int')
+# #This Error is occuring due to some string values in Order ID Column
+
+# === AFTER (edited) ===
+df['Order ID'] = pd.to_numeric(df['Order ID'], errors='coerce')
+df = df[df['Order ID'].notna()]  # Remove rows where conversion failed
+df['Order ID'] = df['Order ID'].astype('int')
+df

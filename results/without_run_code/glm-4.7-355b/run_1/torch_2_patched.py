@@ -12,119 +12,57 @@ from torchvision.transforms import transforms
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# img = read_image("data_small/10/ILSVRC2012_val_00037698.jpeg")
-# print(img.shape[0])
-# if img.shape[0] == 1:
-#      img = img.expand(3, -1, -1)
-# print(img.size())
-# 
-# # Step 1: Initialize model with the best available weights
-# weights =ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
-# model = vit_b_16(weights=weights)
-# model.eval()
-# 
-# # Step 2: Initialize the inference transforms
-# preprocess = weights.transforms()
-# 
-# # Step 3: Apply inference preprocessing transforms
-# batch = preprocess(img).unsqueeze(0)
-# 
-# # Step 4: Use the model and print the predicted category
-# prediction = model(batch).squeeze(0).softmax(0)
-# class_id = prediction.argmax().item()
-# print(class_id)
-# score = prediction[class_id].item()
-# category_name = weights.meta["categories"][class_id]
-# print(f"{category_name}: {100 * score:.1f}%")
+img = read_image("data_small/10/ILSVRC2012_val_00037698.jpeg")
+print(img.shape[0])
+if img.shape[0] == 1:
+     img = img.expand(3, -1, -1)
+print(img.size())
 
-# === AFTER (edited) ===
-img = None
-try:
-    img = read_image("data_small/10/ILSVRC2012_val_00037698.jpeg")
-    print(img.shape[0])
-    if img.shape[0] == 1:
-         img = img.expand(3, -1, -1)
-    print(img.size())
-except Exception as e:
-    print(f"Error reading image: {e}")
-
+# Step 1: Initialize model with the best available weights
 weights =ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
 model = vit_b_16(weights=weights)
 model.eval()
 
-if img is not None:
-    preprocess = weights.transforms()
+# Step 2: Initialize the inference transforms
+preprocess = weights.transforms()
 
-    batch = preprocess(img).unsqueeze(0)
+# Step 3: Apply inference preprocessing transforms
+batch = preprocess(img).unsqueeze(0)
 
-    prediction = model(batch).squeeze(0).softmax(0)
-    class_id = prediction.argmax().item()
-    print(class_id)
-    score = prediction[class_id].item()
-    category_name = weights.meta["categories"][class_id]
-    print(f"{category_name}: {100 * score:.1f}%")
+# Step 4: Use the model and print the predicted category
+prediction = model(batch).squeeze(0).softmax(0)
+class_id = prediction.argmax().item()
+print(class_id)
+score = prediction[class_id].item()
+category_name = weights.meta["categories"][class_id]
+print(f"{category_name}: {100 * score:.1f}%")
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# # Move model and data to GPU if available
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# print("Device used is: " + str(device))
-# 
-# # create a metric for accuracy
-# metric = MulticlassAccuracy(num_classes=1000).to(device)
-# 
-# # Step 2: Initialize the inference transforms
-# preprocess = weights.transforms(antialias=True)
-# 
-# preprocess_w_gray2rgb = transforms.Compose([
-#     lambda x: x.expand(3, -1, -1) if x.shape[0] == 1 else x,
-#     preprocess
-# ])
-# imagenet_val_dir = 'data_small'
-# dataset = ImageFolder(root=imagenet_val_dir, loader=read_image, transform=preprocess_w_gray2rgb)
-# class_dict = dataset.class_to_idx
-# class_dict = {value: key for key, value in class_dict.items()}
-# 
-# # Create a DataLoader to load the images in batches
-# dataloader = DataLoader(dataset, batch_size=8, shuffle=False)
-
-# === AFTER (edited) ===
+# Move model and data to GPU if available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device used is: " + str(device))
 
-
+# create a metric for accuracy
 metric = MulticlassAccuracy(num_classes=1000).to(device)
 
-
+# Step 2: Initialize the inference transforms
 preprocess = weights.transforms(antialias=True)
 
 preprocess_w_gray2rgb = transforms.Compose([
     lambda x: x.expand(3, -1, -1) if x.shape[0] == 1 else x,
     preprocess
 ])
-
-# Custom loader that handles unsupported image formats
-def custom_image_loader(path):
-    try:
-        return read_image(path)
-    except Exception as e:
-        # Return a dummy image if loading fails
-        print(f"Warning: Could not load image {path}: {e}")
-        # Return a dummy RGB tensor of correct size
-        return torch.zeros((3, 224, 224), dtype=torch.uint8)
-
 imagenet_val_dir = 'data_small'
-dataset = ImageFolder(root=imagenet_val_dir, loader=custom_image_loader, transform=preprocess_w_gray2rgb)
+dataset = ImageFolder(root=imagenet_val_dir, loader=read_image, transform=preprocess_w_gray2rgb)
 class_dict = dataset.class_to_idx
 class_dict = {value: key for key, value in class_dict.items()}
 
-
+# Create a DataLoader to load the images in batches
 dataloader = DataLoader(dataset, batch_size=8, shuffle=False)
 
 #%%
@@ -195,7 +133,6 @@ dataloader = DataLoader(dataset, batch_size=8, shuffle=False)
 #     duration = (end_time - start_time) / 60
 #     
 #     return accuracy, duration
-#     
 
 # === AFTER (edited) ===
 def check_label_name(predictions, weights):
@@ -205,7 +142,7 @@ def check_label_name(predictions, weights):
         score = prediction[class_id].item()
         category_name = weights.meta["categories"][class_id]
         print(f"{category_name}: {100 * score:.1f}%")
-        print("\\n")
+        print("\n")
 
 
 def model_quantization(model, backend='x86', save=False):
@@ -214,17 +151,8 @@ def model_quantization(model, backend='x86', save=False):
     torch.backends.quantized.engine = backend
 
     quantized_model = torch.quantization.quantize_dynamic(model, qconfig_spec={torch.nn.Linear}, dtype=torch.qint8)
-    
-    # torch.jit.script() may fail for某些模型结构, skip if it fails
-    try:
-        scripted_quantized_model = torch.jit.script(quantized_model)
-        if save:
-            scripted_quantized_model.save("vit_scripted_quantized.pt")
-    except Exception as e:
-        print(f"Warning: Could not script the quantized model: {e}")
-        if save:
-            # Save the quantized model directly if scripting fails
-            torch.save(quantized_model.state_dict(), "vit_quantized.pt")
+    if save:
+        torch.save(quantized_model.state_dict(), "vit_scripted_quantized.pt")
     return quantized_model
 
 

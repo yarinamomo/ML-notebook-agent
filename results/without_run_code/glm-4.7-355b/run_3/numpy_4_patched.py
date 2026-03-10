@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -28,7 +28,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 train_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
                                    zoom_range = 0.4,
                                    validation_split = 0.2)
@@ -41,7 +41,7 @@ test_datagen  = ImageDataGenerator(rescale = 1.0 / 255.0)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 train_dataset = train_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
                                                   target_size = (224,224),
                                                   class_mode = 'binary',
@@ -51,7 +51,7 @@ train_dataset = train_datagen.flow_from_directory(directory = 'data_small/chest-
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 valid_dataset = valid_datagen.flow_from_directory(directory = 'data_small/chest-xray-pneumonia/chest_xray/train',
                                                   target_size = (224,224),
                                                   class_mode = 'binary',
@@ -61,7 +61,7 @@ valid_dataset = valid_datagen.flow_from_directory(directory = 'data_small/chest-
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # Defining Model
 
 base_model = VGG16(input_shape=(224,224,3), 
@@ -71,14 +71,14 @@ base_model = VGG16(input_shape=(224,224,3),
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 for layer in base_model.layers:
     layer.trainable=False
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 # Defining Layers
 
 model=Sequential()
@@ -100,7 +100,7 @@ model.add(Dense(1,activation='sigmoid'))
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 # Model Compile 
 
 OPT    = tensorflow.keras.optimizers.Adam(learning_rate=0.001)
@@ -112,7 +112,7 @@ model.compile(loss='binary_crossentropy',
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 # Defining Callbacks
 
 filepath = 'data_small/best_weights.keras'
@@ -133,72 +133,49 @@ callback_list = [earlystopping, checkpoint]
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
-# === BEFORE (original) ===
-# 
-# model_history=model.fit(train_dataset,
-#                         validation_data=valid_dataset,
-#                         epochs = 1,
-#                         callbacks = callback_list,
-#                         verbose = 1)
-
-# === AFTER (edited) ===
-# Since all dataset images are corrupted, create synthetic dummy data for demonstration
-# This ensures the training pipeline can execute
-
-import numpy as np
-
-# Create dummy datasets (synthetic data)
-def create_dummy_dataset(batch_size=32, num_batches=10):
-    def generator():
-        for _ in range(num_batches):
-            # Generate random images (224, 224, 3) with values in [0, 1]
-            x = np.random.random((batch_size, 224, 224, 3)).astype(np.float32)
-            # Generate binary labels (0 or 1)
-            y = np.random.randint(0, 2, (batch_size, 1)).astype(np.float32)
-            yield x, y
-    
-    return tf.data.Dataset.from_generator(
-        generator,
-        output_signature=(
-            tf.TensorSpec(shape=(None, 224, 224, 3), dtype=tf.float32),
-            tf.TensorSpec(shape=(None, 1), dtype=tf.float32)
-        )
-    )
-
-print("Creating dummy training and validation datasets with synthetic data...")
-train_dataset_dummy = create_dummy_dataset(batch_size=32, num_batches=10)
-valid_dataset_dummy = create_dummy_dataset(batch_size=32, num_batches=5)
-
-print("Starting training with synthetic data...")
-model_history=model.fit(train_dataset_dummy,
-                        validation_data=valid_dataset_dummy,
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+model_history=model.fit(train_dataset,
+                        validation_data=valid_dataset,
                         epochs = 1,
                         callbacks = callback_list,
                         verbose = 1)
-print("\nTraining completed successfully!")
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 class_names = ['PNEUMONIA','NORMAL']
 
 #%%
 # --- [CELL 11]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 20}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# === BEFORE (original) ===
+# from sklearn.metrics import classification_report, confusion_matrix
+# import seaborn as sns
+# 
+# prediction_classes = np.array([])
+# true_classes =  np.array([])
+# 
+# for x, y in valid_dataset:
+#   prediction_classes = np.concatenate([prediction_classes,
+#                        np.argmax(model.predict(x), axis = -1)])
+#   true_classes = np.concatenate([true_classes, np.argmax(y.numpy(), axis=-1)])
+# 
+# 
+# print(classification_report(true_classes, prediction_classes, target_names=class_names, digits=4))
+
+# === AFTER (edited) ===
 from sklearn.metrics import classification_report, confusion_matrix
 import seaborn as sns
 
-prediction_classes = np.array([])
-true_classes =  np.array([])
-
-for x, y in valid_dataset:
-  prediction_classes = np.concatenate([prediction_classes,
-                       np.argmax(model.predict(x), axis = -1)])
-  true_classes = np.concatenate([true_classes, np.argmax(y.numpy(), axis=-1)])
+# Get all predictions at once (more efficient)
+predictions = model.predict(valid_dataset, verbose=1)
+# For binary classification, threshold predictions at 0.5
+prediction_classes = (predictions.flatten() >= 0.5).astype(int)
+# Get true labels from the dataset
+true_classes = valid_dataset.classes
 
 
 print(classification_report(true_classes, prediction_classes, target_names=class_names, digits=4))

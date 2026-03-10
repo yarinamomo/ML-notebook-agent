@@ -38,13 +38,9 @@ test_ds = pd.read_csv("data/test.csv")
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
-
-# === AFTER (edited) ===
-train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True, errors='ignore')
+train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 #%%
 # --- [CELL 4]: ---
@@ -67,137 +63,107 @@ for column in string_columns:
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# X = train_ds.drop(['SalePrice'], axis = 1)
-# y = train_ds['SalePrice']
-
-# === AFTER (edited) ===
-if 'SalePrice' in train_ds.columns:
-    X = train_ds.drop(['SalePrice'], axis = 1)
-    y = train_ds['SalePrice']
-else:
-    X = train_ds
-    y = None
+X = train_ds.drop(['SalePrice'], axis = 1)
+y = train_ds['SalePrice']
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# === BEFORE (original) ===
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 42)
-
-# === AFTER (edited) ===
-if y is not None:
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 42)
-else:
-    print("Warning: No target variable 'SalePrice' found. Skipping train_test_split.")
-    X_train, X_test, y_train, y_test = X, None, None, None
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 42)
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
-# === BEFORE (original) ===
-# from sklearn.ensemble import RandomForestRegressor
-# FReg = RandomForestRegressor(n_estimators = 100, random_state = 42)
-
-# === AFTER (edited) ===
 from sklearn.ensemble import RandomForestRegressor
-if X_train is not None and y_train is not None:
-    FReg = RandomForestRegressor(n_estimators = 100, random_state = 42)
-else:
-    FReg = None
-    print("Warning: Cannot create RandomForestRegressor without training data.")
+FReg = RandomForestRegressor(n_estimators = 100, random_state = 42)
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-# === BEFORE (original) ===
-# FReg.fit(X_train, y_train)
-
-# === AFTER (edited) ===
-if FReg is not None:
-    FReg.fit(X_train, y_train)
-else:
-    print("Warning: Skipping model fitting.")
+FReg.fit(X_train, y_train)
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
-# === BEFORE (original) ===
-# y_pred = FReg.predict(X_test)
-# mse = mean_squared_error(y_test, y_pred)
-# r2 = r2_score(y_test, y_pred)
-# print(f'R2 Score: {r2}')
-# print(f'MSE: {mse}')
-
-# === AFTER (edited) ===
-if FReg is not None and y_test is not None:
-    y_pred = FReg.predict(X_test)
-    mse = mean_squared_error(y_test, y_pred)
-    r2 = r2_score(y_test, y_pred)
-    print(f'R2 Score: {r2}')
-    print(f'MSE: {mse}')
-else:
-    print("Warning: Skipping evaluation - model not trained or test data not available.")
+y_pred = FReg.predict(X_test)
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+print(f'R2 Score: {r2}')
+print(f'MSE: {mse}')
 
 #%%
 # --- [CELL 11]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
-# === BEFORE (original) ===
-# test_ds_ids = test_ds['Id'] # fix for crash isolation purpose
-# test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
-
-# === AFTER (edited) ===
-if 'Id' in test_ds.columns:
-    test_ds_ids = test_ds['Id']
-else:
-    test_ds_ids = []
-test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True, errors='ignore')
+test_ds_ids = test_ds['Id'] # fix for crash isolation purpose
+test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis = 1, inplace = True)
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
-for column in test_ds:
-    null_count = test_ds[column].isnull().sum()
-    if null_count > 1:
-        print(f"Dropping column {column} with {null_count} missing values.")
-        test_ds.drop(column, axis = 1, inplace = True)
+# === BEFORE (original) ===
+# for column in test_ds:
+#     null_count = test_ds[column].isnull().sum()
+#     if null_count > 1:
+#         print(f"Dropping column {column} with {null_count} missing values.")
+#         test_ds.drop(column, axis = 1, inplace = True)
+
+# === AFTER (edited) ===
+# Get the columns used in training (X)
+training_columns = X.columns
+# Only keep columns that exist in training data
+for column in list(test_ds.columns):
+    if column not in training_columns:
+        print(f"Dropping column {column} (not in training data)")
+        test_ds.drop(column, axis=1, inplace=True)
+    else:
+        # Drop the column if it has too many missing values
+        null_count = test_ds[column].isnull().sum()
+        if null_count > 1:
+            print(f"Filling missing values in {column} with {null_count} missing.")
+            test_ds[column].fillna(X[column].mean(), inplace=True)
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# === BEFORE (original) ===
+# le = LabelEncoder()
+# string_columns = test_ds.select_dtypes(include = ['object']).columns
+# for column in string_columns:
+#     test_ds[column] = le.fit_transform(test_ds[column])
+
+# === AFTER (edited) ===
+# Fill any remaining NaN values with 0 for numeric columns
+for column in test_ds.columns:
+    if test_ds[column].isnull().any():
+        if test_ds[column].dtype != 'object':
+            test_ds[column].fillna(0, inplace=True)
+        else:
+            # For object columns, fill with mode or a default value
+            test_ds[column].fillna('Unknown', inplace=True)
+
+# Now encode string columns
 le = LabelEncoder()
 string_columns = test_ds.select_dtypes(include = ['object']).columns
 for column in string_columns:
-    test_ds[column] = le.fit_transform(test_ds[column])
+    test_ds[column] = le.fit_transform(test_ds[column].astype(str))
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-# === BEFORE (original) ===
-# predictions = FReg.predict(test_ds)
-# submissions_df = pd.DataFrame({
-#     "ID" : test_ds_ids, # test_data['ID'], # fix for crash isolation purpose
-#     "Predictions" : predictions
-# })
-# 
-# # submissions_df.to_csv('submission_csv', index = False)
+predictions = FReg.predict(test_ds)
+submissions_df = pd.DataFrame({
+    "ID" : test_ds_ids, # test_data['ID'], # fix for crash isolation purpose
+    "Predictions" : predictions
+})
 
-# === AFTER (edited) ===
-if FReg is not None and len(test_ds_ids) > 0:
-    predictions = FReg.predict(test_ds)
-    submissions_df = pd.DataFrame({
-        "ID" : test_ds_ids,
-        "Predictions" : predictions
-    })
-else:
-    print("Warning: Cannot make predictions on test data.")
+# submissions_df.to_csv('submission_csv', index = False)

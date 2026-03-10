@@ -25,7 +25,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import cv2
 
-
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
@@ -35,38 +34,11 @@ from tensorflow.keras.preprocessing.image import load_img
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# labels_all = pd.read_csv('data_small/New folder/labels.csv')
-# print(labels_all.shape)
-# labels_all.head()
-
-# === AFTER (edited) ===
-import os
-
-# Get the available train files and create a proper labels dataframe
-train_path = 'data_small/New folder/train'
-train_files = os.listdir(train_path)
-
-CLASS_NAME = ['scottish_deerhound', 'maltese_dog', 'afghan_hound', 'entlebucher', 'bernese_mountain_dog']
-
-# Extract IDs from filenames (remove .jpg extension)
-ids = [f.replace('.jpg', '') for f in train_files]
-
-# Create labels - distribute the 5 breeds across the available images
-breeds = []
-for i in range(len(ids)):
-    breeds.append(CLASS_NAME[i % len(CLASS_NAME)])
-
-# Create a proper dataframe
-labels_all = pd.DataFrame({
-    'id': ids,
-    'breed': breeds
-})
-
+labels_all = pd.read_csv('data_small/New folder/labels.csv')
 print(labels_all.shape)
-print(labels_all.head())
+labels_all.head()
 
 #%%
 # --- [CELL 4]: ---
@@ -86,7 +58,6 @@ train_path = 'data_small/New folder/train'
 
 #reading dataset labels
 train_labels = pd.read_csv('data_small/New folder/labels.csv')
-
 
 #%%
 # --- [CELL 6]: ---
@@ -125,12 +96,6 @@ for i in tqdm(range(len(labels))):
         img = image.load_img(f'data_small/New folder/train/{labels["id"][i]}.jpg', target_size=(224, 224))
     except FileNotFoundError:
         continue
-    except Exception as e:
-        # If image cannot be loaded (e.g., Git LFS pointer), generate random image data
-        img_array = np.random.rand(224, 224, 3) * 255
-        X_data[i] = img_array / 255.0
-        continue
-        
     img = image.img_to_array(img)
 
 

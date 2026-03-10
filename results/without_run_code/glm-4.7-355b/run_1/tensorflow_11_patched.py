@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -34,7 +34,7 @@ from tensorflow.keras.applications.efficientnet import *
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 image_dir = Path('data_small/test')
 
 # Get filepaths and labels
@@ -50,7 +50,7 @@ image_df = pd.concat([filepaths, labels], axis=1)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # Shuffle the DataFrame and reset index
 image_df = image_df.sample(frac=1).reset_index(drop = True)
 
@@ -60,109 +60,27 @@ image_df.head(5)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # Separate in train and test data
 train_df, test_df = train_test_split(image_df, train_size=0.9, shuffle=True, random_state=1)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
-# === BEFORE (original) ===
-# train_generator = tf.keras.preprocessing.image.ImageDataGenerator(
-#     preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input,
-#     validation_split=0.2
-# )
-# 
-# test_generator = tf.keras.preprocessing.image.ImageDataGenerator(
-#     preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input
-# )
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 train_generator = tf.keras.preprocessing.image.ImageDataGenerator(
+    preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input,
     validation_split=0.2
 )
 
 test_generator = tf.keras.preprocessing.image.ImageDataGenerator(
-    preprocessing_function=None
+    preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input
 )
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 21}
-# === BEFORE (original) ===
-# train_images = train_generator.flow_from_dataframe(
-#     dataframe=train_df,
-#     x_col='Filepath',
-#     y_col='Label',
-#     target_size=(224, 224),
-#     color_mode='rgb',
-#     class_mode='categorical',
-#     batch_size=32,
-#     shuffle=True,
-#     seed=42,
-#     subset='training'
-# )
-# 
-# val_images = train_generator.flow_from_dataframe(
-#     dataframe=train_df,
-#     x_col='Filepath',
-#     y_col='Label',
-#     target_size=(224, 224),
-#     color_mode='rgb',
-#     class_mode='categorical',
-#     batch_size=32,
-#     shuffle=True,
-#     seed=42,
-#     subset='validation'
-# )
-# 
-# test_images = test_generator.flow_from_dataframe(
-#     dataframe=test_df,
-#     x_col='Filepath',
-#     y_col='Label',
-#     target_size=(224, 224),
-#     color_mode='rgb',
-#     class_mode='categorical',
-#     batch_size=32,
-#     shuffle=False
-# )
-
-# === AFTER (edited) ===
-import warnings
-warnings.filterwarnings('ignore', category=UserWarning)
-
-# Function to check if an image is valid
-def is_valid_image(filepath):
-    try:
-        with PIL.Image.open(filepath) as img:
-            img.verify()
-        return True
-    except:
-        return False
-
-# Filter out corrupted images
-valid_indices = []
-for i, row in train_df.iterrows():
-    if is_valid_image(row['Filepath']):
-        valid_indices.append(i)
-    else:
-        print(f"Removing corrupted image: {row['Filepath']}")
-
-train_df = train_df.iloc[valid_indices].reset_index(drop=True)
-
-# Similarly for test_df
-valid_indices = []
-for i, row in test_df.iterrows():
-    if is_valid_image(row['Filepath']):
-        valid_indices.append(i)
-    else:
-        print(f"Removing corrupted image: {row['Filepath']}")
-
-test_df = test_df.iloc[valid_indices].reset_index(drop=True)
-
-# Recreate the image generators
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 train_images = train_generator.flow_from_dataframe(
     dataframe=train_df,
     x_col='Filepath',
@@ -202,31 +120,52 @@ test_images = test_generator.flow_from_dataframe(
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-def create_model(input_shape=(224, 224, 3)):
-    
-    inputs = Input(input_shape)
-    base_model = EfficientNetB1(input_shape=input_shape, include_top=False, classes=5)
-    
-    x = base_model(inputs)
-    
-    x = GlobalAveragePooling2D()(x)
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# === BEFORE (original) ===
+# def create_model(input_shape=(224, 224, 3)):
+#     
+#     inputs = Input(input_shape)
+#     base_model = EfficientNetB1(input_shape=input_shape, include_top=False, classes=5)
+#     
+#     x = base_model(inputs)
+#     
+#     x = GlobalAveragePooling2D()(x)
+# #     x = Dropout(0.1)(x)
+#     
+#     x = Dense(56, activation='relu')(x)
 #     x = Dropout(0.1)(x)
-    
+#     
+#     outputs = Dense(5, activation='sigmoid')(x)
+#     
+#     model = Model(inputs, outputs)
+#     
+#     return model
+
+# === AFTER (edited) ===
+def create_model(input_shape=(224, 224, 3)):
+
+    inputs = Input(input_shape)
+    base_model = EfficientNetB1(input_shape=input_shape, include_top=False, classes=2)
+
+    x = base_model(inputs)
+
+    x = GlobalAveragePooling2D()(x)
+
+
     x = Dense(56, activation='relu')(x)
     x = Dropout(0.1)(x)
-    
-    outputs = Dense(5, activation='sigmoid')(x)
-    
+
+    outputs = Dense(2, activation='softmax')(x)
+
     model = Model(inputs, outputs)
-    
+
     return model
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 K.clear_session()
 
 model = create_model((224, 224, 3))
@@ -240,13 +179,13 @@ metrics = [
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 model.compile(optimizer=Adam(), loss='categorical_crossentropy', metrics=metrics)
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 checkpoint_path = 'model_224.keras'
 
 callbacks = [
@@ -258,7 +197,7 @@ callbacks = [
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 19}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 history = model.fit(
     train_images,
     validation_data=val_images,

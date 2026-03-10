@@ -24,19 +24,19 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 np.random.seed(123)
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 data_dir = 'data_small/CovidDataset_70_30'
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 batch_size = 32
 input_shape = (224, 224, 3)
 num_classes = 2
@@ -44,7 +44,7 @@ num_classes = 2
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 train_datagen = ImageDataGenerator(rescale=1./255, shear_range=0.2, zoom_range=0.2, horizontal_flip=True)
 test_datagen = ImageDataGenerator(rescale=1./255)
 validation_datagen = ImageDataGenerator(rescale=1./255)
@@ -71,7 +71,7 @@ validation_generator = validation_datagen.flow_from_directory(
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 vgg19 = VGG19(weights='imagenet', include_top=False, input_shape=input_shape)
 
 modelV19 = Sequential()
@@ -90,7 +90,7 @@ for layer in vgg19.layers:
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 mobilenetv2 = MobileNetV2(weights='imagenet', include_top=False, input_shape=input_shape)
 
 modelM2 = Sequential()
@@ -110,7 +110,7 @@ for layer in mobilenetv2.layers:
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'not run'}
 opt = Adam(learning_rate=0.0001, beta_1=0.9)
 opt2 = Adam(learning_rate=0.0001, beta_1=0.9) # fix for reproducing and fixing purposes, need a new optimizer instance
 modelV19.compile(
@@ -129,28 +129,13 @@ filepath_weights_M2 = "data_small/best_weights_M2-{epoch:02d}-{val_accuracy:.4f}
 checkpoint_V19 = ModelCheckpoint(filepath_weights_V19, monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
 checkpoint_M2 = ModelCheckpoint(filepath_weights_M2, monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
 
-
 #%%
 # --- [CELL 8]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 9}
-# === BEFORE (original) ===
-# # Dont run again model is saved @ /kaggle/working/save_weights/best_weights_V19-47-0.9566.hdf5
-# 
-# history_V19 = modelV19.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_V19])
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+# Dont run again model is saved @ /kaggle/working/save_weights/best_weights_V19-47-0.9566.hdf5
 
-# === AFTER (edited) ===
-steps_per_epoch = len(train_generator)
-validation_steps = len(validation_generator)
-
-history_V19 = modelV19.fit(
-    train_generator, 
-    epochs=2, 
-    validation_data=validation_generator, 
-    steps_per_epoch=steps_per_epoch,
-    validation_steps=validation_steps,
-    callbacks=[early_stop, checkpoint_V19]
-)
+history_V19 = modelV19.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_V19])
 
 #%%
 # --- [CELL 9]: ---
@@ -250,18 +235,25 @@ print(y_pred_classes)
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
-#ensemble_model.load_weights('/kaggle/working/save_weights/best_weights_ensemble-31-0.9690.tf')
-#y_pred = ensemble_model.predict(test_generator)
-#y_pred_classes = np.argmax(y_pred, axis=1)
-#y_true_classes = test_generator.classes
+# === BEFORE (original) ===
+# #ensemble_model.load_weights('/kaggle/working/save_weights/best_weights_ensemble-31-0.9690.tf')
+# #y_pred = ensemble_model.predict(test_generator)
+# #y_pred_classes = np.argmax(y_pred, axis=1)
+# #y_true_classes = test_generator.classes
+# 
+# #try this 
+# # Make predictions on test data
+# y_pred = ensemble_model.predict(test_generator)
+# y_pred_classes = np.argmax(y_pred, axis=1)
+# 
+# # Convert one-hot encoded labels to integer labels
+# y_true_onehot = test_generator.classes
+# y_true_classes = np.argmax(y_true_onehot, axis=1)
 
-#try this 
-# Make predictions on test data
+# === AFTER (edited) ===
 y_pred = ensemble_model.predict(test_generator)
 y_pred_classes = np.argmax(y_pred, axis=1)
 
-# Convert one-hot encoded labels to integer labels
-y_true_onehot = test_generator.classes
-y_true_classes = np.argmax(y_true_onehot, axis=1)
+y_true_classes = test_generator.classes

@@ -65,12 +65,17 @@ transform = transforms.Compose([
 ])
 
 
-trainset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='train', download=True, transform=transform)
-testset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='val', download=True, transform=transform)
+def collate_fn(batch):
+    """Custom collate function for object detection datasets."""
+    return tuple(zip(*batch))
 
 
-trainloader = DataLoader(trainset, batch_size=4, shuffle=True, num_workers=2)
-testloader = DataLoader(testset, batch_size=4, shuffle=False, num_workers=2)
+trainset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='train', download=False, transform=transform)
+testset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='val', download=False, transform=transform)
+
+
+trainloader = DataLoader(trainset, batch_size=2, shuffle=True, num_workers=0, collate_fn=collate_fn)
+testloader = DataLoader(testset, batch_size=2, shuffle=False, num_workers=0, collate_fn=collate_fn)
 
 
 model = fasterrcnn_resnet50_fpn(weights=torchvision.models.detection.FasterRCNN_ResNet50_FPN_Weights.DEFAULT)
@@ -86,15 +91,14 @@ optimizer = torch.optim.SGD(model.parameters(), lr=0.005, momentum=0.9, weight_d
 
 num_epochs = 1
 for epoch in range(num_epochs):
-    for i, data in enumerate(trainloader, 0):
-        inputs, labels = data
+    for i, (images, targets) in enumerate(trainloader, 0):
         optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = sum(loss for loss in outputs.values())
-        loss.backward()
+        loss_dict = model(images, targets)
+        losses = sum(loss for loss in loss_dict.values())
+        losses.backward()
         optimizer.step()
 
         if i % 2000 == 1999:
-            print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, loss.item()))
+            print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, losses.item()))
 
 print('Finished Training')

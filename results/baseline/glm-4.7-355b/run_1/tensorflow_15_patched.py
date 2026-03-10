@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -25,7 +25,7 @@ from sklearn.metrics import confusion_matrix, classification_report
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # Count number of training images for both classes to calculate a
 # data-driven training batch size.
 num_samples = (len(os.listdir('data_small/Chic')) +
@@ -38,7 +38,7 @@ batch_size = num_samples // 200
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 train_ds = tf.keras.utils.image_dataset_from_directory(
   'data_small',
   validation_split=0.2,
@@ -51,7 +51,7 @@ train_ds = tf.keras.utils.image_dataset_from_directory(
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 val_ds = tf.keras.utils.image_dataset_from_directory(
  'data_small',
   validation_split=0.2,
@@ -64,7 +64,7 @@ val_ds = tf.keras.utils.image_dataset_from_directory(
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 test_ds = tf.keras.utils.image_dataset_from_directory(
  'data_small_test',
   image_size=(img_height, img_width),
@@ -74,13 +74,13 @@ test_ds = tf.keras.utils.image_dataset_from_directory(
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 base_model = tf.keras.applications.ResNet50(weights = 'imagenet', include_top = False, input_shape = (224,224,3))
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 x = base_model.output
 x = keras.layers.GlobalAveragePooling2D()(x)
 
@@ -98,14 +98,14 @@ model = keras.models.Model(inputs=base_model.input,
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 for layer in model.layers[:175]:
     layer.trainable = False
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 model.compile(
     optimizer='adam',
     loss='binary_crossentropy',
@@ -115,7 +115,7 @@ model.compile(
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
 history = model.fit(
     train_ds,
     validation_data=val_ds,
@@ -164,8 +164,7 @@ predictions = (model.predict(test_ds) >= 0.5)
 predictions = np.array([])
 labels =  np.array([])
 for x, y in test_ds:
-  batch_pred = (model.predict(x) >= 0.5).astype('int32')
-  predictions = np.concatenate([predictions, np.squeeze(batch_pred)])
-  labels = np.concatenate([labels, np.squeeze(y.numpy())])
+  predictions = np.concatenate([predictions, (model.predict(x) >= 0.5).astype(int).flatten()])
+  labels = np.concatenate([labels, y.numpy().astype(int).flatten()])
 
 tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()

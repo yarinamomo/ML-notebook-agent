@@ -37,52 +37,21 @@ batch_size = num_samples // 200
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-# === BEFORE (original) ===
-# train_ds = tf.keras.utils.image_dataset_from_directory(
-#   'data_small',
-#   validation_split=0.2,
-#   subset="training",
-#   label_mode='binary',
-#   seed=123, #number to randomize outcome
-#   image_size=(img_height, img_width),
-#   batch_size=batch_size)
-
-# === AFTER (edited) ===
 train_ds = tf.keras.utils.image_dataset_from_directory(
   'data_small',
   validation_split=0.2,
   subset="training",
   label_mode='binary',
-  seed=123,
+  seed=123, #number to randomize outcome
   image_size=(img_height, img_width),
   batch_size=batch_size)
 
-# Filter out corrupted images
-def is_valid_batch(*args):
-    return True
-
-def validate_batch(images, labels):
-    return images, labels
-
-train_ds = train_ds.map(validate_batch)
-
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# val_ds = tf.keras.utils.image_dataset_from_directory(
-#  'data_small',
-#   validation_split=0.2,
-#   subset="validation",
-#   label_mode='binary',
-#   seed=123,
-#   image_size=(img_height, img_width),
-#   batch_size=batch_size)
-
-# === AFTER (edited) ===
 val_ds = tf.keras.utils.image_dataset_from_directory(
  'data_small',
   validation_split=0.2,
@@ -92,41 +61,15 @@ val_ds = tf.keras.utils.image_dataset_from_directory(
   image_size=(img_height, img_width),
   batch_size=batch_size)
 
-# Filter out corrupted images
-def is_valid_batch(*args):
-    return True
-
-def validate_batch(images, labels):
-    return images, labels
-
-val_ds = val_ds.map(validate_batch)
-
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# test_ds = tf.keras.utils.image_dataset_from_directory(
-#  'data_small_test',
-#   image_size=(img_height, img_width),
-#   label_mode='binary',
-#   batch_size=batch_size)
-
-# === AFTER (edited) ===
 test_ds = tf.keras.utils.image_dataset_from_directory(
  'data_small_test',
   image_size=(img_height, img_width),
   label_mode='binary',
   batch_size=batch_size)
-
-# Filter out corrupted images
-def is_valid_batch(*args):
-    return True
-
-def validate_batch(images, labels):
-    return images, labels
-
-test_ds = test_ds.map(validate_batch)
 
 #%%
 # --- [CELL 5]: ---
@@ -206,12 +149,22 @@ predictions = (model.predict(test_ds) >= 0.5)
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# predictions = np.array([])
+# labels =  np.array([])
+# for x, y in test_ds:
+#   predictions = np.concatenate([predictions, model.predict_classes(x)])
+#   labels = np.concatenate([labels, np.argmax(y.numpy(), axis=-1)])
+# 
+# tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()
+
+# === AFTER (edited) ===
 predictions = np.array([])
 labels =  np.array([])
 for x, y in test_ds:
-  predictions = np.concatenate([predictions, model.predict_classes(x)])
-  labels = np.concatenate([labels, np.argmax(y.numpy(), axis=-1)])
+  predictions = np.concatenate([predictions, (model.predict(x) > 0.5).astype(int).flatten()])
+  labels = np.concatenate([labels, y.numpy().astype(int).flatten()])
 
 tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()
