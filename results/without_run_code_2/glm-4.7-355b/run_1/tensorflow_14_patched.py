@@ -145,32 +145,22 @@ train_generator = train_datagen.flow_from_directory(
 )
 
 
-num_classes = 7
-
 base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
 
 for layer in base_model.layers:
     layer.trainable = False
 
-from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout
-from tensorflow.keras.models import Sequential
 
-model = Sequential([
-    base_model,
-    GlobalAveragePooling2D(),
-    Dense(512, activation='relu'),
-    Dropout(0.5),
-    Dense(num_classes, activation='softmax')
-])
+from tensorflow.keras.layers import Flatten, Dense
+from tensorflow.keras.models import Model
+
+
+x = Flatten()(base_model.output)
+x = Dense(512, activation='relu')(x)
+predictions = Dense(7, activation='softmax')(x)
+
+
+model = Model(inputs=base_model.input, outputs=predictions)
+
 
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-
-
-model.fit(
-    train_generator,
-    steps_per_epoch=len(train_generator),
-    epochs=10,
-)
-
-
-model.save('data/updated_vgg_face_weights.h5')

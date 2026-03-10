@@ -250,27 +250,52 @@ def process_image(image_path):
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# === BEFORE (original) ===
+# def imshow(image, ax=None, title=None):
+#     """Imshow for Tensor."""
+#     if ax is None:
+#         fig, ax = plt.subplots()
+#     
+#     # PyTorch tensors assume the color channel is the first dimension
+#     # but matplotlib assumes is the third dimension
+#     image = image.numpy().transpose((1, 2, 0))
+#     
+#     # Undo preprocessing
+#     mean = np.array([0.485, 0.456, 0.406])
+#     std = np.array([0.229, 0.224, 0.225])
+#     image = std * image + mean
+#     
+#     # Image needs to be clipped between 0 and 1 or it looks like noise when displayed
+#     image = np.clip(image, 0, 1)
+#     
+#     ax.imshow(image)
+#     
+#     return ax
+
+# === AFTER (edited) ===
+import matplotlib.pyplot as plt
+
 def imshow(image, ax=None, title=None):
     """Imshow for Tensor."""
     if ax is None:
         fig, ax = plt.subplots()
-    
-    # PyTorch tensors assume the color channel is the first dimension
-    # but matplotlib assumes is the third dimension
+
+
+
     image = image.numpy().transpose((1, 2, 0))
-    
-    # Undo preprocessing
+
+
     mean = np.array([0.485, 0.456, 0.406])
     std = np.array([0.229, 0.224, 0.225])
     image = std * image + mean
-    
-    # Image needs to be clipped between 0 and 1 or it looks like noise when displayed
+
+
     image = np.clip(image, 0, 1)
-    
+
     ax.imshow(image)
-    
+
     return ax
 
 #%%
@@ -312,7 +337,7 @@ def predict(image_path, model, topk=5):
 #%%
 # --- [CELL 11]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 # === BEFORE (original) ===
 # import matplotlib.pyplot as plt
 # 
@@ -356,16 +381,16 @@ def display_image(image_path):
 
 model = load_checkpoint('checkpoint.pth')
 
-
-# Create reverse mapping from class index to class name
+# Create reverse mapping from class indices to folder names
 idx_to_class = {v: k for k, v in model.class_to_idx.items()}
 
-test_image_path = test_ds.imgs[np.random.choice(len(test_ds.imgs))][0]
+
+test_image_path = np.random.choice([path for path, _ in test_ds.imgs])
 display_image(test_image_path)
 
 probs, classes = predict(test_image_path, model)
 
-# Map predicted class indices to actual class names
+# Convert class indices to folder names, then to flower names
 class_names = [cat_to_name[idx_to_class[cls]] for cls in classes]
 
 print("Probabilities:", probs)
@@ -373,12 +398,11 @@ print("Classes:", class_names)
 
 
 for i in range(5):
-    test_image_path = test_ds.imgs[np.random.choice(len(test_ds.imgs))][0]
+    test_image_path = np.random.choice([path for path, _ in test_ds.imgs])
     display_image(test_image_path)
 
     probs, classes = predict(test_image_path, model)
 
-    # Map predicted class indices to actual class names
     class_names = [cat_to_name[idx_to_class[cls]] for cls in classes]
 
     print("Probabilities:", probs)

@@ -144,24 +144,17 @@ class HuggingFaceLayer(tf.keras.layers.Layer):
 
     def call(self, inputs):
         outputs = self.model(inputs)
-        return outputs
+        # Extract [CLS] token embedding: [batch_size, hidden_size]
+        return outputs.last_hidden_state[:, 0, :]
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
-# === BEFORE (original) ===
-# model_name = 'bert-base-uncased'
-# model = tf.keras.Sequential()
-# model.add(HuggingFaceLayer(model_name=model_name))
-# model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
-
-# === AFTER (edited) ===
 model_name = 'bert-base-uncased'
-from transformers import TFAutoModelForSequenceClassification
-
-# Use the dedicated classification model
-model = TFAutoModelForSequenceClassification.from_pretrained(model_name, num_labels=1)
+model = tf.keras.Sequential()
+model.add(HuggingFaceLayer(model_name=model_name))
+model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
 
 #%%
 # --- [CELL 14]: ---
@@ -173,24 +166,53 @@ model = TFAutoModelForSequenceClassification.from_pretrained(model_name, num_lab
 # model.fit(train_data, train_labels, epochs=10)
 
 # === AFTER (edited) ===
-# Convert datasets to tf.data format
-def convert_to_tf_dataset(hg_dataset, batch_size=16):
-    dataset = hg_dataset.to_tf_dataset(
-        columns=['input_ids', 'attention_mask'],
-        label_cols='label',
-        shuffle=True,
-        batch_size=batch_size
+import tensorflow as tf
+import numpy as np
+
+# Set format to numpy arrays
+train_hg.set_format(type='numpy', columns=['input_ids', 'attention_mask', 'token_type_ids', 'label'])
+valid_hg.set_format(type='numpy', columns=['input_ids', 'attention_mask', 'token_type_ids', 'label'])
+
+# Create tf.data.Dataset objects
+def to_tf_dataset(dataset, batch_size=16, shuffle=False):
+    def generator():
+        for i in range(len(dataset)):
+            yield (
+                {
+                    'input_ids': dataset[i]['input_ids'],
+                    'attention_mask': dataset[i]['attention_mask'],
+                    'token_type_ids': dataset[i]['token_type_ids']
+                },
+                dataset[i]['label']
+            )
+    
+    ds = tf.data.Dataset.from_generator(
+        generator,
+        output_signature=(
+            {
+                'input_ids': tf.TensorSpec(shape=(128,), dtype=tf.int64),
+                'attention_mask': tf.TensorSpec(shape=(128,), dtype=tf.int64),
+                'token_type_ids': tf.TensorSpec(shape=(128,), dtype=tf.int64)
+            },
+            tf.TensorSpec(shape=(), dtype=tf.int64)
+        )
     )
-    return dataset
+    
+    if shuffle:
+        ds = ds.shuffle(buffer_size=len(dataset))
+    
+    return ds.batch(batch_size)
 
-# Create train and validation tf datasets
-train_tf = convert_to_tf_dataset(train_hg)
-valid_tf = convert_to_tf_dataset(valid_hg)
+# Prepare training and validation datasets
+train_tf = to_tf_dataset(train_hg, batch_size=16, shuffle=True)
+valid_tf = to_tf_dataset(valid_hg, batch_size=16)
 
-# Compile the model using string optimizer name
-model.compile(optimizer='adam',
-              loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-              metrics=['accuracy'])
+# Compile the model
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
 # Train the model
-history = model.fit(train_tf, validation_data=valid_tf, epochs=3)
+history = model.fit(
+    train_tf,
+    validation_data=valid_tf,
+    epochs=10
+)

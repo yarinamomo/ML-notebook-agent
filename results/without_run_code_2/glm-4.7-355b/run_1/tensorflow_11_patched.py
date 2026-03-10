@@ -146,7 +146,7 @@ test_images = test_generator.flow_from_dataframe(
 def create_model(input_shape=(224, 224, 3)):
 
     inputs = Input(input_shape)
-    base_model = EfficientNetB1(input_shape=input_shape, include_top=False, classes=5)
+    base_model = EfficientNetB1(input_shape=input_shape, include_top=False, classes=2)
 
     x = base_model(inputs)
 

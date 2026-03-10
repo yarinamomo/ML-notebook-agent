@@ -44,8 +44,105 @@ model.wv.save_word2vec_format('data/word2vec.txt', binary=False)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# === BEFORE (original) ===
+# from collections import Counter
+# from transformers import BasicTokenizer
+# 
+# basic_tokenizer = BasicTokenizer()
+# 
+# class Vocab():
+#     def __init__(self, train_data):
+#         self.min_count = 5
+#         self.pad = 0
+#         self.unk = 1
+#         self._id2word = ['[PAD]', '[UNK]']
+#         self._id2extword = ['[PAD]', '[UNK]']
+#         
+#         self._id2label = []
+#         self.target_names = []
+#         
+#         self.build_vocab(train_data)
+#         
+#         reverse = lambda x: dict(zip(x, range(len(x))))
+#         self._word2id = reverse(self._id2word)
+#         self._label2id = reverse(self._id2label)
+#         
+#     def build_vocab(self, data):
+#         self.word_counter = Counter()
+#         
+#         for text in data['text']:
+#             words = text.split()
+#             for word in words:
+#                 self.word_counter[word] += 1
+#                 
+#         for word, count in self.word_counter.most_common():
+#             if count >= self.min_count:
+#                 self._id2word.append(word)
+#                 
+#         label2name = {0: '科技', 1: '股票', 2: '体育', 3: '娱乐', 4: '时政', 5: '社会', 6: '教育',
+#                       7: '财经', 8: '家居', 9: '游戏', 10: '房产', 11: '时尚', 12: '彩票', 13: '星座'}
+#         self.label_counter = Counter(data['label'])
+#         
+#         for label in range(len(self.label_counter)):
+#             count = self.label_counter[label]
+#             self._id2label.append(label)
+#             self.target_names.append(label2name[label])
+#             
+#     def load_pretrained_embs(self, embfile):
+#         with open(embfile, encoding='utf-8') as f:
+#             lines = f.readlines()
+#             items = lines[0].split()
+#             word_count, embedding_dim = int(items[0]), int(items[1])
+#             
+#         index = len(self._id2extword)
+#         embeddings = np.zeros((word_count + index, embedding_dim))
+#         for line in lines[1:]:
+#             values = line.split()
+#             self._id2extword.append(values[0])
+#             vector = np.array(values[1:], dtype='float64')
+#             embeddings[self.unk] += vector
+#             embeddings[index] = vector
+#             index += 1
+#             
+#         embeddings[self.unk] = embeddings[self.unk] / word_count
+#         embeddings = embeddings / np.std(embeddings)
+#         
+#         reverse = lambda x: dict(zip(x, range(len(x))))
+#         self._extword2id = reverse(self._id2extword)
+#         
+#         assert len(set(self._id2extword)) == len(self._id2extword)
+#         
+#         return embeddings
+#     
+#     def word2id(self, xs):
+#         if isinstance(xs, list): 
+#             return [self._word2id.get(x, self.unk) for x in xs]
+#         return self._word2id.get(xs, self.unk)
+#     
+#     def extword2id(self, xs):
+#         if isinstance(xs, list):
+#             return [self._extword2id.get(x, self.unk) for x in xs]
+#         return self._extword2id.get(xs, self.unk)
+#     
+#     def label2id(self, xs):
+#         if isinstance(xs, list):
+#             return [self._label2id.get(x, self.unk) for x in xs]
+#         return self._label2id.get(xs, self.unk)
+#     
+#     def word_size(self):
+#         return len(self._id2word)
+#     
+#     def extword_size(self):
+#         return len(self._id2extword)
+#     
+#     def label_size(self):
+#         return len(self._id2label)
+#     
+# vocab = Vocab(train_df)
+
+# === AFTER (edited) ===
 from collections import Counter
 from transformers import BasicTokenizer
 
@@ -58,43 +155,43 @@ class Vocab():
         self.unk = 1
         self._id2word = ['[PAD]', '[UNK]']
         self._id2extword = ['[PAD]', '[UNK]']
-        
+
         self._id2label = []
         self.target_names = []
-        
+
         self.build_vocab(train_data)
-        
+
         reverse = lambda x: dict(zip(x, range(len(x))))
         self._word2id = reverse(self._id2word)
         self._label2id = reverse(self._id2label)
-        
+
     def build_vocab(self, data):
         self.word_counter = Counter()
-        
+
         for text in data['text']:
             words = text.split()
             for word in words:
                 self.word_counter[word] += 1
-                
+
         for word, count in self.word_counter.most_common():
             if count >= self.min_count:
                 self._id2word.append(word)
-                
+
         label2name = {0: '科技', 1: '股票', 2: '体育', 3: '娱乐', 4: '时政', 5: '社会', 6: '教育',
                       7: '财经', 8: '家居', 9: '游戏', 10: '房产', 11: '时尚', 12: '彩票', 13: '星座'}
         self.label_counter = Counter(data['label'])
-        
-        for label in range(len(self.label_counter)):
-            count = self.label_counter[label]
+
+        for label in label2name.keys():
+            count = self.label_counter.get(label, 0)
             self._id2label.append(label)
             self.target_names.append(label2name[label])
-            
+
     def load_pretrained_embs(self, embfile):
         with open(embfile, encoding='utf-8') as f:
             lines = f.readlines()
             items = lines[0].split()
             word_count, embedding_dim = int(items[0]), int(items[1])
-            
+
         index = len(self._id2extword)
         embeddings = np.zeros((word_count + index, embedding_dim))
         for line in lines[1:]:
@@ -104,41 +201,41 @@ class Vocab():
             embeddings[self.unk] += vector
             embeddings[index] = vector
             index += 1
-            
+
         embeddings[self.unk] = embeddings[self.unk] / word_count
         embeddings = embeddings / np.std(embeddings)
-        
+
         reverse = lambda x: dict(zip(x, range(len(x))))
         self._extword2id = reverse(self._id2extword)
-        
+
         assert len(set(self._id2extword)) == len(self._id2extword)
-        
+
         return embeddings
-    
+
     def word2id(self, xs):
-        if isinstance(xs, list): 
+        if isinstance(xs, list):
             return [self._word2id.get(x, self.unk) for x in xs]
         return self._word2id.get(xs, self.unk)
-    
+
     def extword2id(self, xs):
         if isinstance(xs, list):
             return [self._extword2id.get(x, self.unk) for x in xs]
         return self._extword2id.get(xs, self.unk)
-    
+
     def label2id(self, xs):
         if isinstance(xs, list):
             return [self._label2id.get(x, self.unk) for x in xs]
         return self._label2id.get(xs, self.unk)
-    
+
     def word_size(self):
         return len(self._id2word)
-    
+
     def extword_size(self):
         return len(self._id2extword)
-    
+
     def label_size(self):
         return len(self._id2label)
-    
+
 vocab = Vocab(train_df)
 
 #%%
@@ -253,14 +350,14 @@ class WordLSTMEncoder(nn.Module):
     def __init__(self, vocab):
         super(WordLSTMEncoder, self).__init__()
         self.dropout = nn.Dropout(dropout)
-        self.word_dims = num_features
+        self.word_dims = int(num_features)
 
-        self.word_embed = nn.Embedding(vocab.word_size(), self.word_dims, padding_idx=0)
+        self.word_embed = nn.Embedding(int(vocab.word_size()), self.word_dims, padding_idx=0)
 
         extword_embed = vocab.load_pretrained_embs(word2vec_path)
         extword_size, word_dims = extword_embed.shape
 
-        self.extword_embed = nn.Embedding(extword_size, word_dims, padding_idx=0)
+        self.extword_embed = nn.Embedding(int(extword_size), int(word_dims), padding_idx=0)
         self.extword_embed.weight.data.copy_(torch.from_numpy(extword_embed))
         self.extword_embed.weight.requires_grad = False
 
@@ -382,8 +479,7 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.sent_rep_size = word_hidden_size * 2
         self.doc_rep_size = sent_hidden_size * 2
-        self.all_parameters = {}
-
+        
         parameters = []
         self.word_encoder = WordLSTMEncoder(vocab)
         self.word_attention = Attention(self.sent_rep_size)
@@ -394,17 +490,16 @@ class Model(nn.Module):
         self.sent_attention = Attention(self.doc_rep_size)
         parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_encoder.parameters())))
         parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_attention.parameters())))
-        self.out = nn.Linear(self.doc_rep_size, vocab.label_size(), bias=True)
+        self.out = nn.Linear(self.doc_rep_size, int(vocab.label_size()), bias=True)
         parameters.extend(list(filter(lambda p: p.requires_grad, self.out.parameters())))
 
-        if len(parameters) > 0:
-            self.all_parameters['basic_parameters'] = parameters
-
-
-        para_num = sum([np.prod(list(p.size())) for p in self.parameters()])
-        
         self.to(device)
 
+        if len(parameters) > 0:
+            self.trainable_params = parameters
+
+        para_num = sum([np.prod(list(p.size())) for p in self.parameters()])
+    
     def forward(self, batch_inputs):
 
 

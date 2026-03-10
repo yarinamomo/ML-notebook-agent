@@ -242,16 +242,23 @@ test_dataset = get_test_dataset(ordered=True)
 # plt.show()
 
 # === AFTER (edited) ===
-train_agg = np.asarray([[label, (y_train == index).sum()] for index, label in enumerate(CLASSES)])
-valid_agg = np.asarray([[label, (y_valid == index).sum()] for index, label in enumerate(CLASSES)])
+train_agg = pd.DataFrame({
+    'label': [label for index, label in enumerate(CLASSES)],
+    'count': [int((y_train == index).sum()) for index, label in enumerate(CLASSES)]
+})
+
+valid_agg = pd.DataFrame({
+    'label': [label for index, label in enumerate(CLASSES)],
+    'count': [int((y_valid == index).sum()) for index, label in enumerate(CLASSES)]
+})
 
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(24, 64))
 
-ax1 = sns.barplot(x=train_agg[...,1].astype(np.float64), y=train_agg[...,0], order=CLASSES, ax=ax1)
+ax1 = sns.barplot(x='count', y='label', data=train_agg, order=CLASSES, ax=ax1)
 ax1.set_title('Train', fontsize=30)
 ax1.tick_params(labelsize=16)
 
-ax2 = sns.barplot(x=valid_agg[...,1].astype(np.float64), y=valid_agg[...,0], order=CLASSES, ax=ax2)
+ax2 = sns.barplot(x='count', y='label', data=valid_agg, order=CLASSES, ax=ax2)
 ax2.set_title('Validation', fontsize=30)
 ax2.tick_params(labelsize=16)
 

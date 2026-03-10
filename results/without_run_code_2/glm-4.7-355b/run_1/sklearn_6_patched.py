@@ -106,44 +106,64 @@ test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis =
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# for column in test_ds:
-#     null_count = test_ds[column].isnull().sum()
-#     if null_count > 1:
-#         print(f"Dropping column {column} with {null_count} missing values.")
-#         test_ds.drop(column, axis = 1, inplace = True)
-
-# === AFTER (edited) ===
-import numpy as np
-
-# Fill null values for columns with low null counts (≤100) instead of dropping
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 for column in test_ds:
     null_count = test_ds[column].isnull().sum()
-    if null_count > 100:
+    if null_count > 1:
         print(f"Dropping column {column} with {null_count} missing values.")
         test_ds.drop(column, axis = 1, inplace = True)
-    elif null_count > 0:
-        # Fill null values based on column type
-        if test_ds[column].dtype in ['int64', 'float64']:
-            test_ds[column].fillna(test_ds[column].median(), inplace=True)
-        else:
-            test_ds[column].fillna(test_ds[column].mode()[0], inplace=True)
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# === BEFORE (original) ===
+# le = LabelEncoder()
+# string_columns = test_ds.select_dtypes(include = ['object']).columns
+# for column in string_columns:
+#     test_ds[column] = le.fit_transform(test_ds[column])
+
+# === AFTER (edited) ===
 le = LabelEncoder()
 string_columns = test_ds.select_dtypes(include = ['object']).columns
 for column in string_columns:
     test_ds[column] = le.fit_transform(test_ds[column])
 
+# Restore columns that were dropped from test_ds but exist in X_train
+# These columns had <=1 missing values in train_ds but >1 in test_ds
+missing_cols = ['MSZoning', 'Utilities', 'BsmtFullBath', 'BsmtHalfBath', 'Functional']
+for col in missing_cols:
+    if col in X_train.columns and col not in test_ds.columns:
+        # Add the column with imputed value from training data
+        if train_ds[col].dtype == 'object':
+            # For categorical columns, use the mode
+            train_ds[col] = le.fit_transform(train_ds[col])
+            imputed_val = train_ds[col].mode()[0]
+        else:
+            # For numeric columns, use the mean
+            imputed_val = train_ds[col].mean()
+        test_ds[col] = imputed_val
+
+# Ensure test_ds has the same columns as training data
+test_ds = test_ds[X_train.columns]
+
+# Fill any remaining NaN values in test_ds
+for column in test_ds.columns:
+    if test_ds[column].isnull().any():
+        if test_ds[column].dtype in ['int64', 'float64']:
+            # Fill numeric columns with median
+            test_ds[column].fillna(train_ds[column].median(), inplace=True)
+        else:
+            # Fill categorical columns with mode
+            if not train_ds[column].empty:
+                mode_val = train_ds[column].mode()[0]
+                test_ds[column].fillna(mode_val, inplace=True)
+
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 predictions = FReg.predict(test_ds)
 submissions_df = pd.DataFrame({
     "ID" : test_ds_ids, # test_data['ID'], # fix for crash isolation purpose

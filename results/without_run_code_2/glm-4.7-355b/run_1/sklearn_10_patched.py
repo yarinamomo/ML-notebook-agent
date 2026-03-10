@@ -151,19 +151,19 @@ test_preds = None
 kf_rmse = []
 for fold, (train_idx, valid_idx) in enumerate(KFold(n_splits=n_splits, shuffle=True).split(X_train,y_train)):
 
-    X_fold_train, y_fold_train = X_train.iloc[train_idx], y_train.iloc[train_idx]
-    X_fold_valid, y_fold_valid = X_train.iloc[valid_idx], y_train.iloc[valid_idx]
+    X_train_fold, y_train_fold = X_train.iloc[train_idx], y_train.iloc[train_idx]
+    X_valid, y_valid = X_train.iloc[valid_idx], y_train.iloc[valid_idx]
 
 
     model = XGBRegressor(**params)
-    model.fit(X_fold_train, y_fold_train,
-            eval_set=[(X_fold_valid, y_fold_valid)],
+    model.fit(X_train_fold, y_train_fold,
+            eval_set=[(X_valid, y_valid)],
             eval_metric='rmse', verbose=False)
 
 
-    valid_pred = model.predict(X_fold_valid)
+    valid_pred = model.predict(X_valid)
 
-    rmse = np.sqrt(mean_squared_error(y_fold_valid, valid_pred))
+    rmse = np.sqrt(mean_squared_error(y_valid, valid_pred))
     print(f'Fold {fold+1}/{n_splits} RMSE: {rmse:.4f}')
     kf_rmse.append(rmse)
 

@@ -13,32 +13,25 @@ df = pd.read_csv("data/SalaryData_Test(1).csv")
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
-x = df.workclass.values.reshape(-1,1)
-y = df.Salary.values.reshape(-1,1)
+# === BEFORE (original) ===
+# x = df.workclass.values.reshape(-1,1)
+# y = df.Salary.values.reshape(-1,1)
+
+# === AFTER (edited) ===
+from sklearn.preprocessing import LabelEncoder
+
+le_x = LabelEncoder()
+le_y = LabelEncoder()
+x = le_x.fit_transform(df.workclass.values).reshape(-1,1)
+y = le_y.fit_transform(df.Salary.values).reshape(-1,1)
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# from sklearn.linear_model import LinearRegression
-# 
-# linear_reg = LinearRegression() 
-# linear_reg.fit(x,y)
-
-# === AFTER (edited) ===
 from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import LabelEncoder
 
-# Encode categorical features to numeric values
-le_workclass = LabelEncoder()
-le_salary = LabelEncoder()
-
-# Fit and transform the data and reshape to 2D
-x_encoded = le_workclass.fit_transform(df.workclass.values).reshape(-1, 1)
-y_encoded = le_salary.fit_transform(df.Salary.values).reshape(-1, 1)
-
-linear_reg = LinearRegression()
-linear_reg.fit(x_encoded, y_encoded)
+linear_reg = LinearRegression() 
+linear_reg.fit(x,y)

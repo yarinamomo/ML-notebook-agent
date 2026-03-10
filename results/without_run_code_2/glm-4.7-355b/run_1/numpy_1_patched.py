@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np 
 import pandas as pd 
 import torch
@@ -14,7 +14,7 @@ import os
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 batch_size = 32
 img_size = 64
@@ -26,7 +26,7 @@ z_dim = 100
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 transformer = transforms.Compose([
     transforms.Resize(64),
     transforms.ToTensor(),
@@ -36,21 +36,21 @@ transformer = transforms.Compose([
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 dataset = ImageFolder(root = "data_small/celeba_hq_256", 
                       transform = transformer)
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 train_dataloader = DataLoader(dataset, batch_size = batch_size, shuffle = True)
 train_dataloader
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 def initialize_weights(model):
     # Initializes weights according to the DCGAN paper
     for m in model.modules():
@@ -60,7 +60,7 @@ def initialize_weights(model):
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 class Generator(nn.Module):
     def __init__(self, z_dim, num_channels):
         super(Generator,self).__init__()
@@ -127,7 +127,7 @@ disc = Dis(3).to(device)
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 from torch.utils.tensorboard import SummaryWriter
 import torch.optim as optim
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -198,7 +198,7 @@ for epoch in range(NUM_EPOCHS):
 #%%
 # --- [CELL 8]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 # === BEFORE (original) ===
 # import matplotlib.pyplot as plt 
 # def visual():
@@ -222,9 +222,9 @@ for epoch in range(NUM_EPOCHS):
 # === AFTER (edited) ===
 import matplotlib.pyplot as plt
 def visual():
-    n=6
+    n=4
     k=0
-    z = torch.randn((36, 100, 1, 1)).to(device)
+    z = torch.randn((16, 100, 1, 1)).to(device)
     out= gen(z)
     plt.figure(figsize=(16,16))
     out = out.cpu()

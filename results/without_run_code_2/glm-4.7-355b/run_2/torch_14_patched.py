@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # === BEFORE (original) ===
 # import torch
 # import torchvision
@@ -64,56 +64,16 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
-# VOC class names
-voc_classes = [
-    '__background__', 'aeroplane', 'bicycle', 'bird', 'boat',
-    'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable',
-    'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep',
-    'sofa', 'train', 'tvmonitor'
-]
-
-def collate_fn(batch):
-    return tuple(zip(*batch))
-
-def voc_to_faster_rcnn_target(voc_annotation):
-    """Convert VOC annotation format to Faster R-CNN target format"""
-    target = {}
-    annotation = voc_annotation['annotation']
-    
-    boxes = []
-    labels = []
-    
-    for obj in annotation['object']:
-        class_name = obj['name']
-        if class_name in voc_classes:
-            class_idx = voc_classes.index(class_name)
-            labels.append(class_idx)
-            
-            bndbox = obj['bndbox']
-            xmin = float(bndbox['xmin'])
-            ymin = float(bndbox['ymin'])
-            xmax = float(bndbox['xmax'])
-            ymax = float(bndbox['ymax'])
-            boxes.append([xmin, ymin, xmax, ymax])
-    
-    if len(boxes) == 0:
-        return None
-    
-    target['boxes'] = torch.tensor(boxes, dtype=torch.float32)
-    target['labels'] = torch.tensor(labels, dtype=torch.int64)
-    
-    return target
-
 
 trainset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='train', download=False, transform=transform)
 testset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='val', download=False, transform=transform)
 
 
-trainloader = DataLoader(trainset, batch_size=1, shuffle=True, num_workers=0, collate_fn=collate_fn)
-testloader = DataLoader(testset, batch_size=1, shuffle=False, num_workers=0, collate_fn=collate_fn)
+trainloader = DataLoader(trainset, batch_size=1, shuffle=True, num_workers=0)
+testloader = DataLoader(testset, batch_size=1, shuffle=False, num_workers=0)
 
 
-model = fasterrcnn_resnet50_fpn(pretrained=True)
+model = fasterrcnn_resnet50_fpn(weights='DEFAULT')
 
 
 num_classes = 21
@@ -124,38 +84,62 @@ model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCN
 optimizer = torch.optim.SGD(model.parameters(), lr=0.005, momentum=0.9, weight_decay=0.0005)
 
 
-# Train for just a few iterations to verify the code works
-num_iterations = 10
-iteration = 0
+# VOC class names
+voc_classes = [
+    'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 
+    'bus', 'car', 'cat', 'chair', 'cow', 
+    'diningtable', 'dog', 'horse', 'motorbike', 'person', 
+    'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'
+]
+
+model.train()
+num_epochs = 1
+max_batches = 10  # Limit to 10 batches for demonstration
 for epoch in range(num_epochs):
-    for data in trainloader:
-        images, voc_annotations = data
-        inputs = list(images)
+    for i, data in enumerate(trainloader, 0):
+        if i >= max_batches:
+            break
+            
+        inputs, labels = data
+        # Unwrap since DataLoader wraps everything in a list
+        inputs = inputs[0]
+        annotation = labels['annotation']
         
-        # Convert VOC annotations to Faster R-CNN format
-        targets = []
-        for voc_annotation in voc_annotations:
-            target = voc_to_faster_rcnn_target(voc_annotation)
-            if target is not None:
-                targets.append(target)
+        # Extract boxes and labels from VOC format
+        objects = annotation['object']
+        if isinstance(objects, dict):
+            objects = [objects]
         
-        if len(targets) == 0:
+        boxes = []
+        class_labels = []
+        for obj in objects:
+            bbox = obj['bndbox']
+            # bbox values are already in format ['value']
+            xmin = float(bbox['xmin'][0]) if isinstance(bbox['xmin'], list) else float(bbox['xmin'])
+            ymin = float(bbox['ymin'][0]) if isinstance(bbox['ymin'], list) else float(bbox['ymin'])
+            xmax = float(bbox['xmax'][0]) if isinstance(bbox['xmax'], list) else float(bbox['xmax'])
+            ymax = float(bbox['ymax'][0]) if isinstance(bbox['ymax'], list) else float(bbox['ymax'])
+            boxes.append([xmin, ymin, xmax, ymax])
+            
+            # Get class label from name
+            name = obj['name'][0] if isinstance(obj['name'], list) else obj['name']
+            class_idx = voc_classes.index(name) + 1 if name in voc_classes else 0
+            class_labels.append(class_idx)
+        
+        if len(boxes) == 0:
+            # Skip images with no objects
             continue
             
+        target = {}
+        target['boxes'] = torch.tensor(boxes, dtype=torch.float32)
+        target['labels'] = torch.tensor(class_labels, dtype=torch.int64)
+        
         optimizer.zero_grad()
-        outputs = model(inputs, targets)
-        loss = sum(loss for loss in outputs.values())
-        loss.backward()
+        loss_dict = model([inputs], [target])
+        losses = sum(loss for loss in loss_dict.values())
+        losses.backward()
         optimizer.step()
 
-        iteration += 1
-        if iteration % 5 == 0:
-            print('Iteration %d loss: %.3f' % (iteration, loss.item()))
-        
-        if iteration >= num_iterations:
-            break
-    
-    if iteration >= num_iterations:
-        break
+        print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, losses.item()))
 
-print('Finished Training - verification passed')
+print('Finished Training')

@@ -89,16 +89,10 @@ fe(test2)
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-# === BEFORE (original) ===
-# features1 = train2[train2.quality==3].columns.to_list()[0:11] 
-# features2 = train2[train2.quality==3].columns.to_list()[12:15]
-# features = features1 + features2
-
-# === AFTER (edited) ===
-features1 = train2[train2.quality==3].columns.tolist()[0:11]
-features2 = train2[train2.quality==3].columns.tolist()[12:15]
+features1 = train2[train2.quality==3].columns.to_list()[0:11] 
+features2 = train2[train2.quality==3].columns.to_list()[12:15]
 features = features1 + features2
 
 #%%
@@ -110,13 +104,9 @@ test2 = test2.drop(columns=['residual sugar', 'chlorides', 'free sulfur dioxide'
 
 #%%
 # --- [CELL 11]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
-# === BEFORE (original) ===
-# features = test2.columns.to_list()
-
-# === AFTER (edited) ===
-features = test2.columns.tolist()
+features = test2.columns.to_list()
 
 #%%
 # --- [CELL 12]: ---
@@ -149,23 +139,42 @@ df_TSNE_te = df_TSNE_te.set_index('Id')
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# === BEFORE (original) ===
+# df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
+# df_TSNE = pd.concat([df_tmp,train[conf.target]], axis=1)
+# 
+# df_TSNE = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
+# 
+# groups = df_TSNE.groupby(conf.target)
+# 
+# #https://stackoverflow.com/questions/21654635/scatter-plots-in-pandas-pyplot-how-to-plot-by-category
+# fig, ax = plt.subplots(figsize=(12, 12))
+# ax.margins(0.05) # Optional, just adds 5% padding to the autoscaling
+# for name, group in groups:
+#     ax.plot(group.tsne1, group.tsne2, marker='o', linestyle='', ms=12, label=name)
+# ax.legend()
+# #plt.xlim(-75, -80)
+# #plt.ylim(-5, 5)
+# 
+# plt.show()
+
+# === AFTER (edited) ===
 df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
-df_TSNE = pd.concat([df_tmp,train[conf.target]], axis=1)
 
-df_TSNE = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
+# Create df_TSNE with only tsne columns
+df_TSNE = df_tmp.copy()
 
-groups = df_TSNE.groupby(conf.target)
+groups = df_tmp.groupby(train[conf.target])
 
-#https://stackoverflow.com/questions/21654635/scatter-plots-in-pandas-pyplot-how-to-plot-by-category
 fig, ax = plt.subplots(figsize=(12, 12))
-ax.margins(0.05) # Optional, just adds 5% padding to the autoscaling
+ax.margins(0.05)
 for name, group in groups:
-    ax.plot(group.tsne1, group.tsne2, marker='o', linestyle='', ms=12, label=name)
+    ax.plot(group.iloc[:, 0], group.iloc[:, 1], marker='o', linestyle='', ms=12, label=name)
 ax.legend()
-#plt.xlim(-75, -80)
-#plt.ylim(-5, 5)
+
+
 
 plt.show()
 
@@ -179,11 +188,9 @@ plt.show()
 # test3 = pd.concat([test2, df_TSNE_te], axis=1)
 
 # === AFTER (edited) ===
-df_tsne_te = df_TSNE_te[['tsne1', 'tsne2']]
 df_tmp = train2.drop(columns=['quality'])
-df_TSNE_full = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
-train3 = pd.concat([df_tmp.reset_index(drop=True), df_TSNE_full.reset_index(drop=True), train[conf.target].reset_index(drop=True)], axis=1)
-test3 = pd.concat([test2, df_tsne_te], axis=1)
+train3 = pd.concat([df_tmp, df_TSNE, train2['quality']], axis=1)
+test3 = pd.concat([test2, df_TSNE_te], axis=1)
 
 #%%
 # --- [CELL 17]: ---
@@ -241,6 +248,8 @@ X = train3.drop([conf.target], axis=1)
 #     return np.mean(scores)
 
 # === AFTER (edited) ===
+from lightgbm import early_stopping, log_evaluation
+
 scores =[]
 
 def find_out_params_model(trial):
@@ -256,7 +265,8 @@ def find_out_params_model(trial):
         y_train , y_valid = y.iloc[train_idx] , y.iloc[valid_idx]
         my_model.fit(
             X_train, y_train,
-            eval_set= [(X_valid,y_valid)]
+            eval_set= [(X_valid,y_valid)],
+            callbacks=[early_stopping(stopping_rounds=50), log_evaluation(period=-1)]
         )
 
         preds_valid = my_model.predict(X_valid)
@@ -267,6 +277,6 @@ def find_out_params_model(trial):
 #%%
 # --- [CELL 20]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 21}
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 22}
 study = optuna.create_study(direction="maximize")
 study.optimize(find_out_params_model, n_trials=2)

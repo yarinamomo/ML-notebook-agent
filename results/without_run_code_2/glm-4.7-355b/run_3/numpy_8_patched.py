@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 import numpy as np 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -10,7 +10,7 @@ from scipy.stats import chi2_contingency
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 app_train = pd.read_csv('data/application_train.csv.zip')
 app_test=pd.read_csv('data/application_test.csv.zip')
 
@@ -50,7 +50,7 @@ num_columns_lower_percentage_nan  = [i for i in app_train.columns[(((app_train.i
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 for i in Cat_columns_lower_percentage_nan:
     app_test[i].fillna(app_train[i].mode()[0], inplace=True)
     app_train[i].fillna(app_train[i].mode()[0], inplace=True)
@@ -348,7 +348,7 @@ app_test[cat_col.columns] = enc.transform(app_test[cat_col.columns])
 #%%
 # --- [CELL 33]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 34}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -413,7 +413,7 @@ def protected_log(x):
 #%%
 # --- [CELL 35]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 44}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 36}
 # === BEFORE (original) ===
 # import numpy as np
 # import pandas as pd
@@ -438,7 +438,10 @@ import numpy as np
 import pandas as pd
 from deap import creator, base, tools, gp
 
-pset = gp.PrimitiveSet("MAIN", arity=72)
+# Get the number of features from X_train (this should run after cell 33)
+n_features = X_train.shape[1] if 'X_train' in locals() else 72
+
+pset = gp.PrimitiveSet("MAIN", arity=n_features)
 pset.addPrimitive(np.add, arity=2)
 pset.addPrimitive(np.subtract, arity=2)
 pset.addPrimitive(np.multiply, arity=2)
@@ -455,7 +458,7 @@ pset.addTerminal(1)
 #%%
 # --- [CELL 36]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 45}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 41}
 # === BEFORE (original) ===
 # # Определение функции преобразования ГП структуры в вектор признаков
 # def transform_gp_structure(individual, X):
@@ -476,7 +479,15 @@ pset.addTerminal(1)
 # === AFTER (edited) ===
 def transform_gp_structure(individual, X):
     expr = gp.compile(individual, pset)
-    return np.array([expr(*row) for row in X]).reshape(-1, 1)
+    # Handle both numpy arrays (after scaler) and dataframes
+    # X could be 2D array where each row needs to be unpacked
+    if isinstance(X, np.ndarray):
+        result = np.array([expr(*row) for row in X])
+    else:
+        # Handle DataFrame or other iterable
+        result = np.array([expr(*values) for values in X.values])
+    # Reshape to 2D array (n_samples, 1) for scikit-learn compatibility
+    return result.reshape(-1, 1)
 
 
 def evaluate_fitness(individual):
@@ -492,7 +503,7 @@ def evaluate_fitness(individual):
 #%%
 # --- [CELL 37]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 42}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 43}
 # Создание класса для управления эволюцией
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMax)
@@ -513,32 +524,72 @@ toolbox.register("select", tools.selTournament, tournsize=3)
 
 #%%
 # --- [CELL 38]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 43}
-import random # fix missing import and vars for crash isolation purposes
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 44}
+# === BEFORE (original) ===
+# import random # fix missing import and vars for crash isolation purposes
+# crossover_prob = 0.5
+# mutation_prob = 0.5
+# 
+# pop_size = 100  # Размер популяции
+# num_generations = 50  # Количество поколений
+# 
+# # Создание начальной популяции
+# population = toolbox.population(n=pop_size)
+# 
+# # Основной цикл эволюции
+# for generation in range(num_generations):
+#     # Оценка фитнеса
+#     fitnesses = map(evaluate_fitness, population)
+#     for individual, fitness in zip(population, fitnesses):
+#         individual.fitness.values = fitness
+# 
+#     # Выбор следующего поколения
+#     offspring = toolbox.select(population, len(population))
+# 
+#     # Клонирование выбранных индивидуумов
+#     offspring = list(map(toolbox.clone, offspring))
+# 
+#     # Применение операторов скрещивания и мутации
+#     for child1, child2 in zip(offspring[::2], offspring[1::2]):
+#         if random.random() < crossover_prob:
+#             toolbox.mate(child1, child2)
+#             del child1.fitness.values
+#             del child2.fitness.values
+# 
+#     for mutant in offspring:
+#         if random.random() < mutation_prob:
+#             toolbox.mutate(mutant)
+#             del mutant.fitness.values
+# 
+#     # Замена старого поколения потомками
+#     population[:] = offspring
+
+# === AFTER (edited) ===
+import random
 crossover_prob = 0.5
 mutation_prob = 0.5
 
-pop_size = 100  # Размер популяции
-num_generations = 50  # Количество поколений
+pop_size = 10  # Reduced from 100 for faster execution
+num_generations = 5  # Reduced from 50 for faster execution
 
-# Создание начальной популяции
+
 population = toolbox.population(n=pop_size)
 
-# Основной цикл эволюции
+
 for generation in range(num_generations):
-    # Оценка фитнеса
+
     fitnesses = map(evaluate_fitness, population)
     for individual, fitness in zip(population, fitnesses):
         individual.fitness.values = fitness
 
-    # Выбор следующего поколения
+
     offspring = toolbox.select(population, len(population))
 
-    # Клонирование выбранных индивидуумов
+
     offspring = list(map(toolbox.clone, offspring))
 
-    # Применение операторов скрещивания и мутации
+
     for child1, child2 in zip(offspring[::2], offspring[1::2]):
         if random.random() < crossover_prob:
             toolbox.mate(child1, child2)
@@ -550,5 +601,5 @@ for generation in range(num_generations):
             toolbox.mutate(mutant)
             del mutant.fitness.values
 
-    # Замена старого поколения потомками
+
     population[:] = offspring

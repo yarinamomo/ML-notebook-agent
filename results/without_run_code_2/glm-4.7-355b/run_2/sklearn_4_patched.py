@@ -316,10 +316,10 @@ best_decision_tree_model = RandomForestClassifier(random_state = 42,n_estimators
                                           max_features = 'auto', max_depth = None,
                                           bootstrap =True
                                          )
-regression_model = AdaBoostClassifier()
+classification_model = best_decision_tree_model
 ct = ml_support_obj.get_column_transformer(False, "", True)
 X_train, X_test , y_train, y_test = ml_support_obj.get_train_test_data()
-finalized_pipeline = ml_support_obj.get_final_pipeline(regression_model,ct,feature_engieered)
+finalized_pipeline = ml_support_obj.get_final_pipeline(classification_model,ct,feature_engieered)
 
 #%%
 # --- [CELL 8]: ---

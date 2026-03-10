@@ -65,43 +65,12 @@ def encode_sentence(s):
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# def bert_encode(hypotheses, premises, tokenizer):
-#     
-#   num_examples = len(hypotheses)
-#   
-#   sentence1 = tf.ragged.constant([
-#       encode_sentence(s)
-#       for s in np.array(hypotheses)])
-#   sentence2 = tf.ragged.constant([
-#       encode_sentence(s)
-#        for s in np.array(premises)])
-# 
-#   cls = [tokenizer.convert_tokens_to_ids(['[CLS]'])]*sentence1.shape[0]
-#   input_word_ids = tf.concat([cls, sentence1, sentence2], axis=-1)
-# 
-#   input_mask = tf.ones_like(input_word_ids).to_tensor()
-# 
-#   type_cls = tf.zeros_like(cls)
-#   type_s1 = tf.zeros_like(sentence1)
-#   type_s2 = tf.ones_like(sentence2)
-#   input_type_ids = tf.concat(
-#       [type_cls, type_s1, type_s2], axis=-1).to_tensor()
-# 
-#   inputs = {
-#       'input_word_ids': input_word_ids.to_tensor(),
-#       'input_mask': input_mask,
-#       'input_type_ids': input_type_ids}
-# 
-#   return inputs
-
-# === AFTER (edited) ===
-def bert_encode(hypotheses, premises, tokenizer, max_len=50):
-
+def bert_encode(hypotheses, premises, tokenizer):
+    
   num_examples = len(hypotheses)
-
+  
   sentence1 = tf.ragged.constant([
       encode_sentence(s)
       for s in np.array(hypotheses)])
@@ -112,24 +81,18 @@ def bert_encode(hypotheses, premises, tokenizer, max_len=50):
   cls = [tokenizer.convert_tokens_to_ids(['[CLS]'])]*sentence1.shape[0]
   input_word_ids = tf.concat([cls, sentence1, sentence2], axis=-1)
 
-  # Truncate to max_len if needed
-  input_word_ids = input_word_ids[:, :max_len]
-
   input_mask = tf.ones_like(input_word_ids).to_tensor()
 
   type_cls = tf.zeros_like(cls)
   type_s1 = tf.zeros_like(sentence1)
   type_s2 = tf.ones_like(sentence2)
   input_type_ids = tf.concat(
-      [type_cls, type_s1, type_s2], axis=-1)
-  
-  # Truncate to max_len if needed
-  input_type_ids = input_type_ids[:, :max_len]
+      [type_cls, type_s1, type_s2], axis=-1).to_tensor()
 
   inputs = {
       'input_word_ids': input_word_ids.to_tensor(),
       'input_mask': input_mask,
-      'input_type_ids': input_type_ids.to_tensor()}
+      'input_type_ids': input_type_ids}
 
   return inputs
 
@@ -141,9 +104,29 @@ train_input = bert_encode(train.premise.values, train.hypothesis.values, tokeniz
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-max_len = 50
+# === BEFORE (original) ===
+# max_len = 50
+# from transformers import BertTokenizer, TFBertModel
+# 
+# 
+# def build_model():
+#     bert_encoder = TFBertModel.from_pretrained(model_name)
+#     input_word_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_word_ids")
+#     input_mask = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_mask")
+#     input_type_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_type_ids")
+#     
+#     embedding = bert_encoder([input_word_ids, input_mask, input_type_ids])[0]
+#     output = tf.keras.layers.Dense(3, activation='softmax')(embedding[:,0,:])
+#     
+#     model = tf.keras.Model(inputs=[input_word_ids, input_mask, input_type_ids], outputs=output)
+#     model.compile(tf.keras.optimizers.Adam(lr=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+#     
+#     return model
+
+# === AFTER (edited) ===
+max_len = 172
 from transformers import BertTokenizer, TFBertModel
 
 
@@ -152,13 +135,13 @@ def build_model():
     input_word_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_word_ids")
     input_mask = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_mask")
     input_type_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_type_ids")
-    
+
     embedding = bert_encoder([input_word_ids, input_mask, input_type_ids])[0]
     output = tf.keras.layers.Dense(3, activation='softmax')(embedding[:,0,:])
-    
+
     model = tf.keras.Model(inputs=[input_word_ids, input_mask, input_type_ids], outputs=output)
     model.compile(tf.keras.optimizers.Adam(lr=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    
+
     return model
 
 #%%

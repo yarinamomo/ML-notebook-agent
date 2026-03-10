@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import tensorflow as tf
 import tensorflow_decision_forests as tfdf
 import pandas as pd
@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # Load a dataset into a Pandas Dataframe
 df = pd.read_csv('data/train.csv')
 print("El tamaño del dataset: {}".format(df.shape))
@@ -19,21 +19,21 @@ print("El tamaño del dataset: {}".format(df.shape))
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 df = df.drop(['PassengerId', 'Name'], axis=1)
 df.head(5)
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 df[['Age', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck','RoomService']] = df[['Age', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck','RoomService']].fillna(value=0)
 df.isnull().sum().sort_values(ascending=False)
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 from sklearn.preprocessing import LabelEncoder
 
 le = LabelEncoder()
@@ -50,7 +50,7 @@ print(df)
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # Convertir las columnas a enteros
 df["Age"] = df["Age"].astype(int)
 df["RoomService"] = df["RoomService"].astype(int)
@@ -64,7 +64,7 @@ df.dtypes
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # === BEFORE (original) ===
 # # Vemos la relación de cada variable con la variable Y
 # filas = 2

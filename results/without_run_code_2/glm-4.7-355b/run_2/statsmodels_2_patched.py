@@ -145,13 +145,10 @@ plt.show()
 # === AFTER (edited) ===
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
-# Limit lags to a reasonable number based on data size
-lags_to_plot = min(30, len(residuals)-1)
-
 plt.figure(figsize=(12, 6))
-plot_acf(residuals, lags=lags_to_plot, title='ACF of Residuals')
+plot_acf(residuals, lags=40, title='ACF of Residuals')
 plt.show()
 
 plt.figure(figsize=(12, 6))
-plot_pacf(residuals, lags=lags_to_plot, title='PACF of Residuals')
+plot_pacf(residuals, lags=40, title='PACF of Residuals')
 plt.show()

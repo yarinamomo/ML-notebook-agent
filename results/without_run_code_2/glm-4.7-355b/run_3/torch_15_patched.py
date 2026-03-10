@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 22}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
@@ -29,14 +29,14 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 23}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 jsdf = pd.read_json('data/train_annotations')
 jsdf.head()
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 24}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 Id = []
 
 import os
@@ -48,7 +48,7 @@ Id[:5]
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 25}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 train = pd.DataFrame()
 train = train.assign(filename = Id)
 train['image_id'] = train['filename'].str.replace('data/train/train/image_id_','')
@@ -59,7 +59,7 @@ train.head()
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 26}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 train_data = pd.merge(train,jsdf,on='image_id',how='outer')
 train_data = train_data[['filename','category_id']]
 train_data.columns = ['filename','label']
@@ -68,19 +68,19 @@ train_data.head()
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 27}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 train_data['filename'] = train_data['filename'].str.replace('data/train/train/','')
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 train_data['label'] = train_data['label'].replace({1:0,2:1})
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 transform = transforms.Compose([
     transforms.CenterCrop((512, 512)),
     transforms.ToTensor(),
@@ -90,7 +90,7 @@ transform = transforms.Compose([
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 data_path = 'data/train/train'
 images = []
 targets = []
@@ -106,35 +106,41 @@ for i,annotation in train_data.iterrows():
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# === BEFORE (original) ===
+# image_tensor = torch.stack(images)
+# target_tensor = torch.stack(targets)
+
+# === AFTER (edited) ===
 image_tensor = torch.stack(images)
 target_tensor = torch.stack(targets)
+target_tensor = target_tensor.unsqueeze(1).float()  # Reshape from [N] to [N, 1] and convert to float
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 dataset = torch.utils.data.TensorDataset(image_tensor, target_tensor)
 
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 from torch.utils.data import random_split
 train_dataset, test_dataset = random_split(dataset, [400, 100])
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 train_loader = DataLoader(train_dataset,batch_size=32,shuffle=True)
 test_loader = DataLoader(test_dataset,batch_size=32,shuffle=True)
 
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 class CNN(nn.Module):
     def __init__(self):
         super().__init__()
@@ -175,7 +181,7 @@ optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 def test_model(model):
     model.eval()
     correct = 0
@@ -198,37 +204,18 @@ test_model(model)
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 21}
-# === BEFORE (original) ===
-# n_epoch = 1
-# for epoch in range(n_epoch):
-#     model.train()  
-# 
-#     for batch_idx, (sekil, netice) in enumerate(train_loader):
-#         #sekil, netice = sekil.to('cuda'), netice.to('cuda')
-#         optimizer.zero_grad()
-# 
-#         outputs = model(sekil)
-#         loss = loss_fn(outputs, netice)
-# 
-#         loss.backward()
-#         optimizer.step()
-# 
-#         if (batch_idx + 1) % 4 == 0:
-#             print(f"Epoch [{epoch+1}/{n_epoch}], Step [{batch_idx+1}/{len(train_loader)}], Loss: {loss.item()}")
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
 n_epoch = 1
 for epoch in range(n_epoch):
-    model.train()
+    model.train()  
 
     for batch_idx, (sekil, netice) in enumerate(train_loader):
-
+        #sekil, netice = sekil.to('cuda'), netice.to('cuda')
         optimizer.zero_grad()
 
         outputs = model(sekil)
-        loss = loss_fn(outputs, netice.unsqueeze(1).float())
+        loss = loss_fn(outputs, netice)
 
         loss.backward()
         optimizer.step()

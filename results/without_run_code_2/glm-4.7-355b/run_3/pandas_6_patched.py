@@ -38,4 +38,3 @@ df
 # === AFTER (edited) ===
 df = df[df['Order ID'] != 'Order ID']
 df['Order ID'] = df['Order ID'].astype('int')
-df

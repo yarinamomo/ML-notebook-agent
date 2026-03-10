@@ -186,8 +186,8 @@ class Inception(nn.Module):
         branch3 = self.branch3(x)
         branch4 = self.branch4(x)
 
-        outputs = [branch1, branch2, branch3, branch4]
-        return torch.cat(outputs, 1)
+        outputs = torch.cat([branch1, branch2, branch3, branch4], 1)
+        return outputs
 
 #%%
 # --- [CELL 3]: ---
@@ -271,26 +271,9 @@ display(dog_image)
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
-# === BEFORE (original) ===
-# # Preprocess torch image
-# from torchvision import transforms
-# from PIL import Image
-# 
-# preprocess = transforms.Compose([
-#     transforms.Resize(256),
-#     transforms.CenterCrop(224),
-#     transforms.ToTensor(),
-#     transforms.Normalize(
-#     mean=[0.485, 0.456, 0.406],
-#     std=[0.229, 0.224, 0.225]
-# )])
-# torch_img = Image.open("dog.jpg")
-# torch_img = preprocess(dog_image)
-# torch_img = torch.unsqueeze(torch_img, 0)
-
-# === AFTER (edited) ===
+# Preprocess torch image
 from torchvision import transforms
 from PIL import Image
 

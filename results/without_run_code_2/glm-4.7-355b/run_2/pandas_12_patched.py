@@ -25,7 +25,7 @@ df.head()
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 def grab_col_names(dataframe, cat_th=10, car_th=20):
 
     cat_cols = [col for col in dataframe.columns if dataframe[col].dtypes == "O"]
@@ -51,7 +51,7 @@ def grab_col_names(dataframe, cat_th=10, car_th=20):
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 cat_cols, num_cols, num_but_cat = grab_col_names(df)
 
 #%%
@@ -147,7 +147,7 @@ clusters_kmeans
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 df["kmeans_cluster"] = clusters_kmeans
 df["kmeans_cluster"]= df["kmeans_cluster"] + 1
 df.head()
@@ -155,7 +155,7 @@ df.head()
 #%%
 # --- [CELL 15]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
 # === BEFORE (original) ===
 # df.groupby('kmeans_cluster').agg({1: ['count','mean', 'median', 'sum'],
 #                                     2: ['count','mean', 'median', 'sum'],

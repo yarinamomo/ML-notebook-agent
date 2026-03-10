@@ -37,4 +37,4 @@ df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
 # sns.violinplot(df, x='species')
 
 # === AFTER (edited) ===
-sns.violinplot(df, x='species', y='bill_length_mm')
+sns.countplot(df, x='species')

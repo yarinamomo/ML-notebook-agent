@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
@@ -19,7 +19,7 @@ from sklearn.metrics import accuracy_score
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 # load the data
 train_df = pd.read_csv('data/train_synthetic.csv')
 test_df = pd.read_csv('data/test_synthetic.csv')
@@ -28,13 +28,13 @@ greeks_df = pd.read_csv('data/greeks_synthetic.csv')
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 train_df = pd.merge(train_df, greeks_df, on="Id")
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 # Remove the first column
 train_df = train_df.drop("Id", axis=1)
 test_df = test_df.drop("Id", axis=1)
@@ -50,30 +50,32 @@ test_df = test_df.drop("Id", axis=1)
 # test_df = pd.get_dummies(test_df, columns=list(test_df))
 
 # === AFTER (edited) ===
-# Identify all columns (from train) and apply get_dummies to both
-# This ensures train and test have the same columns
-train_df = pd.get_dummies(train_df, columns=['EJ'])
-test_df = pd.get_dummies(test_df, columns=['EJ'])
+# Identify categorical columns (non-numeric columns)
+categorical_cols = train_df.select_dtypes(include=['object', 'category']).columns.tolist()
 
-# Ensure both datasets have the same columns by aligning them
-train_cols = set(train_df.columns)
-test_cols = set(test_df.columns)
-
-# Add missing columns to each dataframe with zeros
-for col in train_cols - test_cols:
-    test_df[col] = 0
+# One-hot encode only categorical columns
+if categorical_cols:
+    # Get dummies for both datasets with same columns
+    train_df = pd.get_dummies(train_df, columns=categorical_cols)
+    test_df = pd.get_dummies(test_df, columns=categorical_cols)
     
-for col in test_cols - train_cols:
-    train_df[col] = 0
-
-# Sort columns to ensure consistent ordering
-train_df = train_df.sort_index(axis=1)
-test_df = test_df.sort_index(axis=1)
+    # Align columns between train and test
+    # Get missing columns in test and add with 0s
+    for col in train_df.columns:
+        if col not in test_df.columns:
+            test_df[col] = 0
+    # Get missing columns in train and add with 0s
+    for col in test_df.columns:
+        if col not in train_df.columns:
+            train_df[col] = 0
+    
+    # Ensure same column order
+    test_df = test_df[train_df.columns]
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 # Data processing
 scaler = StandardScaler()
 train_df = scaler.fit_transform(train_df)

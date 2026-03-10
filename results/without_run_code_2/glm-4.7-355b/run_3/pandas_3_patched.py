@@ -30,7 +30,7 @@ test = pd.read_csv('data/test.csv.zip', index_col="PetID")
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # name_count = train["Name"].value_counts().rename("name_count")
 # RescuerID = LabelEncoder().fit(train["RescuerID"])
@@ -53,16 +53,12 @@ test = pd.read_csv('data/test.csv.zip', index_col="PetID")
 
 # === AFTER (edited) ===
 name_count = train["Name"].value_counts().rename("name_count")
-rescuer_id_le = LabelEncoder().fit(train["RescuerID"])
+# Create a mapping for RescuerIDs to handle unseen values
+rescuer_id_map = {rescuer_id: i for i, rescuer_id in enumerate(train["RescuerID"].unique())}
 
-def procData(data, name_count, rescuer_id_encoder):
-    # Create a mapping from RescuerID to encoded value
-    rescuer_mapping = dict(zip(rescuer_id_encoder.classes_, rescuer_id_encoder.transform(rescuer_id_encoder.classes_)))
-    
-    # Transform RescuerID using the mapping, unseen values will be NaN
-    data["RescuerID"] = data["RescuerID"].map(rescuer_mapping)
-    data["RescuerID"] = data["RescuerID"].fillna(-1)
+def procData(data, name_count, rescuer_id_map):
 
+    data["RescuerID"] = data["RescuerID"].map(rescuer_id_map).fillna(-1).astype(int)
 
     data["NameNull"] = data["Name"].isnull()
     data["NameLen"] = data["Name"].fillna("").str.len()
@@ -76,11 +72,11 @@ def procData(data, name_count, rescuer_id_encoder):
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # train = procData(train, name_count, RescuerID)
 # test = procData(test, name_count, RescuerID)
 
 # === AFTER (edited) ===
-train = procData(train, name_count, rescuer_id_le)
-test = procData(test, name_count, rescuer_id_le)
+train = procData(train, name_count, rescuer_id_map)
+test = procData(test, name_count, rescuer_id_map)

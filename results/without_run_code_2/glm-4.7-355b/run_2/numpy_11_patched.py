@@ -49,7 +49,7 @@ print(f"Will generate {GENERATE_SQUARE}px square images.")
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # training_binary_path = os.path.join(DATA_PATH,
 #         f'training_data_{GENERATE_SQUARE}_{GENERATE_SQUARE}.npy')
@@ -91,34 +91,22 @@ if not os.path.isfile(training_binary_path):
   start = time.time()
   print("Loading training images...")
 
+  training_data = []
   faces_path = 'data/apple_disease_classification/Train/Blotch_Apple'
-  filenames = os.listdir(faces_path)
-  num_images = len(filenames)
-  
-  print(f"Found {num_images} images")
-  
-  # Pre-allocate the array with the correct shape
-  training_data = np.zeros((num_images, GENERATE_SQUARE, GENERATE_SQUARE, 3), dtype=np.float32)
-  
-  for i, filename in enumerate(filenames):
-      if i % 20 == 0:
-          print(f"Processing image {i}/{num_images}")
-      path = os.path.join(faces_path, filename)
-      image = Image.open(path)
-      # Convert to RGB to ensure consistent 3 channels
-      if image.mode != 'RGB':
-          image = image.convert('RGB')
-      image = image.resize((GENERATE_SQUARE, GENERATE_SQUARE), Image.LANCZOS)
-      training_data[i] = np.asarray(image, dtype=np.float32)
-  
-  # Normalize to [-1, 1]
+  for filename in tqdm(os.listdir(faces_path)):
+      path = os.path.join(faces_path,filename)
+      image = Image.open(path).convert('RGB').resize((GENERATE_SQUARE,
+            GENERATE_SQUARE),Image.LANCZOS)
+      training_data.append(np.asarray(image))
+  training_data = np.reshape(training_data,(-1,GENERATE_SQUARE,
+            GENERATE_SQUARE,3))
+  training_data = training_data.astype(np.float32)
   training_data = training_data / 127.5 - 1.
 
-  print("Saving training image binary...")
-  np.save(training_binary_path, training_data)
 
-  elapsed = time.time() - start
-  print(f"Processed {num_images} images in {elapsed:.2f}s")
+  print("Saving training image binary...")
+
+  elapsed = time.time()-start
 
 else:
   print("Loading previous training pickle...")

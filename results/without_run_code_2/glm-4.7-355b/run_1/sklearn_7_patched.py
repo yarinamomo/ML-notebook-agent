@@ -42,27 +42,24 @@ else:
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
-from sklearn.preprocessing import LabelEncoder
 import pandas as pd
 
-# Create a copy of the dataframe to preserve the original
-df_encoded = df.copy()
+# Create a copy of the dataframe for preprocessing
+df_processed = df.copy()
 
-# Encode Gender column (binary)
-le_gender = LabelEncoder()
-df_encoded['Gender'] = le_gender.fit_transform(df_encoded['Gender'])
+# Identify categorical columns and encode them
+categorical_cols = df_processed.select_dtypes(include=['object']).columns
+df_processed = pd.get_dummies(df_processed, columns=categorical_cols, drop_first=True)
 
-# One-hot encode Profession column (multi-class)
-df_encoded = pd.get_dummies(df_encoded, columns=['Profession'], drop_first=True)
-
-# Prepare features and target
-X = df_encoded.drop(['Spending Score (1-100)'], axis=1)
-y = df_encoded['Spending Score (1-100)']
+X = df_processed.drop(['Spending Score (1-100)'], axis=1)
+y = df_processed['Spending Score (1-100)']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Train the model
+
+
 rf = RandomForestRegressor(n_estimators=100, random_state=42)
 rf.fit(X_train, y_train)
 
-# Make predictions
+
+
 y_pred = rf.predict(X_test)

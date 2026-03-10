@@ -85,15 +85,13 @@ test_generator = test_datagen.flow_from_directory(
 
 # === AFTER (edited) ===
 def prepare_model():
-    from tensorflow.keras.layers import Input
     model = Sequential()
-    model.add(Input(shape=(223, 223, 3)))
-    model.add(Conv2D(32, kernel_size=(3,3), activation='relu'))
+    model.add(Conv2D(32,kernel_size=(3,3),activation='relu',input_shape=(223, 223, 3)))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Flatten())
     model.add(Dense(16, activation='relu'))
     model.add(Dense(2, activation='softmax'))
-    model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=['accuracy'])
+    model.compile(loss="categorical_crossentropy",optimizer="adam",metrics=['accuracy'])
     return model
 model = prepare_model()
 model.fit(train_generator,

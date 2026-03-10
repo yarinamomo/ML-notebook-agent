@@ -533,7 +533,7 @@ class Network:
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
 dataset = load_cifar()
 
 # Access the data and labels
@@ -555,7 +555,7 @@ print("Test labels shape:", y_test.shape)
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # from keras.regularizers import l2
 # from keras.optimizers import SGD
@@ -803,7 +803,7 @@ def predict(model, image_idx):
     image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
     pred = np.argmax(model.predict(image))
 
-    plot_sample(dataset['test_images'][image_idx], classes[dataset['test_labels'][image_idx][0]], classes[pred])
+    plot_sample(dataset['test_images'][image_idx], classes[dataset['test_labels'][image_idx]], classes[pred])
 
 
 

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,7 +9,7 @@ import seaborn as sns
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 houseprice=pd.read_csv('data/data.csv')
 
 #%%
@@ -21,17 +21,18 @@ Y=houseprice['price']
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# from sklearn.model_selection import train_test_split
+# X_train,X_test,Y_train,Y_test=train_test_split(X.values,Y.values,test_size=0.2)
+
+# === AFTER (edited) ===
 from sklearn.model_selection import train_test_split
-X_train,X_test,Y_train,Y_test=train_test_split(X.values,Y.values,test_size=0.2)
+X_train,X_test,Y_train,Y_test=train_test_split(X,Y,test_size=0.2)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# train_houseprice=X_train.join(Y_train)
-
-# === AFTER (edited) ===
-train_houseprice=pd.DataFrame(X_train).join(pd.DataFrame(Y_train, columns=['price']))
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+train_houseprice=X_train.join(Y_train)

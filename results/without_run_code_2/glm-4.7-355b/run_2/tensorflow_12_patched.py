@@ -98,7 +98,7 @@ for i in range(df.shape[0]):
 
     path = InputPath+df.laterality[i]+'-'+df.view_position[i]+'/'+df.image_id[i]+'.png'
     if os.path.exists(path):
-        img = cv2.imread(path)
+        img = cv2.imread(path)  # Load in color mode (3 channels)
         img_size = cv2.resize(img, (100, 100), interpolation = cv2.INTER_LINEAR)
 
 
@@ -198,5 +198,5 @@ model.summary()
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 history = model.fit(train_images, train_labels, batch_size = 16, epochs=2, validation_data=(val_images, val_labels), verbose = 1)

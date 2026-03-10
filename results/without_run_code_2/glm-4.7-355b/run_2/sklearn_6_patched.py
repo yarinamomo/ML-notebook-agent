@@ -116,18 +116,34 @@ test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis =
 #         test_ds.drop(column, axis = 1, inplace = True)
 
 # === AFTER (edited) ===
-# Only drop columns that were also dropped from training data
-# These are the columns that had > 1 missing values in the training set
-columns_to_drop = ['LotFrontage', 'Alley', 'MasVnrType', 'MasVnrArea', 'BsmtQual', 
-                   'BsmtCond', 'BsmtExposure', 'BsmtFinType1', 'BsmtFinType2', 
-                   'FireplaceQu', 'GarageType', 'GarageFinish', 'GarageQual', 
-                   'GarageCond', 'PoolQC', 'Fence', 'MiscFeature']
-for column in columns_to_drop:
-    if column in test_ds.columns:
-        null_count = test_ds[column].isnull().sum()
-        if null_count > 1:
-            print(f"Dropping column {column} with {null_count} missing values.")
-            test_ds.drop(column, axis = 1, inplace = True)
+# First fill missing values
+for column in test_ds.columns:
+    null_count = test_ds[column].isnull().sum()
+    if null_count > 1:
+        print(f"Column {column} has {null_count} missing values in test.")
+        # Fill missing values - use median for numeric, mode for categorical
+        if test_ds[column].dtype == 'object':
+            # Fill with mode from this column in test (or 'None' if no mode)
+            mode_val = test_ds[column].mode()[0] if len(test_ds[column].mode()) > 0 else 'None'
+            test_ds[column].fillna(mode_val, inplace=True)
+            print(f"  -> Filled categorical column with mode: {mode_val}")
+        else:
+            # Fill with median
+            median_val = test_ds[column].median()
+            test_ds[column].fillna(median_val, inplace=True)
+            print(f"  -> Filled numeric column with median: {median_val}")
+
+# Now drop the same columns that were dropped from training data in cell 4
+# These columns had >1 nulls in training
+columns_dropped_in_train = [
+    'LotFrontage', 'Alley', 'MasVnrType', 'MasVnrArea', 'BsmtQual', 'BsmtCond',
+    'BsmtExposure', 'BsmtFinType1', 'BsmtFinType2', 'FireplaceQu', 'GarageType',
+    'GarageFinish', 'GarageQual', 'GarageCond', 'PoolQC', 'Fence', 'MiscFeature'
+]
+for col in columns_dropped_in_train:
+    if col in test_ds.columns:
+        test_ds.drop(col, axis=1, inplace=True)
+        print(f"Dropped column {col} from test (was dropped from train in cell 4).")
 
 #%%
 # --- [CELL 13]: ---
@@ -140,22 +156,31 @@ for column in columns_to_drop:
 #     test_ds[column] = le.fit_transform(test_ds[column])
 
 # === AFTER (edited) ===
-# Fill missing numeric columns with median
-numeric_columns = test_ds.select_dtypes(include = ['number']).columns
-for column in numeric_columns:
-    if test_ds[column].isnull().sum() > 0:
-        test_ds[column] = test_ds[column].fillna(test_ds[column].median())
-
-# Fill missing categorical columns with mode
+le = LabelEncoder()
 string_columns = test_ds.select_dtypes(include = ['object']).columns
 for column in string_columns:
-    if test_ds[column].isnull().sum() > 0:
-        test_ds[column] = test_ds[column].fillna(test_ds[column].mode()[0])
-
-# Label encode string columns
-le = LabelEncoder()
-for column in string_columns:
     test_ds[column] = le.fit_transform(test_ds[column])
+
+# Fill any remaining NaN values in test_ds
+print("Filling any remaining NaN values in test_ds...")
+for column in test_ds.columns:
+    if test_ds[column].isnull().any():
+        if test_ds[column].dtype in ['int64', 'float64']:
+            # Fill numeric columns with 0 or median
+            median_val = test_ds[column].median()
+            if pd.isna(median_val):
+                test_ds[column].fillna(0, inplace=True)
+            else:
+                test_ds[column].fillna(0, inplace=True)
+            print(f"  Filled {column} (numeric) with 0 or median")
+        else:
+            # Fill categorical with 0 (already encoded, so use 0 for encoded values)
+            test_ds[column].fillna(0, inplace=True)
+            print(f"  Filled {column} (categorical) with 0")
+
+# Verify no NaN remains
+remaining_nans = test_ds.isnull().sum().sum()
+print(f"\nTotal remaining NaN values: {remaining_nans}")
 
 #%%
 # --- [CELL 14]: ---

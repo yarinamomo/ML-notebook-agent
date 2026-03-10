@@ -36,7 +36,5 @@ df
 # #This Error is occuring due to some string values in Order ID Column
 
 # === AFTER (edited) ===
-df['Order ID'] = pd.to_numeric(df['Order ID'], errors='coerce')
-df = df.dropna(subset=['Order ID'])
+df = df[df['Order ID'] != 'Order ID']
 df['Order ID'] = df['Order ID'].astype('int')
-df

@@ -67,6 +67,8 @@ print('F1 score:', f1_score(y_valid, y_pred))
 # print('F1 score:', f1_score(y_valid, y_pred, average = "weighted"))
 
 # === AFTER (edited) ===
+from sklearn.metrics import precision_score, recall_score, f1_score
+
 log_reg2 = LogisticRegression(max_iter=1000, solver='saga', penalty='elasticnet', l1_ratio=0.5)
 log_reg2.fit(X_train, y_train)
 y_pred = log_reg2.predict(X_valid)

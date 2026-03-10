@@ -160,9 +160,9 @@ train_dataloader = DataLoader(dataset = train_data,batch_size=64,shuffle=True,dr
 test_dataloader = DataLoader(dataset = test_data,batch_size=64,shuffle=True,drop_last=False)
 
 
-class Network(nn.Module):
+class AlexNet(nn.Module):
     def __init__(self):
-        super(Network,self).__init__()
+        super(AlexNet,self).__init__()
         self.conv1 = Conv2d(3,96,11,stride = 4)
         self.relu1 = ReLU()
         self.maxpool1 = MaxPool2d(3,stride = 2)
@@ -201,7 +201,7 @@ class Network(nn.Module):
         return x
 
 
-module = Network()
+module = AlexNet()
 if torch.cuda.is_available():
     module = module.cuda()
 

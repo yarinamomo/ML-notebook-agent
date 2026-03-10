@@ -145,29 +145,32 @@ train_generator = train_datagen.flow_from_directory(
 )
 
 
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Flatten, Dense
+base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
 
-base_model = VGG16(weights='imagenet', include_top=False)
 
-model = Sequential([
-    base_model,
-    Flatten(),
-    Dense(256, activation='relu'),
-    Dense(7, activation='softmax')
-])
-
-for layer in base_model.layers[:-4]:
+for layer in base_model.layers:
     layer.trainable = False
 
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+x = Flatten()(base_model.output)
+x = Dense(4096, activation='relu')(x)
+x = Dropout(0.5)(x)
+x = Dense(4096, activation='relu')(x)
+x = Dropout(0.5)(x)
+predictions = Dense(7, activation='softmax')(x)
 
 
-model.fit(
+model_finetune = Model(inputs=base_model.input, outputs=predictions)
+
+
+model_finetune.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+
+model_finetune.fit(
     train_generator,
     steps_per_epoch=len(train_generator),
     epochs=10,
 )
 
 
-model.save('data/updated_vgg_face_weights.h5')
+model_finetune.save('data/updated_vgg_face_weights.h5')

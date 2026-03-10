@@ -99,14 +99,12 @@ def row2image(row):
     return image, emotion
 
 plt.figure(0, figsize=(16,10))
-plot_idx = 1
-for emotion_val in emotion_map.keys():
-    face = data[data['emotion'] == emotion_val].iloc[0]
-    
+for idx, emotion_id in enumerate(emotion_map.keys()):
+    face = data[data['emotion'] == emotion_id].iloc[0]
+
     img, label = row2image(face)
-    plt.subplot(2,4,plot_idx)
+    plt.subplot(2,4,idx+1)
     plt.imshow(img)
     plt.title(label)
-    plot_idx += 1
 
 plt.show()

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'not run'}
 import torch
 from torch import nn
 from tqdm.auto import tqdm
@@ -27,7 +27,7 @@ def show_tensor_images(image_tensor, num_images=25, size=(1, 28, 28)):
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 class Generator(nn.Module):
     '''
     Generator Class
@@ -111,7 +111,7 @@ def get_noise(n_samples, z_dim, device='cpu'):
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 class Discriminator(nn.Module):
     '''
     Discriminator Class
@@ -170,7 +170,7 @@ class Discriminator(nn.Module):
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # criterion = nn.BCEWithLogitsLoss()
 # z_dim = 64
@@ -221,7 +221,7 @@ dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 def show_images(images):
     fig, ax = plt.subplots(figsize=(20, 20))
     ax.set_xticks([]); ax.set_yticks([])
@@ -235,5 +235,5 @@ def show_batch(dl):
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 show_batch(dataloader)

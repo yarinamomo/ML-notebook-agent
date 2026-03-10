@@ -42,7 +42,7 @@ test_df = test_df.drop("Id", axis=1)
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # # One-hot encoding
 # encoder = OneHotEncoder(handle_unknown="ignore")
@@ -50,25 +50,52 @@ test_df = test_df.drop("Id", axis=1)
 # test_df = pd.get_dummies(test_df, columns=list(test_df))
 
 # === AFTER (edited) ===
-# Concatenate train and test to ensure consistent columns
-combined_df = pd.concat([train_df, test_df], axis=0, ignore_index=True)
+# Identify categorical columns (object type) that exist in both train and test
+train_cat_cols = train_df.select_dtypes(include=['object']).columns.tolist()
+test_cat_cols = test_df.select_dtypes(include=['object']).columns.tolist()
 
-# Identify categorical columns (object dtype) from combined data
-categorical_cols = combined_df.select_dtypes(include=['object']).columns.tolist()
+# Keep only categorical columns that exist in both datasets
+common_categorical_cols = [col for col in train_cat_cols if col in test_cat_cols]
 
-# Create dummy variables for categorical columns only
-combined_df = pd.get_dummies(combined_df, columns=categorical_cols, drop_first=False)
+# One-hot encode only common categorical columns
+if common_categorical_cols:
+    encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+    
+    # Get encoded features for train
+    train_encoded = encoder.fit_transform(train_df[common_categorical_cols])
+    train_encoded_df = pd.DataFrame(train_encoded, columns=encoder.get_feature_names_out(common_categorical_cols), index=train_df.index)
+    
+    # Get encoded features for test
+    test_encoded = encoder.transform(test_df[common_categorical_cols])
+    test_encoded_df = pd.DataFrame(test_encoded, columns=encoder.get_feature_names_out(common_categorical_cols), index=test_df.index)
+    
+    # Drop original categorical columns and add encoded ones
+    train_df = pd.concat([train_df.drop(common_categorical_cols, axis=1), train_encoded_df], axis=1)
+    test_df = pd.concat([test_df.drop(common_categorical_cols, axis=1), test_encoded_df], axis=1)
 
-# Split back into train and test based on original sizes
-original_train_size = len(train_df)
-train_df = combined_df.iloc[:original_train_size].copy()
-test_df = combined_df.iloc[original_train_size:].copy()
+# Drop any remaining categorical columns (those only in train or only in test)
+train_df = train_df.select_dtypes(exclude=['object'])
+test_df = test_df.select_dtypes(exclude=['object'])
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
-# Data processing
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# === BEFORE (original) ===
+# # Data processing
+# scaler = StandardScaler()
+# train_df = scaler.fit_transform(train_df)
+# test_df = scaler.transform(test_df)
+
+# === AFTER (edited) ===
+# Find common columns between train and test dataframes
+common_cols = [col for col in train_df.columns if col in test_df.columns]
+
+# Scale only common columns
 scaler = StandardScaler()
-train_df = scaler.fit_transform(train_df)
-test_df = scaler.transform(test_df)
+train_scaled = scaler.fit_transform(train_df[common_cols])
+test_scaled = scaler.transform(test_df[common_cols])
+
+# Convert back to DataFrame with column names
+train_df = pd.DataFrame(train_scaled, columns=common_cols)
+test_df = pd.DataFrame(test_scaled, columns=common_cols)

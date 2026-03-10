@@ -28,7 +28,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 train_datagen = ImageDataGenerator(rescale = 1.0 / 255.0,
                                    zoom_range = 0.4,
                                    validation_split = 0.2)
@@ -150,7 +150,7 @@ class_names = ['PNEUMONIA','NORMAL']
 #%%
 # --- [CELL 11]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # from sklearn.metrics import classification_report, confusion_matrix
 # import seaborn as sns
@@ -170,16 +170,15 @@ class_names = ['PNEUMONIA','NORMAL']
 from sklearn.metrics import classification_report, confusion_matrix
 import seaborn as sns
 
-# Get all predictions at once
-pred_probs = model.predict(valid_dataset, steps=valid_dataset.samples // valid_dataset.batch_size + 1, verbose=1)
-prediction_classes = (pred_probs.flatten() > 0.5).astype(int)
-
-# Get all true labels
+# Get predictions for all validation data
 valid_dataset.reset()
-true_classes = []
-for i in range(len(valid_dataset)):
-    _, y = valid_dataset[i]
-    true_classes.append(y)
-true_classes = np.concatenate(true_classes).ravel()
+predictions = model.predict(valid_dataset, verbose=1)
+
+# Convert sigmoid probabilities to binary classes (threshold 0.5)
+prediction_classes = np.where(predictions >= 0.5, 1, 0).flatten()
+
+# Get true classes
+valid_dataset.reset()
+true_classes = valid_dataset.classes
 
 print(classification_report(true_classes, prediction_classes, target_names=class_names, digits=4))

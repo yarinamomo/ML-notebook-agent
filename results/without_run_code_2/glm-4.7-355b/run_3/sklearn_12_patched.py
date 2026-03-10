@@ -134,11 +134,9 @@ print(f'SVC (accuracy): {acc}%')
 # === AFTER (edited) ===
 from pandas import Series
 
-# Using RandomForestClassifier model which has feature_importances_
-# from the RandomForestClassifier training in cell 6
-rf_model = RandomForestClassifier(n_estimators=100)
-rf_model.fit(X_train, y_train)
+# Use RandomForest for feature importance (SVC doesn't have feature_importances_)
+model = RandomForestClassifier(n_estimators=100)
+model.fit(X_train, y_train)
 
-feature_importance = rf_model.feature_importances_
+feature_importance = model.feature_importances_
 Series_feat_imp = Series(feature_importance, index=features.columns)
-print(Series_feat_imp)

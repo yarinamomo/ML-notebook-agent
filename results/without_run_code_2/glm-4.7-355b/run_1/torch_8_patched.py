@@ -85,22 +85,41 @@ for i in tp_nonwatermarked:
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# dimension to resize to 
-width = 196 # only certain dimensions work due to UpSampling (196x196 works, 148x148 works)
+# === BEFORE (original) ===
+# # dimension to resize to 
+# width = 196 # only certain dimensions work due to UpSampling (196x196 works, 148x148 works)
+# height = 196
+# dim = (width, height) # set the dimensions
+# def createPixelArr(files):
+#     data = []
+#     for image in files:
+#         try: # take each image and use imread to get the pixel values in a matrix 
+#             img_arr = cv2.imread(image, cv2.IMREAD_COLOR)
+#             img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
+#             resized_arr = cv2.resize(img_arr, (width, height)) # rescale the image so every image is of the same dimension
+#             data.append(resized_arr) # add the matrix of pixel values 
+#         except Exception as e:
+#             print(e) # some error thrown in imread or resize
+#     return np.array(data)
+
+# === AFTER (edited) ===
+width = 196
 height = 196
-dim = (width, height) # set the dimensions
+dim = (width, height)
 def createPixelArr(files):
     data = []
     for image in files:
-        try: # take each image and use imread to get the pixel values in a matrix 
+        try:
             img_arr = cv2.imread(image, cv2.IMREAD_COLOR)
             img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
-            resized_arr = cv2.resize(img_arr, (width, height)) # rescale the image so every image is of the same dimension
-            data.append(resized_arr) # add the matrix of pixel values 
+            resized_arr = cv2.resize(img_arr, (width, height))
+            # Transpose from HWC to CHW format for PyTorch
+            transposed_arr = np.transpose(resized_arr, (2, 0, 1))
+            data.append(transposed_arr)
         except Exception as e:
-            print(e) # some error thrown in imread or resize
+            print(e)
     return np.array(data)
 
 #%%
@@ -118,12 +137,13 @@ train_nwms_pixVals = createPixelArr(out_array_nwm[:90]) # 1000
 # X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1)
 
 # === AFTER (edited) ===
-# Combine all images and create labels
-# Label 0 for non-watermark, Label 1 for watermark
-X = np.concatenate([train_nwms_pixVals, train_wms_pixVals], axis=0)
-y = np.concatenate([np.zeros(len(train_nwms_pixVals)), np.ones(len(train_wms_pixVals))], axis=0)
+# Create labels: 1 for watermarked, 0 for non-watermarked
+X = np.concatenate([train_wms_pixVals, train_nwms_pixVals])
+y_watermarked = np.ones(len(train_wms_pixVals), dtype=np.int64)
+y_nonwatermarked = np.zeros(len(train_nwms_pixVals), dtype=np.int64)
+y = np.concatenate([y_watermarked, y_nonwatermarked])
 
-# Split into train and test sets
+# Split the data correctly
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
 
 #%%
@@ -287,9 +307,8 @@ class MyDataset(Dataset):
         return len(self.X)
 
     def __getitem__(self, idx):
-        # Convert numpy array to tensor and change from (H, W, C) to (C, H, W)
-        image = torch.from_numpy(self.X[idx]).permute(2, 0, 1).float() / 255.0
-        # Convert label to tensor
+        # Convert numpy array to float32 and scale to [0, 1]
+        image = torch.tensor(self.X[idx], dtype=torch.float32) / 255.0
         label = torch.tensor(self.y[idx], dtype=torch.long)
         return image, label
 
@@ -309,11 +328,20 @@ test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
 #%%
 # --- [CELL 17]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# import warnings
+# warnings.filterwarnings("ignore")
+# 
+# model_ft, train_acc_history, val_acc_history = train_model(
+#     model_ft, train_loader, test_loader, criterion, optimizer, num_epochs=3
+# )
+
+# === AFTER (edited) ===
 import warnings
 warnings.filterwarnings("ignore")
 
 model_ft, train_acc_history, val_acc_history = train_model(
-    model_ft, train_loader, test_loader, criterion, optimizer, num_epochs=3
+    model_ft, train_loader, test_loader, criterion, optimizer, num_epochs=1
 )

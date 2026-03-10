@@ -115,12 +115,13 @@ data[data['Distance']==0].shape
 # plt.show()
 
 # === AFTER (edited) ===
-data['PDweek'] = pd.Categorical(data['PDweek'], categories=range(7), ordered=True)
-data['PDweek'] = data['PDweek'].cat.rename_categories(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
+day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
+# Create DayOfWeek column with categorical data
+data['DayOfWeek'] = pd.Categorical(data['PDweek'], categories=range(7), ordered=True)
+data['DayOfWeek'] = data['DayOfWeek'].cat.rename_categories(day_names)
 
-average_duration = data.groupby('PDweek')['Duration'].mean()
-
+average_duration = data.groupby('DayOfWeek')['Duration'].mean()
 
 plt.plot(average_duration.index, average_duration.values)
 plt.xlabel('Day of Week')

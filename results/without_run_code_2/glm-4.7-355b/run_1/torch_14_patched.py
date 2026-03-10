@@ -57,13 +57,6 @@ from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.models.detection.rpn import AnchorGenerator
 from torchvision.transforms import transforms
 from torch.utils.data import DataLoader
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-from torch.utils.data.dataloader import default_collate
-
-
-def collate_fn(batch):
-    """Custom collate function for object detection datasets."""
-    return tuple(zip(*batch))
 
 
 transform = transforms.Compose([
@@ -76,56 +69,62 @@ trainset = torchvision.datasets.VOCDetection(root="data_small", year='2012', ima
 testset = torchvision.datasets.VOCDetection(root="data_small", year='2012', image_set='val', download=False, transform=transform)
 
 
-trainloader = DataLoader(trainset, batch_size=4, shuffle=True, num_workers=0, collate_fn=collate_fn)
-testloader = DataLoader(testset, batch_size=4, shuffle=False, num_workers=0, collate_fn=collate_fn)
+trainloader = DataLoader(trainset, batch_size=1, shuffle=True, num_workers=0, collate_fn=lambda x: x)
+testloader = DataLoader(testset, batch_size=1, shuffle=False, num_workers=0, collate_fn=lambda x: x)
 
 
-model = fasterrcnn_resnet50_fpn(weights=None)
+model = fasterrcnn_resnet50_fpn(weights='DEFAULT')
 
 
 num_classes = 21
 in_features = model.roi_heads.box_predictor.cls_score.in_features
-model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
+model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, num_classes)
 
 
 optimizer = torch.optim.SGD(model.parameters(), lr=0.005, momentum=0.9, weight_decay=0.0005)
 
 
-num_epochs = 1
-for epoch in range(num_epochs):
-    for i, data in enumerate(trainloader, 0):
-        inputs, labels = data
-        optimizer.zero_grad()
-        
-        # Convert VOC labels to expected format
-        targets = []
-        for label in labels:
-            boxes = []
-            for obj in label['annotation']['object']:
-                bndbox = obj['bndbox']
-                xmin = float(bndbox['xmin'])
-                ymin = float(bndbox['ymin'])
-                xmax = float(bndbox['xmax'])
-                ymax = float(bndbox['ymax'])
-                boxes.append([xmin, ymin, xmax, ymax])
-            
-            target = {
-                'boxes': torch.tensor(boxes, dtype=torch.float32),
-                'labels': torch.ones(len(boxes), dtype=torch.int64)
-            }
-            targets.append(target)
-        
-        model.train()
-        loss_dict = model(inputs, targets)
-        losses = sum(loss for loss in loss_dict.values())
-        losses.backward()
-        optimizer.step()
+def collate_fn(batch):
+    return tuple(zip(*batch))
 
-        if i % 2000 == 1999:
-            print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, losses.item()))
-        
-        # Limit iterations for testing
-        if i >= 5:
-            break
+
+def convert_voc_to_target(annotation):
+    target = {}
+    objects = annotation['annotation']['object']
+    if isinstance(objects, dict):
+        objects = [objects]
+    
+    boxes = []
+    labels = []
+    for obj in objects:
+        bndbox = obj['bndbox']
+        xmin = float(bndbox['xmin'])
+        ymin = float(bndbox['ymin'])
+        xmax = float(bndbox['xmax'])
+        ymax = float(bndbox['ymax'])
+        boxes.append([xmin, ymin, xmax, ymax])
+        labels.append(int(obj['name']) if isinstance(obj['name'], int) else 1)
+    
+    target['boxes'] = torch.as_tensor(boxes, dtype=torch.float32)
+    target['labels'] = torch.as_tensor(labels, dtype=torch.int64)
+    return target
+
+
+model.train()
+num_iterations = 5
+for i, data in enumerate(trainloader, 0):
+    if i >= num_iterations:
+        break
+    
+    images, annotations = data[0]
+    target = convert_voc_to_target(annotations)
+    
+    optimizer.zero_grad()
+    loss_dict = model([images], [target])
+    losses = sum(loss for loss in loss_dict.values())
+    losses.backward()
+    optimizer.step()
+
+    print('[%5d] loss: %.3f' % (i + 1, losses.item()))
 
 print('Finished Training')

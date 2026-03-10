@@ -151,10 +151,8 @@ def model_quantization(model, backend='x86', save=False):
     torch.backends.quantized.engine = backend
 
     quantized_model = torch.quantization.quantize_dynamic(model, qconfig_spec={torch.nn.Linear}, dtype=torch.qint8)
-    
     if save:
-        torch.save(quantized_model.state_dict(), "vit_quantized_state_dict.pt")
-    
+        torch.save(quantized_model.state_dict(), "vit_scripted_quantized.pt")
     return quantized_model
 
 
@@ -204,7 +202,7 @@ def inference(model, dataloader, class_dict, device, image_num_stop=40000):
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # Step 1: Initialize model with the best available weights
 weights = ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
 model = vit_b_16(weights=weights)

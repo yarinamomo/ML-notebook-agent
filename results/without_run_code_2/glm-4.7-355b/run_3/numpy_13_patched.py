@@ -66,8 +66,9 @@ import matplotlib.pyplot as plt
 path = "data_small/"
 def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
 
-    all_logam = []
-    
+    data = []
+    max_harm_length = 0
+
     for dirname, _, filenames in os.walk(path):
         for filename in filenames:
             foldername = os.path.basename(dirname)
@@ -76,12 +77,19 @@ def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
             y, sr = librosa.load(full_path)
             mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, fmax=fmax, fmin=fmin)
             logam = librosa.power_to_db(mel)
-            all_logam.append(logam)
+            data.append(logam)
+            
+    # Find the maximum length (time dimension)
+    max_len = max(arr.shape[1] for arr in data)
+    
+    # Pad all arrays to the same length
+    padded_data = []
+    for arr in data:
+        pad_width = max_len - arr.shape[1]
+        padded_arr = np.pad(arr, ((0, 0), (0, pad_width)), mode='constant')
+        padded_data.append(padded_arr)
 
-    # Find the maximum length and pad all arrays to that length
-    max_len = max(l.shape[1] for l in all_logam)
-    data = np.array([np.pad(l, ((0, 0), (0, max_len - l.shape[1])), mode='constant') 
-                     for l in all_logam])
+    data = np.array(padded_data)
     return data
 
 #%%

@@ -49,7 +49,7 @@ print(f"Will generate {GENERATE_SQUARE}px square images.")
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # training_binary_path = os.path.join(DATA_PATH,
 #         f'training_data_{GENERATE_SQUARE}_{GENERATE_SQUARE}.npy')
@@ -95,8 +95,8 @@ if not os.path.isfile(training_binary_path):
   faces_path = 'data/apple_disease_classification/Train/Blotch_Apple'
   for filename in tqdm(os.listdir(faces_path)):
       path = os.path.join(faces_path,filename)
-      image = Image.open(path).convert('RGB').resize((GENERATE_SQUARE,
-            GENERATE_SQUARE),Image.LANCZOS)
+      image = Image.open(path).resize((GENERATE_SQUARE,
+            GENERATE_SQUARE),Image.LANCZOS).convert('RGB')
       training_data.append(np.asarray(image))
   training_data = np.reshape(training_data,(-1,GENERATE_SQUARE,
             GENERATE_SQUARE,3))

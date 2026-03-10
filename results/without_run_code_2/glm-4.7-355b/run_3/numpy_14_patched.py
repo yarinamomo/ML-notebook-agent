@@ -236,7 +236,7 @@ print(y_pred_classes)
 #%%
 # --- [CELL 15]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # #ensemble_model.load_weights('/kaggle/working/save_weights/best_weights_ensemble-31-0.9690.tf')
 # #y_pred = ensemble_model.predict(test_generator)

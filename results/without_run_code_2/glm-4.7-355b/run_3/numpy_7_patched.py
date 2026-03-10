@@ -855,9 +855,9 @@ if __name__ == '__main__':
     print('\n--- Processing the dataset ---')
     dataset = preprocess(dataset)
 
-    train_images = np.moveaxis(dataset['train_images'], 1, 3)
-    validation_images = np.moveaxis(dataset['validation_images'], 1, 3)
-    test_images = np.moveaxis(dataset['test_images'], 1, 3)
+    train_images = dataset['train_images']
+    validation_images = dataset['validation_images']
+    test_images = dataset['test_images']
     train_labels = to_categorical(dataset['train_labels'].flatten())
     validation_labels = to_categorical(dataset['validation_labels'].flatten())
     test_labels = to_categorical(dataset['test_labels'].flatten())
@@ -877,10 +877,6 @@ if __name__ == '__main__':
         model.add(Flatten())
         model.add(Dense(256, name='fullyconnected', activation='relu', kernel_initializer='he_normal', kernel_regularizer=l2(lam)))
         model.add(Dense(10, name='dense', activation='softmax'))
-
-        train_images = np.moveaxis(train_images, -1, 1)
-        validation_images = np.moveaxis(validation_images, -1, 1)
-        test_images = np.moveaxis(test_images, -1, 1)
 
 
     train(

@@ -46,5 +46,5 @@ game_df.head(5)
 # game_df['released'] = game_df['released'].apply(lambda x: str(x).split('-')[0]).astype('int')
 
 # === AFTER (edited) ===
-# Handle NaN values before conversion - use pd.to_numeric with coerce to convert to NaN, then fill with 0 or another default
-game_df['released'] = pd.to_numeric(game_df['released'].apply(lambda x: str(x).split('-')[0] if str(x) != 'nan' else '0'), errors='coerce').fillna(0).astype('int')
+game_df['released'] = game_df['released'].fillna('1900-01-01')
+game_df['released'] = game_df['released'].apply(lambda x: str(x).split('-')[0]).astype('int')

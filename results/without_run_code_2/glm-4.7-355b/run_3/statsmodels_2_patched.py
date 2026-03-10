@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -25,7 +25,7 @@ test = pd.read_csv(test_csv_path)
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 train['date'] = pd.to_datetime(train['date'])
 train['day'] = train['date'].dt.day
 train['month'] = train['date'].dt.month
@@ -60,7 +60,7 @@ train['sales_lag_365'] = train['sales'].shift(365)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # Filter for a specific store-item combination, say store 1 and item 1
 train_subset = train[(train['store'] == 8) & (train['item'] == 20)]
 train_subset.set_index('date', inplace=True)
@@ -70,7 +70,7 @@ train_subset.head()
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 sarima_data = train_subset[['sales']]
 
 print(sarima_data.index)
@@ -79,7 +79,7 @@ sarima_data.head()
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # Data Splitting
 train_end_date = '2017-09-30'
 pred_start_date = '2017-10-01'
@@ -114,7 +114,7 @@ print(f'RMSE: {rmse}')
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 residuals = y_val - y_pred
 plt.figure(figsize=(12, 6))
 plt.plot(residuals.index, residuals, label='Residuals')
@@ -127,7 +127,7 @@ plt.show()
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # === BEFORE (original) ===
 # from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 # 
@@ -146,9 +146,9 @@ plt.show()
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 plt.figure(figsize=(12, 6))
-plot_acf(residuals, lags=90, title='ACF of Residuals')
+plot_acf(residuals, lags=45, title='ACF of Residuals')
 plt.show()
 
 plt.figure(figsize=(12, 6))
-plot_pacf(residuals, lags=90, title='PACF of Residuals')
+plot_pacf(residuals, lags=45, title='PACF of Residuals')
 plt.show()

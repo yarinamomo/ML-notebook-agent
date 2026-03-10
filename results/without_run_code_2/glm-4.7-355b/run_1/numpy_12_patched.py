@@ -55,7 +55,7 @@ def create_dataset(dataset, look_back=1):
 #%%
 # --- [CELL 5]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # === BEFORE (original) ===
 # # reshape into X=t and Y=t+1
 # look_back = 12

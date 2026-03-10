@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'not run'}
 try:
   # This command only in Colab.
   %tensorflow_version 2.x
@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'not run'}
 PATH = 'data_small/cats_and_dogs'
 
 # Get number of files in each directory. The train and validation directories
@@ -49,7 +49,7 @@ IMG_WIDTH = 150
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 # 3
 
 train_image_generator = ImageDataGenerator(rescale = 1./255)
@@ -79,7 +79,7 @@ test_data_gen  = test_image_generator.flow_from_directory(
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # 4
 def plotImages(images_arr, probabilities = False):
     fig, axes = plt.subplots(len(images_arr), 1, figsize=(5,len(images_arr) * 3))
@@ -103,7 +103,7 @@ plotImages(sample_training_images[:5])
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 # 5
 train_image_generator = ImageDataGenerator(
     rescale=1./255,
@@ -120,7 +120,7 @@ train_image_generator = ImageDataGenerator(
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 # 6
 train_data_gen = train_image_generator.flow_from_directory(batch_size=batch_size,
                                                      directory=train_dir,
@@ -134,7 +134,7 @@ plotImages(augmented_images)
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'not run'}
 # 7
 from tensorflow.keras.optimizers import Adam
 model = Sequential()
@@ -158,7 +158,7 @@ model.compile(optimizer=optimizer,
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'not run'}
 # 8
 history = model.fit(
     train_data_gen,
@@ -169,13 +169,13 @@ history = model.fit(
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'not run'}
 model.save("train.h5")
 
 #%%
 # --- [CELL 9]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # model.load ("train.h5")
 

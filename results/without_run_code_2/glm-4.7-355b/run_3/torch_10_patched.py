@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import os
 import torch
 import torchvision
@@ -131,7 +131,7 @@ for i in range(epoch):
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # train_data_path = 'data_small/101/train'
 # train_data=torchvision.datasets.ImageFolder(root = train_data_path,transform=transforms)
@@ -146,7 +146,7 @@ for i in range(epoch):
 
 # === AFTER (edited) ===
 train_data_path = 'data_small/101/train'
-train_data=torchvision.datasets.ImageFolder(root = train_data_path,transform = transform)
+train_data=torchvision.datasets.ImageFolder(root = train_data_path,transform=transform)
 train_dataloader = DataLoader(dataset = train_data,batch_size=64,shuffle=True,drop_last=False)
 for data in train_dataloader:
     imgs,targets = data

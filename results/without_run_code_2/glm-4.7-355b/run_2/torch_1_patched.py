@@ -185,7 +185,7 @@ class SiameseNetwork(nn.Module):
             nn.ReLU(inplace=True),
             nn.LocalResponseNorm(5,alpha=0.0001,beta=0.75,k=2),
             nn.MaxPool2d(3, stride=2),
-            nn.Dropout2d(p=0.3),
+            nn.Dropout(p=0.3),
 
             nn.Conv2d(256,384 , kernel_size=3,stride=1,padding=1),
             nn.ReLU(inplace=True),
@@ -193,18 +193,17 @@ class SiameseNetwork(nn.Module):
             nn.Conv2d(384,256 , kernel_size=3,stride=1,padding=1),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(3, stride=2),
-            nn.Dropout2d(p=0.3),
+            nn.Dropout(p=0.3),
         )
 
         self.fc1 = nn.Sequential(
             nn.Linear(27648, 500),
             nn.ReLU(inplace=True),
-            nn.Dropout(p=0.5),
 
             nn.Linear(500, 128),
             nn.ReLU(inplace=True),
 
-            nn.Linear(128, 2))
+            nn.Linear(128,2))
 
     def forward_once(self, x):
 
@@ -248,35 +247,69 @@ class ContrastiveLoss(torch.nn.Module):
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
-net = SiameseNetwork()#.cuda()
-# Decalre Loss Function
+# === BEFORE (original) ===
+# net = SiameseNetwork()#.cuda()
+# # Decalre Loss Function
+# criterion = ContrastiveLoss()
+# # Declare Optimizer
+# optimizer = torch.optim.Adam(net.parameters(), lr=1e-3, weight_decay=0.0005)
+# #train the model
+# def train():
+#     epochs=2 # 100
+#     loss=[]
+#     counter=[]
+#     iteration_number = 0
+#     for epoch in range(1,epochs):
+#         for i, data in enumerate(train_dataloader,0):
+#             img0, img1 , label = data
+# #             img0, img1 , label = img0.cuda(), img1.cuda() , label.cuda()
+#             optimizer.zero_grad()
+#             output1,output2 = net(img0,img1)
+#             loss_contrastive = criterion(output1,output2,label)
+#             loss_contrastive.backward()
+#             optimizer.step()   
+#         print("Epoch {}\n Current loss {}\n".format(epoch,loss_contrastive.item()))
+#         iteration_number += 10
+#         counter.append(iteration_number)
+#         loss.append(loss_contrastive.item())
+# #     show_plot(counter, loss)  
+#     return net
+# #set the device to cuda
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# model = train()
+# torch.save(model.state_dict(), "model.pt")
+# print("Model Saved Successfully")
+
+# === AFTER (edited) ===
+net = SiameseNetwork()
+
 criterion = ContrastiveLoss()
-# Declare Optimizer
+
 optimizer = torch.optim.Adam(net.parameters(), lr=1e-3, weight_decay=0.0005)
-#train the model
+
 def train():
-    epochs=2 # 100
+    epochs=1
     loss=[]
     counter=[]
     iteration_number = 0
     for epoch in range(1,epochs):
         for i, data in enumerate(train_dataloader,0):
             img0, img1 , label = data
-#             img0, img1 , label = img0.cuda(), img1.cuda() , label.cuda()
+
             optimizer.zero_grad()
             output1,output2 = net(img0,img1)
             loss_contrastive = criterion(output1,output2,label)
             loss_contrastive.backward()
-            optimizer.step()   
+            optimizer.step()
         print("Epoch {}\n Current loss {}\n".format(epoch,loss_contrastive.item()))
         iteration_number += 10
         counter.append(iteration_number)
         loss.append(loss_contrastive.item())
-#     show_plot(counter, loss)  
+
     return net
-#set the device to cuda
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = train()
 torch.save(model.state_dict(), "model.pt")

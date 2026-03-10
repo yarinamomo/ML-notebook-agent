@@ -89,7 +89,7 @@ df.dtypes
 
 # === AFTER (edited) ===
 filas = 2
-col = 3
+col = 5
 
 nombres_col = df[["Cabin", "RoomService", "FoodCourt", "ShoppingMall", "Spa", "VRDeck"]]
 y = df["Age"]
@@ -101,9 +101,12 @@ fig, axs = plt.subplots(filas, col, figsize=(25, 10))
 for i in range(filas):
     for j in range(col):
         n = i * col + j
-        if n < len(nombres_col):
+        if n < len(nombres_col.columns):
             axs[i, j].set_title(nombres_col.columns[n])
             axs[i, j].scatter(df[nombres_col.columns[n]][:N], y[:N])
+        else:
+            # Hide unused subplots
+            axs[i, j].axis('off')
 
 fig.tight_layout()
 plt.show()

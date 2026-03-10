@@ -55,7 +55,7 @@ class CustomModelMultichoice(nn.Module):
 
         self.sigmoid = nn.Sigmoid()
         self.num_choice = num_choice
-    def forward(self,input_ids = None,token_type_ids = None ,attention_mask = None,labels = None):
+    def forward(self,input_ids = None,token_type_ids = None,attention_mask = None,labels = None):
         outputs = self.model(input_ids=input_ids,token_type_ids=token_type_ids,attention_mask=attention_mask)
         logits = self.sigmoid(outputs.logits)
         loss = None

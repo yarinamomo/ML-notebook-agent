@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 from mpl_toolkits.mplot3d import Axes3D
@@ -26,7 +26,7 @@ seed=42
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 #use this block later to read cvs hopefully :)
 train_df=pd.read_csv("data_small/train.csv",index_col=0)
 #
@@ -60,7 +60,7 @@ train_df
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 train_arr=train_df.to_numpy()
 train_arr=torch.from_numpy(train_arr)
 test_arr=test_df.to_numpy()
@@ -92,7 +92,7 @@ test_labels=test_labels.to(torch.float32)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 class myDataset(Dataset):
     def __init__(self, array,labels):
         self.array = array.to(device)
@@ -115,50 +115,89 @@ class myDataset(Dataset):
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 customDataset=myDataset(train_arr,train_labels)
 train_dataloader = DataLoader(customDataset, batch_size=64,shuffle=True, num_workers=0)
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-#trial torch model
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# === BEFORE (original) ===
+# #trial torch model
+# class AnswerModel(torch.nn.Module):
+# 
+#     def __init__(self):
+#         super(AnswerModel, self).__init__()
+#         
+#         self.norm0 = torch.nn.LayerNorm(1536).to(device)
+#         self.dropout0 = torch.nn.Dropout(0.5).to(device)
+#         self.linear1 = torch.nn.Linear(1536, 512).to(device)
+#         #check layer norm
+#         self.norm1 = torch.nn.LayerNorm(512).to(device)
+#         self.dropout1 = torch.nn.Dropout(0.5).to(device)
+#         
+#         self.activation = torch.nn.ReLU().to(device)
+#         
+#         self.linear2 = torch.nn.Linear(512 , 6294).to(device)
+#         
+#         self.aux = torch.nn.Linear(512,4).to(device)
+#         self.dropout1 = torch.nn.Dropout(0.5).to(device)
+#         self.gate = torch.nn.Linear(4, 6294).to(device)
+#         self.sigmoid=torch.nn.Sigmoid().to(device)
+#         
+#         
+#     def forward(self, x):
+#         x = self.norm0(x).to(device)
+#         x = self.dropout0(x).to(device)
+#         
+#         x= self.linear1(x).to(device)
+#         x = self.dropout1(x).to(device)
+#         
+#         xaux =self.aux(x).to(device)
+#         xaux =self.gate(xaux).to(device)
+#         vqa = self.linear2(x).to(device)
+#         out = vqa * self.sigmoid(xaux)
+#         return out,xaux
+# model= AnswerModel().to(device)
+# print(model)
+
+# === AFTER (edited) ===
 class AnswerModel(torch.nn.Module):
 
     def __init__(self):
         super(AnswerModel, self).__init__()
-        
+
         self.norm0 = torch.nn.LayerNorm(1536).to(device)
         self.dropout0 = torch.nn.Dropout(0.5).to(device)
         self.linear1 = torch.nn.Linear(1536, 512).to(device)
-        #check layer norm
+
         self.norm1 = torch.nn.LayerNorm(512).to(device)
         self.dropout1 = torch.nn.Dropout(0.5).to(device)
-        
+
         self.activation = torch.nn.ReLU().to(device)
-        
-        self.linear2 = torch.nn.Linear(512 , 6294).to(device)
-        
+
+        self.linear2 = torch.nn.Linear(512 , 393).to(device)
+
         self.aux = torch.nn.Linear(512,4).to(device)
         self.dropout1 = torch.nn.Dropout(0.5).to(device)
-        self.gate = torch.nn.Linear(4, 6294).to(device)
+        self.gate = torch.nn.Linear(4, 393).to(device)
         self.sigmoid=torch.nn.Sigmoid().to(device)
-        
-        
+
+
     def forward(self, x):
         x = self.norm0(x).to(device)
         x = self.dropout0(x).to(device)
-        
+
         x= self.linear1(x).to(device)
         x = self.dropout1(x).to(device)
-        
+
         xaux =self.aux(x).to(device)
         xaux =self.gate(xaux).to(device)
         vqa = self.linear2(x).to(device)
@@ -170,7 +209,7 @@ print(model)
 #%%
 # --- [CELL 7]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # === BEFORE (original) ===
 # #1 epoch
 # def run_model(model,dataloader, optimizer,train = True ):
@@ -217,7 +256,7 @@ def run_model(model,dataloader, optimizer,train = True ):
 
     pred = []
     True_labels = []
-    loss = torch.nn.CrossEntropyLoss()
+    loss = torch.nn.BCEWithLogitsLoss()
 
     total_loss = 0
     for (data, label) in dataloader:
@@ -230,14 +269,13 @@ def run_model(model,dataloader, optimizer,train = True ):
 
         optimizer.zero_grad()
         output,out_aux = model(data)
-        output=output.type(torch.FloatTensor).to(device)
-        out_aux=out_aux.type(torch.FloatTensor).to(device)
+        output=output.to(device)
+        out_aux=out_aux.to(device)
 
-        # Convert one-hot encoded labels to class indices for CrossEntropyLoss
-        label_indices = torch.argmax(label, dim=1).to(device)
-        loss_ = loss(output, label_indices).to(device)
-        loss_aux=loss(out_aux,label_indices).to(device)
-        mod_loss = loss_+loss_aux
+
+
+        loss_ = loss(output, label).to(device)
+        mod_loss = loss_
         mod_loss.backward()
         total_loss+=mod_loss.item()
 
@@ -250,28 +288,55 @@ def run_model(model,dataloader, optimizer,train = True ):
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
-epoch = 2 #150
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# === BEFORE (original) ===
+# epoch = 2 #150
+# 
+# optimizer = torch.optim.Adam(model.parameters(), 0.001, weight_decay=.01)
+# scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5, factor=.1, threshold=1e-6)
+# 
+# for e in range(epoch):
+#     pred,labels,loss = run_model(model,train_dataloader,optimizer)
+#     #training accuracy
+#     correct=0
+#     for i in range(len(pred)):
+#         predictions = pred[i].to(device)
+#         t_label = labels[i].to(device)
+#         position = torch.argmax(predictions).to(device)
+#         pos_label= torch.argmax(t_label).to(device)
+#         #print("pred",position)
+#         #print("true",pos_label)
+#         if (position == pos_label ):
+#             correct+=1
+#     scheduler.step(loss)
+#     print("epoch : ",e)
+#     print("training accuracy is ",correct/len(pred)*1.0)
+#   # calculate acc, f1 score, recall ......
+#     print(loss)
+
+# === AFTER (edited) ===
+epoch = 2
 
 optimizer = torch.optim.Adam(model.parameters(), 0.001, weight_decay=.01)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5, factor=.1, threshold=1e-6)
 
 for e in range(epoch):
     pred,labels,loss = run_model(model,train_dataloader,optimizer)
-    #training accuracy
+
     correct=0
+    total=0
     for i in range(len(pred)):
         predictions = pred[i].to(device)
         t_label = labels[i].to(device)
-        position = torch.argmax(predictions).to(device)
-        pos_label= torch.argmax(t_label).to(device)
-        #print("pred",position)
-        #print("true",pos_label)
-        if (position == pos_label ):
-            correct+=1
+        position = torch.argmax(predictions, dim=1).to(device)
+        pos_label= torch.argmax(t_label, dim=1).to(device)
+
+        
+        correct += (position == pos_label).sum().item()
+        total += position.shape[0]
     scheduler.step(loss)
     print("epoch : ",e)
-    print("training accuracy is ",correct/len(pred)*1.0)
-  # calculate acc, f1 score, recall ......
+    print("training accuracy is ",correct/total*1.0)
+
     print(loss)

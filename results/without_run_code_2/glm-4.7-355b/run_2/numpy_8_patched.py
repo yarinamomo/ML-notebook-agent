@@ -413,7 +413,7 @@ def protected_log(x):
 #%%
 # --- [CELL 35]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 41}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 36}
 # === BEFORE (original) ===
 # import numpy as np
 # import pandas as pd
@@ -438,7 +438,11 @@ import numpy as np
 import pandas as pd
 from deap import creator, base, tools, gp
 
-pset = gp.PrimitiveSet("MAIN", arity=72)
+# Get the number of columns from X_train (72 after encoding)
+# Using the default value of 72 based on the error message
+num_features = 72
+
+pset = gp.PrimitiveSet("MAIN", arity=num_features)
 pset.addPrimitive(np.add, arity=2)
 pset.addPrimitive(np.subtract, arity=2)
 pset.addPrimitive(np.multiply, arity=2)
@@ -455,7 +459,7 @@ pset.addTerminal(1)
 #%%
 # --- [CELL 36]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 42}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 37}
 # === BEFORE (original) ===
 # # Определение функции преобразования ГП структуры в вектор признаков
 # def transform_gp_structure(individual, X):
@@ -476,24 +480,18 @@ pset.addTerminal(1)
 # === AFTER (edited) ===
 def transform_gp_structure(individual, X):
     expr = gp.compile(individual, pset)
-    return np.array([expr(*row) for row in X]).reshape(-1, 1)
+    # Generate new feature and stack with original features
+    new_feature = np.array([expr(*row) for row in X])
+    # Keep all original features and add the GP-generated feature
+    return np.column_stack([X, new_feature])
 
 
 def evaluate_fitness(individual):
-    # Generate new feature using GP tree
-    new_feature_train = transform_gp_structure(individual, X_train)
-    # Concatenate the new feature with original features
-    X_train_gp = np.hstack([X_train, new_feature_train])
-    
-    # Train model with augmented features
+
+    X_train_gp = transform_gp_structure(individual, X_train)
     rf_model_gp = lr
     rf_model_gp.fit(X_train_gp, y_train)
-    
-    # Transform test data similarly
-    new_feature_test = transform_gp_structure(individual, X_test)
-    X_test_gp = np.hstack([X_test, new_feature_test])
-    
-    # Predict and calculate AUC
+    X_test_gp = transform_gp_structure(individual, X_test)
     y_pred_gp = rf_model_gp.predict_proba(X_test_gp)[:, 1]
     auc_gp = roc_auc_score(y_test, y_pred_gp)
     return auc_gp,
@@ -501,7 +499,7 @@ def evaluate_fitness(individual):
 #%%
 # --- [CELL 37]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 43}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 38}
 # Создание класса для управления эволюцией
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMax)
@@ -522,32 +520,72 @@ toolbox.register("select", tools.selTournament, tournsize=3)
 
 #%%
 # --- [CELL 38]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 44}
-import random # fix missing import and vars for crash isolation purposes
+# cell_state: edited
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
+# === BEFORE (original) ===
+# import random # fix missing import and vars for crash isolation purposes
+# crossover_prob = 0.5
+# mutation_prob = 0.5
+# 
+# pop_size = 100  # Размер популяции
+# num_generations = 50  # Количество поколений
+# 
+# # Создание начальной популяции
+# population = toolbox.population(n=pop_size)
+# 
+# # Основной цикл эволюции
+# for generation in range(num_generations):
+#     # Оценка фитнеса
+#     fitnesses = map(evaluate_fitness, population)
+#     for individual, fitness in zip(population, fitnesses):
+#         individual.fitness.values = fitness
+# 
+#     # Выбор следующего поколения
+#     offspring = toolbox.select(population, len(population))
+# 
+#     # Клонирование выбранных индивидуумов
+#     offspring = list(map(toolbox.clone, offspring))
+# 
+#     # Применение операторов скрещивания и мутации
+#     for child1, child2 in zip(offspring[::2], offspring[1::2]):
+#         if random.random() < crossover_prob:
+#             toolbox.mate(child1, child2)
+#             del child1.fitness.values
+#             del child2.fitness.values
+# 
+#     for mutant in offspring:
+#         if random.random() < mutation_prob:
+#             toolbox.mutate(mutant)
+#             del mutant.fitness.values
+# 
+#     # Замена старого поколения потомками
+#     population[:] = offspring
+
+# === AFTER (edited) ===
+import random
 crossover_prob = 0.5
 mutation_prob = 0.5
 
-pop_size = 100  # Размер популяции
-num_generations = 50  # Количество поколений
+pop_size = 100
+num_generations = 50
 
-# Создание начальной популяции
+
 population = toolbox.population(n=pop_size)
 
-# Основной цикл эволюции
+
 for generation in range(num_generations):
-    # Оценка фитнеса
+
     fitnesses = map(evaluate_fitness, population)
     for individual, fitness in zip(population, fitnesses):
         individual.fitness.values = fitness
 
-    # Выбор следующего поколения
+
     offspring = toolbox.select(population, len(population))
 
-    # Клонирование выбранных индивидуумов
+
     offspring = list(map(toolbox.clone, offspring))
 
-    # Применение операторов скрещивания и мутации
+
     for child1, child2 in zip(offspring[::2], offspring[1::2]):
         if random.random() < crossover_prob:
             toolbox.mate(child1, child2)
@@ -559,5 +597,5 @@ for generation in range(num_generations):
             toolbox.mutate(mutant)
             del mutant.fitness.values
 
-    # Замена старого поколения потомками
+
     population[:] = offspring

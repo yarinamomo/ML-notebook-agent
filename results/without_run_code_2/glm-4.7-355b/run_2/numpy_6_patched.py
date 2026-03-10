@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -16,7 +16,7 @@ from keras.optimizers import Adam
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 import tensorflow as tf
 from keras.applications.resnet_v2 import ResNet50V2
 from tensorflow import keras
@@ -28,14 +28,14 @@ import cv2
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 import os
 from tensorflow.keras.preprocessing.image import load_img
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 labels_all = pd.read_csv('data_small/New folder/labels.csv')
 print(labels_all.shape)
 labels_all.head()
@@ -43,7 +43,7 @@ labels_all.head()
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 CLASS_NAME = ['scottish_deerhound', 'maltese_dog', 'afghan_hound', 'entlebucher', 'bernese_mountain_dog']
 labels = labels_all[(labels_all['breed'].isin(CLASS_NAME))]
 labels = labels.reset_index()
@@ -52,7 +52,7 @@ labels.head()
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 train_path = 'data_small/New folder/train'
 
 
@@ -62,7 +62,7 @@ train_labels = pd.read_csv('data_small/New folder/labels.csv')
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # === BEFORE (original) ===
 # X_data = np.zeros((len(labels), 224, 224, 3), dtype='float32')
 # # One hot encoding
@@ -101,7 +101,6 @@ for i in tqdm(range(len(labels))):
 
     x = np.expand_dims(img.copy(), axis=0)
     X_data[i] = x / 255.0
-
 
 print('\nTrain Images shape: ',X_data.shape,' size: {:,}'.format(X_data.size))
 print('One-hot encoded output shape: ',Y_data.shape,' size: {:,}'.format(Y_data.size))

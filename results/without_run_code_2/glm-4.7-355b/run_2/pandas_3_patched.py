@@ -53,13 +53,14 @@ test = pd.read_csv('data/test.csv.zip', index_col="PetID")
 
 # === AFTER (edited) ===
 name_count = train["Name"].value_counts().rename("name_count")
-RescuerID = LabelEncoder().fit(pd.concat([train["RescuerID"], test["RescuerID"]]))
+RescuerID = LabelEncoder().fit(train["RescuerID"])
 
 def procData(data, name_count, RescuerID):
 
-    data["RescuerID"] = RescuerID.transform(data["RescuerID"])
-    data["RescuerID"] = data["RescuerID"].fillna(-1)
-
+    # Fill unseen rescuer IDs with -1 before encoding, leave known ones alone
+    mask = ~data["RescuerID"].isin(RescuerID.classes_)
+    data.loc[mask, "RescuerID"] = -1
+    data.loc[~mask, "RescuerID"] = RescuerID.transform(data.loc[~mask, "RescuerID"])
 
     data["NameNull"] = data["Name"].isnull()
     data["NameLen"] = data["Name"].fillna("").str.len()
