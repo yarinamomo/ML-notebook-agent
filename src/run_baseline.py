@@ -150,13 +150,11 @@ def run_baseline_instance(
         trajectory_path.write_text(json.dumps(trajectory, indent=2))
 
         # Build summary using build_summary utility
-        summary_path = get_instance_summary_path(output_dir, instance_name, config)
-        if summary_path:
-            summary = build_summary(messages, response_cost, elapsed, initial_cells)
-            
-            summary_path.parent.mkdir(parents=True, exist_ok=True)
-            summary_path.write_text(json.dumps(summary, indent=2))
-            logger.info(f"Saved baseline summary to: {summary_path}")
+        summary = build_summary(messages, response_cost, elapsed, initial_cells)
+        summary_path = get_instance_summary_path(output_dir, instance_name)
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
+        summary_path.write_text(json.dumps(summary, indent=2))
+        logger.info(f"Saved baseline summary to: {summary_path}")
 
         env.close()
         time.sleep(2)

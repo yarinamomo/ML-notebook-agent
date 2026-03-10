@@ -17,7 +17,7 @@ from src.utils.yaml_parser import (
     get_trajectories_dir,
     prepare_config_for_threading
 )
-from src.run_agent import run_single_instance
+from src.run_agent import run_single_instance, get_instance_summary_path
 from src.run_baseline import run_baseline_instance
 
 app = typer.Typer(rich_markup_mode="rich")
@@ -44,13 +44,14 @@ def read_api_keys(api_keys_file: Path) -> list[str]:
         keys = [line.strip() for line in f if line.strip() and not line.strip().startswith('#')]
     return keys
 
-
-def should_skip_instance(summary_path: Path) -> bool:
+def should_skip_instance(output_dir, instance_name) -> bool:
     """Check if an instance should be skipped based on summary status.
     
     Returns True if the instance should be skipped (already completed successfully),
     False if it should be run (doesn't exist or has failed/incomplete status).
     """
+    summary_path = get_instance_summary_path(output_dir, instance_name)
+
     if not summary_path.exists():
         return False
     
@@ -75,7 +76,6 @@ def should_skip_instance(summary_path: Path) -> bool:
 def build_instances(config: dict, model_name: str) -> list[SingleInstance]:
     misc_config = config.get("misc", {})
     skip_existing = misc_config.get("skip_existing", False)
-    enable_summary_log = misc_config.get("enable_summary_log", False)
     trajectories_dir = get_trajectories_dir(config)
     number_of_runs = get_run_count(config)
 
@@ -89,10 +89,8 @@ def build_instances(config: dict, model_name: str) -> list[SingleInstance]:
             continue
         for run_num in range(1, number_of_runs + 1):
             run_output_dir = trajectories_dir / model_name / f"run_{run_num}"
-            if skip_existing and enable_summary_log:
-                summary_path = run_output_dir / f"{instance_name}_summary.json"
-                
-                if should_skip_instance(summary_path):
+            if skip_existing:
+                if should_skip_instance(run_output_dir, instance_name):
                     logger.info(f"Skipping (already completed): {instance_name} run {run_num}")
                     continue
             run_output_dir.mkdir(parents=True, exist_ok=True)
@@ -191,8 +189,13 @@ def main(
 
     def run_non_threaded(config: dict, instance: SingleInstance, progress_advance_fn: ProgressAdvanceFn):
             instance_name, run_num, output_dir = instance
+            
             try:
                 run_fn(instance_name, config, output_dir)
+                # Check if run completed successfully, and retry once if not
+                if not should_skip_instance(output_dir, instance_name):
+                    logger.warning(f"Run failed or incomplete for {instance_name} run {run_num}, retrying once...")
+                    run_fn(instance_name, config, output_dir)
             except Exception as e:
                 logger.error(f"Failed to run model={model_name}, instance={instance_name}, run={run_num}: {e}")
                 logger.exception(e)
@@ -213,6 +216,14 @@ def main(
             for instance in instances_to_execute:
                 run_non_threaded(config, instance, progress_advance_fn=progress_advance_fn)
 
+    # Summary: check which instances did not complete successfully
+    incomplete_instances = list(filter(lambda i: not should_skip_instance(i[2], i[0]), instances_to_execute))
+    
+    if len(incomplete_instances) > 0:
+        logger.warning(f"Failed to complete {len(incomplete_instances)} out of {len(instances_to_execute)} runs:")
+        map(lambda i: logger.warning(f"  - {i[0]} (run {i[1]})"), incomplete_instances)
+    else:
+        logger.info(f"All {len(instances_to_execute)} runs completed successfully")
 
 
 if __name__ == "__main__":

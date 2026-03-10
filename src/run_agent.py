@@ -1,4 +1,3 @@
-import json
 import time
 from pathlib import Path
 from typing import Optional
@@ -13,12 +12,8 @@ def get_instance_trajectory_path(run_output_dir: Path, instance_name: str) -> Pa
     """Construct the trajectory file path for a given instance."""
     return run_output_dir / f"{instance_name}.traj.json"
 
-def get_instance_summary_path(run_output_dir: Path, instance_name: str, config: dict) -> Optional[Path]:
-    """Construct the summary file path for a given instance if summary logging is enabled."""
-    enable_summary_log = config.get("misc", {}).get("enable_summary_log", False)
-    if enable_summary_log:
-        return run_output_dir / f"{instance_name}_summary.json"
-    return None
+def get_instance_summary_path(run_output_dir: Path, instance_name: str) -> Path:
+    return run_output_dir / f"{instance_name}_summary.json"
 
 
 def run_single_instance(
@@ -57,7 +52,7 @@ def run_single_instance(
         instance_traj_path = get_instance_trajectory_path(output_dir, instance_name)
         agent.save(instance_traj_path)
         logger.info(f"Saved trajectory to: {instance_traj_path}")
-        summary_path = get_instance_summary_path(output_dir, instance_name, config)
+        summary_path = get_instance_summary_path(output_dir, instance_name)
         agent.save_summary(summary_path)
         logger.info(f"Saved summary to: {summary_path}")
         
