@@ -112,7 +112,7 @@ def format_initial_notebook(notebook: NotebookNode) -> str:
         has_error = any(output.get("output_type") == "error" for output in cell_outputs)
 
         exec_result: CellExecutionResult = {
-            "outputs": cell_outputs,
+            "outputs": [output if (output.get("output_type") == "error") else "" for output in cell_outputs],
             "execution_count": cell.get("execution_count", None),
             "status": "error" if has_error else "ok",
             "done": True
@@ -165,6 +165,8 @@ def _clean_outputs(outputs: list):
     cleaned_outputs = []
     handled_streams = set()    
     for out in outputs:
+        if not out:
+            continue
         msg_type = out.get('msg_type', out.get('output_type', ''))
         content = out.get('content', out)
         if msg_type == 'stream':
