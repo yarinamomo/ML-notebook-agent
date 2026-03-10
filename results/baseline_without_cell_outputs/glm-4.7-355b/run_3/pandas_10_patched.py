@@ -1,0 +1,34 @@
+# --- [CELL 0]: ---
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+#%%
+# --- [CELL 1]: ---
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+df=pd.read_csv('data/googleplaystore.csv')
+
+#%%
+# --- [CELL 2]: ---
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+df.dropna(inplace=True)
+
+#%%
+# --- [CELL 3]: ---
+# cell_state: unchanged
+# execution_status: {'status': 'not run'}
+df['Reviews']=df['Reviews'].astype('int')
+
+#%%
+# --- [CELL 4]: ---
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# df['Installs']=df['Installs'].astype('int')
+
+# === AFTER (edited) ===
+df['Installs']=df['Installs'].astype(str).str.replace(',', '').str.replace('+', '').astype('int')
