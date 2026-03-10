@@ -10,7 +10,7 @@ from typing import Any, Optional, TypedDict, Literal, cast
 from pathlib import Path
 from pydantic import BaseModel
 
-from minisweagent.exceptions import Submitted
+from minisweagent.exceptions import Submitted, InterruptAgentFlow
 from src.utils.nb_types import CellExecutionResult, ErrorOutput
 from src.utils.format_nb_cells import format_exec_result_for_llm, format_cell_source_for_llm, format_initial_notebook
 
@@ -84,8 +84,8 @@ class NotebookEnvironment:
 
         try:
             return self._dispatch_tool(tool_name, args)
-        except Submitted:
-            raise  # Let the agent framework handle submission
+        except InterruptAgentFlow:
+            raise  # Let the agent framework handle submission and flow control exceptions
         except Exception as exc:
             logger.exception(f"Error executing tool '{tool_name}'")
             logger.exception(exc)

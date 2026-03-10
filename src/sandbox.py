@@ -261,6 +261,8 @@ class DockerSandbox:
                     self.execution_results[msg_id]['status'] = 'timeout'
                     
                     logger.info(f"Code execution exceeded {timeout} seconds and was interrupted")
+                elif not self.ws:
+                    raise RuntimeError("WebSocket disconnected while waiting for execution result")
                 time.sleep(0.05)
             
             result = self.execution_results.pop(msg_id)
