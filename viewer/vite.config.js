@@ -6,5 +6,7 @@ export default defineConfig({
   server: {
     port: 5173,
     open: true
-  }
+  },
+  // Ensure public directory is served correctly
+  publicDir: 'public'
 });

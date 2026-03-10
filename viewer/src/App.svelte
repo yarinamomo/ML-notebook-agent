@@ -6,6 +6,8 @@
   let data = $state(null);
   let loading = $state(true);
   let error = $state(null);
+  let availableConfigs = $state([]);
+  let selectedConfig = $state('');
 
   // Selection state
   let selectedModel = $state('');
@@ -13,6 +15,7 @@
   let selectedInstance = $state('');
   let selectedRun = $state('');
   let currentStepIndex = $state(0);
+  let viewMode = $state('steps');
 
   // Derived: available options
   let models = $derived(
@@ -118,15 +121,22 @@
       : null
   );
 
-  // Load data
-  onMount(async () => {
+  async function loadSelectedConfig() {
+    if (!selectedConfig) return;
+
+    loading = true;
     try {
-      const resp = await fetch('/data.json');
+      const dataPath = `/${selectedConfig}/data.json`;
+      const resp = await fetch(dataPath);
+      if (!resp.ok) {
+        throw new Error(`Failed to load ${dataPath}`);
+      }
+
       const d = await resp.json();
       data = d;
-      loading = false;
-      // Auto-select first available
-      if (d.trajectories.length > 0) {
+      error = null;
+
+      if (d.trajectories && d.trajectories.length > 0) {
         const first = d.trajectories[0];
         selectedModel = first.model;
         selectedLibrary = first.library;
@@ -136,8 +146,40 @@
       }
     } catch (e) {
       error = e.message;
+      data = null;
+    } finally {
       loading = false;
     }
+  }
+
+  // Load configs and data
+  onMount(async () => {
+    try {
+      // Load available configs
+      const configResp = await fetch('/configs_index.json');
+      if (configResp.ok) {
+        const configData = await configResp.json();
+        availableConfigs = configData.configs || [];
+        
+        // Select first config by default
+        if (availableConfigs.length > 0) {
+          selectedConfig = availableConfigs[0].name;
+          await loadSelectedConfig();
+        }
+      }
+    } catch (e) {
+      console.warn('Could not load configs index:', e.message);
+    }
+    
+    loading = false;
+  });
+
+  // Load data when config changes
+  let lastLoadedConfig = $state('');
+  $effect(() => {
+    if (!selectedConfig || selectedConfig === lastLoadedConfig) return;
+    lastLoadedConfig = selectedConfig;
+    loadSelectedConfig();
   });
 
   // Reset downstream selections when upstream changes
@@ -173,7 +215,7 @@
   }
 
   function handleKeydown(e) {
-    if (!currentTrajectory) return;
+    if (!currentTrajectory || viewMode !== 'steps') return;
     // Don't interfere with form controls
     if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
     if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
@@ -199,6 +241,16 @@
       <h1>ML Agent Trajectory Viewer</h1>
     </div>
     <div class="topbar-selectors">
+      <label>
+        <span>Config</span>
+        <select bind:value={selectedConfig}>
+          {#each availableConfigs as config}
+            <option value={config.name}>
+              {config.name} ({config.trajectory_count} trajectories)
+            </option>
+          {/each}
+        </select>
+      </label>
       <label>
         <span>Model</span>
         <select bind:value={selectedModel}>
@@ -235,6 +287,13 @@
           {/each}
         </select>
       </label>
+      <label>
+        <span>View</span>
+        <select bind:value={viewMode}>
+          <option value="steps">Steps</option>
+          <option value="verify">Verify</option>
+        </select>
+      </label>
     </div>
     {#if currentTrajectory}
       <div class="topbar-meta">
@@ -245,6 +304,11 @@
         <span class="meta-item">Cost: ${currentTrajectory.metadata.cost?.toFixed(4)}</span>
         <span class="meta-item">Time: {currentTrajectory.metadata.execution_time}s</span>
         <span class="meta-item">Edits: {currentTrajectory.metadata.cells_edited}</span>
+        {#if currentTrajectory.metadata.success && currentTrajectory.metadata.submit_reason}
+          <span class="meta-item submit-reason" title={currentTrajectory.metadata.submit_reason}>
+            📋 {currentTrajectory.metadata.submit_reason.length > 50 ? currentTrajectory.metadata.submit_reason.substring(0, 47) + '...' : currentTrajectory.metadata.submit_reason}
+          </span>
+        {/if}
       </div>
     {/if}
   </header>
@@ -258,22 +322,38 @@
     <div class="center-message">No trajectory selected</div>
   {:else}
     <div class="main-content">
-      <div class="panel chat-panel">
-        <ChatPanel
-          steps={currentTrajectory.steps}
-          {currentStepIndex}
-          {onSelectStep}
-        />
-      </div>
-      <div class="panel notebook-panel">
-        <NotebookPanel
-          cells={currentTrajectory.notebook_cells}
-          step={currentStep}
-          steps={currentTrajectory.steps}
-          codeChanges={currentTrajectory.code_changes}
-          {currentStepIndex}
-        />
-      </div>
+      {#if viewMode === 'steps'}
+        <div class="panel chat-panel">
+          <ChatPanel
+            steps={currentTrajectory.steps}
+            {currentStepIndex}
+            {onSelectStep}
+          />
+        </div>
+        <div class="panel notebook-panel">
+          <NotebookPanel
+            cells={currentTrajectory.notebook_cells}
+            step={currentStep}
+            steps={currentTrajectory.steps}
+            codeChanges={currentTrajectory.code_changes}
+            referenceNotebook={currentTrajectory.reference_fix_notebook}
+            {currentStepIndex}
+            mode={viewMode}
+          />
+        </div>
+      {:else}
+        <div class="panel notebook-panel verify-full-width">
+          <NotebookPanel
+            cells={currentTrajectory.notebook_cells}
+            step={currentStep}
+            steps={currentTrajectory.steps}
+            codeChanges={currentTrajectory.code_changes}
+            referenceNotebook={currentTrajectory.reference_fix_notebook}
+            {currentStepIndex}
+            mode={viewMode}
+          />
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -369,6 +449,16 @@
     color: #8b949e;
   }
 
+  .meta-item.submit-reason {
+    color: #58a6ff;
+    font-style: italic;
+    cursor: help;
+    max-width: 400px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .main-content {
     display: flex;
     flex: 1;
@@ -388,6 +478,10 @@
 
   .notebook-panel {
     width: 55%;
+  }
+
+  .verify-full-width {
+    width: 100%;
   }
 
   .center-message {

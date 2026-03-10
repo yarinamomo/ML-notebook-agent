@@ -82,14 +82,21 @@ def _first_line(cell: NotebookCell) -> str:
 
 
 def _get_buggy_cell_exec_count(nb: NotebookNode) -> int | None:
+    max_exec_count: int | None = None
     for cell in nb.cells:
         if cell.get("cell_type") != "code":
             continue
+
+        exec_count = cell.get("execution_count")
+        if isinstance(exec_count, int):
+            max_exec_count = exec_count if max_exec_count is None else max(max_exec_count, exec_count)
 
         for output in cell.get("outputs", []):
             if output.get("output_type") == "error":
                 return cell.get("execution_count")
 
-    raise ValueError("No error output found in the notebook.")
+    # Fixed notebooks can have no error output at all. In that case,
+    # keep all executed cells by returning the largest execution count.
+    return max_exec_count
 
 
