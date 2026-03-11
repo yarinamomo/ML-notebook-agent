@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 from difflib import SequenceMatcher
 import json
+import os
 import sys
 import warnings
 from dataclasses import dataclass
@@ -21,7 +22,7 @@ except ModuleNotFoundError:
 VALID = "Valid"
 VALID_WITH_EXTRA_CHANGES = "Valid With Extra Changes"
 PLAUSIBLE = "Plausible"
-SUBMIT_STATUSES = {"SUBMITTED", "SUBMITTEDWITHERRORS"}
+SUBMIT_STATUSES = {"SUBMITTED", "SUBMITTEDWITHERRORS", "SUCCESS"}
 RESULTS_DIR = Path("results")
 BENCHMARK_DIR = Path("JunoBench/benchmark")
 OUTPUT_PATH = Path("results/data_analysis/fixed_notebook_comparison.json")
@@ -38,6 +39,18 @@ class ComparisonConfig:
 
 def is_submit_status(status: str) -> bool:
     return status.upper() in SUBMIT_STATUSES
+
+
+def safe_relative_path(path: Path, base: Path) -> str:
+    """Return a forward-slash relative path when possible across platforms."""
+    try:
+        return path.relative_to(base).as_posix()
+    except ValueError:
+        try:
+            return Path(os.path.relpath(path, start=base)).as_posix()
+        except ValueError:
+            # Windows can raise when path/base are on different drives.
+            return path.as_posix()
 
 
 def source_to_text(source: Any) -> str:
@@ -434,14 +447,14 @@ def analyze_summary_file(
         config,
     )
 
-    relative_path = summary_path.relative_to(results_root)
+    relative_path = Path(safe_relative_path(summary_path, results_root))
     relative_parts = relative_path.parts
     run_name = next((part for part in relative_parts if part.startswith("run_")), "unknown")
     model_name = relative_parts[1] if len(relative_parts) > 1 else "unknown"
     result_group = relative_parts[0] if relative_parts else "unknown"
 
     return {
-        "summary_path": str(relative_path).replace("\\", "/"),
+        "summary_path": relative_path.as_posix(),
         "result_group": result_group,
         "model": model_name,
         "run": run_name,
@@ -453,7 +466,7 @@ def analyze_summary_file(
             str(cell_index): reason
             for cell_index, reason in sorted(summary_cell_match_reasons.items())
         },
-        "reference_notebook": str(fixed_notebook.relative_to(results_root.parent)).replace("\\", "/"),
+        "reference_notebook": safe_relative_path(fixed_notebook, results_root.parent),
         "original_code_cell_count": len(original_cells),
         "reference_code_cell_count": len(fixed_cells),
         "alignment_applied": True,
@@ -480,7 +493,7 @@ def analyze_results_directory(
         except Exception as exc:
             errors.append(
                 {
-                    "summary_path": str(summary_path.relative_to(results_root)).replace("\\", "/"),
+                    "summary_path": safe_relative_path(summary_path, results_root),
                     "error": str(exc),
                 }
             )
@@ -519,21 +532,79 @@ def analyze_results_directory(
     }
 
 
+def build_group_report(
+    base_report: dict[str, Any],
+    config_name: str,
+    model_name: str,
+    records: list[dict[str, Any]],
+    errors: list[dict[str, str]],
+) -> dict[str, Any]:
+    classification_counts = {
+        VALID: sum(1 for record in records if record["classification"] == VALID),
+        VALID_WITH_EXTRA_CHANGES: sum(
+            1 for record in records if record["classification"] == VALID_WITH_EXTRA_CHANGES
+        ),
+        PLAUSIBLE: sum(1 for record in records if record["classification"] == PLAUSIBLE),
+    }
+
+    metadata = dict(base_report.get("metadata", {}))
+    metadata["config"] = config_name
+    metadata["model"] = model_name
+
+    return {
+        "metadata": metadata,
+        "statistics": {
+            "summaries_compared": len(records),
+            "classification_counts": classification_counts,
+            "errors": len(errors),
+        },
+        "records": records,
+        "errors": errors,
+    }
+
+
 def main() -> None:
     report = analyze_results_directory(RESULTS_DIR, BENCHMARK_DIR)
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    records_by_group: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for record in report.get("records", []):
+        key = (record.get("result_group", "unknown"), record.get("model", "unknown"))
+        records_by_group.setdefault(key, []).append(record)
 
-    stats = report["statistics"]
-    print(f"Compared {stats['summaries_compared']} submitted summaries")
-    print(f"  {VALID}: {stats['classification_counts'][VALID]}")
-    print(
-        f"  {VALID_WITH_EXTRA_CHANGES}: "
-        f"{stats['classification_counts'][VALID_WITH_EXTRA_CHANGES]}"
-    )
-    print(f"  {PLAUSIBLE}: {stats['classification_counts'][PLAUSIBLE]}")
-    print(f"  Errors: {stats['errors']}")
-    print(f"Wrote report to {OUTPUT_PATH}")
+    errors_by_group: dict[tuple[str, str], list[dict[str, str]]] = {}
+    for error in report.get("errors", []):
+        summary_path = error.get("summary_path", "")
+        parts = summary_path.split("/")
+        config_name = parts[0] if len(parts) > 0 and parts[0] else "unknown"
+        model_name = parts[1] if len(parts) > 1 and parts[1] else "unknown"
+        key = (config_name, model_name)
+        errors_by_group.setdefault(key, []).append(error)
+
+    total_written = 0
+    total_compared = 0
+    for key in sorted(set(records_by_group) | set(errors_by_group)):
+        config_name, model_name = key
+        group_records = records_by_group.get(key, [])
+        group_errors = errors_by_group.get(key, [])
+
+        group_report = build_group_report(
+            base_report=report,
+            config_name=config_name,
+            model_name=model_name,
+            records=group_records,
+            errors=group_errors,
+        )
+
+        output_path = RESULTS_DIR / config_name / model_name / "analysis" / "fixed_notebook_comparison.json"
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(json.dumps(group_report, indent=2), encoding="utf-8")
+
+        total_written += 1
+        total_compared += len(group_records)
+        print(
+            f"Wrote {len(group_records)} summaries to {output_path}"
+        )
+
+    print(f"Compared {total_compared} submitted summaries across {total_written} model reports")
 
 
 if __name__ == "__main__":
