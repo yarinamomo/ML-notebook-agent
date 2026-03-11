@@ -25,6 +25,8 @@ class EditCellAnalyzer:
             },
             "summary": {
                 "avg_cell_edits": 0.0,
+                "max_cell_edits": 0,
+                "max_cell_edit_instances": [],
                 "avg_unique_cell_edits": 0.0,
                 "avg_cell_edits_with_added_prints": 0.0,
                 "avg_cell_edits_with_added_try_excepts": 0.0,
@@ -138,6 +140,7 @@ class EditCellAnalyzer:
         unique_cell_edits_per_file: list[int] = []
         edits_with_added_prints_per_file: list[int] = []
         edits_with_added_try_excepts_per_file: list[int] = []
+        edits_by_instance: list[tuple[str, int]] = []
         run_accumulator: dict[str, dict[str, list[int]]] = {}
         examples_with_added_prints: list[dict[str, Any]] = []
         examples_with_added_try_excepts: list[dict[str, Any]] = []
@@ -221,6 +224,7 @@ class EditCellAnalyzer:
                         )
 
             edits_per_file.append(file_edits)
+            edits_by_instance.append((instance_name, file_edits))
             unique_cell_edits_per_file.append(file_unique_cells)
             edits_with_added_prints_per_file.append(file_added_print_edit_count)
             edits_with_added_try_excepts_per_file.append(file_added_try_except_edit_count)
@@ -250,6 +254,13 @@ class EditCellAnalyzer:
 
         divisor = len(edits_per_file) if edits_per_file else 1
         self.results["summary"]["avg_cell_edits"] = round(sum(edits_per_file) / divisor, 4)
+        max_cell_edits = max(edits_per_file) if edits_per_file else 0
+        self.results["summary"]["max_cell_edits"] = max_cell_edits
+        self.results["summary"]["max_cell_edit_instances"] = (
+            sorted(instance for instance, edits in edits_by_instance if edits == max_cell_edits)
+            if max_cell_edits > 1
+            else []
+        )
         self.results["summary"]["avg_unique_cell_edits"] = round(sum(unique_cell_edits_per_file) / divisor, 4)
         self.results["summary"]["avg_cell_edits_with_added_prints"] = round(
             sum(edits_with_added_prints_per_file) / divisor,
@@ -294,6 +305,11 @@ def main(target_dir: Path) -> None:
     print(f"files_analyzed: {results['metadata']['files_analyzed']}")
     print(f"files_without_cell_edits: {len(results['metadata']['instances_without_cell_edits'])}")
     print(f"avg_cell_edits: {results['summary']['avg_cell_edits']}")
+    print(f"max_cell_edits: {results['summary']['max_cell_edits']}")
+    if results["summary"]["max_cell_edit_instances"]:
+        print("max_cell_edit_instances:")
+        for instance in results["summary"]["max_cell_edit_instances"]:
+            print(f"  - {instance}")
     print(f"avg_unique_cell_edits: {results['summary']['avg_unique_cell_edits']}")
     print(f"avg_cell_edits_with_added_prints: {results['summary']['avg_cell_edits_with_added_prints']}")
     print(f"avg_cell_edits_with_added_try_excepts: {results['summary']['avg_cell_edits_with_added_try_excepts']}")
