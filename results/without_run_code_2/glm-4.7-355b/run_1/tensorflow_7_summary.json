@@ -1,0 +1,97 @@
+{
+  "metadata": {
+    "generated_at": "2026-03-10T20:25:21.126454",
+    "execution_time_seconds": 103.46,
+    "success": true,
+    "status": "Submitted",
+    "cost": 0.004
+  },
+  "statistics": {
+    "total_steps": 4,
+    "total_operations": 4,
+    "successful_operations": 4,
+    "failed_operations": 0,
+    "cells_edited": 2,
+    "unique_cells_edited": 2,
+    "avg_tool_execution_time_seconds": 26.95
+  },
+  "original_notebook": [
+    "# --- [CELL 0]: ---\n\nimport tensorflow as tf\n\nimport matplotlib.pyplot as plt\nimport numpy as np\nfrom transformers import BertTokenizer, TFBertModel",
+    "# --- [CELL 1]: ---\n\ntry:\n    tpu=tf.distribute.cluster_resolver.TCPClusterResolver()\n\n\n    print(\"Device : \",tpu.master())\n    tf.config.experimental_connect_to_cluster(tpu)\n\n    tf.tpu.experimental.initialize_tpu_system(tpu)\n\n    strategy=tf.distribute.experimental.TPUStrategy(tpu)\n\nexcept:\n    strategy=tf.distribute.get_strategy()\n\n\nprint(\"Number of replicas : \",strategy.num_replicas_in_sync)\n\n\n\nprint(tf.__version__)\n\n\n\n\n\n",
+    "# --- [CELL 2]: ---\n\nimport pandas as pd\n\ntrain = pd.read_csv(\"data/train.csv\")\ntrain = train[:8]",
+    "# --- [CELL 3]: ---\n\nmodel_name = 'bert-base-multilingual-cased'\ntokenizer = BertTokenizer.from_pretrained(model_name)",
+    "# --- [CELL 4]: ---\n\ndef encode_sentence(s):\n   tokens = list(tokenizer.tokenize(s))\n   tokens.append('[SEP]')\n   return tokenizer.convert_tokens_to_ids(tokens)",
+    "# --- [CELL 5]: ---\n\ndef bert_encode(hypotheses, premises, tokenizer):\n\n  num_examples = len(hypotheses)\n\n  sentence1 = tf.ragged.constant([\n      encode_sentence(s)\n      for s in np.array(hypotheses)])\n  sentence2 = tf.ragged.constant([\n      encode_sentence(s)\n       for s in np.array(premises)])\n\n  cls = [tokenizer.convert_tokens_to_ids(['[CLS]'])]*sentence1.shape[0]\n  input_word_ids = tf.concat([cls, sentence1, sentence2], axis=-1)\n\n  input_mask = tf.ones_like(input_word_ids).to_tensor()\n\n  type_cls = tf.zeros_like(cls)\n  type_s1 = tf.zeros_like(sentence1)\n  type_s2 = tf.ones_like(sentence2)\n  input_type_ids = tf.concat(\n      [type_cls, type_s1, type_s2], axis=-1).to_tensor()\n\n  inputs = {\n      'input_word_ids': input_word_ids.to_tensor(),\n      'input_mask': input_mask,\n      'input_type_ids': input_type_ids}\n\n  return inputs",
+    "# --- [CELL 6]: ---\n\ntrain_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer)",
+    "# --- [CELL 7]: ---\n\nmax_len = 50\nfrom transformers import BertTokenizer, TFBertModel\n\n\ndef build_model():\n    bert_encoder = TFBertModel.from_pretrained(model_name)\n    input_word_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name=\"input_word_ids\")\n    input_mask = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name=\"input_mask\")\n    input_type_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name=\"input_type_ids\")\n\n    embedding = bert_encoder([input_word_ids, input_mask, input_type_ids])[0]\n    output = tf.keras.layers.Dense(3, activation='softmax')(embedding[:,0,:])\n\n    model = tf.keras.Model(inputs=[input_word_ids, input_mask, input_type_ids], outputs=output)\n    model.compile(tf.keras.optimizers.Adam(lr=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])\n\n    return model",
+    "# --- [CELL 8]: ---\n\nwith strategy.scope():\n    model = build_model()\n    model.summary()",
+    "# --- [CELL 9]: ---\n\nmodel.fit(train_input, train.label.values, epochs = 2, verbose = 1, batch_size = 64, validation_split = 0.2)"
+  ],
+  "llm_responses": [
+    {
+      "step": 1,
+      "content": "Looking at the error, the model expects input shape `(None, 50)` but gets `(None, 172)`. This is because the `bert_encode` function doesn't truncate the encoded outputs to match `max_len=50`. Let me fix the `bert_encode` function to accept a `max_len` parameter and truncate the outputs.",
+      "reasoning": "Looking at the error, it seems the issue is that the model expects input shape of `(None, 50)` but finds `(None, 172)`. This is a mismatch between the `max_len=50` parameter and the actual shape of the encoded inputs.\n\nLet me trace through the code:\n1. Cell 5: `bert_encode` function creates inputs by encoding sentences and concatenating them\n2. Cell 6: `train_input = bert_encode(...)` - this creates the actual encoded inputs\n3. Cell 7: `build_model()` defines `max_len = 50` and uses it as input shape\n\nThe problem is that the encoded sentences in `train_input` have a different length (172) than the `max_len=50` specified in the model. The encoding is producing sequences longer than 50 tokens.\n\nLet me check what the actual issue is:\n- The `bert_encode` function returns inputs with whatever length the encoded sentences have (not truncated)\n- The model expects exactly 50 tokens\n\nThe fix should be in the `bert_encode` function to truncate the encoded inputs to `max_len`. However, `max_len` is defined in cell 7, but `bert_encode` is defined in cell 5 and called in cell 6.\n\nLooking at the code structure:\n- Cell 5 defines `bert_encode` (no max_len parameter)\n- Cell 6 calls `bert_encode` to create `train_input`\n- Cell 7 defines `max_len = 50` and `build_model`\n\nThe issue is that `bert_encode` doesn't have access to `max_len` when it's called. We need to either:\n1. Add `max_len` as a parameter to `bert_encode` and truncate the output\n2. Or simply increase `max_len` to be larger than the actual encoded sequence length\n\nSince the encoded sequences are 172 tokens long, and `max_len=50`, we should:\n1. Update `bert_encode` to accept `max_len` and truncate the output\n2. Pass `max_len` when calling `bert_encode`\n\n\n3. Either modify the model definition or the preprocessing\n\nI'll focus on updating the preprocessing to match the model's expected input length, ensuring the token sequences are correctly truncated to 50 tokens.\n\nTruncation involves slicing the tensor to its first 50 elements, which ensures compatibility with the model's input specifications. This approach maintains the original tokenization process while adapting to the model's requirements.\n\nThe implementation will involve carefully adjusting the tensor shapes to guarantee consistent input across the pipeline."
+    },
+    {
+      "step": 2,
+      "content": "",
+      "reasoning": "Now I need to update the call to bert_encode in cell 6 to pass max_len=50."
+    },
+    {
+      "step": 3,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Now I need to re-run the notebook from the beginning to make sure all cells execute properly with the updated code. The kernel state needs to be refreshed since we modified cell 5, and cell 9 which depends on the inputs will fail. Let me run all cells."
+    },
+    {
+      "step": 4,
+      "content": "",
+      "reasoning": "All cells execute successfully now. Let me submit my fix."
+    }
+  ],
+  "operations": [
+    {
+      "step": 1,
+      "action": "edit_cell(cell_index=5, code=<974 chars>)",
+      "output": "Cell 5 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0057
+    },
+    {
+      "step": 2,
+      "action": "edit_cell(cell_index=6, code='train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer, max_len=50)')",
+      "output": "Cell 6 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0021
+    },
+    {
+      "step": 3,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\n\nCell 9:\nExecution Count: 10 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 80.8462
+    },
+    {
+      "step": 4,
+      "action": "Submitted",
+      "output": "Fixed the ShapeMismatchError by modifying the bert_encode function to accept a max_len parameter and truncate all BERT encodings to length 50, which matches the model's expected input shape. Updated cell 5 to include truncation logic in bert_encode and cell 6 to pass max_len=50 when calling the function.",
+      "return_code": 0,
+      "success": true
+    }
+  ],
+  "code_changes": [
+    {
+      "cell_index": 5,
+      "step": 1,
+      "code": "def bert_encode(hypotheses, premises, tokenizer, max_len=50):\n\n  num_examples = len(hypotheses)\n\n  sentence1 = tf.ragged.constant([\n      encode_sentence(s)\n      for s in np.array(hypotheses)])\n  sentence2 = tf.ragged.constant([\n      encode_sentence(s)\n       for s in np.array(premises)])\n\n  cls = [tokenizer.convert_tokens_to_ids(['[CLS]'])]*sentence1.shape[0]\n  input_word_ids = tf.concat([cls, sentence1, sentence2], axis=-1)\n\n  input_mask = tf.ones_like(input_word_ids).to_tensor(default_value=0, shape=[num_examples, max_len])\n\n  type_cls = tf.zeros_like(cls)\n  type_s1 = tf.zeros_like(sentence1)\n  type_s2 = tf.ones_like(sentence2)\n  input_type_ids = tf.concat(\n      [type_cls, type_s1, type_s2], axis=-1).to_tensor(default_value=0, shape=[num_examples, max_len])\n\n  inputs = {\n      'input_word_ids': input_word_ids.to_tensor(default_value=0, shape=[num_examples, max_len]),\n      'input_mask': input_mask,\n      'input_type_ids': input_type_ids}\n\n  return inputs"
+    },
+    {
+      "cell_index": 6,
+      "step": 2,
+      "code": "train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer, max_len=50)"
+    }
+  ]
+}
