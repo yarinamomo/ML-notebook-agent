@@ -70,14 +70,13 @@ def stratify_sample_on_library(instances, sample_size):
     return sampled
 
 
-def main():
-    confidence_level = 0.9
-    margin_error = 0.1
-    random_seed = 42
+def main(target_setting: str, if_random_sampling = True, random_sampling_config = {
+    "confidence_level": 0.9,
+    "margin_error": 0.1
+}, sample_size = 20, random_seed = 42):
 
     random.seed(random_seed)
 
-    target_setting = "results/agent_2/glm-4.7-355b"
     summary_path = Path(target_setting) / "overall_summary.json"
 
     with open(summary_path, "r", encoding="utf-8") as f:
@@ -90,9 +89,11 @@ def main():
     )
 
     population_size = len(success_instances)
-    sample_size = calculate_sample_size(population_size, confidence_level, margin_error)
-    print(f"Calculated sample size: {sample_size} for population size: {population_size}")
-
+    if if_random_sampling:
+        sample_size = calculate_sample_size(population_size, random_sampling_config["confidence_level"], random_sampling_config["margin_error"])
+        print(f"Calculated sample size: {sample_size} for population size: {population_size}")
+    else:
+        print(f"Use predefined sample size: {sample_size} for population size: {population_size}")
     sampled_instances = stratify_sample_on_library(success_instances, sample_size)
 
     def sort_key(instance):
@@ -105,15 +106,17 @@ def main():
 
     sampled_instances = sorted(sampled_instances, key=sort_key)
 
-    output = {
-        "target_setting": target_setting,
-        "confidence_level": confidence_level,
-        "margin_error": margin_error,
-        "random_seed": random_seed,
-        "population_size": population_size,
-        "sample_size": sample_size,
-        "sampled_instances": sampled_instances,
-    }
+    output = {}
+    if if_random_sampling:
+        output["random_sampling_config"] = random_sampling_config
+    else:
+        output["random_sampling_config"] = "N/A (predefined sample size)"
+
+    output["target_setting"] = target_setting
+    output["random_seed"] = random_seed
+    output["population_size"] = population_size
+    output["sample_size"] = sample_size
+    output["sampled_instances"] = sampled_instances
 
     output_dir = summary_path.parent / "analysis"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -124,4 +127,16 @@ def main():
     print(f"Saved stratified sample to: {output_path}")
 
 if __name__ == "__main__":
-    main()
+    random_seed = 42
+    
+    if_random_sampling = True
+    random_sampling_config = {
+        "confidence_level": 0.9,
+        "margin_error": 0.1
+    }
+    # if_random_sampling = False
+    # sample_size = 20
+    
+    target_setting = "results/baseline/glm-4.7-355b"
+
+    main(target_setting = target_setting, if_random_sampling = if_random_sampling, random_sampling_config = random_sampling_config, random_seed = random_seed)
