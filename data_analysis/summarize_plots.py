@@ -26,6 +26,19 @@ VALID_TOOLS = [
     "Submitted"
 ]
 
+# Fixed colors per tool for consistent appearance across settings
+_tab10 = plt.cm.tab10(np.linspace(0, 1, 10))
+TOOL_COLORS = {
+    "run_all":       _tab10[0],
+    "run_cell":      _tab10[1],
+    "get_cells":     _tab10[2],
+    "get_cell":      _tab10[3],
+    "get_cell_count": _tab10[4],
+    "edit_cell":     _tab10[5],
+    "run_code":      _tab10[6],
+    "Submitted":     _tab10[7],
+}
+
 
 def extract_tool_name(action_string):
     """
@@ -157,16 +170,14 @@ def create_stacked_bar_chart(aggregated_data, title, output_path):
     # Create the plot
     fig, ax = plt.subplots(figsize=(max(12, len(steps) * 0.5), 8))
     
-    # Define colors for each tool
-    colors = plt.cm.tab10(np.linspace(0, 1, len(tools)))
-    
     # Create stacked bars
     bottom = np.zeros(len(steps))
     bars = []
     
     for j, tool in enumerate(tools):
+        color = TOOL_COLORS.get(tool, plt.cm.tab10((len(TOOL_COLORS) + list(tools).index(tool)) / 10))
         bar = ax.bar(range(len(steps)), data_matrix[j], bottom=bottom, 
-                     label=tool, color=colors[j], edgecolor='white', linewidth=0.5)
+                     label=tool, color=color, edgecolor='white', linewidth=0.5)
         bars.append(bar)
         bottom += data_matrix[j]
     
@@ -262,10 +273,10 @@ def create_comparison_chart(path1: str, path2: str, title: str, output_path: Pat
     if mode == 'diff':
         # Plot differences on a single line chart
         fig, ax = plt.subplots(figsize=(14, 8))
-        colors = plt.cm.tab10(np.linspace(0, 1, len(tools)))
         
         # Plot difference lines for each tool
         for j, tool in enumerate(tools):
+            color = TOOL_COLORS.get(tool, plt.cm.tab10((len(TOOL_COLORS) + j) / 10))
             steps_list = list(all_steps)
             data1 = np.array([aggregated_data1.get(step, {}).get(tool, 0) for step in steps_list])
             data2 = np.array([aggregated_data2.get(step, {}).get(tool, 0) for step in steps_list])
@@ -275,7 +286,7 @@ def create_comparison_chart(path1: str, path2: str, title: str, output_path: Pat
             
             # Plot line for this tool's difference
             ax.plot(range(len(steps_list)), differences, marker='o', linestyle='-', linewidth=2.5,
-                   color=colors[j], label=tool, alpha=0.8, markersize=6)
+                   color=color, label=tool, alpha=0.8, markersize=6)
         
         # Add a horizontal line at y=0 to show the neutral point
         ax.axhline(y=0, color='black', linestyle='-', linewidth=1, alpha=0.3)
