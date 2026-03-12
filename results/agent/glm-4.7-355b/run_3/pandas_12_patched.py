@@ -155,7 +155,7 @@ df.head()
 #%%
 # --- [CELL 15]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 16}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
 # === BEFORE (original) ===
 # df.groupby('kmeans_cluster').agg({1: ['count','mean', 'median', 'sum'],
 #                                     2: ['count','mean', 'median', 'sum'],
@@ -163,7 +163,7 @@ df.head()
 #                                     4: ['count','mean','median', 'sum']})
 
 # === AFTER (edited) ===
-df.groupby('kmeans_cluster').agg({df.columns[1]: ['count','mean', 'median', 'sum'],
-                                    df.columns[2]: ['count','mean', 'median', 'sum'],
-                                    df.columns[3]: ['count','mean','median', 'sum'],
-                                    df.columns[4]: ['count','mean','median', 'sum']})
+df.groupby('kmeans_cluster').agg({'CookTime': ['count','mean', 'median', 'sum'],
+                                    'PrepTime': ['count','mean', 'median', 'sum'],
+                                    'TotalTime': ['count','mean', 'median', 'sum'],
+                                    'Calories': ['count','mean', 'median', 'sum']})
