@@ -1,0 +1,159 @@
+{
+  "metadata": {
+    "generated_at": "2026-03-12T11:22:06.968602",
+    "execution_time_seconds": 830.52,
+    "success": true,
+    "status": "Submitted",
+    "cost": 0.0264
+  },
+  "statistics": {
+    "total_steps": 8,
+    "total_operations": 8,
+    "successful_operations": 5,
+    "failed_operations": 3,
+    "cells_edited": 3,
+    "unique_cells_edited": 2,
+    "avg_tool_execution_time_seconds": 108.7
+  },
+  "original_notebook": [
+    "# --- [CELL 0]: ---\n\nimport tensorflow as tf\nfrom transformers import TFAutoModel",
+    "# --- [CELL 1]: ---\n\nimport pandas as pd\nimport json\ndf_psytar = pd.read_csv(\"data/PsyTAR.csv\")\ndf_psytar.head(5)",
+    "# --- [CELL 2]: ---\n\n\n\ndf=df_psytar",
+    "# --- [CELL 3]: ---\n\ndf_1 = df[df['ADR']==1]\ndf_0 = df[df['ADR']==0]",
+    "# --- [CELL 4]: ---\n\ndf_0 = df_0.sample(df_1.shape[0])",
+    "# --- [CELL 5]: ---\n\ndf = pd.concat([df_1,df_0])",
+    "# --- [CELL 6]: ---\n\nfrom transformers import AutoTokenizer\ntokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')",
+    "# --- [CELL 7]: ---\n\ndef process_data(row):\n\n    text = row['sentences']\n    text = str(text)\n    text = ' '.join(text.split())\n\n    encodings = tokenizer(text, padding=\"max_length\", truncation=True, max_length=128)\n\n    label = 0\n    if row['ADR'] == 1:\n        label += 1\n\n    encodings['label'] = label\n    encodings['text'] = text\n\n    return encodings",
+    "# --- [CELL 8]: ---\n\nprocessed_data = []\n\nfor i in range(len(df[:1000])):\n    processed_data.append(process_data(df.iloc[i]))",
+    "# --- [CELL 9]: ---\n\ntrain_data = df[\"sentences\"]\ntrain_labels = df['ADR']",
+    "# --- [CELL 10]: ---\n\nfrom sklearn.model_selection import train_test_split\n\nnew_df = pd.DataFrame(processed_data)\n\ntrain_df, valid_df = train_test_split(\n    new_df,\n    test_size=0.2,\n    random_state=2022\n)",
+    "# --- [CELL 11]: ---\n\nimport pyarrow as pa\nfrom datasets import Dataset\n\ntrain_hg = Dataset(pa.Table.from_pandas(train_df))\nvalid_hg = Dataset(pa.Table.from_pandas(valid_df))",
+    "# --- [CELL 12]: ---\n\nclass HuggingFaceLayer(tf.keras.layers.Layer):\n    def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):\n        super(HuggingFaceLayer, self).__init__(**kwargs)\n        self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)\n        self.trainable = trainable\n\n    def build(self, input_shape):\n        self.model.built = True\n        if not self.trainable:\n            self.model.trainable = False\n        super(HuggingFaceLayer, self).build(input_shape)\n\n    def call(self, inputs, **kwargs):\n        outputs = self.model(inputs, **kwargs)\n        return outputs",
+    "# --- [CELL 13]: ---\n\nmodel_name = 'bert-base-uncased'\nmodel = tf.keras.Sequential()\nmodel.add(HuggingFaceLayer(model_name=model_name))\nmodel.add(tf.keras.layers.Dense(1, activation='sigmoid'))",
+    "# --- [CELL 14]: ---\n\n\nmodel.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])\nmodel.fit(train_data, train_labels, epochs=10)"
+  ],
+  "llm_responses": [
+    {
+      "step": 1,
+      "content": "I'll start by running all cells to see the full error.<tool_call>run_all</tool_call>",
+      "reasoning": "Let me understand the error. The error is:\n\n```\nValueError: Layers added to a Sequential model can only have a single positional argument, the input tensor. Layer HuggingFaceLayer has multiple positional arguments: [<Parameter \"inputs\">, <Parameter \"**kwargs\">]\n```\n\nThis is happening in cell 14 where the model is being compiled and fit. Looking at cell 13:\n\n```python\nmodel_name = 'bert-base-uncased'\nmodel = tf.keras.Sequential()\nmodel.add(HuggingFaceLayer(model_name=model_name))\nmodel.add(tf.keras.layers.Dense(1, activation='sigmoid'))\n```\n\nAnd cell 14:\n```python\nmodel.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])\nmodel.fit(train_data, train_labels, epochs=10)\n```\n\nThe error is about the `HuggingFaceLayer` in the Sequential model. The issue is that when using a Sequential model, each layer can only have a single positional argument (the input tensor). However, the `HuggingFaceLayer.call` method has:\n\n```python\ndef call(self, inputs, **kwargs):\n    outputs = self.model(inputs, **kwargs)\n    return outputs\n```\n\nThe `**kwargs` is the problem. When a layer is used in a Sequential model, Keras tries to inspect its signature and expects only a single positional argument.\n\nTo fix this, I need to modify the `HuggingFaceLayer` to work with Sequential models. There are a few approaches:\n\n1. Remove the `**kwargs` from the call method\n2. Use the Functional API instead of Sequential\n3. Modify the layer to work differently\n\nSince the code uses Sequential model, I should modify the layer to not use `**kwargs`. Let me check the cell 12 content again:\n\n```python\nclass HuggingFaceLayer(tf.keras.layers.Layer):\n    def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):\n        super(HuggingFaceLayer, self).__init__(**kwargs)\n        self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)\n        self.trainable = trainable\n\n    def build(self, input_shape):\n        self.model.built = True\n        if not self.trainable:\n            self.model.trainable = False\n        super(HuggingFaceLayer, self).build(input_shape)\n\n    def call(self, inputs, **kwargs):\n        outputs = self.model(inputs, **kwargs)\n        return outputs\n```\n\nI'll implement the simplest solution by removing `**kwargs` from the call method. This should resolve the Sequential model's requirement for a single positional argument while maintaining the layer's core functionality.\n\nHowever, simply removing `**kwargs` introduces new challenges. Passing keyword arguments like attention masks directly becomes problematic when the method only accepts inputs.\n\nThe code's data preparation suggests a potential approach using `processed_data` from the datasets library, which might offer a more robust solution for handling BERT model inputs.\n\nI'll focus on refactoring the layer's call method to handle just the inputs, recognizing that the initial approach was overly complex for the current implementation.\n\nThe Sequential model's constraints require a more precise input handling strategy, which means stripping unnecessary parameters to ensure compatibility. By simplifying the method's signature, we can ensure clean integration with the model's training pipeline.\n\nThe parameter-free approach seems most aligned with the current setup, allowing direct usage of BERT token embeddings without additional argument overhead.\n\nThe model initialization looks straightforward, using a HuggingFaceLayer with BERT's base uncased model followed by a dense layer for binary classification.\n\nThe `call` method's current implementation passes `**kwargs` directly to the pretrained model, which suggests potential complexity in argument handling. By removing `**kwargs`, we simplify the layer's interface, assuming the standard model call expects just the primary inputs.\n\nThe code's intent seems to be creating a custom TensorFlow layer that wraps a pretrained BERT model, with careful consideration of trainability and model building processes.\n\nI'll need to modify the HuggingFaceLayer's `call` method to ensure compatibility with Sequential models, which can be potentially tricky but important for seamless integration.\n\nThe key observation is that default keyword arguments in a layer's call method can cause compatibility issues with Sequential models. I'll document the specific problem and create a more flexible approach by removing default values from the method definition.\n\nIm explicitly calling the model's `distilbert` transformer layer with `inputs` and mask, indicating a need to customize how we interact with the underlying model's architecture.\n\nI'll explore passing inputs directly without kwargs to simplify the method signature and ensure consistent model behavior.\n\nThe model's compilation step reveals a potential mismatch between training data expectations and actual input preparation, suggesting a need for careful data preprocessing.\n\nTwo critical issues emerge: incorrect training data format for BERT tokenization and improper model layer configuration. The current approach uses raw sentences instead of the BERT-encoded tokenized data, which requires restructured input handling.\n\nI'll focus on extracting the correct input_ids and attention_mask from the processed_data to ensure proper model training compatibility.\n\nThe key strategy involves refactoring the data preparation and model layer to match BERT's input requirements, potentially necessitating a custom wrapper approach for batch processing.\n\nI'll simplify the HuggingFaceLayer's call method to handle dictionary-based inputs, extracting key parameters like input_ids and attention_mask directly within the layer itself. This approach provides more flexibility in model architecture while maintaining a clear data transformation pipeline.\n\nThe implementation will focus on creating a robust preprocessing mechanism that converts raw text into BERT-compatible embeddings efficiently."
+    },
+    {
+      "step": 2,
+      "content": "I can see the error occurs in cell 14. The issue is that the `HuggingFaceLayer`'s `call` method has `**kwargs` in its signature, which is not allowed for layers in a Sequential model. I need to fix the `call` method in cell 12 to only accept a single `inputs` positional argument.",
+      "reasoning": "The error is in cell 14, which is actually the compilation and fitting cell. The issue is that the HuggingFaceLayer has a `call` method with `**kwargs` parameter, which causes problems when added to a Sequential model.\n\nThe error says: \"Layers added to a Sequential model can only have a single positional argument, the input tensor. Layer HuggingFaceLayer has multiple positional arguments: [<Parameter \"inputs\">, <Parameter \"**kwargs\">]\"\n\nLooking at cell 12, the HuggingFaceLayer class has:\n```python\ndef call(self, inputs, **kwargs):\n    outputs = self.model(inputs, **kwargs)\n    return outputs\n```\n\nThe issue is that `**kwargs` in the `call` method signature is not compatible with Keras Sequential models, which expect the call method to have a single `inputs` positional argument.\n\nThe fix is to modify the `call` method to only accept `inputs` as a positional parameter and handle kwargs differently. However, for TFAutoModel, we need to pass specific arguments like `attention_mask`, etc.\n\nLet me look at the usage. In cell 13, the model is:\n```python\nmodel_name = 'bert-base-uncased'\nmodel = tf.keras.Sequential()\nmodel.add(HuggingFaceLayer(model_name=model_name))\nmodel.add(tf.keras.layers.Dense(1, activation='sigmoid'))\n```\n\nAnd in cell 14, it's trying to fit with:\n```python\nmodel.fit(train_data, train_labels, epochs=10)\n```\n\nThe problem is that in a Sequential model, layers cannot have `**kwargs` in their call method signature. I need to modify the HuggingFaceLayer's call method to not use `**kwargs`.\n\nLet me fix this by removing `**kwargs` from the call method signature."
+    },
+    {
+      "step": 3,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Good, the edit was successful. Now I need to run all cells again to verify that the fix works and there are no more errors."
+    },
+    {
+      "step": 4,
+      "content": "The issue is that the model is being trained with raw `train_data` (sentences) instead of the tokenized format required by BERT. The `HuggingFaceLayer` expects a dictionary with 'input_ids', 'attention_mask', and 'token_type_ids'. I need to fix the training data preparation in cell 14.",
+      "reasoning": "The error now is different. The issue is that the `HuggingFaceLayer` expects a dictionary of inputs (with keys like 'input_ids', 'attention_mask', 'token_type_ids') but is receiving raw data. \n\nLooking at the setup, the processed_data contains encodings from the tokenizer with keys like 'input_ids', 'attention_mask', etc. But the cell 14 is trying to train with `train_data` and `train_labels` which are directly from the dataframe (raw sentences), not the tokenized format.\n\nThe problem is in cell 14 where `model.fit(train_data, train_labels, epochs=10)` is called with raw data that's not tokenized properly for the BERT model. \n\nI need to look at how the data should be structured for the HuggingFaceLayer. The HuggingFaceLayer expects a dictionary with 'input_ids', 'attention_mask', etc., but train_data contains sentences, not tokenized data.\n\nActually, looking more carefully at the workflow:\n- Cell 8: processes data into processed_data which contains tokenized encodings\n- Cell 10: creates train_df and valid_df from processed_data\n- Cell 11: converts to datasets\n\nBut cell 9 creates train_data and train_labels from the original dataframe, and cell 14 tries to train with that raw data.\n\nI need to fix cell 14 to use the properly formatted data. Let me look at what train_df contains - it should have the processed data with 'input_ids', 'attention_mask', etc.\n\nThe fix should be to create proper training data from train_df that matches what the BERT model expects.\n\nLet me think about this more carefully. The model architecture is:\n1. HuggingFaceLayer (BERT) that expects a dict with 'input_ids', 'attention_mask', etc.\n2. Dense layer that outputs a single value\n\nFor training, I need to:\n1. Extract 'input_ids', 'attention_mask', 'token_type_ids' from train_df\n2. Extract 'label' column for labels\n\nSo cell 14 should be modified to use the correct data format."
+    },
+    {
+      "step": 5,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Let me run all cells again to see if the issue is fixed."
+    },
+    {
+      "step": 6,
+      "content": "The issue is that the `HuggingFaceLayer.call()` method returns the full `TFBaseModelOutputWithPoolingAndCrossAttentions` object, but Sequential models need a simple tensor. I need to modify the layer to return the `pooler_output` instead.",
+      "reasoning": "The issue is that the `HuggingFaceLayer.call()` method returns the full TFBaseModelOutputWithPoolingAndCrossAttentions object, but Sequential models expect the return value to be a tensor, not a named output object. I need to modify the `call` method to extract a specific tensor from the output, typically the `last_hidden_state` or `pooler_output`.\n\nLooking at the error, the pooler_output has shape (32, 768) which would be suitable for feeding into the Dense layer for binary classification. Let me update the HuggingFaceLayer to return the pooler_output instead of the full output object."
+    },
+    {
+      "step": 7,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Now let me run all cells again to see if this fixes the issue."
+    },
+    {
+      "step": 8,
+      "content": "",
+      "reasoning": "All cells executed successfully without errors. I should now submit the final result with a summary of the fixes I made."
+    }
+  ],
+  "operations": [
+    {
+      "step": 1,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\n\nCell 9:\nExecution Count: 10 | Status: ok\n\nCell 10:\nExecution Count: 11 | Status: ok\n\nCell 11:\nExecution Count: 12 | Status: ok\n\nCell 12:\nExecution Count: 13 | Status: ok\n\nCell 13:\nExecution Count: 14 | Status: ok\n\nCell 14:\nExecution Count: 15 | Status: error\n\n---ERROR---: ValueError: Layers added to a Sequential model can only have a single positional argument, the input tensor. Layer HuggingFaceLayer has multiple positional arguments: [<Parameter \"inputs\">, <Parameter \"**kwargs\">]\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 25.7805
+    },
+    {
+      "step": 2,
+      "action": "edit_cell(cell_index=12, code=<618 chars>)",
+      "output": "Cell 12 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0019
+    },
+    {
+      "step": 3,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\n\nCell 9:\nExecution Count: 10 | Status: ok\n\nCell 10:\nExecution Count: 11 | Status: ok\n\nCell 11:\nExecution Count: 12 | Status: ok\n\nCell 12:\nExecution Count: 13 | Status: ok\n\nCell 13:\nExecution Count: 14 | Status: ok\n\nCell 14:\nExecution Count: 15 | Status: error\n\n---ERROR---: TypeError: Exception encountered when calling HuggingFaceLayer.call().\n\n\u001b[1mCould not automatically infer the output shape / dtype of 'hugging_face_layer' (of type HuggingFaceLayer). Either the `HuggingFaceLayer.call()` method is incorrect, or you need to implement the `HuggingFaceLayer.compute_output_spec() / compute_output_shape()` method. Error encountered:\n\nException encountered when calling layer 'embeddings' (type TFBertEmbeddings).\n\nValue passed to parameter 'indices' has DataType float32 not in list of allowed values: int32, int64\n\nCall arguments received by layer 'embeddings' (type TFBertEmbeddings):\n  • input_ids=tf.Tensor(shape=(None, 1), dtype=float32)\n  • position_ids=None\n  • token_type_ids=tf.Tensor(shape=(None, 1), dtype=int32)\n  • inputs_embeds=None\n  • past_key_values_length=0\n  • training=False\u001b[0m\n\nArguments received by HuggingFaceLayer.call():\n  • args=('<KerasTensor shape=(None, 1), dtype=float32, sparse=None, name=keras_tensor>',)\n  • kwargs=<class 'inspect._empty'>\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 10.4456
+    },
+    {
+      "step": 4,
+      "action": "edit_cell(cell_index=14, code=<484 chars>)",
+      "output": "Cell 14 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0016
+    },
+    {
+      "step": 5,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\n\nCell 9:\nExecution Count: 10 | Status: ok\n\nCell 10:\nExecution Count: 11 | Status: ok\n\nCell 11:\nExecution Count: 12 | Status: ok\n\nCell 12:\nExecution Count: 13 | Status: ok\n\nCell 13:\nExecution Count: 14 | Status: ok\n\nCell 14:\nExecution Count: 15 | Status: error\n\n---ERROR---: ValueError: Exception encountered when calling Sequential.call().\n\n\u001b[1mOnly input tensors may be passed as positional arguments. The following argument value should be passed as a keyword argument: TFBaseModelOutputWithPoolingAndCrossAttentions(last_hidden_state=<tf.Tensor 'sequential_1/hugging_face_layer_1/tf_bert_model/bert/encoder/layer_._11/output/LayerNorm/batchnorm/add_1:0' shape=(32, 128, 768) dtype=float32>, pooler_output=<tf.Tensor 'sequential_1/hugging_face_layer_1/tf_bert_model/bert/pooler/dense/Tanh:0' shape=(32, 768) dtype=float32>, past_key_values=None, hidden_states=None, attentions=None, cross_attentions=None) (of type <class 'transformers.modeling_tf_outputs.TFBaseModelOutputWithPoolingAndCrossAttentions'>)\u001b[0m\n\nArguments received by Sequential.call():\n  • inputs={'input_ids': 'tf.Tensor(shape=(32, 128), dtype=int32)', 'attention_mask': 'tf.Tensor(shape=(32, 128), dtype=int32)', 'token_type_ids': 'tf.Tensor(shape=(32, 128), dtype=int32)'}\n  • training=True\n  • mask={'input_ids': 'None', 'attention_mask': 'None', 'token_type_ids': 'None'}\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 20.3338
+    },
+    {
+      "step": 6,
+      "action": "edit_cell(cell_index=12, code=<632 chars>)",
+      "output": "Cell 12 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0019
+    },
+    {
+      "step": 7,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\n\nCell 9:\nExecution Count: 10 | Status: ok\n\nCell 10:\nExecution Count: 11 | Status: ok\n\nCell 11:\nExecution Count: 12 | Status: ok\n\nCell 12:\nExecution Count: 13 | Status: ok\n\nCell 13:\nExecution Count: 14 | Status: ok\n\nCell 14:\nExecution Count: 15 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 704.3642
+    },
+    {
+      "step": 8,
+      "action": "Submitted",
+      "output": "Fixed the crash by modifying the HuggingFaceLayer's call method to return outputs.pooler_output instead of the full TFBaseModelOutput object, and updated the training cell to use properly tokenized inputs (input_ids, attention_mask, token_type_ids) instead of raw text data.",
+      "return_code": 0,
+      "success": true
+    }
+  ],
+  "code_changes": [
+    {
+      "cell_index": 12,
+      "step": 2,
+      "code": "class HuggingFaceLayer(tf.keras.layers.Layer):\n    def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):\n        super(HuggingFaceLayer, self).__init__(**kwargs)\n        self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)\n        self.trainable = trainable\n\n    def build(self, input_shape):\n        self.model.built = True\n        if not self.trainable:\n            self.model.trainable = False\n        super(HuggingFaceLayer, self).build(input_shape)\n\n    def call(self, inputs):\n        outputs = self.model(inputs)\n        return outputs"
+    },
+    {
+      "cell_index": 14,
+      "step": 4,
+      "code": "# Prepare the inputs for BERT model\ntrain_inputs = {\n    'input_ids': tf.convert_to_tensor(list(train_df['input_ids'])),\n    'attention_mask': tf.convert_to_tensor(list(train_df['attention_mask'])),\n    'token_type_ids': tf.convert_to_tensor(list(train_df['token_type_ids']))\n}\ntrain_labels_tensor = tf.convert_to_tensor(list(train_df['label']))\n\nmodel.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])\nmodel.fit(train_inputs, train_labels_tensor, epochs=10)"
+    },
+    {
+      "cell_index": 12,
+      "step": 6,
+      "code": "class HuggingFaceLayer(tf.keras.layers.Layer):\n    def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):\n        super(HuggingFaceLayer, self).__init__(**kwargs)\n        self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)\n        self.trainable = trainable\n\n    def build(self, input_shape):\n        self.model.built = True\n        if not self.trainable:\n            self.model.trainable = False\n        super(HuggingFaceLayer, self).build(input_shape)\n\n    def call(self, inputs):\n        outputs = self.model(inputs)\n        return outputs.pooler_output"
+    }
+  ]
+}
