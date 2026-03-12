@@ -171,7 +171,7 @@ rfr_gs_y_predict = rfr_gs.predict(X_2_test)
 #%%
 # --- [CELL 14]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 # === BEFORE (original) ===
 # # 表格方式
 # model_dict = {'X_train': [gbr, gbr_gs, rfr, rfr_gs],
@@ -191,7 +191,7 @@ rfr_gs_y_predict = rfr_gs.predict(X_2_test)
 
 # === AFTER (edited) ===
 model_dict = {'X_train': [gbr, rfr],
-              'X_2_train': [gbr2, rfr2, gbr_gs, rfr_gs]}
+              'X_2_train': [gbr2, gbr_gs, rfr2, rfr_gs]}
 
 for key in model_dict:
     f_list = []
@@ -200,7 +200,7 @@ for key in model_dict:
         f_list.append(feature_importance)
 
     fearture_names = X_train.columns.tolist() if key == 'X_train' else X_2_train.columns.tolist()
-    f_index = ['gbr', 'rfr'] if key == 'X_train' else ['gbr2', 'rfr2', 'gbr_gs', 'rfr_gs']
+    f_index = ['gbr', 'rfr'] if key == 'X_train' else ['gbr2','gbr_gs','rfr2','rfr_gs']
 
     feature_df = pd.DataFrame(np.array(f_list), columns=fearture_names, index=f_index)
     display(feature_df)

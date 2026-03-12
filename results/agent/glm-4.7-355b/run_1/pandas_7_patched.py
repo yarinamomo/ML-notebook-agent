@@ -46,4 +46,5 @@ game_df.head(5)
 # game_df['released'] = game_df['released'].apply(lambda x: str(x).split('-')[0]).astype('int')
 
 # === AFTER (edited) ===
-game_df['released'] = game_df['released'].fillna(0).apply(lambda x: str(x).split('-')[0]).astype('int')
+game_df['released'] = game_df['released'].fillna('2000-01-01')
+game_df['released'] = game_df['released'].apply(lambda x: str(x).split('-')[0]).astype('int')

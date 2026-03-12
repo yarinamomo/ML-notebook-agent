@@ -140,6 +140,7 @@ def num_summary(dataframe, numerical_col, plot=False):
 for col in num_cols:
     num_summary(df, col, True)
 
+
 for col in num_cols:
     sns.boxplot(data=df, x=col)
     plt.show(block=True)

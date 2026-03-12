@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import os
 import cv2
 import glob
@@ -15,7 +15,7 @@ import pickle
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # train_dir="../input/signature-verification-dataset-iraninan/train"
 # test_dir="../input/signature-verification-dataset-iraninan/test"
 
@@ -25,13 +25,13 @@ test_dir="data/signature-verification-dataset/sign_data/test"
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 SIZE = 224
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 def find_files_in_folder(path, folder_name):
     folder_path = None
     for root, dirs, files in os.walk(path):
@@ -151,7 +151,7 @@ print("number of forged_images",len(forged_images))
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # Categorical labels
 # print(train_labels.shape)
 # train_labels = to_categorical(train_labels)
@@ -178,13 +178,13 @@ print(test_data.shape)
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 print(train_labels.shape)
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # === BEFORE (original) ===
 # import tensorflow as tf
 # from tensorflow import keras
@@ -252,12 +252,18 @@ from sklearn.model_selection import train_test_split
 train_data = train_data.astype('float32') / 255
 test_data = test_data.astype('float32') / 255
 
-# Reshape from (None, 1, 224, 224) to (None, 1, 224*224) for LSTM
-train_data = train_data.reshape(train_data.shape[0], train_data.shape[1], -1)
-test_data = test_data.reshape(test_data.shape[0], test_data.shape[1], -1)
+# Reshape to (batch, height, width, 1) for grayscale images
+train_data = train_data.reshape(train_data.shape[0], train_data.shape[2], train_data.shape[3], 1)
+test_data = test_data.reshape(test_data.shape[0], test_data.shape[2], test_data.shape[3], 1)
 
 model = keras.Sequential([
-    layers.LSTM(256, input_shape=(train_data.shape[1], train_data.shape[2])),
+    layers.Conv2D(32, (3, 3), activation='relu', input_shape=(train_data.shape[1], train_data.shape[2], train_data.shape[3])),
+    layers.MaxPooling2D((2, 2)),
+    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.MaxPooling2D((2, 2)),
+    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.Flatten(),
+    layers.Dense(64, activation='relu'),
     layers.Dense(2, activation='softmax')
 ])
 

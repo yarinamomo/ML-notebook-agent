@@ -98,7 +98,7 @@ for i in range(df.shape[0]):
 
     path = InputPath+df.laterality[i]+'-'+df.view_position[i]+'/'+df.image_id[i]+'.png'
     if os.path.exists(path):
-        img = cv2.imread(path)  # Load as color (3 channels) instead of grayscale
+        img = cv2.imread(path)
         img_size = cv2.resize(img, (100, 100), interpolation = cv2.INTER_LINEAR)
 
 

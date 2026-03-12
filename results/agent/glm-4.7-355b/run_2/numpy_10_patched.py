@@ -357,16 +357,15 @@ def display_image(image_path):
 
 model = load_checkpoint('checkpoint.pth')
 
-# Create a mapping from index to class name
-idx_to_class = {idx: class_name for class_name, idx in model.class_to_idx.items()}
-
+# Create a mapping from index to class label
+idx_to_class = {v: k for k, v in model.class_to_idx.items()}
 
 test_image_path = random.choice(test_ds.imgs)[0]
 display_image(test_image_path)
 
 probs, classes = predict(test_image_path, model)
 
-# Convert predicted indices to class names
+# Convert class indices to class labels, then to flower names
 class_names = [cat_to_name[idx_to_class[cls]] for cls in classes]
 
 print("Probabilities:", probs)
@@ -379,7 +378,6 @@ for i in range(5):
 
     probs, classes = predict(test_image_path, model)
 
-    # Convert predicted indices to class names
     class_names = [cat_to_name[idx_to_class[cls]] for cls in classes]
 
     print("Probabilities:", probs)

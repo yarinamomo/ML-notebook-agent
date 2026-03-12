@@ -67,7 +67,7 @@ path = "data_small/"
 def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
 
     data = []
-    max_harm_length = 0
+    max_length = 0
 
     for dirname, _, filenames in os.walk(path):
         for filename in filenames:
@@ -78,22 +78,17 @@ def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
             mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, fmax=fmax, fmin=fmin)
             logam = librosa.power_to_db(mel)
             data.append(logam)
-            
-            # Track the maximum length
-            if logam.shape[1] > max_harm_length:
-                max_harm_length = logam.shape[1]
+            if logam.shape[1] > max_length:
+                max_length = logam.shape[1]
 
     # Pad all arrays to the same length
-    padded_data = []
+    data_padded = []
     for arr in data:
-        if arr.shape[1] < max_harm_length:
-            # Pad with zeros
-            padded = np.pad(arr, ((0, 0), (0, max_harm_length - arr.shape[1])), mode='constant')
-            padded_data.append(padded)
-        else:
-            padded_data.append(arr)
-    
-    data = np.array(padded_data)
+        pad_length = max_length - arr.shape[1]
+        padded = np.pad(arr, ((0, 0), (0, pad_length)), mode='constant')
+        data_padded.append(padded)
+
+    data = np.array(data_padded)
     return data
 
 #%%

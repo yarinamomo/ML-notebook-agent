@@ -104,6 +104,10 @@ for i in range(filas):
         if n < len(nombres_col.columns):
             axs[i, j].set_title(nombres_col.columns[n])
             axs[i, j].scatter(df[nombres_col.columns[n]][:N], y[:N])
+        else:
+            break
+    if n >= len(nombres_col.columns):
+        break
 
 fig.tight_layout()
 plt.show()

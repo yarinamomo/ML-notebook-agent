@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import os
 import numpy as np
 import pandas as pd
@@ -20,14 +20,14 @@ pd.set_option('display.max_columns',200)
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 #Loading the data
 path="data/For_modeling.csv.zip"
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 data = pd.read_csv(path, 
                   dtype={
                       'Duration': 'int8',
@@ -63,7 +63,7 @@ data.head(25)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 #Resetting index
 data = data.reset_index().drop(columns=['index'])
 data.head(25)
@@ -71,7 +71,7 @@ data.head(25)
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 #Dropping value with haversine ==0
 data= data[data['Haversine']!=0].reset_index().drop(columns=['index'])
 #data.shape
@@ -79,7 +79,7 @@ data= data[data['Haversine']!=0].reset_index().drop(columns=['index'])
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 #transforming all the negative distance to posiive distances
 
 data["Distance"]=data['Distance'].apply(lambda x:abs(x))
@@ -88,7 +88,7 @@ data[data['Distance']<0].shape
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 #Dropping values with diatance is zero, that indicate trip was never occured or error in recordings or something
 data = data[data['Distance']!=0].reset_index().drop(columns=['index'])
 data[data['Distance']==0].shape
@@ -96,7 +96,7 @@ data[data['Distance']==0].shape
 #%%
 # --- [CELL 7]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # === BEFORE (original) ===
 # #Average Trip Duration by Day of Week
 # # Convert the 'PDweek' column to a day of the week name
@@ -115,18 +115,13 @@ data[data['Distance']==0].shape
 # plt.show()
 
 # === AFTER (edited) ===
-# Convert 'PDweek' to a Series with categorical dtype
-day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-data1 = data['PDweek'].astype('category')
-data1 = data1.cat.rename_categories(day_names)
+data['PDweek'] = pd.Categorical(data['PDweek'], categories=range(7), ordered=True)
+data['PDweek'] = data['PDweek'].cat.rename_categories(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', ' Sunday'])
 
-# Add the day names as a column to the data DataFrame
-data['DayOfWeek'] = data1
+data = data.rename(columns={'PDweek': 'DayOfWeek'})
 
-# Calculate the average trip duration for each day of the week
 average_duration = data.groupby('DayOfWeek')['Duration'].mean()
 
-# Plot the results
 plt.plot(average_duration.index, average_duration.values)
 plt.xlabel('Day of Week')
 plt.ylabel('Average Duration')

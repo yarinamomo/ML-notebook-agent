@@ -33,9 +33,14 @@ PIL.Image.open(str(princess[1]))
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-image_height, image_width = PIL.Image.open(str(princess[1])).size
+# === BEFORE (original) ===
+# image_height, image_width = PIL.Image.open(str(princess[1])).size
+# batch_size,epochs = 64,10
+
+# === AFTER (edited) ===
+image_width, image_height = PIL.Image.open(str(princess[1])).size
 batch_size,epochs = 64,10
 
 #%%
@@ -54,56 +59,13 @@ batch_size,epochs = 64,10
 # )
 
 # === AFTER (edited) ===
-# Filter out corrupted image files first
-import PIL.Image
-from pathlib import Path
-
-def is_valid_image(filepath):
-    try:
-        with PIL.Image.open(filepath) as img:
-            img.verify()
-        return True
-    except:
-        return False
-
-# Get list of valid files
-valid_files = []
-for class_dir in data_dir.iterdir():
-    if class_dir.is_dir():
-        for img_file in class_dir.glob('*.jpg'):
-            if is_valid_image(img_file):
-                valid_files.append(str(img_file))
-            else:
-                print(f"Skipping corrupted file: {img_file}")
-
-# Create labels from file paths
-labels = []
-for path in valid_files:
-    class_name = Path(path).parent.name
-    labels.append(class_name)
-
-# Create directories with symbolic links to valid files only
-import tempfile
 import os
-import shutil
-
-filtered_dir = Path(tempfile.mkdtemp())
-print(f"Creating filtered dataset in: {filtered_dir}")
-
-for path, label in zip(valid_files, labels):
-    class_dir = filtered_dir / label
-    class_dir.mkdir(parents=True, exist_ok=True)
-    # Copy the file (or use symlink if supported)
-    shutil.copy2(path, class_dir / Path(path).name)
-
-print(f"Prepared {len(valid_files)} valid images")
-
 train_ds = tf.keras.utils.image_dataset_from_directory(
-    filtered_dir,
+    data_dir,
     validation_split=0.2,
     subset='training',
     image_size=(image_height, image_width),
-    seed = 1,
+    seed = 2,
     shuffle=True,
     batch_size=batch_size
 )
@@ -125,11 +87,11 @@ train_ds = tf.keras.utils.image_dataset_from_directory(
 
 # === AFTER (edited) ===
 val_ds = tf.keras.utils.image_dataset_from_directory(
-    filtered_dir,
+    data_dir,
     validation_split=0.2,
     subset='validation',
     image_size=(image_height, image_width),
-    seed = 1,
+    seed = 2,
     shuffle=True,
     batch_size=batch_size
 )

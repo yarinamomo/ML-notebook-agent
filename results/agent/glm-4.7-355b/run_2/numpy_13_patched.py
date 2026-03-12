@@ -65,6 +65,7 @@ import matplotlib.pyplot as plt
 # === AFTER (edited) ===
 path = "data_small/"
 def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
+
     data = []
     max_harm_length = 0
 
@@ -77,21 +78,12 @@ def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
             mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, fmax=fmax, fmin=fmin)
             logam = librosa.power_to_db(mel)
             data.append(logam)
-            
-            # Track the maximum length
-            if logam.shape[1] > max_harm_length:
-                max_harm_length = logam.shape[1]
-    
-    # Pad all arrays to the same length
-    padded_data = []
-    for arr in data:
-        # Calculate padding needed
-        pad_width = max_harm_length - arr.shape[1]
-        # Pad with zeros on the time axis (axis=1)
-        padded_arr = np.pad(arr, ((0, 0), (0, pad_width)), mode='constant')
-        padded_data.append(padded_arr)
 
-    return np.array(padded_data)
+    # Find the maximum length and pad all arrays to that length
+    max_len = max(d.shape[1] for d in data)
+    data_padded = [np.pad(d, ((0, 0), (0, max_len - d.shape[1])), mode='constant') for d in data]
+    data = np.array(data_padded)
+    return data
 
 #%%
 # --- [CELL 3]: ---

@@ -39,56 +39,44 @@ print('Avg', AvgRating)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# # Encoding categorical data
-# user_ids = rating_df["user_id"].unique().tolist()[:1000]
-# user2user_encoded = {x: i for i, x in enumerate(user_ids)}
-# user_encoded2user = {i: x for i, x in enumerate(user_ids)}
-# rating_df["user"] = rating_df["user_id"].map(user2user_encoded)
-# n_users = len(user2user_encoded)
-# 
-# anime_ids = rating_df["anime_id"].unique().tolist()[:1000]
-# anime2anime_encoded = {x: i for i, x in enumerate(anime_ids)}
-# anime_encoded2anime = {i: x for i, x in enumerate(anime_ids)}
-# rating_df["anime"] = rating_df["anime_id"].map(anime2anime_encoded)
-# n_animes = len(anime2anime_encoded)
-# 
-# print("Num of users: {}, Num of animes: {}".format(n_users, n_animes))
-# print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rating_df['rating'])))
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# Encoding categorical data
 user_ids = rating_df["user_id"].unique().tolist()[:1000]
 user2user_encoded = {x: i for i, x in enumerate(user_ids)}
 user_encoded2user = {i: x for i, x in enumerate(user_ids)}
+rating_df["user"] = rating_df["user_id"].map(user2user_encoded)
+n_users = len(user2user_encoded)
 
 anime_ids = rating_df["anime_id"].unique().tolist()[:1000]
 anime2anime_encoded = {x: i for i, x in enumerate(anime_ids)}
 anime_encoded2anime = {i: x for i, x in enumerate(anime_ids)}
-
-# Filter rating_df to only include rows where user_id and anime_id are in our mappings
-rating_df = rating_df[rating_df["user_id"].isin(user_ids) & rating_df["anime_id"].isin(anime_ids)].copy()
-
-# Now apply the mappings
-rating_df["user"] = rating_df["user_id"].map(user2user_encoded)
 rating_df["anime"] = rating_df["anime_id"].map(anime2anime_encoded)
-
-n_users = len(user2user_encoded)
 n_animes = len(anime2anime_encoded)
 
 print("Num of users: {}, Num of animes: {}".format(n_users, n_animes))
-print("Filtered dataset size:", len(rating_df))
 print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rating_df['rating'])))
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# Shuffle
+# === BEFORE (original) ===
+# # Shuffle
+# rating_df = rating_df.sample(frac=1, random_state=73)
+# 
+# rating_df= rating_df.head(1000)
+# 
+# X = rating_df[['user', 'anime']].values
+# y = rating_df["rating"]
+
+# === AFTER (edited) ===
 rating_df = rating_df.sample(frac=1, random_state=73)
 
 rating_df= rating_df.head(1000)
+
+# Drop rows where user or anime mapping resulted in NaN
+rating_df = rating_df.dropna(subset=['user', 'anime'])
 
 X = rating_df[['user', 'anime']].values
 y = rating_df["rating"]
@@ -236,7 +224,7 @@ my_callbacks = [
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # Model training
 history = model.fit(
     x=X_train_array,

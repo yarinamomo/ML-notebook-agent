@@ -743,5 +743,27 @@ def predict(model, image_idx):
     image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
     pred = np.argmax(model.predict(image))
 
-    true_label_idx = dataset['test_labels'][image_idx][0]
-    plot_sample(dataset['test_images'][image_idx], classes[true_label_idx], classes[pred])
+    plot_sample(dataset['test_images'][image_idx], classes[dataset['test_labels'][image_idx][0]], classes[pred])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def plot_weights(model):
+    for layer in model.layers:
+        if 'conv' in layer.name:
+            weights, _ = layer.get_weights()
+            plot_histogram(layer.name, np.reshape(weights, -1))

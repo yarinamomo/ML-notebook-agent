@@ -43,19 +43,20 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
-# Drop non-predictive column and target
-X = df.drop(['CustomerID', 'Spending Score (1-100)'], axis=1)
-y = df['Spending Score (1-100)']
+# Get column names before dropping
+target_column = 'Spending Score (1-100)'
+id_column = 'CustomerID'
 
-# Convert categorical variables to numerical using one-hot encoding
-X = pd.get_dummies(X, columns=['Gender', 'Profession'], drop_first=True)
+# Drop non-predictive columns and encode categorical variables
+X = df.drop([target_column, id_column], axis=1)
+y = df[target_column]
 
-# Split the data
+# One-hot encode categorical variables
+X = pd.get_dummies(X, drop_first=True)
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Train the model
 rf = RandomForestRegressor(n_estimators=100, random_state=42)
 rf.fit(X_train, y_train)
 
-# Make predictions
 y_pred = rf.predict(X_test)

@@ -255,7 +255,9 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-import torchvision.models as models
+
+
+
 
 
 resnet_model = models.resnet18(pretrained=True)
@@ -297,6 +299,7 @@ def evaluate(model, test_dl):
         correct = 0
         total = 0
         for inputs, labels in test_dl:
+
             outputs = model(inputs)
 
             _, predicted = torch.max(outputs.data, 1)

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # importing necessary packages for the section
 import os
 import IPython
@@ -15,7 +15,7 @@ from scipy.signal import spectrogram, find_peaks
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # importing packages
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
@@ -41,7 +41,7 @@ import matplotlib.pyplot as plt
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # path = "data_small/"
 # def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
@@ -65,19 +65,12 @@ import matplotlib.pyplot as plt
 # === AFTER (edited) ===
 path = "data_small/"
 def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
-    import librosa
-    import numpy as np
-    import os
 
     data = []
     max_harm_length = 0
 
     for dirname, _, filenames in os.walk(path):
         for filename in filenames:
-            # Skip non-audio files
-            if not filename.endswith(('.wav', '.WAV', '.mp3', '.flac', '.ogg')):
-                continue
-                
             foldername = os.path.basename(dirname)
             full_path = os.path.join(dirname, filename)
 
@@ -86,22 +79,24 @@ def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
             logam = librosa.power_to_db(mel)
             data.append(logam)
 
-    # Pad all spectrograms to the same length (length of the longest one)
-    if data:
-        max_len = max(spec.shape[1] for spec in data)
-        padded_data = []
-        for spec in data:
-            # Pad with zeros to match max_len
-            padded_spec = np.pad(spec, ((0, 0), (0, max_len - spec.shape[1])), mode='constant')
-            padded_data.append(padded_spec)
-        data = np.array(padded_data)
-    else:
-        data = np.array(data)
-        
+    # Find maximum length across all spectrograms
+    max_len = max(d.shape[1] for d in data)
+    
+    # Pad all spectrograms to the same length
+    data_padded = []
+    for d in data:
+        if d.shape[1] < max_len:
+            # Pad with zeros
+            padded = np.pad(d, ((0, 0), (0, max_len - d.shape[1])), mode='constant')
+            data_padded.append(padded)
+        else:
+            data_padded.append(d)
+    
+    data = np.array(data_padded)
     return data
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 NX = FeatureExtractor(path, n_mels = 10)

@@ -175,6 +175,5 @@ print(bert_model.config.hidden_size)
 # tf.keras.utils.plot_model(bert_model)
 
 # === AFTER (edited) ===
-import tensorflow as tf
-# Note: bert_model is a PyTorch model, so we use print() instead of tf.keras.utils.plot_model()
+import torch
 print(bert_model)

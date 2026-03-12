@@ -180,5 +180,4 @@ model.save("train.h5")
 # model.load ("train.h5")
 
 # === AFTER (edited) ===
-from tensorflow.keras.models import load_model
-model = load_model("train.h5")
+model.load_weights("train.h5")

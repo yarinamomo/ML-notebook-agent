@@ -148,32 +148,68 @@ class HuggingFaceLayer(tf.keras.layers.Layer):
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# === BEFORE (original) ===
+# model_name = 'bert-base-uncased'
+# model = tf.keras.Sequential()
+# model.add(HuggingFaceLayer(model_name=model_name))
+# model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
+
+# === AFTER (edited) ===
 model_name = 'bert-base-uncased'
-model = tf.keras.Sequential()
-model.add(HuggingFaceLayer(model_name=model_name))
-model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
+
+# Define inputs
+input_ids = tf.keras.layers.Input(shape=(128,), dtype=tf.int32, name='input_ids')
+attention_mask = tf.keras.layers.Input(shape=(128,), dtype=tf.int32, name='attention_mask')
+
+# Create HuggingFace bert model
+bert_model = TFAutoModel.from_pretrained(model_name)
+
+# Wrap bert call in a Lambda to extract last_hidden_state
+# BERT output shape is (batch_size, seq_length, hidden_size) = (None, 128, 768)
+bert_output = tf.keras.layers.Lambda(
+    lambda inputs: bert_model(input_ids=inputs[0], attention_mask=inputs[1]).last_hidden_state,
+    output_shape=(128, 768),
+    name='bert_output'
+)([input_ids, attention_mask])
+
+# Extract [CLS] token output (first token)
+cls_output = bert_output[:, 0, :]
+
+# Add classification layer
+dense_output = tf.keras.layers.Dense(1, activation='sigmoid')(cls_output)
+
+# Create the model
+model = tf.keras.Model(inputs=[input_ids, attention_mask], outputs=dense_output)
+
+# Make bert model non-trainable (optional)
+bert_model.trainable = False
 
 #%%
 # --- [CELL 14]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 # === BEFORE (original) ===
 # # Compile and train the model
 # model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 # model.fit(train_data, train_labels, epochs=10)
 
 # === AFTER (edited) ===
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+# Prepare inputs for training
+import numpy as np
 
-# Prepare the inputs for BERT from the tokenized data
-train_inputs = {
-    'input_ids': train_df['input_ids'].tolist(),
-    'token_type_ids': train_df['token_type_ids'].tolist(),
-    'attention_mask': train_df['attention_mask'].tolist()
+X_train = {
+    'input_ids': np.array(train_df['input_ids'].tolist()),
+    'attention_mask': np.array(train_df['attention_mask'].tolist())
 }
+y_train = np.array(train_df['label'].tolist())
 
-train_labels = train_df['label'].tolist()
+X_valid = {
+    'input_ids': np.array(valid_df['input_ids'].tolist()),
+    'attention_mask': np.array(valid_df['attention_mask'].tolist())
+}
+y_valid = np.array(valid_df['label'].tolist())
 
-model.fit(train_inputs, train_labels, epochs=10)
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+model.fit(X_train, y_train, epochs=10)

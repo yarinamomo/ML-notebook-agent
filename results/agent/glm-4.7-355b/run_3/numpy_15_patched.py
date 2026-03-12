@@ -80,10 +80,17 @@ y_ts_arr = y_test.values
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# === BEFORE (original) ===
+# def weightInitialization(n_features):
+#     w = np.zeros((1,n_features))
+#     b = 0
+#     return w,b
+
+# === AFTER (edited) ===
 def weightInitialization(n_features):
-    w = np.zeros((1,n_features))
+    w = np.zeros((n_features, 1))
     b = 0
     return w,b
 
@@ -205,59 +212,28 @@ def predict(final_pred, m):
 
 #%%
 # --- [CELL 16]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
-# === BEFORE (original) ===
-# #Get number of features
-# n_features = X_tr_arr.shape[1]
-# print('Number of Features', n_features)
-# w, b = weightInitialization(n_features)
-# #Gradient Descent
-# coeff, gradient, costs = model_predict(w, b, X_tr_arr, y_tr_arr, learning_rate=0.0001,no_iterations=4500)
-# #Final prediction
-# w = coeff["w"]
-# b = coeff["b"]
-# print('Optimized weights', w)
-# print('Optimized intercept',b)
-# #
-# final_train_pred = sigmoid_activation(np.dot(w,X_tr_arr.T)+b)
-# final_test_pred = sigmoid_activation(np.dot(w,X_ts_arr.T)+b)
-# #
-# m_tr =  X_tr_arr.shape[0]
-# m_ts =  X_ts_arr.shape[0]
-# #
-# y_tr_pred = predict(final_train_pred, m_tr)
-# print('Training Accuracy',accuracy_score(y_tr_pred.T, y_tr_arr))
-# #
-# y_ts_pred = predict(final_test_pred, m_ts)
-# print('Test Accuracy',accuracy_score(y_ts_pred.T, y_ts_arr))
-
-# === AFTER (edited) ===
-def weightInitialization(n_features):
-    w = np.zeros((n_features,1))  # Changed from (1,n_features) to (n_features,1)
-    b = 0
-    return w,b
-
-
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+#Get number of features
 n_features = X_tr_arr.shape[1]
 print('Number of Features', n_features)
 w, b = weightInitialization(n_features)
-
+#Gradient Descent
 coeff, gradient, costs = model_predict(w, b, X_tr_arr, y_tr_arr, learning_rate=0.0001,no_iterations=4500)
-
+#Final prediction
 w = coeff["w"]
 b = coeff["b"]
 print('Optimized weights', w)
 print('Optimized intercept',b)
-
-final_train_pred = sigmoid(np.dot(X_tr_arr, w) + b)  # Fixed for column vector w
-final_test_pred = sigmoid(np.dot(X_ts_arr, w) + b)  # Fixed for column vector w
-
+#
+final_train_pred = sigmoid_activation(np.dot(w,X_tr_arr.T)+b)
+final_test_pred = sigmoid_activation(np.dot(w,X_ts_arr.T)+b)
+#
 m_tr =  X_tr_arr.shape[0]
 m_ts =  X_ts_arr.shape[0]
-
-y_tr_pred = predict(final_train_pred.T, m_tr)  # Transpose to match expected shape (1,m)
+#
+y_tr_pred = predict(final_train_pred, m_tr)
 print('Training Accuracy',accuracy_score(y_tr_pred.T, y_tr_arr))
-
-y_ts_pred = predict(final_test_pred.T, m_ts)  # Transpose to match expected shape (1,m)
+#
+y_ts_pred = predict(final_test_pred, m_ts)
 print('Test Accuracy',accuracy_score(y_ts_pred.T, y_ts_arr))

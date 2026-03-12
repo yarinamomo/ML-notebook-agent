@@ -242,25 +242,22 @@ test_dataset = get_test_dataset(ordered=True)
 # plt.show()
 
 # === AFTER (edited) ===
-import pandas as pd
+train_agg = np.asarray([[label, (y_train == index).sum()] for index, label in enumerate(CLASSES)])
+valid_agg = np.asarray([[label, (y_valid == index).sum()] for index, label in enumerate(CLASSES)])
 
-train_agg = pd.DataFrame({
-    'label': [label for index, label in enumerate(CLASSES)],
-    'count': [(y_train == index).sum() for index, label in enumerate(CLASSES)]
-})
+train_df = pd.DataFrame(train_agg, columns=['class', 'count'])
+train_df['count'] = train_df['count'].astype(float)
 
-valid_agg = pd.DataFrame({
-    'label': [label for index, label in enumerate(CLASSES)],
-    'count': [(y_valid == index).sum() for index, label in enumerate(CLASSES)]
-})
+valid_df = pd.DataFrame(valid_agg, columns=['class', 'count'])
+valid_df['count'] = valid_df['count'].astype(float)
 
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(24, 64))
 
-ax1 = sns.barplot(x='count', y='label', data=train_agg, order=CLASSES, ax=ax1)
+ax1 = sns.barplot(x='count', y='class', data=train_df, order=CLASSES, ax=ax1)
 ax1.set_title('Train', fontsize=30)
 ax1.tick_params(labelsize=16)
 
-ax2 = sns.barplot(x='count', y='label', data=valid_agg, order=CLASSES, ax=ax2)
+ax2 = sns.barplot(x='count', y='class', data=valid_df, order=CLASSES, ax=ax2)
 ax2.set_title('Validation', fontsize=30)
 ax2.tick_params(labelsize=16)
 

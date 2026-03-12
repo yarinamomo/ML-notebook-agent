@@ -25,7 +25,7 @@ from torch import nn
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # class CustomModelMultichoice(nn.Module):
 #     def __init__(self,config,num_choice):
@@ -50,19 +50,17 @@ class CustomModelMultichoice(nn.Module):
     def __init__(self,config,num_choice):
         super(CustomModelMultichoice,self).__init__()
         model = AutoModelForMultipleChoice.from_config(config)
-        model.classifier = nn.Linear(768, 1)  # Output 1 logit per choice, not 2 classes
+        model.classifier = nn.Linear(768, num_choice)
         self.model = model
 
-        self.sigmoid = nn.Sigmoid()
         self.num_choice = num_choice
     def forward(self,input_ids = None,token_type_ids = None ,attention_mask = None,labels = None):
         outputs = self.model(input_ids=input_ids,token_type_ids=token_type_ids,attention_mask=attention_mask)
-        logits = self.sigmoid(outputs.logits)
+        logits = outputs.logits
         loss = None
         if labels is not None:
-            # For multiple choice, use BCELoss with binary targets
-            loss_func = nn.BCELoss()
-            loss = loss_func(logits.view(-1), labels.view(-1).float())
+            loss_func = nn.CrossEntropyLoss()
+            loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))
         return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states = None,attentions =None)
 
 #%%
@@ -115,12 +113,12 @@ CustomModel.eval()
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 target = torch.tensor([[1, 0, 1]])
 target
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 out = CustomModel(**inputs,labels = target)

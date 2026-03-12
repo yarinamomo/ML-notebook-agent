@@ -438,25 +438,19 @@ import numpy as np
 import pandas as pd
 from deap import creator, base, tools, gp
 
-# Get number of features from the data
-num_features = X_train.shape[1]
-
-# Create the primitive set with arity=72 to match the data
-pset = gp.PrimitiveSet("MAIN", arity=num_features)
-
-# Add primitives
-pset.addPrimitive(np.add, arity=2, name="add")
-pset.addPrimitive(np.subtract, arity=2, name="sub")
-pset.addPrimitive(np.multiply, arity=2, name="mul")
-pset.addPrimitive(np.maximum, arity=2, name="max")
-pset.addPrimitive(np.minimum, arity=2, name="min")
-pset.addPrimitive(protected_division, arity=2, name="div")
-pset.addPrimitive(protected_sqrt, arity=1, name="sqrt")
-pset.addPrimitive(protected_log, arity=1, name="log")
-pset.addPrimitive(np.sin, arity=1, name="sin")
-pset.addPrimitive(np.cos, arity=1, name="cos")
-pset.addTerminal(0, name="const0")
-pset.addTerminal(1, name="const1")
+pset = gp.PrimitiveSet("MAIN", arity=72)
+pset.addPrimitive(np.add, 2)
+pset.addPrimitive(np.subtract, 2)
+pset.addPrimitive(np.multiply, 2)
+pset.addPrimitive(np.maximum, 2)
+pset.addPrimitive(np.minimum, 2)
+pset.addPrimitive(protected_division, 2)
+pset.addPrimitive(protected_sqrt, 1)
+pset.addPrimitive(protected_log, 1)
+pset.addPrimitive(np.sin, 1)
+pset.addPrimitive(np.cos, 1)
+pset.addTerminal(0)
+pset.addTerminal(1)
 
 #%%
 # --- [CELL 36]: ---
@@ -482,11 +476,10 @@ pset.addTerminal(1, name="const1")
 # === AFTER (edited) ===
 def transform_gp_structure(individual, X):
     expr = gp.compile(individual, pset)
-    # Reshape to 2D array (n_samples, 1 feature)
     return np.array([expr(*row) for row in X]).reshape(-1, 1)
 
-
 def evaluate_fitness(individual):
+
     X_train_gp = transform_gp_structure(individual, X_train)
     rf_model_gp = lr
     rf_model_gp.fit(X_train_gp, y_train)
@@ -565,8 +558,8 @@ import random
 crossover_prob = 0.5
 mutation_prob = 0.5
 
-pop_size = 10  # Reduced from 100 for testing
-num_generations = 5  # Reduced from 50 for testing
+pop_size = 10
+num_generations = 3
 
 
 population = toolbox.population(n=pop_size)

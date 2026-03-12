@@ -85,64 +85,30 @@ for i in tp_nonwatermarked:
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# === BEFORE (original) ===
-# # dimension to resize to 
-# width = 196 # only certain dimensions work due to UpSampling (196x196 works, 148x148 works)
-# height = 196
-# dim = (width, height) # set the dimensions
-# def createPixelArr(files):
-#     data = []
-#     for image in files:
-#         try: # take each image and use imread to get the pixel values in a matrix 
-#             img_arr = cv2.imread(image, cv2.IMREAD_COLOR)
-#             img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
-#             resized_arr = cv2.resize(img_arr, (width, height)) # rescale the image so every image is of the same dimension
-#             data.append(resized_arr) # add the matrix of pixel values 
-#         except Exception as e:
-#             print(e) # some error thrown in imread or resize
-#     return np.array(data)
-
-# === AFTER (edited) ===
-width = 196
+# dimension to resize to 
+width = 196 # only certain dimensions work due to UpSampling (196x196 works, 148x148 works)
 height = 196
-dim = (width, height)
+dim = (width, height) # set the dimensions
 def createPixelArr(files):
     data = []
     for image in files:
-        try:
+        try: # take each image and use imread to get the pixel values in a matrix 
             img_arr = cv2.imread(image, cv2.IMREAD_COLOR)
             img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
-            resized_arr = cv2.resize(img_arr, (width, height))
-            data.append(resized_arr)
+            resized_arr = cv2.resize(img_arr, (width, height)) # rescale the image so every image is of the same dimension
+            data.append(resized_arr) # add the matrix of pixel values 
         except Exception as e:
-            print(e)
-    return np.array(data).transpose(0, 3, 1, 2)
+            print(e) # some error thrown in imread or resize
+    return np.array(data)
 
 #%%
 # --- [CELL 8]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
-# === BEFORE (original) ===
-# train_wms_pixVals = createPixelArr(out_array_wm[:90]) # 1000
-# train_nwms_pixVals = createPixelArr(out_array_nwm[:90]) # 1000
-
-# === AFTER (edited) ===
-# Create training data for watermarked (class 1) and non-watermarked (class 0)
-train_wms_pixVals = createPixelArr(out_array_wm[:90])
-train_nwms_pixVals = createPixelArr(out_array_nwm[:90])
-
-# Create labels: 1 for watermarked, 0 for non-watermarked
-labels_wms = np.ones(len(train_wms_pixVals), dtype=np.int64)
-labels_nwms = np.zeros(len(train_nwms_pixVals), dtype=np.int64)
-
-# Combine images and labels
-X = np.concatenate([train_wms_pixVals, train_nwms_pixVals], axis=0)
-y = np.concatenate([labels_wms, labels_nwms], axis=0)
-
-# Split into train and test
-X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
+train_wms_pixVals = createPixelArr(out_array_wm[:90]) # 1000
+train_nwms_pixVals = createPixelArr(out_array_nwm[:90]) # 1000
 
 #%%
 # --- [CELL 9]: ---
@@ -152,7 +118,13 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random
 # X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1)
 
 # === AFTER (edited) ===
-# Cell 8 now handles train_test_split
+# Combine both datasets and create proper labels
+X = np.concatenate([train_wms_pixVals, train_nwms_pixVals], axis=0)
+# Create labels: 0 for non-watermark, 1 for watermark
+y = np.array([0] * len(train_nwms_pixVals) + [1] * len(train_wms_pixVals))
+
+# Split into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
 
 #%%
 # --- [CELL 10]: ---
@@ -315,10 +287,13 @@ class MyDataset(Dataset):
         return len(self.X)
 
     def __getitem__(self, idx):
-        # Convert to float32 and normalize to [0, 1]
-        x = torch.tensor(self.X[idx], dtype=torch.float32) / 255.0
-        y = torch.tensor(self.y[idx], dtype=torch.long)
-        return x, y
+        # Convert numpy array (H, W, C) to torch tensor and permute to (C, H, W)
+        image = torch.from_numpy(self.X[idx]).permute(2, 0, 1).float()
+        # Normalize to [0, 1] range (images are uint8, so divide by 255)
+        image = image / 255.0
+        # Convert label to tensor
+        label = torch.tensor(self.y[idx], dtype=torch.long)
+        return image, label
 
 #%%
 # --- [CELL 15]: ---
@@ -336,11 +311,20 @@ test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
 #%%
 # --- [CELL 17]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# === BEFORE (original) ===
+# import warnings
+# warnings.filterwarnings("ignore")
+# 
+# model_ft, train_acc_history, val_acc_history = train_model(
+#     model_ft, train_loader, test_loader, criterion, optimizer, num_epochs=3
+# )
+
+# === AFTER (edited) ===
 import warnings
 warnings.filterwarnings("ignore")
 
 model_ft, train_acc_history, val_acc_history = train_model(
-    model_ft, train_loader, test_loader, criterion, optimizer, num_epochs=3
+    model_ft, train_loader, test_loader, criterion, optimizer, num_epochs=1
 )

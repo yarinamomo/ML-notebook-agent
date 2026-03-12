@@ -92,7 +92,7 @@ y_ts_arr = y_test.values
 def weightInitialization(n_features):
     w = np.zeros((n_features, 1))
     b = 0
-    return w, b
+    return w,b
 
 #%%
 # --- [CELL 11]: ---
@@ -213,7 +213,7 @@ def predict(final_pred, m):
 #%%
 # --- [CELL 16]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
 #Get number of features
 n_features = X_tr_arr.shape[1]
 print('Number of Features', n_features)

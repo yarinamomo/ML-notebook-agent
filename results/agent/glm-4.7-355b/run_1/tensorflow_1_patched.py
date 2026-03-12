@@ -40,124 +40,61 @@ PIL.Image.open(str(princess[1]))
 # batch_size,epochs = 64,10
 
 # === AFTER (edited) ===
-image_width, image_height = PIL.Image.open(str(princess[1])).size
+image_height, image_width = PIL.Image.open(str(princess[1])).size
 batch_size,epochs = 64,10
+
+# Filter out corrupted image files by removing them from dataset directory
+from PIL import Image
+import shutil
+import os
+
+removed_count = 0
+for class_dir in data_dir.iterdir():
+    if class_dir.is_dir():
+        for img_file in class_dir.glob('*.jpg'):
+            try:
+                with Image.open(img_file) as img:
+                    img.verify()
+                # Reopen to ensure file is good
+                with Image.open(img_file) as img:
+                    img.load()
+            except Exception as e:
+                print(f"Removing corrupted file: {img_file}")
+                # Move to a backup directory
+                backup_dir = data_dir.parent / 'corrupted_images'
+                backup_dir.mkdir(exist_ok=True)
+                shutil.move(str(img_file), str(backup_dir / img_file.name))
+                removed_count += 1
+
+print(f"Removed {removed_count} corrupted files")
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# train_ds = tf.keras.utils.image_dataset_from_directory(
-#     data_dir,
-#     validation_split=0.2,
-#     subset='training',
-#     image_size=(image_height, image_width),
-#     seed = 1,
-#     shuffle=True,
-#     batch_size=batch_size
-# )
-
-# === AFTER (edited) ===
-# First, remove or skip the corrupted file by creating a custom dataset
-import glob
-import os
-
-def create_filtered_dataset(data_dir, subset, image_size, batch_size, validation_split=0.2, seed=1):
-    # Get all subdirectories
-    class_dirs = sorted([d for d in glob.glob(os.path.join(data_dir, '*')) if os.path.isdir(d)])
-    class_names = [os.path.basename(d) for d in class_dirs]
-    
-    # Collect all valid image files with their labels
-    all_files = []
-    all_labels = []
-    
-    for class_idx, class_dir in enumerate(class_dirs):
-        files = glob.glob(os.path.join(class_dir, '*.jpg'))
-        for file_path in files:
-            # Try to open and verify the image
-            try:
-                with PIL.Image.open(file_path) as img:
-                    img.verify()
-                all_files.append(file_path)
-                all_labels.append(class_idx)
-            except:
-                print(f"Skipping corrupted file: {file_path}")
-                continue
-    
-    # Split into train/val
-    import random
-    random.seed(seed)
-    indices = list(range(len(all_files)))
-    random.shuffle(indices)
-    
-    split_idx = int(len(indices) * (1 - validation_split)) if subset == 'training' else int(len(indices) * validation_split)
-    
-    if subset == 'training':
-        selected_indices = indices[:split_idx]
-    else:
-        selected_indices = indices[-split_idx:]
-    
-    # Create dataset
-    file_paths = [all_files[i] for i in selected_indices]
-    labels = [all_labels[i] for i in selected_indices]
-    
-    # Create tf.data.Dataset
-    def load_and_preprocess(path, label):
-        # Read file
-        img = tf.io.read_file(path)
-        # Decode image
-        img = tf.image.decode_jpeg(img, channels=3)
-        # Resize
-        img = tf.image.resize(img, image_size)
-        return img, label
-    
-    path_ds = tf.data.Dataset.from_tensor_slices((file_paths, labels))
-    dataset = path_ds.map(load_and_preprocess, num_parallel_calls=tf.data.AUTOTUNE)
-    dataset = dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
-    
-    return dataset, class_names
-
-train_ds, all_class_names = create_filtered_dataset(
-    data_dir, 
+train_ds = tf.keras.utils.image_dataset_from_directory(
+    data_dir,
+    validation_split=0.2,
     subset='training',
     image_size=(image_height, image_width),
-    batch_size=batch_size,
-    validation_split=0.2,
-    seed=1
+    seed = 1,
+    shuffle=True,
+    batch_size=batch_size
 )
-
-val_ds, _ = create_filtered_dataset(
-    data_dir,
-    subset='validation', 
-    image_size=(image_height, image_width),
-    batch_size=batch_size,
-    validation_split=0.2,
-    seed=1
-)
-
-# Update class_names
-train_ds.class_names = all_class_names
-val_ds.class_names = all_class_names
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# val_ds = tf.keras.utils.image_dataset_from_directory(
-#     data_dir,
-#     validation_split=0.2,
-#     subset='validation',
-#     image_size=(image_height, image_width),
-#     seed = 1,
-#     shuffle=True,
-#     batch_size=batch_size
-# )
-
-# === AFTER (edited) ===
-# val_ds was already created in cell 5 with filtered data
-# No need to recreate it
+val_ds = tf.keras.utils.image_dataset_from_directory(
+    data_dir,
+    validation_split=0.2,
+    subset='validation',
+    image_size=(image_height, image_width),
+    seed = 1,
+    shuffle=True,
+    batch_size=batch_size
+)
 
 #%%
 # --- [CELL 7]: ---

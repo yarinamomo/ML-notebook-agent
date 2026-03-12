@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import pandas as pd
 import numpy as np
 import warnings
@@ -9,7 +9,7 @@ warnings.filterwarnings('ignore')
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 import logging  # 日志相关的包
 import random
 
@@ -28,7 +28,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 from gensim.models.word2vec import Word2Vec
 
 num_features = 10 #100  # 词向量维度
@@ -45,7 +45,7 @@ model.wv.save_word2vec_format('data/word2vec.txt', binary=False)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 from collections import Counter
 from transformers import BasicTokenizer
 
@@ -144,7 +144,7 @@ vocab = Vocab(train_df)
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -186,8 +186,61 @@ class Attention(nn.Module):
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# === BEFORE (original) ===
+# word2vec_path = 'data/word2vec.txt'
+# dropout = 0.15
+# word_hidden_size = 128
+# word_num_layers = 2
+# 
+# class WordLSTMEncoder(nn.Module):
+#     '''
+#     结合word2vec（预训练）和nn.Embedding()（待训练）的词向量表示，然后进一步用lstm提取序列信息，更新词向量表示
+#     '''
+#     def __init__(self, vocab):
+#         super(WordLSTMEncoder, self).__init__()
+#         self.dropout = nn.Dropout(dropout)
+#         self.word_dims = num_features #100
+#         
+#         self.word_embed = nn.Embedding(vocab.word_size, self.word_dims, padding_idx=0)
+#         
+#         extword_embed = vocab.load_pretrained_embs(word2vec_path)
+#         extword_size, word_dims = extword_embed.shape
+#         
+#         self.extword_embed = nn.Embedding(extword_size, word_dims, padding_idx=0)
+#         self.extword_embed.weight.data.copy_(torch.from_numpy(extword_embed))
+#         self.extword_embed.weight.requires_grad = False
+#         
+#         input_size = self.word_dims
+#         
+#         self.word_lstm = nn.LSTM(input_size=input_size, 
+#                                  hidden_size=word_hidden_size,
+#                                  num_layers=word_num_layers,  # LSTM层的数量
+#                                  batch_first=True,
+#                                  bidirectional=True)
+#         
+#     def forward(self, word_ids, extword_ids, batch_masks):
+#         # word_ids: sen_num x sent_len
+#         # extword_ids: sen_num x sent_len
+#         # batch_masks: sen_num x sent_len
+#         
+#         word_embed = self.word_embed(word_ids)  # sen_num x sent_len x 100
+#         extword_embed = self.extword_embed(extword_ids)
+#         batch_embed = word_embed + extword_embed
+#         
+#         if self.training:
+#             batch_embed = self.dropout(batch_embed)
+#             
+#         hiddens, _ = self.word_lstm(batch_embed)  # sen_num x sent_len x hidden*2
+#         hiddens = hiddens * batch_masks.unsqueeze(2)
+#         
+#         if self.training:
+#             hiddens = self.dropout(hiddens)
+#             
+#         return hiddens
+
+# === AFTER (edited) ===
 word2vec_path = 'data/word2vec.txt'
 dropout = 0.15
 word_hidden_size = 128
@@ -200,49 +253,49 @@ class WordLSTMEncoder(nn.Module):
     def __init__(self, vocab):
         super(WordLSTMEncoder, self).__init__()
         self.dropout = nn.Dropout(dropout)
-        self.word_dims = num_features #100
-        
-        self.word_embed = nn.Embedding(vocab.word_size, self.word_dims, padding_idx=0)
-        
+        self.word_dims = num_features
+
+        self.word_embed = nn.Embedding(vocab.word_size(), self.word_dims, padding_idx=0)
+
         extword_embed = vocab.load_pretrained_embs(word2vec_path)
         extword_size, word_dims = extword_embed.shape
-        
+
         self.extword_embed = nn.Embedding(extword_size, word_dims, padding_idx=0)
         self.extword_embed.weight.data.copy_(torch.from_numpy(extword_embed))
         self.extword_embed.weight.requires_grad = False
-        
+
         input_size = self.word_dims
-        
-        self.word_lstm = nn.LSTM(input_size=input_size, 
+
+        self.word_lstm = nn.LSTM(input_size=input_size,
                                  hidden_size=word_hidden_size,
-                                 num_layers=word_num_layers,  # LSTM层的数量
+                                 num_layers=word_num_layers,
                                  batch_first=True,
                                  bidirectional=True)
-        
+
     def forward(self, word_ids, extword_ids, batch_masks):
-        # word_ids: sen_num x sent_len
-        # extword_ids: sen_num x sent_len
-        # batch_masks: sen_num x sent_len
-        
-        word_embed = self.word_embed(word_ids)  # sen_num x sent_len x 100
+
+
+
+
+        word_embed = self.word_embed(word_ids)
         extword_embed = self.extword_embed(extword_ids)
         batch_embed = word_embed + extword_embed
-        
+
         if self.training:
             batch_embed = self.dropout(batch_embed)
-            
-        hiddens, _ = self.word_lstm(batch_embed)  # sen_num x sent_len x hidden*2
+
+        hiddens, _ = self.word_lstm(batch_embed)
         hiddens = hiddens * batch_masks.unsqueeze(2)
-        
+
         if self.training:
             hiddens = self.dropout(hiddens)
-            
+
         return hiddens
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 sent_hidden_size = 256
 sent_num_layers = 2
 
@@ -270,40 +323,92 @@ class SentEncoder(nn.Module):
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 13}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# === BEFORE (original) ===
+# class Model(nn.Module):
+#     def __init__(self, vocab):
+#         super(Model, self).__init__()
+#         self.sent_rep_size = word_hidden_size * 2  # 双向lstm，每个词向量对应的隐藏层维度
+#         self.doc_rep_size = sent_hidden_size * 2  # 文档表示大小，每个句子对应隐藏层的维度
+#         self.all_parameters = {}
+#         
+#         parameters = []
+#         self.word_encoder = WordLSTMEncoder(vocab)
+#         self.word_attention = Attention(self.sent_rep_size)
+#         # filter(判断函数, 可迭代对象)
+#         parameters.extend(list(filter(lambda p: p.requires_grad, self.word_encoder.parameters())))
+#         parameters.extend(list(filter(lambda p: p.requires_grad, self.word_attention.parameters())))
+#         self.sent_encoder = SentEncoder(self.sent_rep_size)
+#         self.sent_attention = Attention(self.doc_rep_size)
+#         parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_encoder.parameters())))
+#         parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_attention.parameters())))
+#         self.out = nn.Linear(self.doc_rep_size, vocab.label_size, bias=True)
+#         parameters.extend(list(filter(lambda p: p.requires_grad, self.out.parameters())))
+#         
+#         self.to(device)
+#         
+#         if len(parameters) > 0:
+#             self.all_parameters['basic_parameters'] = parameters
+#             
+#         # 模型总参数量
+#         para_num = sum([np.prod(list(p.size())) for p in self.parameters()])
+#         
+#     def forward(self, batch_inputs):
+#         # batch_inputs(batch_inputs1, batch_inputs2): b x doc_len x sent_len
+#         # batch_masks: b x doc_len x sent_len
+#         # 不明白为什么这里要同时输入两个batch？？？？？？？
+#         batch_inputs1, batch_inputs2, batch_masks = batch_inputs
+#         batch_size, max_doc_len, max_sent_len = batch_inputs1.shape[0], batch_inputs1.shape[1], batch_inputs1.shape[2]
+#         batch_inputs1 = batch_inputs1.view(batch_size * max_doc_len, max_sent_len)
+#         batch_inputs2 = batch_inputs2.view(batch_size * max_doc_len, max_sent_len)
+#         batch_masks = batch_masks.view(batch_size * max_doc_len, max_sent_len)
+#         batch_hiddens = self.word_encoder(batch_inputs1, batch_inputs2, batch_masks)
+#         sent_reps, atten_scores = self.word_attention(batch_hiddens, batch_masks)
+#         sent_reps = sent_reps.view(batch_size, max_doc_len, self.sent_rep_size)
+#         batch_masks = batch_masks.view(batch_size, max_doc_len, max_sent_len)
+#         sent_masks = batch_masks.bool().any(2).float()
+#         sent_hiddens = self.sent_encoder(sent_reps, sent_masks)
+#         doc_reps, atten_scores = self.sent_attention(sent_hiddens, sent_masks)
+#         batch_outputs = self.out(doc_reps)
+#         
+#         return batch_outputs
+#     
+# model = Model(vocab)
+
+# === AFTER (edited) ===
 class Model(nn.Module):
     def __init__(self, vocab):
         super(Model, self).__init__()
-        self.sent_rep_size = word_hidden_size * 2  # 双向lstm，每个词向量对应的隐藏层维度
-        self.doc_rep_size = sent_hidden_size * 2  # 文档表示大小，每个句子对应隐藏层的维度
+        self.sent_rep_size = word_hidden_size * 2
+        self.doc_rep_size = sent_hidden_size * 2
         self.all_parameters = {}
-        
+
         parameters = []
         self.word_encoder = WordLSTMEncoder(vocab)
         self.word_attention = Attention(self.sent_rep_size)
-        # filter(判断函数, 可迭代对象)
+
         parameters.extend(list(filter(lambda p: p.requires_grad, self.word_encoder.parameters())))
         parameters.extend(list(filter(lambda p: p.requires_grad, self.word_attention.parameters())))
         self.sent_encoder = SentEncoder(self.sent_rep_size)
         self.sent_attention = Attention(self.doc_rep_size)
         parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_encoder.parameters())))
         parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_attention.parameters())))
-        self.out = nn.Linear(self.doc_rep_size, vocab.label_size, bias=True)
+        self.out = nn.Linear(self.doc_rep_size, vocab.label_size(), bias=True)
         parameters.extend(list(filter(lambda p: p.requires_grad, self.out.parameters())))
-        
+
         self.to(device)
-        
+
         if len(parameters) > 0:
             self.all_parameters['basic_parameters'] = parameters
-            
-        # 模型总参数量
+
+
         para_num = sum([np.prod(list(p.size())) for p in self.parameters()])
-        
+
     def forward(self, batch_inputs):
-        # batch_inputs(batch_inputs1, batch_inputs2): b x doc_len x sent_len
-        # batch_masks: b x doc_len x sent_len
-        # 不明白为什么这里要同时输入两个batch？？？？？？？
+
+
+
         batch_inputs1, batch_inputs2, batch_masks = batch_inputs
         batch_size, max_doc_len, max_sent_len = batch_inputs1.shape[0], batch_inputs1.shape[1], batch_inputs1.shape[2]
         batch_inputs1 = batch_inputs1.view(batch_size * max_doc_len, max_sent_len)
@@ -317,7 +422,7 @@ class Model(nn.Module):
         sent_hiddens = self.sent_encoder(sent_reps, sent_masks)
         doc_reps, atten_scores = self.sent_attention(sent_hiddens, sent_masks)
         batch_outputs = self.out(doc_reps)
-        
+
         return batch_outputs
-    
+
 model = Model(vocab)

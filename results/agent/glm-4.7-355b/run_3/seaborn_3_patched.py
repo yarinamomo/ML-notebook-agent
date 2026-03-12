@@ -141,7 +141,7 @@ for col in num_cols:
     num_summary(df, col, True)
 
 for col in num_cols:
-    sns.countplot(x=df[col])
+    sns.histplot(data=df, x=col)
     plt.show()
 
 for col in num_cols:

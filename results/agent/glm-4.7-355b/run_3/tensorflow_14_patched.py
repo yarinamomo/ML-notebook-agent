@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -14,7 +14,7 @@ import tensorflow.keras.backend as K
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # Define VGG_FACE_MODEL architecture
 model = Sequential()
 model.add(ZeroPadding2D((1,1),input_shape=(224,224, 3)))
@@ -71,7 +71,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # # Set the main data directory where subdirectories represent classes/labels
 # main_data_directory = 'data/train-data-imgs'
@@ -145,29 +145,30 @@ train_generator = train_datagen.flow_from_directory(
 )
 
 
-base_model = VGG16(weights='imagenet', include_top=False,classes=7)
-
-# Add classification head
-from tensorflow.keras.layers import GlobalAveragePooling2D
-
-x = GlobalAveragePooling2D()(base_model.output)
-x = Dense(7, activation='softmax')(x)
-
-base_model = tf.keras.Model(inputs=base_model.input, outputs=x)
+base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
 
 
-for layer in base_model.layers[:-2]:  # Freeze all layers except the new ones
+for layer in base_model.layers:
     layer.trainable = False
 
 
-base_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+model = Sequential([
+    base_model,
+    Flatten(),
+    Dense(256, activation='relu'),
+    Dropout(0.5),
+    Dense(7, activation='softmax')
+])
 
 
-base_model.fit(
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+
+model.fit(
     train_generator,
     steps_per_epoch=len(train_generator),
     epochs=10,
 )
 
 
-base_model.save('data/updated_vgg_face_weights.h5')
+model.save('data/updated_vgg_face_weights.h5')

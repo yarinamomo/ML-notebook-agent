@@ -50,26 +50,28 @@ test_df = test_df.drop("Id", axis=1)
 # test_df = pd.get_dummies(test_df, columns=list(test_df))
 
 # === AFTER (edited) ===
-# Identify categorical columns to encode (all non-numeric columns)
-categorical_cols = ['EJ', 'Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon']
+# Identify categorical columns that exist in both train and test
+cat_cols_train = train_df.select_dtypes(include=['object']).columns.tolist()
+cat_cols_test = test_df.select_dtypes(include=['object']).columns.tolist()
+cat_cols = list(set(cat_cols_train) & set(cat_cols_test))
+print("Categorical columns to encode (both train and test):", cat_cols)
 
-# Get the combined set of columns for consistent one-hot encoding
-train_cat = train_df[categorical_cols]
-test_cat = test_df[['EJ']]  # EJ is the only categorical column in test
+# Identify categorical columns only in train (likely extra labels to remove)
+extra_cat_cols = list(set(cat_cols_train) - set(cat_cols_test))
+if extra_cat_cols:
+    print("Dropping extra categorical columns from train:", extra_cat_cols)
+    train_df = train_df.drop(columns=extra_cat_cols)
 
-combined_df = pd.concat([train_cat, test_cat], axis=0, ignore_index=True)
-combined_dummies = pd.get_dummies(combined_df, columns=categorical_cols)
+# Apply one-hot encoding only to common categorical columns
+train_df = pd.get_dummies(train_df, columns=cat_cols, drop_first=True)
+test_df = pd.get_dummies(test_df, columns=cat_cols, drop_first=True)
 
-# Split back into train and test with consistent columns
-train_dummies = combined_dummies.iloc[:len(train_df)].reset_index(drop=True)
-test_dummies = combined_dummies.iloc[len(train_df):].reset_index(drop=True)
-
-# Remove categorical columns and add one-hot encoded columns
-train_df = pd.concat([train_df.drop(categorical_cols, axis=1).reset_index(drop=True), train_dummies], axis=1)
-test_df = pd.concat([test_df.drop(['EJ'], axis=1).reset_index(drop=True), test_dummies], axis=1)
-
-# Align test_df columns with train_df columns (fill missing columns with 0)
+# Align columns between train and test (ensure same feature space)
+# Add missing columns to test as zeros, and remove extras
 test_df = test_df.reindex(columns=train_df.columns, fill_value=0)
+
+print("Train shape:", train_df.shape)
+print("Test shape:", test_df.shape)
 
 #%%
 # --- [CELL 5]: ---

@@ -165,31 +165,15 @@ model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
 # model.fit(train_data, train_labels, epochs=10)
 
 # === AFTER (edited) ===
-# Prepare data for training - use tokenized inputs
-def prepare_dataset(dataset):
-    input_ids = []
-    attention_mask = []
-    labels = []
-    
-    for item in dataset:
-        input_ids.append(item['input_ids'])
-        attention_mask.append(item['attention_mask'])
-        labels.append(item['label'])
-    
-    return {
-        'input_ids': tf.constant(input_ids),
-        'attention_mask': tf.constant(attention_mask)
-    }, tf.constant(labels)
-
-# Prepare training and validation data
-train_inputs, train_labels = prepare_dataset(train_hg)
-valid_inputs, valid_labels = prepare_dataset(valid_hg)
-
-# Compile and train the model
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-model.fit(
-    train_inputs,
-    train_labels,
-    validation_data=(valid_inputs, valid_labels),
-    epochs=10
-)
+
+# Extract tokenized inputs from train_df
+train_inputs = {
+    'input_ids': tf.convert_to_tensor(list(train_df['input_ids'])),
+    'attention_mask': tf.convert_to_tensor(list(train_df['attention_mask'])),
+    'token_type_ids': tf.convert_to_tensor(list(train_df['token_type_ids']))
+}
+
+train_labels_tensor = tf.convert_to_tensor(list(train_df['label']))
+
+model.fit(train_inputs, train_labels_tensor, epochs=10)

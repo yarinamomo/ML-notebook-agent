@@ -46,5 +46,5 @@ game_df.head(5)
 # game_df['released'] = game_df['released'].apply(lambda x: str(x).split('-')[0]).astype('int')
 
 # === AFTER (edited) ===
-game_df['released'] = game_df['released'].fillna(game_df['released'].mode()[0])
-game_df['released'] = game_df['released'].apply(lambda x: str(x).split('-')[0]).astype('int')
+# Extract year from released column and handle NaN values
+game_df['released'] = pd.to_numeric(game_df['released'].apply(lambda x: str(x).split('-')[0] if pd.notna(x) else np.nan), errors='coerce').astype('Int64')

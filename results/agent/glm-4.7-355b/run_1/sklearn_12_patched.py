@@ -134,9 +134,10 @@ print(f'SVC (accuracy): {acc}%')
 # === AFTER (edited) ===
 from pandas import Series
 
-# Train a model that supports feature_importances_
-model = RandomForestClassifier(n_estimators=100)
+# Need to use a tree-based model that has feature_importances_
+model = GradientBoostingClassifier(n_estimators=100)
 model.fit(X_train, y_train)
 
 feature_importance = model.feature_importances_
 Series_feat_imp = Series(feature_importance, index=features.columns)
+Series_feat_imp

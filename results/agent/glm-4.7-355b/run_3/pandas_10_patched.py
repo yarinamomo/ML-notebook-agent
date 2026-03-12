@@ -31,4 +31,4 @@ df['Reviews']=df['Reviews'].astype('int')
 # df['Installs']=df['Installs'].astype('int')
 
 # === AFTER (edited) ===
-df['Installs'] = df['Installs'].astype(str).str.replace(',', '').str.replace('+', '').astype('int')
+df['Installs']=df['Installs'].str.replace(',','').str.replace('+','').astype('int')

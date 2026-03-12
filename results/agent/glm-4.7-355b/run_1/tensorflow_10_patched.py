@@ -79,15 +79,10 @@ for i in range(len(df[:1000])):
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# train_data = df["sentences"]
-# train_labels = df['ADR']
-
-# === AFTER (edited) ===
-# This cell prepares train_data and train_labels
-# It will be executed after cells 8 and 10 (train_df split)
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+train_data = df["sentences"]
+train_labels = df['ADR']
 
 #%%
 # --- [CELL 10]: ---
@@ -105,36 +100,18 @@ train_df, valid_df = train_test_split(
 
 #%%
 # --- [CELL 11]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# import pyarrow as pa
-# from datasets import Dataset
-# 
-# train_hg = Dataset(pa.Table.from_pandas(train_df))
-# valid_hg = Dataset(pa.Table.from_pandas(valid_df))
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 import pyarrow as pa
 from datasets import Dataset
 
 train_hg = Dataset(pa.Table.from_pandas(train_df))
 valid_hg = Dataset(pa.Table.from_pandas(valid_df))
 
-# Prepare the inputs for BERT from the processed train_df
-import tensorflow as tf
-
-train_data = {
-    'input_ids': tf.convert_to_tensor(list(train_df['input_ids'])),
-    'attention_mask': tf.convert_to_tensor(list(train_df['attention_mask'])),
-    'token_type_ids': tf.convert_to_tensor(list(train_df['token_type_ids']))
-}
-train_labels = tf.convert_to_tensor(list(train_df['label']))
-
 #%%
 # --- [CELL 12]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # === BEFORE (original) ===
 # class HuggingFaceLayer(tf.keras.layers.Layer):
 #     def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):
@@ -167,27 +144,70 @@ class HuggingFaceLayer(tf.keras.layers.Layer):
 
     def call(self, inputs):
         outputs = self.model(inputs)
-        # Extract the pooled_output or the CLS token representation
-        # For sequence classification, we typically use the pooled_output or the first token
-        if hasattr(outputs, 'pooler_output') and outputs.pooler_output is not None:
-            return outputs.pooler_output
-        else:
-            # If no pooler_output, use the first token (CLS token) from last_hidden_state
-            return outputs.last_hidden_state[:, 0, :]
+        return outputs
 
 #%%
 # --- [CELL 13]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# === BEFORE (original) ===
+# model_name = 'bert-base-uncased'
+# model = tf.keras.Sequential()
+# model.add(HuggingFaceLayer(model_name=model_name))
+# model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
+
+# === AFTER (edited) ===
+import numpy as np
+
+# Create a custom layer wrapper for TFAutoModel
+class TFBertEmbeddingLayer(tf.keras.layers.Layer):
+    def __init__(self, model_name, trainable=False, **kwargs):
+        super(TFBertEmbeddingLayer, self).__init__(**kwargs)
+        self.bert = TFAutoModel.from_pretrained(model_name, trainable=trainable)
+        self.trainable = trainable
+
+    def call(self, inputs):
+        input_ids, attention_mask, token_type_ids = inputs
+        bert_outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
+        return bert_outputs.last_hidden_state[:, 0, :]
+
 model_name = 'bert-base-uncased'
-model = tf.keras.Sequential()
-model.add(HuggingFaceLayer(model_name=model_name))
-model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
+
+# Define input layers
+input_ids = tf.keras.layers.Input(shape=(128,), dtype=tf.int32, name='input_ids')
+attention_mask = tf.keras.layers.Input(shape=(128,), dtype=tf.int32, name='attention_mask')
+token_type_ids = tf.keras.layers.Input(shape=(128,), dtype=tf.int32, name='token_type_ids')
+
+# Use the custom wrapper layer
+bert_cls_token = TFBertEmbeddingLayer(model_name, trainable=False)([input_ids, attention_mask, token_type_ids])
+
+# Add classification head
+output = tf.keras.layers.Dense(1, activation='sigmoid')(bert_cls_token)
+
+# Create the model
+model = tf.keras.Model(inputs=[input_ids, attention_mask, token_type_ids], outputs=output)
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'error', 'done': True, 'execution_count': 15}
-# Compile and train the model
+# === BEFORE (original) ===
+# # Compile and train the model
+# model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+# model.fit(train_data, train_labels, epochs=10)
+
+# === AFTER (edited) ===
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-model.fit(train_data, train_labels, epochs=10)
+
+# Prepare the data in the format expected by the model
+def prepare_dataset(dataset_df):
+    return {
+        'input_ids': dataset_df['input_ids'].tolist(),
+        'attention_mask': dataset_df['attention_mask'].tolist(),
+        'token_type_ids': dataset_df['token_type_ids'].tolist()
+    }, dataset_df['label'].tolist()
+
+train_inputs, train_labels_array = prepare_dataset(train_df)
+valid_inputs, valid_labels_array = prepare_dataset(valid_df)
+
+model.fit(train_inputs, train_labels_array, epochs=10, validation_data=(valid_inputs, valid_labels_array))

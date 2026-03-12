@@ -150,7 +150,7 @@ class_names = ['PNEUMONIA','NORMAL']
 #%%
 # --- [CELL 11]: ---
 # cell_state: edited
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
 # === BEFORE (original) ===
 # from sklearn.metrics import classification_report, confusion_matrix
 # import seaborn as sns
@@ -170,14 +170,13 @@ class_names = ['PNEUMONIA','NORMAL']
 from sklearn.metrics import classification_report, confusion_matrix
 import seaborn as sns
 
-# Get predictions for the entire validation dataset at once
-predictions = model.predict(valid_dataset, verbose=1)
-prediction_classes = (predictions > 0.5).astype(int).flatten()
+prediction_classes = np.array([])
+true_classes =  np.array([])
 
-# Get true labels by iterating through the dataset
-true_classes = []
 for x, y in valid_dataset:
-    true_classes.extend(y)
-true_classes = np.array(true_classes)
+  prediction_classes = np.concatenate([prediction_classes,
+                       (model.predict(x) > 0.5).astype(int).flatten()])
+  true_classes = np.concatenate([true_classes, y.astype(int)])
+
 
 print(classification_report(true_classes, prediction_classes, target_names=class_names, digits=4))

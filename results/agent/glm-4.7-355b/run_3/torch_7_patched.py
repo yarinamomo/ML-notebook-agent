@@ -186,8 +186,8 @@ class Inception(nn.Module):
         branch3 = self.branch3(x)
         branch4 = self.branch4(x)
 
-        outputs = torch.cat([branch1, branch2, branch3, branch4], 1)
-        return outputs
+        outputs = [branch1, branch2, branch3, branch4]
+        return torch.cat(outputs, 1)
 
 #%%
 # --- [CELL 3]: ---

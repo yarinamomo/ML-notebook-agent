@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import os
 import tensorflow as tf
 from tensorflow.keras.applications.vgg19 import VGG19
@@ -24,19 +24,19 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 np.random.seed(123)
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 data_dir = 'data_small/CovidDataset_70_30'
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 batch_size = 32
 input_shape = (224, 224, 3)
 num_classes = 2
@@ -44,7 +44,7 @@ num_classes = 2
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 train_datagen = ImageDataGenerator(rescale=1./255, shear_range=0.2, zoom_range=0.2, horizontal_flip=True)
 test_datagen = ImageDataGenerator(rescale=1./255)
 validation_datagen = ImageDataGenerator(rescale=1./255)
@@ -71,7 +71,7 @@ validation_generator = validation_datagen.flow_from_directory(
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 vgg19 = VGG19(weights='imagenet', include_top=False, input_shape=input_shape)
 
 modelV19 = Sequential()
@@ -90,7 +90,7 @@ for layer in vgg19.layers:
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 mobilenetv2 = MobileNetV2(weights='imagenet', include_top=False, input_shape=input_shape)
 
 modelM2 = Sequential()
@@ -110,7 +110,7 @@ for layer in mobilenetv2.layers:
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 opt = Adam(learning_rate=0.0001, beta_1=0.9)
 opt2 = Adam(learning_rate=0.0001, beta_1=0.9) # fix for reproducing and fixing purposes, need a new optimizer instance
 modelV19.compile(
@@ -132,7 +132,7 @@ checkpoint_M2 = ModelCheckpoint(filepath_weights_M2, monitor='val_accuracy', mod
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 # Dont run again model is saved @ /kaggle/working/save_weights/best_weights_V19-47-0.9566.hdf5
 
 history_V19 = modelV19.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_V19])
@@ -140,14 +140,14 @@ history_V19 = modelV19.fit(train_generator, epochs=2, validation_data=validation
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 # Dont run again model is saved @ /kaggle/working/save_weights/best_weights_M2-49-0.9681.hdf5
 history_M2 = modelM2.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_M2])
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input, Average
 
@@ -196,7 +196,7 @@ ensemble_model = Model(
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 opt3 = Adam(learning_rate=0.0001, beta_1=0.9) # fix for reproducing and fixing purposes, need a new optimizer instance
 # only compile when there are trainable parameters
 ensemble_model.compile(
@@ -210,14 +210,14 @@ checkpoint_ensemble = ModelCheckpoint(filepath_weights_ensemble, monitor='val_ac
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # only fit when there are trainable parameters
 history_ensemble = ensemble_model.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_ensemble])
 
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 # ensemble_model.load_weights('/kaggle/working/save_weights/best_weights_ensemble-01-0.9752.tf')
 # test_loss, test_acc = ensemble_model.evaluate(test_generator)
 # print('Test accuracy:', test_acc)
@@ -226,7 +226,7 @@ ensemble_model.evaluate(test_generator)
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 y_pred = ensemble_model.predict(test_generator)
 print("One-hot encoded predicted labels:")
 print(y_pred)
@@ -236,7 +236,7 @@ print(y_pred_classes)
 #%%
 # --- [CELL 15]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
 # === BEFORE (original) ===
 # #ensemble_model.load_weights('/kaggle/working/save_weights/best_weights_ensemble-31-0.9690.tf')
 # #y_pred = ensemble_model.predict(test_generator)
@@ -256,7 +256,4 @@ print(y_pred_classes)
 y_pred = ensemble_model.predict(test_generator)
 y_pred_classes = np.argmax(y_pred, axis=1)
 
-
 y_true_classes = test_generator.classes
-print("True labels:", y_true_classes)
-print("Predicted labels:", y_pred_classes)

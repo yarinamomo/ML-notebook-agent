@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # Importing libraries
 
 import numpy as np
@@ -9,7 +9,7 @@ import pandas as pd
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # Reading dataset
 
 df=pd.read_csv('data/data.csv')
@@ -17,7 +17,7 @@ df=pd.read_csv('data/data.csv')
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # Selecting the LinearRegression model
 
 from sklearn.linear_model import LinearRegression
@@ -26,7 +26,7 @@ model = LinearRegression()
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 df['city'].replace({
 'Seattle'            :      0,
 'Renton'             :      1,
@@ -76,7 +76,7 @@ df['city'].replace({
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # # Define X and y
 # 
@@ -96,7 +96,7 @@ X=df[['bedrooms', 'bathrooms', 'sqft_living', 'sqft_lot',
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # Splitting the dataset
 
 from sklearn.model_selection import train_test_split
@@ -105,6 +105,6 @@ X_train,X_test,y_train,y_test=train_test_split(X,y,train_size=0.8,random_state=2
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # Fitting the model
 model.fit(X_train,y_train)

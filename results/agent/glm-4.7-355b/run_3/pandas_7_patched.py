@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -15,14 +15,14 @@ from math import sqrt
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 game_df = pd.read_csv('data/game_info.csv')
 game_df.head(5)
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 import pandas as pd
 
 # Fill missing 'genres' values with the mode (most frequent) genres
@@ -34,21 +34,16 @@ game_df['genres'].isnull().sum()
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 game_df = game_df.drop(['website', 'tba', 'publishers', 'platforms', 'slug','updated'], axis=1)
 game_df.head(5)
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # game_df['released'] = game_df['released'].apply(lambda x: str(x).split('-')[0]).astype('int')
 
 # === AFTER (edited) ===
-# Handle NaN values in released column before converting to year
-game_df['released'] = pd.to_numeric(game_df['released'].apply(lambda x: str(x).split('-')[0]), errors='coerce')
-# Fill NaN years with 0 or keep them as NaN
-game_df['released'].fillna(0, inplace=True)
-# Convert to integer
-game_df['released'] = game_df['released'].astype('int')
+game_df['released'] = game_df['released'].fillna('1900-01-01').apply(lambda x: str(x).split('-')[0]).astype('int')

@@ -100,7 +100,7 @@ model_name = "gpt2"
 model = GPT2LMHeadModel.from_pretrained(model_name)
 tokenizer = GPT2Tokenizer.from_pretrained(model_name)
 
-# GPT2 doesn't have a pad token by default, so we need to set one
+# GPT2 doesn't have a pad token, so we set it to eos_token
 tokenizer.pad_token = tokenizer.eos_token
 
 
@@ -117,7 +117,7 @@ for index, row in df.head(3).iterrows():
             input_ids,
             max_length=input_ids.size(1) + 50,
             num_return_sequences=1,
-            pad_token_id=tokenizer.eos_token_id,
+            pad_token_id=tokenizer.pad_token_id,
             attention_mask=input_ids.ne(tokenizer.pad_token_id)
         )
 
@@ -127,4 +127,4 @@ for index, row in df.head(3).iterrows():
     response = tokenizer.decode(padded_output[0], skip_special_tokens=True)
     generated_responses.append(response)
 
-print(generated_responses)
+print("Generated responses:", generated_responses)

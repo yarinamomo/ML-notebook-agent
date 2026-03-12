@@ -54,4 +54,7 @@ for b in data.dtypes:
         num.append(x[a])
     a=a+1
 
-data.drop(['LotFrontage','Alley','FireplaceQu','PoolQC','Fence', 'MiscFeature'], axis=1, inplace=True)
+# Only drop columns that actually exist in the dataframe
+cols_to_drop = ['LotFrontage','Alley','FireplaceQu','PoolQC','Fence', 'MiscFeature']
+cols_to_drop_existing = [col for col in cols_to_drop if col in data.columns]
+data.drop(cols_to_drop_existing, axis=1, inplace=True)

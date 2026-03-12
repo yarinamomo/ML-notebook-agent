@@ -10,25 +10,11 @@ from matplotlib import pyplot as plt
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
-# === BEFORE (original) ===
-# import pathlib
-# data_dir = 'data/web_scraped_small'
-# data_dir = pathlib.Path(data_dir).with_suffix('')
-
-# === AFTER (edited) ===
 import pathlib
-import os
-
 data_dir = 'data/web_scraped_small'
 data_dir = pathlib.Path(data_dir).with_suffix('')
-
-# Remove the corrupted image file if it exists
-corrupted_file = pathlib.Path('data/web_scraped_small/emerald/220188-630.jpg')
-if corrupted_file.exists():
-    os.remove(corrupted_file)
-    print(f"Removed corrupted file: {corrupted_file}")
 
 #%%
 # --- [CELL 2]: ---
@@ -54,8 +40,32 @@ batch_size,epochs = 64,10
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# === BEFORE (original) ===
+# train_ds = tf.keras.utils.image_dataset_from_directory(
+#     data_dir,
+#     validation_split=0.2,
+#     subset='training',
+#     image_size=(image_height, image_width),
+#     seed = 1,
+#     shuffle=True,
+#     batch_size=batch_size
+# )
+
+# === AFTER (edited) ===
+# Remove corrupted image files
+import os
+from PIL import Image
+
+for img_file in data_dir.glob('*/*'):
+    try:
+        with Image.open(img_file) as img:
+            img.verify()
+    except:
+        print(f"Removing corrupted file: {img_file}")
+        os.remove(img_file)
+
 train_ds = tf.keras.utils.image_dataset_from_directory(
     data_dir,
     validation_split=0.2,

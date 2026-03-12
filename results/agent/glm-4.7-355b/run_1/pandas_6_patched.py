@@ -36,8 +36,6 @@ df
 # #This Error is occuring due to some string values in Order ID Column
 
 # === AFTER (edited) ===
-# Remove rows where 'Order ID' contains the header string 'Order ID'
+# Remove rows where Order ID is the header value 'Order ID' (duplicate headers in data)
 df = df[df['Order ID'] != 'Order ID']
-# Now convert Order ID column to integer
 df['Order ID'] = df['Order ID'].astype('int')
-df

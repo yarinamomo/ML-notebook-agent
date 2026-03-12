@@ -35,14 +35,9 @@ transformer = transforms.Compose([
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# dataset = ImageFolder(root = "data_small/celeba_hq_256", 
-#                       transform = transformer)
-
-# === AFTER (edited) ===
-dataset = ImageFolder(root = "data_small/celeba_hq_256",
+dataset = ImageFolder(root = "data_small/celeba_hq_256", 
                       transform = transformer)
 
 #%%
@@ -227,9 +222,9 @@ for epoch in range(NUM_EPOCHS):
 # === AFTER (edited) ===
 import matplotlib.pyplot as plt
 def visual():
-    n=4
+    n=6
     k=0
-    z = torch.randn((16, 100, 1, 1)).to(device)
+    z = torch.randn((36, 100, 1, 1)).to(device)
     out= gen(z)
     plt.figure(figsize=(16,16))
     out = out.cpu()

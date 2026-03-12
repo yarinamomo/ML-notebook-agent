@@ -145,32 +145,34 @@ train_generator = train_datagen.flow_from_directory(
 )
 
 
-base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-
+# Use the base VGG Face feature extraction layers (excluding fully connected layers)
+# Model has 31 layers: 24 conv/pool layers + conv(4096) + dropout + conv(4096) + dropout + conv(2622) + flatten + softmax
+# We'll use layers up to the last pooling layer (layer index 23)
+base_model = Sequential()
+for layer in model.layers[:24]:
+    base_model.add(layer)
 
 for layer in base_model.layers:
     layer.trainable = False
 
+# Build transfer learning model for 7 classes
+transfer_model = Sequential()
+transfer_model.add(base_model)
+transfer_model.add(Flatten())
+transfer_model.add(Dense(4096, activation='relu'))
+transfer_model.add(Dropout(0.5))
+transfer_model.add(Dense(4096, activation='relu'))
+transfer_model.add(Dropout(0.5))
+transfer_model.add(Dense(7, activation='softmax'))
 
-x = base_model.output
-x = Flatten()(x)
-x = Dense(4096, activation='relu')(x)
-x = Dropout(0.5)(x)
-x = Dense(4096, activation='relu')(x)
-x = Dropout(0.5)(x)
-predictions = Dense(7, activation='softmax')(x)
-
-model = tf.keras.Model(inputs=base_model.input, outputs=predictions)
-
-
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+transfer_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 
-model.fit(
+transfer_model.fit(
     train_generator,
     steps_per_epoch=len(train_generator),
     epochs=10,
 )
 
 
-model.save('data/updated_vgg_face_weights.h5')
+transfer_model.save('data/updated_vgg_face_weights.h5')

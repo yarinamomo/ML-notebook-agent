@@ -55,7 +55,7 @@ print(df.head())
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # import pandas as pd
 # import torch
@@ -100,14 +100,13 @@ model_name = "gpt2"
 model = GPT2LMHeadModel.from_pretrained(model_name)
 tokenizer = GPT2Tokenizer.from_pretrained(model_name)
 
-# Set pad_token to eos_token for GPT2 (which doesn't have a pad token by default)
-tokenizer.pad_token = tokenizer.eos_token
 tokenizer.pad_token_id = tokenizer.eos_token_id
-
 
 generated_responses = []
 
-for index, row in df.iterrows():
+max_examples = 5
+
+for index, row in df.head(max_examples).iterrows():
     prompt = row['instruction']
     input_ids = tokenizer.encode(prompt, return_tensors="pt")
 
@@ -117,7 +116,7 @@ for index, row in df.iterrows():
             input_ids,
             max_length=input_ids.size(1) + 50,
             num_return_sequences=1,
-            pad_token_id=tokenizer.eos_token_id,
+            pad_token_id=tokenizer.pad_token_id,
             attention_mask=input_ids.ne(tokenizer.pad_token_id)
         )
 

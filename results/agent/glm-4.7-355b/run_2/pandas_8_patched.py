@@ -24,4 +24,5 @@ df["DriveTrain"]=df["DriveTrain"].astype("category")
 # df["MSRP"]=pd.to_numeric(df["MSRP"])
 
 # === AFTER (edited) ===
-df["MSRP"]=pd.to_numeric(df["MSRP"].str.replace('$', '').str.replace(',', '').str.strip())
+df["MSRP"]=df["MSRP"].str.replace("$","",regex=False).str.replace(",","",regex=False).str.strip()
+df["MSRP"]=pd.to_numeric(df["MSRP"])

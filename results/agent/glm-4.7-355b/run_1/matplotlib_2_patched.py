@@ -229,5 +229,6 @@ train_loader = DataLoader(custom_dataset, batch_size=batch_size, shuffle=shuffle
 
 # === AFTER (edited) ===
 plt.imshow(custom_dataset.images[1][0, :, :])
+
 plt.title(f"Label: {labels_array[1]}")
 plt.show()

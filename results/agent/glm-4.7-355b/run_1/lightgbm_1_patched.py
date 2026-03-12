@@ -170,9 +170,9 @@ plt.show()
 
 # === AFTER (edited) ===
 df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
-df_tmp['quality'] = train2['quality'].values
-train3 = pd.concat([train2.drop(columns=['quality']), df_tmp], axis=1)
-test3 = pd.concat([test2, df_TSNE_te], axis=1)
+df_TSNE_full = pd.concat([df_tmp, train[conf.target]], axis=1)
+train3 = pd.concat([train2.drop(columns=['quality']).reset_index(drop=True), df_TSNE_full.reset_index(drop=True)], axis=1)
+test3 = pd.concat([test2.reset_index(drop=True), df_TSNE_te.reset_index(drop=True)], axis=1)
 
 #%%
 # --- [CELL 17]: ---
@@ -233,13 +233,12 @@ X = train3.drop([conf.target], axis=1)
 scores =[]
 
 def find_out_params_model(trial):
+    from lightgbm import early_stopping, log_evaluation
     random_state = trial.suggest_int('random_state', 1000, 2000)
     n_splits = trial.suggest_int('n_splits', 8, 20)
     cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=conf.random)
     my_model = LGBMClassifier(
-        random_state = random_state,
-        early_stopping_rounds = 50,
-        verbosity = -1
+        random_state = random_state
     )
     for fold, (train_idx, valid_idx) in enumerate(cv.split(X, y)):
 
@@ -247,7 +246,8 @@ def find_out_params_model(trial):
         y_train , y_valid = y.iloc[train_idx] , y.iloc[valid_idx]
         my_model.fit(
             X_train, y_train,
-            eval_set= [(X_valid,y_valid)]
+            eval_set= [(X_valid,y_valid)],
+            callbacks=[early_stopping(stopping_rounds=50), log_evaluation(-1)]
         )
 
         preds_valid = my_model.predict(X_valid)
@@ -257,7 +257,12 @@ def find_out_params_model(trial):
 
 #%%
 # --- [CELL 20]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 21}
+# cell_state: edited
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
+# === BEFORE (original) ===
+# study = optuna.create_study(direction="maximize")
+# study.optimize(find_out_params_model, n_trials=2)
+
+# === AFTER (edited) ===
 study = optuna.create_study(direction="maximize")
-study.optimize(find_out_params_model, n_trials=2)
+study.optimize(find_out_params_model, n_trials=1)

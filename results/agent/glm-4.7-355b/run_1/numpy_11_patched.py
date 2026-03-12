@@ -49,7 +49,7 @@ print(f"Will generate {GENERATE_SQUARE}px square images.")
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # training_binary_path = os.path.join(DATA_PATH,
 #         f'training_data_{GENERATE_SQUARE}_{GENERATE_SQUARE}.npy')

@@ -63,8 +63,25 @@ for column in string_columns:
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# === BEFORE (original) ===
+# X = train_ds.drop(['SalePrice'], axis = 1)
+# y = train_ds['SalePrice']
+
+# === AFTER (edited) ===
+# First, ensure both train and test have the same columns by dropping from train
+# any columns that were dropped from test (those with >1 null values in test)
+test_null_columns = []
+for column in train_ds.columns:
+    if column in test_ds.columns:
+        null_count_test = test_ds[column].isnull().sum()
+        if null_count_test > 1:
+            test_null_columns.append(column)
+
+print(f"Dropping from training set columns that have >1 null in test set: {test_null_columns}")
+train_ds.drop(test_null_columns, axis=1, inplace=True)
+
 X = train_ds.drop(['SalePrice'], axis = 1)
 y = train_ds['SalePrice']
 
@@ -106,29 +123,13 @@ test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis =
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
-# === BEFORE (original) ===
-# for column in test_ds:
-#     null_count = test_ds[column].isnull().sum()
-#     if null_count > 1:
-#         print(f"Dropping column {column} with {null_count} missing values.")
-#         test_ds.drop(column, axis = 1, inplace = True)
-
-# === AFTER (edited) ===
-# Get the columns used in training (X)
-training_columns = X.columns
-# Only keep columns that exist in training data
-for column in list(test_ds.columns):
-    if column not in training_columns:
-        print(f"Dropping column {column} (not in training data)")
-        test_ds.drop(column, axis=1, inplace=True)
-    else:
-        # Drop the column if it has too many missing values
-        null_count = test_ds[column].isnull().sum()
-        if null_count > 1:
-            print(f"Filling missing values in {column} with {null_count} missing.")
-            test_ds[column].fillna(X[column].mean(), inplace=True)
+for column in test_ds:
+    null_count = test_ds[column].isnull().sum()
+    if null_count > 1:
+        print(f"Dropping column {column} with {null_count} missing values.")
+        test_ds.drop(column, axis = 1, inplace = True)
 
 #%%
 # --- [CELL 13]: ---
@@ -141,20 +142,13 @@ for column in list(test_ds.columns):
 #     test_ds[column] = le.fit_transform(test_ds[column])
 
 # === AFTER (edited) ===
-# Fill any remaining NaN values with 0 for numeric columns
-for column in test_ds.columns:
-    if test_ds[column].isnull().any():
-        if test_ds[column].dtype != 'object':
-            test_ds[column].fillna(0, inplace=True)
-        else:
-            # For object columns, fill with mode or a default value
-            test_ds[column].fillna('Unknown', inplace=True)
-
-# Now encode string columns
 le = LabelEncoder()
 string_columns = test_ds.select_dtypes(include = ['object']).columns
 for column in string_columns:
-    test_ds[column] = le.fit_transform(test_ds[column].astype(str))
+    test_ds[column] = le.fit_transform(test_ds[column])
+
+# Fill any remaining NaN values with 0
+test_ds = test_ds.fillna(0)
 
 #%%
 # --- [CELL 14]: ---

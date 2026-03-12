@@ -98,7 +98,7 @@ y_pred = model.predict(X_test)
 #%%
 # --- [CELL 8]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 # === BEFORE (original) ===
 # params = {}
 # params['tree_method'] = 'hist' # fix (for testing locally), use cpu instead of gpu

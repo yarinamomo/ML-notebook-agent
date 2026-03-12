@@ -79,8 +79,8 @@ import torch
 
 def load_loss_weights_from_directory(directory_path):
     weight_files = [filename for filename in os.listdir(directory_path) if filename.endswith(".npy")]
-    weights = [np.atleast_1d(np.load(os.path.join(directory_path, filename))) for filename in weight_files]
-    return np.concatenate(weights)
+    weights = [np.load(os.path.join(directory_path, filename)) for filename in weight_files]
+    return np.array(weights)
 
 
 def save_weights_to_directory(directory_path, weights):

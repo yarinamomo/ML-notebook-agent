@@ -1,6 +1,25 @@
 # --- [CELL 0]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# cell_state: edited
+# execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# import numpy as np
+# import pandas as pd
+# import matplotlib.pyplot as plt
+# import seaborn as sns
+# import torch
+# import torch.nn as nn
+# import torchvision
+# import torchvision.transforms as transforms
+# import cv2
+# import torch.nn.functional as F
+# from PIL import Image
+# from glob import glob
+# from tqdm import tqdm
+# from itertools import combinations
+# from torch.utils.data import DataLoader
+# from torch.utils.data import Dataset
+
+# === AFTER (edited) ===
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -17,6 +36,8 @@ from tqdm import tqdm
 from itertools import combinations
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
+import os
+import torch as th
 
 #%%
 # --- [CELL 1]: ---
@@ -249,7 +270,7 @@ class ContrastiveLoss(torch.nn.Module):
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 net = SiameseNetwork()#.cuda()
 # Decalre Loss Function
 criterion = ContrastiveLoss()

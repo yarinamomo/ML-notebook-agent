@@ -20,15 +20,13 @@ df = pd.read_csv("data/SalaryData_Test(1).csv")
 # y = df.Salary.values.reshape(-1,1)
 
 # === AFTER (edited) ===
-# Use numeric columns for LinearRegression
-# Map Salary to numeric values (0 for <=50K, 1 for >50K)
-# Note: Salary values have leading spaces
-salary_map = {' <=50K': 0, ' >50K': 1}
-df['Salary_numeric'] = df['Salary'].map(salary_map)
+from sklearn.preprocessing import LabelEncoder
 
-# Use age as predictor and Salary_numeric as target
-x = df.age.values.reshape(-1,1)
-y = df.Salary_numeric.values.reshape(-1,1)
+le_x = LabelEncoder()
+le_y = LabelEncoder()
+
+x = le_x.fit_transform(df.workclass).reshape(-1,1)
+y = le_y.fit_transform(df.Salary).reshape(-1,1)
 
 #%%
 # --- [CELL 3]: ---

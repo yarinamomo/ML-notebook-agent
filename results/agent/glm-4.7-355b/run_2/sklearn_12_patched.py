@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
@@ -22,7 +22,7 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay
 from sklearn.linear_model import LogisticRegression
@@ -35,7 +35,7 @@ from sklearn import svm
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 data =pd.read_csv("data/train.csv")
 # print(data)
 data.head()
@@ -43,7 +43,7 @@ data.head()
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 data['Embarked'].fillna('S', inplace=True)
 data.loc[data.Fare.isnull(),'Fare'] = data['Fare'].mean()
 data.loc[data.Age.isnull(),'Age'] = data['Age'].mean()
@@ -58,13 +58,13 @@ features,labels
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 X_train,X_test,y_train,y_test =train_test_split(features, labels, test_size=0.3)
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 def evaluate(model,y_test=y_test):
     predictions = model.predict(X_test)
     acc = accuracy_score(predictions,y_test)
@@ -72,57 +72,8 @@ def evaluate(model,y_test=y_test):
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# model = LogisticRegression()
-# model.fit(X_train, y_train)
-# acc = evaluate(model)
-# print(f'LogisticRegression (accuracy): {acc}%')
-# 
-# model = DecisionTreeClassifier(criterion='gini', max_depth=12, random_state=42)
-# model.fit(X_train, y_train)
-# acc = evaluate(model)
-# print(f'DecisionTreeClassifier with gini (accuracy): {acc}%')
-# 
-# model = DecisionTreeClassifier(criterion='entropy', max_depth=12, random_state=42)
-# model.fit(X_train, y_train)
-# acc = evaluate(model)
-# print(f'DecisionTreeClassifier with entropy (accuracy): {acc}%')
-# 
-# model = RandomForestClassifier(n_estimators=100)
-# model.fit(X_train, y_train)
-# acc = evaluate(model)
-# # filename = 'model/RandomForestClassifier.sav'
-# # pickle.dump(model, open(filename, 'wb'))
-# # print(f'RandomForestClassifier (accuracy): {acc}%')
-# 
-# model = KNeighborsClassifier()
-# model.fit(X_train, y_train)
-# acc = evaluate(model)
-# print(f'KNeighborsClassifier (accuracy): {acc}%')
-# 
-# model = AdaBoostClassifier(n_estimators=100)
-# model.fit(X_train, y_train)
-# acc = evaluate(model)
-# print(f'AdaBoostClassifier (accuracy): {acc}%')
-# 
-# model = GradientBoostingClassifier(n_estimators=100)
-# model.fit(X_train, y_train)
-# acc = evaluate(model)
-# print(f'GradientBoostingClassifier (accuracy): {acc}%')
-# 
-# model = GaussianNB()
-# model.fit(X_train, y_train)
-# acc = evaluate(model)
-# print(f'GaussianNB (accuracy): {acc}%')
-# 
-# model = svm.SVC(kernel='rbf')
-# model.fit(X_train, y_train)
-# acc = evaluate(model)
-# print(f'SVC (accuracy): {acc}%')
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 model = LogisticRegression()
 model.fit(X_train, y_train)
 acc = evaluate(model)
@@ -141,7 +92,9 @@ print(f'DecisionTreeClassifier with entropy (accuracy): {acc}%')
 model = RandomForestClassifier(n_estimators=100)
 model.fit(X_train, y_train)
 acc = evaluate(model)
-print(f'RandomForestClassifier (accuracy): {acc}%')
+# filename = 'model/RandomForestClassifier.sav'
+# pickle.dump(model, open(filename, 'wb'))
+# print(f'RandomForestClassifier (accuracy): {acc}%')
 
 model = KNeighborsClassifier()
 model.fit(X_train, y_train)
@@ -171,7 +124,7 @@ print(f'SVC (accuracy): {acc}%')
 #%%
 # --- [CELL 7]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # === BEFORE (original) ===
 # from pandas import Series
 # 
@@ -181,5 +134,9 @@ print(f'SVC (accuracy): {acc}%')
 # === AFTER (edited) ===
 from pandas import Series
 
-feature_importance = model.feature_importances_
+# Use a tree-based model that has feature_importances_
+rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+rf_model.fit(X_train, y_train)
+
+feature_importance = rf_model.feature_importances_
 Series_feat_imp = Series(feature_importance, index=features.columns)

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
@@ -32,7 +32,7 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 #By Ranamalla Nithin Reddy https://www.kaggle.com/code/nithinreddy90/chatpgpt-prompts
 
 from transformers import AutoTokenizer
@@ -55,7 +55,7 @@ print(df.head())
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 6}
 # === BEFORE (original) ===
 # import pandas as pd
 # import torch
@@ -100,13 +100,12 @@ model_name = "gpt2"
 model = GPT2LMHeadModel.from_pretrained(model_name)
 tokenizer = GPT2Tokenizer.from_pretrained(model_name)
 
-# GPT2 doesn't have a pad token by default, so we set it to the EOS token
+# GPT2 doesn't have a pad token by default, so we set it to the eos token
 tokenizer.pad_token = tokenizer.eos_token
 
 generated_responses = []
 
-# Limit to first 5 rows to avoid timeout
-for index, row in df.head(5).iterrows():
+for index, row in df.iterrows():
     prompt = row['instruction']
     input_ids = tokenizer.encode(prompt, return_tensors="pt")
 
@@ -116,7 +115,7 @@ for index, row in df.head(5).iterrows():
             input_ids,
             max_length=input_ids.size(1) + 50,
             num_return_sequences=1,
-            pad_token_id=tokenizer.pad_token_id,
+            pad_token_id=tokenizer.eos_token_id,
             attention_mask=input_ids.ne(tokenizer.pad_token_id)
         )
 
@@ -125,8 +124,3 @@ for index, row in df.head(5).iterrows():
 
     response = tokenizer.decode(padded_output[0], skip_special_tokens=True)
     generated_responses.append(response)
-
-print("Generated responses for first 5 examples:")
-for i, response in enumerate(generated_responses):
-    print(f"\nExample {i+1}:")
-    print(response[:200] + "...")

@@ -59,8 +59,38 @@ train_df
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# === BEFORE (original) ===
+# train_arr=train_df.to_numpy()
+# train_arr=torch.from_numpy(train_arr)
+# test_arr=test_df.to_numpy()
+# test_arr=torch.from_numpy(test_arr)
+# val_arr=val_df.to_numpy()
+# val_arr=torch.from_numpy(val_arr)
+# 
+# 
+# train_labels=oh.transform(train_labels)
+# val_labels =oh.transform(val_labels)
+# test_enc_labels=[]
+# for i in range(test_labels.shape[0]):
+#     try:
+#         test_enc_labels.append(oh.transform(test_labels[i]))
+#     except ValueError as e:
+#         z=np.zeros((1,6294))
+#         test_enc_labels.append(z)
+# test_labels=np.array(test_enc_labels)
+# test_labels=np.squeeze(test_labels)
+# test_labels.shape
+# 
+# train_labels=torch.tensor(train_labels)
+# train_labels=train_labels.to(torch.float32)
+# val_labels=torch.tensor(val_labels)
+# val_labels=val_labels.to(torch.float32)
+# test_labels=torch.tensor(test_labels)
+# test_labels=test_labels.to(torch.float32)
+
+# === AFTER (edited) ===
 train_arr=train_df.to_numpy()
 train_arr=torch.from_numpy(train_arr)
 test_arr=test_df.to_numpy()
@@ -82,12 +112,19 @@ test_labels=np.array(test_enc_labels)
 test_labels=np.squeeze(test_labels)
 test_labels.shape
 
-train_labels=torch.tensor(train_labels)
-train_labels=train_labels.to(torch.float32)
-val_labels=torch.tensor(val_labels)
-val_labels=val_labels.to(torch.float32)
-test_labels=torch.tensor(test_labels)
-test_labels=test_labels.to(torch.float32)
+# Convert one-hot encoded labels to class indices using argmax on axis 1
+train_labels_indices = np.argmax(train_labels, axis=1)
+val_labels_indices = np.argmax(val_labels, axis=1)
+
+# For test_labels that are trying to match the 6294 output size, we also need class indices
+test_labels_indices = np.argmax(test_labels, axis=1)
+
+train_labels=torch.tensor(train_labels_indices)
+train_labels=train_labels.to(torch.long)
+val_labels=torch.tensor(val_labels_indices)
+val_labels=val_labels.to(torch.long)
+test_labels=torch.tensor(test_labels_indices)
+test_labels=test_labels.to(torch.long)
 
 #%%
 # --- [CELL 3]: ---
@@ -169,85 +206,44 @@ print(model)
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# === BEFORE (original) ===
-# #1 epoch
-# def run_model(model,dataloader, optimizer,train = True ):
-#     if train:
-#         model.train()
-#   
-#     pred = []
-#     True_labels = []
-#     loss = torch.nn.CrossEntropyLoss()
-#     #loss_aux = torch.nn.CrossEntropyLoss()
-#     total_loss = 0
-#     for (data, label) in dataloader: 
-#         
-#         data=data.to(device)
-#         label=label.to(device)
-#         #print("!!!!!!!!!!!!!!PLS!!!!!!!!!!!!!!!!")
-#         #print(next(model.parameters()).is_cuda)
-#         #print("!!!!!!!!!!!!!!!DATALOCATION!!!!!!!!!!!!!!!!!")
-#         #print(data.device)
-#         optimizer.zero_grad()
-#         output,out_aux = model(data)
-#         output=output.type(torch.FloatTensor).to(device)
-#         out_aux=out_aux.type(torch.FloatTensor).to(device)
-#         #print("output shape is,",output.shape)
-#         #print("label shape is,",label.shape)
-#    
-#         loss_ = loss(output, label).to(device)
-#         loss_aux=loss(out_aux,label).to(device)
-#         mod_loss = loss_+loss_aux 
-#         mod_loss.backward()
-#         total_loss+=mod_loss.item()
-#         
-#         optimizer.step()
-#         pred.append(output)
-#         True_labels.append(label)
-#         #print("total loss",total_loss)
-#         
-#     return pred ,True_labels, total_loss/len(dataloader)
-
-# === AFTER (edited) ===
+#1 epoch
 def run_model(model,dataloader, optimizer,train = True ):
     if train:
         model.train()
-
+  
     pred = []
     True_labels = []
     loss = torch.nn.CrossEntropyLoss()
-
+    #loss_aux = torch.nn.CrossEntropyLoss()
     total_loss = 0
-    for (data, label) in dataloader:
-
+    for (data, label) in dataloader: 
+        
         data=data.to(device)
         label=label.to(device)
-
-
-
-
+        #print("!!!!!!!!!!!!!!PLS!!!!!!!!!!!!!!!!")
+        #print(next(model.parameters()).is_cuda)
+        #print("!!!!!!!!!!!!!!!DATALOCATION!!!!!!!!!!!!!!!!!")
+        #print(data.device)
         optimizer.zero_grad()
         output,out_aux = model(data)
         output=output.type(torch.FloatTensor).to(device)
         out_aux=out_aux.type(torch.FloatTensor).to(device)
-
-
-
-        # Convert one-hot encoded labels to class indices
-        label_indices = torch.argmax(label, dim=1).long()
-        loss_ = loss(output, label_indices).to(device)
-        loss_aux=loss(out_aux,label_indices).to(device)
-        mod_loss = loss_+loss_aux
+        #print("output shape is,",output.shape)
+        #print("label shape is,",label.shape)
+   
+        loss_ = loss(output, label).to(device)
+        loss_aux=loss(out_aux,label).to(device)
+        mod_loss = loss_+loss_aux 
         mod_loss.backward()
         total_loss+=mod_loss.item()
-
+        
         optimizer.step()
         pred.append(output)
         True_labels.append(label)
-
-
+        #print("total loss",total_loss)
+        
     return pred ,True_labels, total_loss/len(dataloader)
 
 #%%

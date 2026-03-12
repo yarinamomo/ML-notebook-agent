@@ -146,7 +146,7 @@ test_images = test_generator.flow_from_dataframe(
 def create_model(input_shape=(224, 224, 3)):
 
     inputs = Input(input_shape)
-    base_model = EfficientNetB1(input_shape=input_shape, include_top=False, classes=5)
+    base_model = EfficientNetB1(input_shape=input_shape, include_top=False)
 
     x = base_model(inputs)
 
@@ -197,7 +197,7 @@ callbacks = [
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 history = model.fit(
     train_images,
     validation_data=val_images,

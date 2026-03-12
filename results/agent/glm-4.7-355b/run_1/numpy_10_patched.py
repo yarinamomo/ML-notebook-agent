@@ -1,28 +1,9 @@
 # --- [CELL 0]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
-# === BEFORE (original) ===
-# # Imports here
-# %matplotlib inline
-# %config InlinBackend.figure_format = 'retina'
-# import numpy as np
-# import torch
-# from torch import nn
-# from torch import optim
-# import torch.nn.functional as F
-# import ast
-# import torchvision.transforms as transforms
-# from torchvision import datasets, models, transforms
-# import torchvision.models as models
-# from torch.autograd import Variable
-# from collections import OrderedDict
-# from PIL import Image
-# import json
-# import time
-# import warnings
-# warnings.filterwarnings('ignore')
-
-# === AFTER (edited) ===
+# Imports here
+%matplotlib inline
+%config InlinBackend.figure_format = 'retina'
 import numpy as np
 import torch
 from torch import nn
@@ -39,8 +20,6 @@ import json
 import time
 import warnings
 warnings.filterwarnings('ignore')
-# torch.autograd import added for automatic gradient clarity as preventive fix
-import torch.autograd
 
 #%%
 # --- [CELL 1]: ---
@@ -369,6 +348,7 @@ def predict(image_path, model, topk=5):
 
 # === AFTER (edited) ===
 import matplotlib.pyplot as plt
+import random
 
 
 def display_image(image_path):
@@ -377,17 +357,16 @@ def display_image(image_path):
 
 model = load_checkpoint('checkpoint.pth')
 
-# Create inverse mapping from idx to class
+# Create idx_to_class mapping from the checkpoint
 idx_to_class = {v: k for k, v in model.class_to_idx.items()}
 
-# Fix: Randomly select an index and then get the path from the tuple
-idx = np.random.choice(len(test_ds.imgs))
-test_image_path = test_ds.imgs[idx][0]
+
+test_image_path = random.choice(test_ds.imgs)[0]
 display_image(test_image_path)
 
 probs, classes = predict(test_image_path, model)
 
-# Convert class indices to class names using idx_to_class and then to human-readable names
+# Convert class indices to folder names, then to flower names
 class_names = [cat_to_name[idx_to_class[cls]] for cls in classes]
 
 print("Probabilities:", probs)
@@ -395,13 +374,11 @@ print("Classes:", class_names)
 
 
 for i in range(5):
-    idx = np.random.choice(len(test_ds.imgs))
-    test_image_path = test_ds.imgs[idx][0]
+    test_image_path = random.choice(test_ds.imgs)[0]
     display_image(test_image_path)
 
     probs, classes = predict(test_image_path, model)
 
-    # Convert class indices to class names using idx_to_class and then to human-readable names
     class_names = [cat_to_name[idx_to_class[cls]] for cls in classes]
 
     print("Probabilities:", probs)

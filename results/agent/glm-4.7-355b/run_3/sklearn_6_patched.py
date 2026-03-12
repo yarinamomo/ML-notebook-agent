@@ -44,13 +44,33 @@ train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis 
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# === BEFORE (original) ===
+# for column in train_ds:
+#     null_count = train_ds[column].isnull().sum()
+#     if null_count > 1:
+#         print(f"Dropping column {column} with {null_count} missing values.")
+#         train_ds.drop(column, axis = 1, inplace = True)
+
+# === AFTER (edited) ===
 for column in train_ds:
     null_count = train_ds[column].isnull().sum()
     if null_count > 1:
         print(f"Dropping column {column} with {null_count} missing values.")
         train_ds.drop(column, axis = 1, inplace = True)
+
+# Also drop columns that will be dropped in test set due to missing values
+# to ensure consistent feature set between train and test
+columns_to_drop = ['MSZoning', 'Utilities', 'Functional', 'BsmtFullBath', 'BsmtHalfBath']
+for column in columns_to_drop:
+    if column in train_ds.columns:
+        print(f"Dropping column {column} to match test set.")
+        train_ds.drop(column, axis = 1, inplace = True)
+
+# Convert all object columns to string to ensure consistent types for LabelEncoder
+for column in train_ds.select_dtypes(include=['object']).columns:
+    train_ds[column] = train_ds[column].astype(str)
 
 #%%
 # --- [CELL 5]: ---
@@ -116,20 +136,18 @@ test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis =
 #         test_ds.drop(column, axis = 1, inplace = True)
 
 # === AFTER (edited) ===
-# Fill columns with few missing values instead of dropping them
 for column in test_ds:
     null_count = test_ds[column].isnull().sum()
-    if 0 < null_count <= 10:
-        # Fill with mode for categorical columns or median for numerical columns
-        if test_ds[column].dtype == 'object':
-            fill_value = test_ds[column].mode()[0]
-        else:
-            fill_value = test_ds[column].median()
-        test_ds[column].fillna(fill_value, inplace=True)
-        print(f"Filling column {column} with {null_count} missing values.")
-    elif null_count > 10:
+    if null_count > 1:
         print(f"Dropping column {column} with {null_count} missing values.")
         test_ds.drop(column, axis = 1, inplace = True)
+
+# Fill remaining single missing values with 0
+test_ds.fillna(0, inplace=True)
+
+# Convert all object columns to string to ensure consistent types for LabelEncoder
+for column in test_ds.select_dtypes(include=['object']).columns:
+    test_ds[column] = test_ds[column].astype(str)
 
 #%%
 # --- [CELL 13]: ---

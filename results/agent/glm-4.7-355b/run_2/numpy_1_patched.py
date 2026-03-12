@@ -224,7 +224,7 @@ import matplotlib.pyplot as plt
 def visual():
     n=6
     k=0
-    z = torch.randn((n*n, 100, 1, 1)).to(device)
+    z = torch.randn((36, 100, 1, 1)).to(device)
     out= gen(z)
     plt.figure(figsize=(16,16))
     out = out.cpu()

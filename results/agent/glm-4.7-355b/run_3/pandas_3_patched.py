@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import pandas as pd
 import os
 import numpy as np
@@ -30,7 +30,7 @@ test = pd.read_csv('data/test.csv.zip', index_col="PetID")
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # name_count = train["Name"].value_counts().rename("name_count")
 # RescuerID = LabelEncoder().fit(train["RescuerID"])
@@ -53,12 +53,11 @@ test = pd.read_csv('data/test.csv.zip', index_col="PetID")
 
 # === AFTER (edited) ===
 name_count = train["Name"].value_counts().rename("name_count")
-RescuerID = LabelEncoder().fit(train["RescuerID"])
+rescuer_encoder = LabelEncoder().fit(pd.concat([train["RescuerID"], test["RescuerID"]]))
 
-def procData(data, name_count, RescuerID):
+def procData(data, name_count, rescuer_encoder):
 
-    # Removed the problematic join on RescuerID - name_count is for pet names only
-    data["RescuerID"] = RescuerID.transform(data["RescuerID"])
+    data["RescuerID"] = rescuer_encoder.transform(data["RescuerID"])
     data["RescuerID"] = data["RescuerID"].fillna(-1)
 
 
@@ -73,7 +72,12 @@ def procData(data, name_count, RescuerID):
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-train = procData(train, name_count, RescuerID)
-test = procData(test, name_count, RescuerID)
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# === BEFORE (original) ===
+# train = procData(train, name_count, RescuerID)
+# test = procData(test, name_count, RescuerID)
+
+# === AFTER (edited) ===
+train = procData(train, name_count, rescuer_encoder)
+test = procData(test, name_count, rescuer_encoder)

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import pandas
 import matplotlib.pyplot as plt
 dataset = pandas.read_csv('data/international-airline-passengers.csv', usecols=[1], engine='python')
@@ -10,7 +10,7 @@ plt.show()
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -24,7 +24,7 @@ from sklearn.metrics import mean_squared_error
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # normalize the dataset
 scaler = MinMaxScaler(feature_range=(0, 1))
 dataset = scaler.fit_transform(dataset)
@@ -32,7 +32,7 @@ dataset = scaler.fit_transform(dataset)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # split into train and test sets
 train_size = int(len(dataset) * 0.67)
 test_size = len(dataset) - train_size
@@ -42,7 +42,7 @@ print(len(train), len(test))
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # convert an array of values into a dataset matrix
 def create_dataset(dataset, look_back=1):
 	dataX, dataY = [], []
@@ -55,7 +55,7 @@ def create_dataset(dataset, look_back=1):
 #%%
 # --- [CELL 5]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # === BEFORE (original) ===
 # # reshape into X=t and Y=t+1
 # look_back = 12
@@ -108,9 +108,9 @@ testX, testY = create_dataset(test, look_back)
 trainX = np.reshape(trainX, (trainX.shape[0], 1, trainX.shape[1]))
 testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
 
+
 model = Sequential()
-model.add(LSTM(4, input_shape=(1, look_back), return_sequences=True))
-model.add(LSTM(4))
+model.add(LSTM(4, input_shape=(1, look_back),return_sequences=True))
 model.add(Dense(1))
 model.compile(loss='mean_squared_error', optimizer='adam')
 model.fit(trainX, trainY, epochs=10, batch_size=1, verbose=2)
@@ -119,9 +119,9 @@ model.fit(trainX, trainY, epochs=10, batch_size=1, verbose=2)
 trainPredict = model.predict(trainX)
 testPredict = model.predict(testX)
 
-trainPredict = scaler.inverse_transform(trainPredict)
+trainPredict = scaler.inverse_transform(trainPredict.reshape(-1, 1))
 trainY = scaler.inverse_transform([trainY])
-testPredict = scaler.inverse_transform(testPredict)
+testPredict = scaler.inverse_transform(testPredict.reshape(-1, 1))
 testY = scaler.inverse_transform([testY])
 
 trainScore = np.sqrt(mean_squared_error(trainY[0], trainPredict[:,0]))
@@ -131,11 +131,11 @@ print('Test Score: %.2f RMSE' % (testScore))
 
 trainPredictPlot = np.empty_like(dataset)
 trainPredictPlot[:, :] = np.nan
-trainPredictPlot[look_back:len(trainPredict)+look_back, :] = trainPredict[:, :1]
+trainPredictPlot[look_back:len(trainPredict)+look_back, :] = trainPredict
 
 testPredictPlot = np.empty_like(dataset)
 testPredictPlot[:, :] = np.nan
-testPredictPlot[len(trainPredict)+(look_back*2)+1:len(dataset)-1, :] = testPredict[:, :1]
+testPredictPlot[len(trainPredict)+(look_back*2)+1:len(dataset)-1, :] = testPredict
 
 plt.plot(scaler.inverse_transform(dataset))
 plt.plot(trainPredictPlot)

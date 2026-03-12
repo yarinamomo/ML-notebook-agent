@@ -56,10 +56,13 @@ name_count = train["Name"].value_counts().rename("name_count")
 RescuerID = LabelEncoder().fit(train["RescuerID"])
 
 def procData(data, name_count, RescuerID):
-    
-    # Create a mapping dictionary that returns -1 for unseen labels
-    mapping = {label: idx for idx, label in enumerate(RescuerID.classes_)}
-    data["RescuerID"] = data["RescuerID"].map(mapping).fillna(-1)
+
+    # Handle unseen RescuerIDs in test data by replacing with a known value
+    temp_rescuer = data["RescuerID"].copy()
+    temp_rescuer[~temp_rescuer.isin(RescuerID.classes_)] = RescuerID.classes_[0]
+    data["RescuerID"] = RescuerID.transform(temp_rescuer)
+    data["RescuerID"] = data["RescuerID"].fillna(-1)
+
 
     data["NameNull"] = data["Name"].isnull()
     data["NameLen"] = data["Name"].fillna("").str.len()

@@ -118,13 +118,9 @@ train_nwms_pixVals = createPixelArr(out_array_nwm[:90]) # 1000
 # X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1)
 
 # === AFTER (edited) ===
-# Create labels: 1 for watermarked, 0 for non-watermarked
-y_wm = np.ones(len(train_wms_pixVals))
-y_nwm = np.zeros(len(train_nwms_pixVals))
-
-# Combine data and labels
+# Combine data and create labels
 X = np.concatenate([train_wms_pixVals, train_nwms_pixVals], axis=0)
-y = np.concatenate([y_wm, y_nwm], axis=0)
+y = np.concatenate([np.zeros(len(train_wms_pixVals)), np.ones(len(train_nwms_pixVals))], axis=0).astype(int)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
 
@@ -289,11 +285,11 @@ class MyDataset(Dataset):
         return len(self.X)
 
     def __getitem__(self, idx):
-        # Convert numpy array to tensor and transpose from (H, W, C) to (C, H, W)
-        image = torch.tensor(self.X[idx]).permute(2, 0, 1).float() / 255.0
-        # Convert label to long type for CrossEntropyLoss
-        label = torch.tensor(self.y[idx], dtype=torch.long)
-        return image, label
+        # Convert from (H, W, C) to (C, H, W) and to tensor
+        x = torch.from_numpy(self.X[idx]).permute(2, 0, 1).float() / 255.0
+        # Convert label to int then to Long tensor for CrossEntropyLoss
+        y = torch.tensor(int(self.y[idx]), dtype=torch.long)
+        return x, y
 
 #%%
 # --- [CELL 15]: ---
@@ -312,7 +308,7 @@ test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 #%%
 # --- [CELL 17]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
 import warnings
 warnings.filterwarnings("ignore")
 

@@ -163,7 +163,7 @@ df.head()
 #                                     4: ['count','mean','median', 'sum']})
 
 # === AFTER (edited) ===
-df.groupby('kmeans_cluster').agg({'TotalTime': ['count','mean', 'median', 'sum'],
-                                    'Calories': ['count','mean', 'median', 'sum'],
-                                    'SugarContent': ['count','mean', 'median', 'sum'],
-                                    'FatContent': ['count','mean','median', 'sum']})
+df.groupby('kmeans_cluster').agg({'CookTime': ['count', 'mean', 'median', 'sum'],
+                                    'PrepTime': ['count', 'mean', 'median', 'sum'],
+                                    'TotalTime': ['count', 'mean', 'median', 'sum'],
+                                    'Calories': ['count', 'mean', 'median', 'sum']})

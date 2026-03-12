@@ -249,14 +249,24 @@ from sklearn.model_selection import train_test_split
 
 
 
-# Reshape data from (batch, 1, 224, 224) to (batch, 1, 224*224) for LSTM
-train_data = train_data.reshape(train_data.shape[0], 1, -1).astype('float32') / 255
-test_data = test_data.reshape(test_data.shape[0], 1, -1).astype('float32') / 255
+train_data = train_data.astype('float32') / 255
+test_data = test_data.astype('float32') / 255
+
+# Reshape from (batch, channel, height, width) to (batch, height, width, channel)
+train_data = train_data.reshape(train_data.shape[0], train_data.shape[2], train_data.shape[3], 1)
+test_data = test_data.reshape(test_data.shape[0], test_data.shape[2], test_data.shape[3], 1)
 
 
 model = keras.Sequential([
-    layers.Input(shape=(1, 224*224)),
-    layers.LSTM(256),
+    layers.Input(shape=(train_data.shape[1], train_data.shape[2], train_data.shape[3])),
+    layers.Conv2D(32, (3, 3), activation='relu'),
+    layers.MaxPooling2D((2, 2)),
+    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.MaxPooling2D((2, 2)),
+    layers.Conv2D(128, (3, 3), activation='relu'),
+    layers.MaxPooling2D((2, 2)),
+    layers.Flatten(),
+    layers.Dense(128, activation='relu'),
     layers.Dense(2, activation='softmax')
 ])
 

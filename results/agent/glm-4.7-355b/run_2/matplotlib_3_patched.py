@@ -251,9 +251,7 @@ best_trials = tuner.oracle.get_best_trials(5)
 plt.figure(figsize=(10, 6))
 for trial in best_trials:
     val_accuracy_history = trial.metrics.get_history(name='val_accuracy')
-    # Extract the actual values from MetricObservation objects
-    val_accuracy_values = [obs.value for obs in val_accuracy_history]
-    plt.plot(val_accuracy_values, label=f'Trial {trial.trial_id}')
+    plt.plot([obs.value[0] for obs in val_accuracy_history], label=f'Trial {trial.trial_id}')
 
 plt.title('Validation Accuracy of Best Trials')
 plt.xlabel('Epochs')

@@ -18,7 +18,7 @@ df = pd.read_csv("data/data.csv")
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # abnormaldata1 = df[df['month'] =='8']
 # x = np.array(abnormaldata1.loc[:,"number_people"]).reshape(-1,1)
@@ -32,7 +32,7 @@ y = np.array(abnormaldata1.loc[:,"temperature"]).reshape(-1,1)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=2)
 
 lr = LinearRegression()

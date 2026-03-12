@@ -99,15 +99,12 @@ def row2image(row):
     return image, emotion
 
 plt.figure(0, figsize=(16,10))
-for i in range(1,8):
-    # Skip if this emotion doesn't exist in the data or the map
-    if (i-1) not in emotion_map or len(data[data['emotion'] == i-1]) == 0:
-        continue
-    face = data[data['emotion'] == i-1].iloc[0]
+for idx, emotion_key in enumerate(emotion_map.keys()):
+    face = data[data['emotion'] == emotion_key].iloc[0]
 
     img, label = row2image(face)
-    plt.subplot(2,4,i)
-    plt.imshow(img)  # Fixed: img is already 3D, no need for img[0]
+    plt.subplot(2,4,idx+1)
+    plt.imshow(img[0])
     plt.title(label)
 
 plt.show()

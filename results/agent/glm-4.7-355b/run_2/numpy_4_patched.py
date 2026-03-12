@@ -150,7 +150,7 @@ class_names = ['PNEUMONIA','NORMAL']
 #%%
 # --- [CELL 11]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 13}
 # === BEFORE (original) ===
 # from sklearn.metrics import classification_report, confusion_matrix
 # import seaborn as sns
@@ -170,22 +170,13 @@ class_names = ['PNEUMONIA','NORMAL']
 from sklearn.metrics import classification_report, confusion_matrix
 import seaborn as sns
 
-# Reset the generator to start from the beginning
-valid_dataset.reset()
+prediction_classes = np.array([])
+true_classes =  np.array([])
 
-# Get predictions for all validation data
-predictions = model.predict(valid_dataset, steps=None, verbose=1)
+for x, y in valid_dataset:
+  prediction_classes = np.concatenate([prediction_classes,
+                       (model.predict(x) > 0.5).astype(int).flatten()])
+  true_classes = np.concatenate([true_classes, y.astype(int).flatten()])
 
-# Get all true labels from the dataset
-valid_dataset.reset()
-true_classes = []
-for i in range(len(valid_dataset)):
-    _, y = valid_dataset[i]
-    true_classes.extend(y)
-true_classes = np.array(true_classes)
-
-# Reshape predictions from (n, 1) to (n,) and convert to binary classes using threshold
-prediction_classes = predictions.flatten()
-prediction_classes = (prediction_classes > 0.5).astype(int)
 
 print(classification_report(true_classes, prediction_classes, target_names=class_names, digits=4))

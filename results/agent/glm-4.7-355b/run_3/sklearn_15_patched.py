@@ -56,7 +56,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 #%%
 # --- [CELL 7]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # === BEFORE (original) ===
 # logreg = LogisticRegression(max_iter=1000)
 # 
@@ -70,18 +70,10 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # logreg.fit(X_train, y_train)
 
 # === AFTER (edited) ===
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-
 logreg = LogisticRegression(max_iter=1000)
 
-# Scale the features
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
-
-# Encode the target variable
-label_encoder = LabelEncoder()
-y_train = label_encoder.fit_transform(y_train)
-y_test = label_encoder.transform(y_test)
 
 logreg.fit(X_train, y_train)

@@ -76,28 +76,59 @@ train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-#preprocessing and loading the data set
+# === BEFORE (original) ===
+# #preprocessing and loading the data set
+# class SiameseDataset(Dataset):
+#     def __init__(self,training_csv,training_dir,transform=None):
+#         # used to prepare the labels and images path
+#         self.train_df=pd.read_csv(training_csv)
+#         self.train_df = self.train_df.drop(columns=['Unnamed: 0'])
+#         self.train_df.columns =["image1","image2","label"]
+#         self.train_dir = training_dir   
+#         self.transform = transform
+# 
+#     def __getitem__(self,index):
+#         # getting the image path
+#         image1_path=os.path.join(self.train_dir,self.train_df.iat[index,0])
+#         image2_path=os.path.join(self.train_dir,self.train_df.iat[index,1])
+#         # Loading the image
+#         img0 = Image.open(image1_path)
+#         img1 = Image.open(image2_path)
+#         img0 = img0.convert("L")
+#         img1 = img1.convert("L")
+#         # Apply image transformations
+#         if self.transform is not None:
+#             img0 = self.transform(img0)
+#             img1 = self.transform(img1)
+#         return img0, img1 , th.from_numpy(np.array([int(self.train_df.iat[index,2])],dtype=np.float32))
+#     def __len__(self):
+#         return len(self.train_df)
+
+# === AFTER (edited) ===
+import os as os
+import torch as th
+
 class SiameseDataset(Dataset):
     def __init__(self,training_csv,training_dir,transform=None):
-        # used to prepare the labels and images path
+
         self.train_df=pd.read_csv(training_csv)
         self.train_df = self.train_df.drop(columns=['Unnamed: 0'])
         self.train_df.columns =["image1","image2","label"]
-        self.train_dir = training_dir   
+        self.train_dir = training_dir
         self.transform = transform
 
     def __getitem__(self,index):
-        # getting the image path
+
         image1_path=os.path.join(self.train_dir,self.train_df.iat[index,0])
         image2_path=os.path.join(self.train_dir,self.train_df.iat[index,1])
-        # Loading the image
+
         img0 = Image.open(image1_path)
         img1 = Image.open(image2_path)
         img0 = img0.convert("L")
         img1 = img1.convert("L")
-        # Apply image transformations
+
         if self.transform is not None:
             img0 = self.transform(img0)
             img1 = self.transform(img1)
@@ -197,8 +228,9 @@ class SiameseNetwork(nn.Module):
         )
 
         self.fc1 = nn.Sequential(
-            nn.Linear(256 * 18 * 6, 500),
+            nn.Linear(27648, 500),
             nn.ReLU(inplace=True),
+            nn.Dropout(p=0.5),
 
             nn.Linear(500, 128),
             nn.ReLU(inplace=True),
@@ -248,7 +280,7 @@ class ContrastiveLoss(torch.nn.Module):
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
 net = SiameseNetwork()#.cuda()
 # Decalre Loss Function
 criterion = ContrastiveLoss()

@@ -22,22 +22,21 @@ df.head()
 
 #%%
 # --- [CELL 2]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# === BEFORE (original) ===
+# df=df.dropna(how='all')
+# df
+
+# === AFTER (edited) ===
 df=df.dropna(how='all')
+# Remove rows where 'Order ID' contains the header string 'Order ID'
+df = df[df['Order ID'] != 'Order ID']
 df
 
 #%%
 # --- [CELL 3]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
-# === BEFORE (original) ===
-# df=df['Order ID'].astype('int')
-# #This Error is occuring due to some string values in Order ID Column
-
-# === AFTER (edited) ===
-# Remove rows where 'Order ID' appears as a value (duplicate header rows)
-df = df[df['Order ID'] != 'Order ID']
-
-# Now convert 'Order ID' to integer
-df['Order ID'] = df['Order ID'].astype('int')
+df=df['Order ID'].astype('int')
+#This Error is occuring due to some string values in Order ID Column

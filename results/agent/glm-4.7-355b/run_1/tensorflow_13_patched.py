@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np
 
 # Load GloVe embeddings
@@ -20,7 +20,7 @@ glove_embeddings = load_glove_embeddings(glove_embeddings_file)
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 from transformers import BertTokenizer
 
 # Load BERT tokenizer
@@ -40,7 +40,7 @@ input_ids = tokenize_text(text)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 docs = np.array(['Well done!',
 		'Good work',
 		'Great effort',
@@ -57,7 +57,7 @@ labels = np.array([1,1,1,1,1,0,0,0,0,0])
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # import numpy as np
 # from tensorflow.keras.preprocessing.sequence import pad_sequences

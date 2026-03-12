@@ -141,7 +141,7 @@ for col in num_cols:
     num_summary(df, col, True)
 
 for col in num_cols:
-    sns.barplot(data=df, x=col)
+    sns.barplot(x=col, data=df)
 
 for col in num_cols:
     sns.boxplot(data=df, x=col)

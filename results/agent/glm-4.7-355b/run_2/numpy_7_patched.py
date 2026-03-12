@@ -858,9 +858,9 @@ if __name__ == '__main__':
     train_images = np.moveaxis(dataset['train_images'], 1, 3)
     validation_images = np.moveaxis(dataset['validation_images'], 1, 3)
     test_images = np.moveaxis(dataset['test_images'], 1, 3)
-    train_labels = to_categorical(dataset['train_labels'].flatten())
-    validation_labels = to_categorical(dataset['validation_labels'].flatten())
-    test_labels = to_categorical(dataset['test_labels'].flatten())
+    train_labels = to_categorical(dataset['train_labels'])
+    validation_labels = to_categorical(dataset['validation_labels'])
+    test_labels = to_categorical(dataset['test_labels'])
 
     if os.path.isfile('model.h5'):
         print('\n--- Loading model ---')

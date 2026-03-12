@@ -21,7 +21,7 @@ import time
 import pickle
 
 dataset = load_dataset("sst", "default", trust_remote_code=True)
-dataset2 = load_dataset("multi_nli", trust_remote_code=True)
+dataset2 = load_dataset("multi_nli")
 
 #%%
 # --- [CELL 1]: ---
@@ -230,84 +230,21 @@ X_test = build_input_test(tokens_test , word2index)
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-# === BEFORE (original) ===
-# class elmo(torch.nn.Module):
-#     def __init__(self , vocab_size,dim ,classes = 2, embed = None):
-#         super(elmo, self).__init__()
-#         self.embedding = torch.nn.Embedding(vocab_size , dim )
-#         if(embed != None):
-#           self.embedding.weights = torch.nn.Parameter(embed)
-# #         self.forward_lstm1 = torch.nn.LSTM(dim, dim)
-# #         self.forward_lstm2 = torch.nn.LSTM(dim, dim)
-# #         self.backward_lstm1 = torch.nn.LSTM(dim, dim)
-# #         self.backward_lstm2 = torch.nn.LSTM(dim, dim)
-#         self.bilstm1 = torch.nn.LSTM(dim,dim , bidirectional = True , batch_first = True)
-#         self.bilstm2 = torch.nn.LSTM(dim*2,dim , bidirectional = True, batch_first = True)
-#     
-#         self.parameter =torch.nn.Parameter (torch.tensor([1.,1.,1.]))
-#         self.dense = torch.nn.Linear(dim*2 , 512)
-#         self.dense2 = torch.nn.Linear(512 , 1024)
-#         self.dense3 = torch.nn.Linear(1024 , 512)
-#         self.dense4 = torch.nn.Linear(512 , classes)
-#         self.dropout = torch.nn.Dropout(p=0.5)
-#     def forward(self , x , training= 1):
-#         # print(x.shape)
-#         embed = self.embedding(x )
-#         # print(embed.shape)
-#         out1 , h1 = self.bilstm1(embed)
-#         out2 , h2 = self.bilstm2(out1)
-# #         print(h1[1])
-#         dembed = torch.cat([embed,embed],2)
-# 
-#         
-#         first_layer = dembed     * self.parameter[0]   
-#         second_layer = out1    * self.parameter[1]
-#         embed_layer = out2         * self.parameter[2]
-#         
-# #         reverse_embed = torch.flip(embed ,[2] )
-# #         out_f1 , hn_f1 = self.forward_lstm1(embed)
-# #         out_b1 , hn_b1 = self.backward_lstm1(reverse_embed)
-# #         out_f2 , hn_f2 = self.forward_lstm2(out_f1)
-# #         out_b2 , hn_b2 = self.backward_lstm2(out_b1)
-#         
-#         
-# #         reverse_bl1 = torch.flip(out_b1 , [1])
-# #         reverse_bl2 = torch.flip(out_b2 , [1])
-#         
-# #         first_layer = torch.cat([out_f1,reverse_bl1],2)     * self.parameter[0]   
-# #         second_layer = torch.cat([out_f2,reverse_bl2],2)    * self.parameter[1]
-# #         embed_layer = torch.cat([embed , embed] ,2)         * self.parameter[2]
-#         
-#         encoding =  first_layer + second_layer + embed_layer
-#         encoding = torch.sum(encoding,axis = 1)
-#         # print("enc : ", encoding.shape)
-# #         encoding = out1
-#         if training:
-#           x = F.relu(self.dense(encoding))
-#           x = F.relu(self.dropout(self.dense2(x)))
-#           x = F.relu(self.dense3(x))
-#           x = F.softmax(self.dense4(x) , 1)
-#           # print("softmax : ",x)
-#           return x
-#         else:
-#             return encoding
-
-# === AFTER (edited) ===
 class elmo(torch.nn.Module):
     def __init__(self , vocab_size,dim ,classes = 2, embed = None):
         super(elmo, self).__init__()
         self.embedding = torch.nn.Embedding(vocab_size , dim )
         if(embed != None):
           self.embedding.weights = torch.nn.Parameter(embed)
-
-
-
-
+#         self.forward_lstm1 = torch.nn.LSTM(dim, dim)
+#         self.forward_lstm2 = torch.nn.LSTM(dim, dim)
+#         self.backward_lstm1 = torch.nn.LSTM(dim, dim)
+#         self.backward_lstm2 = torch.nn.LSTM(dim, dim)
         self.bilstm1 = torch.nn.LSTM(dim,dim , bidirectional = True , batch_first = True)
         self.bilstm2 = torch.nn.LSTM(dim*2,dim , bidirectional = True, batch_first = True)
-
+    
         self.parameter =torch.nn.Parameter (torch.tensor([1.,1.,1.]))
         self.dense = torch.nn.Linear(dim*2 , 512)
         self.dense2 = torch.nn.Linear(512 , 1024)
@@ -315,39 +252,43 @@ class elmo(torch.nn.Module):
         self.dense4 = torch.nn.Linear(512 , classes)
         self.dropout = torch.nn.Dropout(p=0.5)
     def forward(self , x , training= 1):
-
+        # print(x.shape)
         embed = self.embedding(x )
-
+        # print(embed.shape)
         out1 , h1 = self.bilstm1(embed)
         out2 , h2 = self.bilstm2(out1)
-
+#         print(h1[1])
         dembed = torch.cat([embed,embed],2)
 
-
-        first_layer = dembed     * self.parameter[0]
+        
+        first_layer = dembed     * self.parameter[0]   
         second_layer = out1    * self.parameter[1]
         embed_layer = out2         * self.parameter[2]
-
-
-
-
-
-
-
-
-
-
-
+        
+#         reverse_embed = torch.flip(embed ,[2] )
+#         out_f1 , hn_f1 = self.forward_lstm1(embed)
+#         out_b1 , hn_b1 = self.backward_lstm1(reverse_embed)
+#         out_f2 , hn_f2 = self.forward_lstm2(out_f1)
+#         out_b2 , hn_b2 = self.backward_lstm2(out_b1)
+        
+        
+#         reverse_bl1 = torch.flip(out_b1 , [1])
+#         reverse_bl2 = torch.flip(out_b2 , [1])
+        
+#         first_layer = torch.cat([out_f1,reverse_bl1],2)     * self.parameter[0]   
+#         second_layer = torch.cat([out_f2,reverse_bl2],2)    * self.parameter[1]
+#         embed_layer = torch.cat([embed , embed] ,2)         * self.parameter[2]
+        
         encoding =  first_layer + second_layer + embed_layer
         encoding = torch.sum(encoding,axis = 1)
-
-
+        # print("enc : ", encoding.shape)
+#         encoding = out1
         if training:
           x = F.relu(self.dense(encoding))
           x = F.relu(self.dropout(self.dense2(x)))
           x = F.relu(self.dense3(x))
-          x = self.dense4(x)  # Return logits, not softmax
-
+          x = F.softmax(self.dense4(x) , 1)
+          # print("softmax : ",x)
           return x
         else:
             return encoding
@@ -361,7 +302,7 @@ class elmo(torch.nn.Module):
 # optimizer = torch.optim.Adam(model.parameters())
 
 # === AFTER (edited) ===
-model = elmo(len(word2index), glv_size, embed=embed)
+model = elmo(max(word2index.values()) + 1, glv_size)
 optimizer = torch.optim.Adam(model.parameters())
 
 #%%
@@ -396,7 +337,7 @@ optimizer = torch.optim.Adam(model.parameters())
 
 # === AFTER (edited) ===
 def train( traindata,epochs = 5):
-    criterion = torch.nn.CrossEntropyLoss()
+
     for x in range(epochs):
         datal = iter(traindata)
         print("epoch ",x+1)
@@ -409,8 +350,8 @@ def train( traindata,epochs = 5):
 
             outputs = model.forward(cx)
 
-            loss = criterion(outputs, cy.long())
-            bloss.append(loss.item())
+            loss = torch.sum((cy - outputs)**2)
+            bloss.append(loss/cx.shape[0])
             loss.backward()
             optimizer.step()
             numb+=1
@@ -454,30 +395,40 @@ yt = dataset['test']['label']
 
 # === AFTER (edited) ===
 class sentimentdata(Dataset):
-    def __init__(self , X,Y, padsz=40):
+    def __init__(self , X,Y , padsz, num_classes=2):
         self.X = X
         self.Y = Y
         self.mx = padsz
+        self.num_classes = num_classes
     def __len__(self):
         return len(self.X)
     def __getitem__(self , index):
         x = self.X[index]
         y = self.Y[index]
-        dif = self.mx - len(x)
-        if dif > 0:
-            a = torch.zeros(self.mx).long()
+        if len(x) < self.mx:
+            # Pad if shorter
+            a = torch.zeros(self.mx)
             a[:len(x)] = x
             x = a
-        return x, y
-
-st_train_loader = sentimentdata(X ,ylb)
-st_test_loader = sentimentdata(X ,ytb)
+        elif len(x) > self.mx:
+            # Trim if longer
+            x = x[:self.mx]
+        # Convert label to one-hot encoding
+        y_onehot = torch.zeros(self.num_classes)
+        y_onehot[y] = 1
+        return x.long(), y_onehot.long()
+st_train_loader = sentimentdata(X ,ylb, 40)
+st_test_loader = sentimentdata(X ,ytb, 40)
 
 st_train = DataLoader(st_train_loader, batch_size=5 )
 st_test= DataLoader(st_test_loader, batch_size=5 )
 
 #%%
 # --- [CELL 19]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
-train(st_train,2)
+# cell_state: edited
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
+# === BEFORE (original) ===
+# train(st_train,2)
+
+# === AFTER (edited) ===
+train(st_train,1)

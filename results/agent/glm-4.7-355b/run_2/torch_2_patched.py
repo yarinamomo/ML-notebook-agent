@@ -150,9 +150,10 @@ def model_quantization(model, backend='x86', save=False):
     model.qconfig = torch.quantization.get_default_qconfig(backend)
     torch.backends.quantized.engine = backend
 
-    quantized_model = torch.quantization.quantize_dynamic(model, qconfig_spec={torch.nn.Linear}, dtype=torch.qint8)
+    quantized_model = torch.quantization.quantize_dynamic(model, qconfig_spec={torch.nn.Linear, torch.nn.LayerNorm}, dtype=torch.qint8)
     if save:
         torch.save(quantized_model.state_dict(), "vit_quantized.pt")
+    
     return quantized_model
 
 
@@ -201,12 +202,22 @@ def inference(model, dataloader, class_dict, device, image_num_stop=40000):
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# Step 1: Initialize model with the best available weights
+# === BEFORE (original) ===
+# # Step 1: Initialize model with the best available weights
+# weights = ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
+# model = vit_b_16(weights=weights)
+# quantized_vit = model_quantization(model=model, save=True)
+# 
+# accuracy, duration = inference(model=model, dataloader=dataloader, class_dict=class_dict, device=device, image_num_stop=100)
+# 
+# print("Inference took {} minutes".format(duration))
+# print("Accuracy for this model is {}".format(accuracy))
+
+# === AFTER (edited) ===
 weights = ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
 model = vit_b_16(weights=weights)
-quantized_vit = model_quantization(model=model, save=True)
 
 accuracy, duration = inference(model=model, dataloader=dataloader, class_dict=class_dict, device=device, image_num_stop=100)
 

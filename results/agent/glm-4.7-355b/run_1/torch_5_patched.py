@@ -319,8 +319,7 @@ def train(num_epochs):
 
             images = Variable(images.to(device))
 
-
-            classes = Variable(classes.to(device))
+            classes = classes.to(device)
 
 
             optimizer.zero_grad()
@@ -353,76 +352,40 @@ def train(num_epochs):
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# import matplotlib.pyplot as plt
-# import numpy as np
-# 
-# # Function to show the images
-# def imageshow(img):
-#     img = img / 2 + 0.5     # unnormalize
-#     npimg = img.numpy()
-#     plt.imshow(np.transpose(npimg, (1, 2, 0)))
-#     plt.show()
-# 
-# 
-# # Function to test the model with a batch of images and show the labels predictions
-# def testBatch():
-#     # get batch of images from the test DataLoader  
-#     images, labels = next(iter(testing_set_loader)) # images, labels = next(iter(test_loader)) # fix for crash isolation reasons
-# 
-#     # show all images as one image grid
-#     imageshow(torchvision.utils.make_grid(images))
-#    
-#     # Show the real labels on the screen 
-#     print('Real labels: ', ' '.join('%5s' % classes[labels[j]] 
-#                                for j in range(batch_size)))
-#   
-#     # Let's see what if the model identifiers the  labels of those example
-#     outputs = model(images)
-#     
-#     # We got the probability for every 10 labels. The highest (max) probability should be correct label
-#     _, predicted = torch.max(outputs, 1)
-#     
-#     # Let's show the predicted labels on the screen to compare with the real ones
-#     print('Predicted: ', ' '.join('%5s' % classes[predicted[j]] 
-#                               for j in range(batch_size)))
-
-# === AFTER (edited) ===
 import matplotlib.pyplot as plt
 import numpy as np
 
-
+# Function to show the images
 def imageshow(img):
-    img = img / 2 + 0.5
+    img = img / 2 + 0.5     # unnormalize
     npimg = img.numpy()
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
     plt.show()
 
 
-
+# Function to test the model with a batch of images and show the labels predictions
 def testBatch():
+    # get batch of images from the test DataLoader  
+    images, labels = next(iter(testing_set_loader)) # images, labels = next(iter(test_loader)) # fix for crash isolation reasons
 
-    images, labels = next(iter(testing_set_loader))
-
-
+    # show all images as one image grid
     imageshow(torchvision.utils.make_grid(images))
-
-
-    batch_size_actual = len(images)
-    print('Real labels: ', ' '.join('%5s' % classes[labels[j]]
-                               for j in range(batch_size_actual)))
-
-
+   
+    # Show the real labels on the screen 
+    print('Real labels: ', ' '.join('%5s' % classes[labels[j]] 
+                               for j in range(batch_size)))
+  
+    # Let's see what if the model identifiers the  labels of those example
     outputs = model(images)
-
-
+    
+    # We got the probability for every 10 labels. The highest (max) probability should be correct label
     _, predicted = torch.max(outputs, 1)
-
-
-    print('Predicted: ', ' '.join('%5s' % classes[predicted[j]]
-                              for j in range(batch_size_actual)))
+    
+    # Let's show the predicted labels on the screen to compare with the real ones
+    print('Predicted: ', ' '.join('%5s' % classes[predicted[j]] 
+                              for j in range(batch_size)))
 
 #%%
 # --- [CELL 6]: ---

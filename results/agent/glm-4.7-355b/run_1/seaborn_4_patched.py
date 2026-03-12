@@ -32,16 +32,11 @@ df.head()
 # plt.tight_layout(pad=0.5, w_pad=0.7, h_pad=5.0)
 
 # === AFTER (edited) ===
-# Calculate grid dimensions to fit all columns
-num_cols = len(df.columns)
-num_subplot_cols = 7
-num_subplot_rows = int(np.ceil(num_cols / num_subplot_cols))
-
-fig, ax = plt.subplots(ncols=num_subplot_cols, nrows=num_subplot_rows, figsize=(20, 10))
+fig, ax = plt.subplots(ncols=7, nrows=3, figsize=(20, 10))
+index = 0
 ax = ax.flatten()
 
-for index, col in enumerate(df.columns):
-    if index < len(ax):
-        sns.boxplot(y=col, data=df, ax=ax[index])
-
+for col, value in df.items():
+    sns.boxplot(y=col, data=df, ax=ax[index])
+    index += 1
 plt.tight_layout(pad=0.5, w_pad=0.7, h_pad=5.0)

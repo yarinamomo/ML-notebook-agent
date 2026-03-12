@@ -139,23 +139,44 @@ df_TSNE_te = df_TSNE_te.set_index('Id')
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
-df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
-df_TSNE = pd.concat([df_tmp,train[conf.target]], axis=1)
+# === BEFORE (original) ===
+# df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
+# df_TSNE = pd.concat([df_tmp,train[conf.target]], axis=1)
+# 
+# df_TSNE = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
+# 
+# groups = df_TSNE.groupby(conf.target)
+# 
+# #https://stackoverflow.com/questions/21654635/scatter-plots-in-pandas-pyplot-how-to-plot-by-category
+# fig, ax = plt.subplots(figsize=(12, 12))
+# ax.margins(0.05) # Optional, just adds 5% padding to the autoscaling
+# for name, group in groups:
+#     ax.plot(group.tsne1, group.tsne2, marker='o', linestyle='', ms=12, label=name)
+# ax.legend()
+# #plt.xlim(-75, -80)
+# #plt.ylim(-5, 5)
+# 
+# plt.show()
 
-df_TSNE = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
+# === AFTER (edited) ===
+df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
+df_tmp['quality'] = train[conf.target].values
+df_TSNE_full = df_tmp.copy()
+
+df_TSNE = df_tmp[(df_tmp.quality == 4) | (df_tmp.quality == 7)]
 
 groups = df_TSNE.groupby(conf.target)
 
-#https://stackoverflow.com/questions/21654635/scatter-plots-in-pandas-pyplot-how-to-plot-by-category
+
 fig, ax = plt.subplots(figsize=(12, 12))
-ax.margins(0.05) # Optional, just adds 5% padding to the autoscaling
+ax.margins(0.05)
 for name, group in groups:
     ax.plot(group.tsne1, group.tsne2, marker='o', linestyle='', ms=12, label=name)
 ax.legend()
-#plt.xlim(-75, -80)
-#plt.ylim(-5, 5)
+
+
 
 plt.show()
 
@@ -169,14 +190,8 @@ plt.show()
 # test3 = pd.concat([test2, df_TSNE_te], axis=1)
 
 # === AFTER (edited) ===
-# Recreate df_TSNE with all rows (not filtered to only quality 4 and 7)
 df_tmp = train2.drop(columns=['quality'])
-df_tsne_all = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
-df_TSNE = pd.concat([df_tsne_all, train[conf.target]], axis=1)
-
-# Now concatenate to create train3 with all rows
-train3 = pd.concat([df_tmp, df_tsne_all], axis=1)
-train3['quality'] = train2['quality'].values
+train3 = pd.concat([df_tmp, train2['quality'], df_TSNE_full[['tsne1', 'tsne2']]], axis=1)
 test3 = pd.concat([test2, df_TSNE_te], axis=1)
 
 #%%
@@ -235,8 +250,6 @@ X = train3.drop([conf.target], axis=1)
 #     return np.mean(scores)
 
 # === AFTER (edited) ===
-import lightgbm as lgb
-
 scores =[]
 
 def find_out_params_model(trial):
@@ -244,7 +257,9 @@ def find_out_params_model(trial):
     n_splits = trial.suggest_int('n_splits', 8, 20)
     cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=conf.random)
     my_model = LGBMClassifier(
-        random_state = random_state
+        random_state=random_state,
+        early_stopping_rounds=50,
+        verbose=-1
     )
     for fold, (train_idx, valid_idx) in enumerate(cv.split(X, y)):
 
@@ -252,8 +267,7 @@ def find_out_params_model(trial):
         y_train , y_valid = y.iloc[train_idx] , y.iloc[valid_idx]
         my_model.fit(
             X_train, y_train,
-            eval_set= [(X_valid,y_valid)],
-            callbacks=[lgb.early_stopping(stopping_rounds=50), lgb.log_evaluation(period=-1)]
+            eval_set=[(X_valid, y_valid)]
         )
 
         preds_valid = my_model.predict(X_valid)
@@ -263,7 +277,12 @@ def find_out_params_model(trial):
 
 #%%
 # --- [CELL 20]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 21}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 22}
+# === BEFORE (original) ===
+# study = optuna.create_study(direction="maximize")
+# study.optimize(find_out_params_model, n_trials=2)
+
+# === AFTER (edited) ===
 study = optuna.create_study(direction="maximize")
-study.optimize(find_out_params_model, n_trials=2)
+study.optimize(find_out_params_model, n_trials=1)

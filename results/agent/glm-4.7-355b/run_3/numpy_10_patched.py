@@ -356,15 +356,16 @@ def display_image(image_path):
 
 model = load_checkpoint('checkpoint.pth')
 
-# Create inverse mapping from model indices to class folder names
+# Reverse class_to_idx mapping to get idx_to_class
 idx_to_class = {v: k for k, v in model.class_to_idx.items()}
 
-test_image_path = test_ds.imgs[np.random.choice(len(test_ds.imgs))][0]
+
+test_image_path = np.random.choice([x[0] for x in test_ds.imgs])
 display_image(test_image_path)
 
 probs, classes = predict(test_image_path, model)
 
-# Convert model indices to class folder names, then to flower names
+# Map class indices back to folder indices for cat_to_name lookup
 class_names = [cat_to_name[idx_to_class[cls]] for cls in classes]
 
 print("Probabilities:", probs)
@@ -372,11 +373,12 @@ print("Classes:", class_names)
 
 
 for i in range(5):
-    test_image_path = test_ds.imgs[np.random.choice(len(test_ds.imgs))][0]
+    test_image_path = np.random.choice([x[0] for x in test_ds.imgs])
     display_image(test_image_path)
 
     probs, classes = predict(test_image_path, model)
 
+    # Map class indices back to folder indices for cat_to_name lookup
     class_names = [cat_to_name[idx_to_class[cls]] for cls in classes]
 
     print("Probabilities:", probs)

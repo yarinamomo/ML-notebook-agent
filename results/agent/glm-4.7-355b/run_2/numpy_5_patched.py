@@ -455,4 +455,3 @@ else:
 
 # === AFTER (edited) ===
 np.save('images.npy', images)
-print(f'Images saved to images.npy with shape: {images.shape}')

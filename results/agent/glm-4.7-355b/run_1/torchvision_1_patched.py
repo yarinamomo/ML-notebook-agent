@@ -306,8 +306,8 @@ def evaluate(model, test_dl):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
-        accuracy = correct / total
-        print(f'Test Accuracy: {accuracy:.4f}')
+    accuracy = correct / total
+    print(f'Test Accuracy: {accuracy:.4f}')
 
 
 

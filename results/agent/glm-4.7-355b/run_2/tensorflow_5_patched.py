@@ -39,9 +39,26 @@ print('Avg', AvgRating)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# Encoding categorical data
+# === BEFORE (original) ===
+# # Encoding categorical data
+# user_ids = rating_df["user_id"].unique().tolist()[:1000]
+# user2user_encoded = {x: i for i, x in enumerate(user_ids)}
+# user_encoded2user = {i: x for i, x in enumerate(user_ids)}
+# rating_df["user"] = rating_df["user_id"].map(user2user_encoded)
+# n_users = len(user2user_encoded)
+# 
+# anime_ids = rating_df["anime_id"].unique().tolist()[:1000]
+# anime2anime_encoded = {x: i for i, x in enumerate(anime_ids)}
+# anime_encoded2anime = {i: x for i, x in enumerate(anime_ids)}
+# rating_df["anime"] = rating_df["anime_id"].map(anime2anime_encoded)
+# n_animes = len(anime2anime_encoded)
+# 
+# print("Num of users: {}, Num of animes: {}".format(n_users, n_animes))
+# print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rating_df['rating'])))
+
+# === AFTER (edited) ===
 user_ids = rating_df["user_id"].unique().tolist()[:1000]
 user2user_encoded = {x: i for i, x in enumerate(user_ids)}
 user_encoded2user = {i: x for i, x in enumerate(user_ids)}
@@ -54,29 +71,21 @@ anime_encoded2anime = {i: x for i, x in enumerate(anime_ids)}
 rating_df["anime"] = rating_df["anime_id"].map(anime2anime_encoded)
 n_animes = len(anime2anime_encoded)
 
+# Drop rows with unmapped user_ids or anime_ids (NaN encoded values)
+rating_df = rating_df.dropna(subset=["user", "anime"])
+
 print("Num of users: {}, Num of animes: {}".format(n_users, n_animes))
 print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rating_df['rating'])))
+print("Rows after filtering:", len(rating_df))
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# # Shuffle
-# rating_df = rating_df.sample(frac=1, random_state=73)
-# 
-# rating_df= rating_df.head(1000)
-# 
-# X = rating_df[['user', 'anime']].values
-# y = rating_df["rating"]
-
-# === AFTER (edited) ===
+# Shuffle
 rating_df = rating_df.sample(frac=1, random_state=73)
 
-# Filter to only include rows with valid user and anime encodings
-rating_df = rating_df[rating_df['user'].notna() & rating_df['anime'].notna()]
-
-rating_df = rating_df.head(1000)
+rating_df= rating_df.head(1000)
 
 X = rating_df[['user', 'anime']].values
 y = rating_df["rating"]
@@ -224,7 +233,7 @@ my_callbacks = [
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # Model training
 history = model.fit(
     x=X_train_array,

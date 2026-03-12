@@ -145,7 +145,7 @@ import torch.nn.functional as F
 
 
 class Network(nn.Module):
-    def __init__(self, num_classes=120):
+    def __init__(self):
         super(Network, self).__init__()
 
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=12, kernel_size=5, stride=1, padding=1)
@@ -157,8 +157,7 @@ class Network(nn.Module):
         self.bn4 = nn.BatchNorm2d(24)
         self.conv5 = nn.Conv2d(in_channels=24, out_channels=24, kernel_size=5, stride=1, padding=1)
         self.bn5 = nn.BatchNorm2d(24)
-        self.pool2 = nn.MaxPool2d(2,2)
-        self.fc1 = nn.Linear(24*53*53, num_classes)
+        self.fc1 = nn.Linear(24*106*106, 120)
 
     def forward(self, input):
         output = F.relu(self.bn1(self.conv1(input)))
@@ -166,14 +165,13 @@ class Network(nn.Module):
         output = self.pool(output)
         output = F.relu(self.bn4(self.conv4(output)))
         output = F.relu(self.bn5(self.conv5(output)))
-        output = self.pool2(output)
-        output = output.view(-1, 24*53*53)
+        output = output.view(output.size(0), -1)
         output = self.fc1(output)
 
         return output
 
 
-model = Network(len(class_names))
+model = Network()
 
 #%%
 # --- [CELL 3]: ---
@@ -320,8 +318,6 @@ def train(num_epochs):
 
 
             images = Variable(images.to(device))
-
-            classes = torch.tensor(classes)
             classes = Variable(classes.to(device))
 
 
@@ -355,45 +351,80 @@ def train(num_epochs):
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# === BEFORE (original) ===
+# import matplotlib.pyplot as plt
+# import numpy as np
+# 
+# # Function to show the images
+# def imageshow(img):
+#     img = img / 2 + 0.5     # unnormalize
+#     npimg = img.numpy()
+#     plt.imshow(np.transpose(npimg, (1, 2, 0)))
+#     plt.show()
+# 
+# 
+# # Function to test the model with a batch of images and show the labels predictions
+# def testBatch():
+#     # get batch of images from the test DataLoader  
+#     images, labels = next(iter(testing_set_loader)) # images, labels = next(iter(test_loader)) # fix for crash isolation reasons
+# 
+#     # show all images as one image grid
+#     imageshow(torchvision.utils.make_grid(images))
+#    
+#     # Show the real labels on the screen 
+#     print('Real labels: ', ' '.join('%5s' % classes[labels[j]] 
+#                                for j in range(batch_size)))
+#   
+#     # Let's see what if the model identifiers the  labels of those example
+#     outputs = model(images)
+#     
+#     # We got the probability for every 10 labels. The highest (max) probability should be correct label
+#     _, predicted = torch.max(outputs, 1)
+#     
+#     # Let's show the predicted labels on the screen to compare with the real ones
+#     print('Predicted: ', ' '.join('%5s' % classes[predicted[j]] 
+#                               for j in range(batch_size)))
+
+# === AFTER (edited) ===
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Function to show the images
+
 def imageshow(img):
-    img = img / 2 + 0.5     # unnormalize
+    img = img / 2 + 0.5
     npimg = img.numpy()
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
     plt.show()
 
 
-# Function to test the model with a batch of images and show the labels predictions
-def testBatch():
-    # get batch of images from the test DataLoader  
-    images, labels = next(iter(testing_set_loader)) # images, labels = next(iter(test_loader)) # fix for crash isolation reasons
 
-    # show all images as one image grid
+def testBatch():
+
+    images, labels = next(iter(testing_set_loader))
+
+
     imageshow(torchvision.utils.make_grid(images))
-   
-    # Show the real labels on the screen 
-    print('Real labels: ', ' '.join('%5s' % classes[labels[j]] 
-                               for j in range(batch_size)))
-  
-    # Let's see what if the model identifiers the  labels of those example
+
+
+    print('Real labels: ', ' '.join('%5s' % classes[labels[j]]
+                               for j in range(len(labels))))
+
+
     outputs = model(images)
-    
-    # We got the probability for every 10 labels. The highest (max) probability should be correct label
+
+
     _, predicted = torch.max(outputs, 1)
-    
-    # Let's show the predicted labels on the screen to compare with the real ones
-    print('Predicted: ', ' '.join('%5s' % classes[predicted[j]] 
-                              for j in range(batch_size)))
+
+
+    print('Predicted: ', ' '.join('%5s' % classes[predicted[j]]
+                              for j in range(len(predicted))))
 
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # === BEFORE (original) ===
 # if __name__ == "__main__":
 #     
@@ -423,9 +454,10 @@ if __name__ == "__main__":
     testAccuracy()
 
 
-    model = Network(len(class_names))
+    model = Network()
     path = "data_small/myFirstModel.pth"
     model.load_state_dict(torch.load(path))
+    model.to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
 
 
     testBatch()

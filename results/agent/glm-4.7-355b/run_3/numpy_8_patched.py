@@ -348,7 +348,7 @@ app_test[cat_col.columns] = enc.transform(app_test[cat_col.columns])
 #%%
 # --- [CELL 33]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 40}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 34}
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -412,13 +412,36 @@ def protected_log(x):
 
 #%%
 # --- [CELL 35]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 36}
+# === BEFORE (original) ===
+# import numpy as np
+# import pandas as pd
+# from deap import creator, base, tools, gp
+# # Определение функций и операций для генерации новых признаков
+# pset = gp.PrimitiveSet("MAIN", arity=2)
+# pset.addPrimitive(np.add, arity=2)
+# pset.addPrimitive(np.subtract, arity=2)
+# pset.addPrimitive(np.multiply, arity=2)
+# pset.addPrimitive(np.maximum, arity=2)
+# pset.addPrimitive(np.minimum, arity=2)
+# pset.addPrimitive(protected_division, arity=2)
+# pset.addPrimitive(protected_sqrt, arity=1)
+# pset.addPrimitive(protected_log, arity=1)
+# pset.addPrimitive(np.sin, arity=1)
+# pset.addPrimitive(np.cos, arity=1)
+# pset.addTerminal(0)
+# pset.addTerminal(1)
+
+# === AFTER (edited) ===
 import numpy as np
 import pandas as pd
 from deap import creator, base, tools, gp
-# Определение функций и операций для генерации новых признаков
-pset = gp.PrimitiveSet("MAIN", arity=2)
+
+# Get the number of features from X_train
+num_features = X_train.shape[1]
+
+pset = gp.PrimitiveSet("MAIN", arity=num_features)
 pset.addPrimitive(np.add, arity=2)
 pset.addPrimitive(np.subtract, arity=2)
 pset.addPrimitive(np.multiply, arity=2)
@@ -432,10 +455,13 @@ pset.addPrimitive(np.cos, arity=1)
 pset.addTerminal(0)
 pset.addTerminal(1)
 
+# Rename arguments to match feature indices
+pset.renameArguments(**{f'ARG{i}': f'x{i}' for i in range(num_features)})
+
 #%%
 # --- [CELL 36]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 45}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 37}
 # === BEFORE (original) ===
 # # Определение функции преобразования ГП структуры в вектор признаков
 # def transform_gp_structure(individual, X):
@@ -456,11 +482,17 @@ pset.addTerminal(1)
 # === AFTER (edited) ===
 def transform_gp_structure(individual, X):
     expr = gp.compile(individual, pset)
-    return np.array([expr(row[0], row[1]) for row in X]).reshape(-1, 1)
+    # For each row, evaluate the GP expression with keyword arguments
+    result = []
+    for row in X:
+        # Convert row to dict of keyword arguments x0, x1, x2, ...
+        kwargs = {f'x{i}': val for i, val in enumerate(row)}
+        result.append(expr(**kwargs))
+    # Reshape to 2D array with one column for model compatibility
+    return np.array(result).reshape(-1, 1)
 
 
 def evaluate_fitness(individual):
-
     X_train_gp = transform_gp_structure(individual, X_train)
     rf_model_gp = lr
     rf_model_gp.fit(X_train_gp, y_train)
@@ -493,32 +525,72 @@ toolbox.register("select", tools.selTournament, tournsize=3)
 
 #%%
 # --- [CELL 38]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': 46}
-import random # fix missing import and vars for crash isolation purposes
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 39}
+# === BEFORE (original) ===
+# import random # fix missing import and vars for crash isolation purposes
+# crossover_prob = 0.5
+# mutation_prob = 0.5
+# 
+# pop_size = 100  # Размер популяции
+# num_generations = 50  # Количество поколений
+# 
+# # Создание начальной популяции
+# population = toolbox.population(n=pop_size)
+# 
+# # Основной цикл эволюции
+# for generation in range(num_generations):
+#     # Оценка фитнеса
+#     fitnesses = map(evaluate_fitness, population)
+#     for individual, fitness in zip(population, fitnesses):
+#         individual.fitness.values = fitness
+# 
+#     # Выбор следующего поколения
+#     offspring = toolbox.select(population, len(population))
+# 
+#     # Клонирование выбранных индивидуумов
+#     offspring = list(map(toolbox.clone, offspring))
+# 
+#     # Применение операторов скрещивания и мутации
+#     for child1, child2 in zip(offspring[::2], offspring[1::2]):
+#         if random.random() < crossover_prob:
+#             toolbox.mate(child1, child2)
+#             del child1.fitness.values
+#             del child2.fitness.values
+# 
+#     for mutant in offspring:
+#         if random.random() < mutation_prob:
+#             toolbox.mutate(mutant)
+#             del mutant.fitness.values
+# 
+#     # Замена старого поколения потомками
+#     population[:] = offspring
+
+# === AFTER (edited) ===
+import random
 crossover_prob = 0.5
 mutation_prob = 0.5
 
-pop_size = 100  # Размер популяции
-num_generations = 50  # Количество поколений
+pop_size = 10
+num_generations = 2
 
-# Создание начальной популяции
+
 population = toolbox.population(n=pop_size)
 
-# Основной цикл эволюции
+
 for generation in range(num_generations):
-    # Оценка фитнеса
+
     fitnesses = map(evaluate_fitness, population)
     for individual, fitness in zip(population, fitnesses):
         individual.fitness.values = fitness
 
-    # Выбор следующего поколения
+
     offspring = toolbox.select(population, len(population))
 
-    # Клонирование выбранных индивидуумов
+
     offspring = list(map(toolbox.clone, offspring))
 
-    # Применение операторов скрещивания и мутации
+
     for child1, child2 in zip(offspring[::2], offspring[1::2]):
         if random.random() < crossover_prob:
             toolbox.mate(child1, child2)
@@ -530,5 +602,5 @@ for generation in range(num_generations):
             toolbox.mutate(mutant)
             del mutant.fitness.values
 
-    # Замена старого поколения потомками
+
     population[:] = offspring

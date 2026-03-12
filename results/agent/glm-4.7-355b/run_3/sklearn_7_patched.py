@@ -18,7 +18,7 @@ else:
 #%%
 # --- [CELL 1]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # === BEFORE (original) ===
 # from sklearn.model_selection import train_test_split
 # from sklearn.ensemble import RandomForestRegressor
@@ -43,16 +43,17 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
-# Drop non-predictive column (CustomerID) and target column
-X = df.drop(['CustomerID', 'Spending Score (1-100)'], axis=1)
-y = df['Spending Score (1-100)']
+# Encode categorical variables using one-hot encoding
+categorical_cols = ['Gender', 'Profession']
+df_encoded = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
 
-# Encode categorical columns using one-hot encoding
-X = pd.get_dummies(X, drop_first=True)
-
+X = df_encoded.drop(['Spending Score (1-100)'], axis=1)
+y = df_encoded['Spending Score (1-100)']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+# Train the model
 rf = RandomForestRegressor(n_estimators=100, random_state=42)
 rf.fit(X_train, y_train)
 
+# Make predictions
 y_pred = rf.predict(X_test)

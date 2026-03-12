@@ -107,7 +107,7 @@ test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis =
 #%%
 # --- [CELL 12]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # === BEFORE (original) ===
 # for column in test_ds:
 #     null_count = test_ds[column].isnull().sum()
@@ -116,19 +116,24 @@ test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis =
 #         test_ds.drop(column, axis = 1, inplace = True)
 
 # === AFTER (edited) ===
-# Drop the same columns from test_ds that were dropped from train_ds
-# These are the columns with >1 null values that were dropped in cell 4
-cols_to_drop = [
-    'LotFrontage', 'Alley', 'MasVnrType', 'MasVnrArea', 'BsmtQual', 'BsmtCond',
-    'BsmtExposure', 'BsmtFinType1', 'BsmtFinType2', 'FireplaceQu', 'GarageType',
-    'GarageFinish', 'GarageQual', 'GarageCond', 'PoolQC', 'Fence', 'MiscFeature'
-]
-
-for column in cols_to_drop:
-    if column in test_ds.columns:
-        null_count = test_ds[column].isnull().sum()
-        print(f"Dropping column {column} with {null_count} missing values.")
+# Keep only the columns that exist in X (the training features used for model fitting)
+for column in list(test_ds.columns):
+    if column not in X.columns:
+        print(f"Dropping column {column} from test_ds (not in training data).")
         test_ds.drop(column, axis = 1, inplace = True)
+
+# Ensure all columns from X are present in test_ds
+for column in X.columns:
+    if column not in test_ds.columns:
+        raise ValueError(f"Column {column} is missing from test_ds but present in training data!")
+
+# Fill only numeric columns with median from training data
+from numpy import number as numeric_types
+for column in test_ds.columns:
+    if test_ds[column].isnull().sum() > 0 and np.issubdtype(test_ds[column].dtype, numeric_types):
+        median_value = train_ds[column].median()
+        test_ds[column].fillna(median_value, inplace = True)
+        print(f"Filled numeric column {column} with median value: {median_value}")
 
 #%%
 # --- [CELL 13]: ---
@@ -141,20 +146,12 @@ for column in string_columns:
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# predictions = FReg.predict(test_ds)
-# submissions_df = pd.DataFrame({
-#     "ID" : test_ds_ids, # test_data['ID'], # fix for crash isolation purpose
-#     "Predictions" : predictions
-# })
-# 
-# # submissions_df.to_csv('submission_csv', index = False)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 predictions = FReg.predict(test_ds)
 submissions_df = pd.DataFrame({
-    "ID" : test_ds_ids,
+    "ID" : test_ds_ids, # test_data['ID'], # fix for crash isolation purpose
     "Predictions" : predictions
 })
+
+# submissions_df.to_csv('submission_csv', index = False)

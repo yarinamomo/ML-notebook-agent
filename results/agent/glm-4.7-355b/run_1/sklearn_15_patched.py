@@ -76,8 +76,8 @@ scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-# Convert string labels to numeric: 'No' -> 0, 'Yes' -> 1
-y_train = y_train.fillna(y_train.mode()[0]).map({'No': 0, 'Yes': 1})
-y_test = y_test.fillna(y_test.mode()[0]).map({'No': 0, 'Yes': 1})
+# Encode target variable as binary (0/1) instead of scaling it
+y_train = y_train.map({'No': 0, 'Yes': 1})
+y_test = y_test.map({'No': 0, 'Yes': 1})
 
 logreg.fit(X_train, y_train)

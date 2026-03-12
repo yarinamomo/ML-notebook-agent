@@ -102,5 +102,6 @@ for i in tqdm(range(len(labels))):
     x = np.expand_dims(img.copy(), axis=0)
     X_data[i] = x / 255.0
 
+
 print('\nTrain Images shape: ',X_data.shape,' size: {:,}'.format(X_data.size))
 print('One-hot encoded output shape: ',Y_data.shape,' size: {:,}'.format(Y_data.size))

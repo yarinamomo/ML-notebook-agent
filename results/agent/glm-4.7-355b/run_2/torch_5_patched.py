@@ -157,7 +157,10 @@ class Network(nn.Module):
         self.bn4 = nn.BatchNorm2d(24)
         self.conv5 = nn.Conv2d(in_channels=24, out_channels=24, kernel_size=5, stride=1, padding=1)
         self.bn5 = nn.BatchNorm2d(24)
-        self.fc1 = nn.Linear(269664, 120)
+        
+        # Adaptive pooling to ensure fixed size before FC layer
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((10, 10))
+        self.fc1 = nn.Linear(24*10*10, 120)
 
     def forward(self, input):
         output = F.relu(self.bn1(self.conv1(input)))
@@ -165,7 +168,9 @@ class Network(nn.Module):
         output = self.pool(output)
         output = F.relu(self.bn4(self.conv4(output)))
         output = F.relu(self.bn5(self.conv5(output)))
-        output = output.view(output.size(0), -1)
+        output = self.pool(output)
+        output = self.adaptive_pool(output)
+        output = output.view(-1, 24*10*10)
         output = self.fc1(output)
 
         return output

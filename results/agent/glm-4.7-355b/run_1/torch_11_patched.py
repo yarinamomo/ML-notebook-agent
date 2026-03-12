@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 # === BEFORE (original) ===
 # from datasets import load_dataset
 # import torch
@@ -21,19 +21,23 @@ import time
 import pickle
 
 dataset = load_dataset("sst", "default", trust_remote_code=True)
-dataset2 = load_dataset("multi_nli", trust_remote_code=True)
+dataset2 = load_dataset("multi_nli")
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-torch.manual_seed = 555
-# torch.set_default_tensor_type('torch.cuda.FloatTensor')
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# === BEFORE (original) ===
+# torch.manual_seed = 555
+# # torch.set_default_tensor_type('torch.cuda.FloatTensor')
+
+# === AFTER (edited) ===
+torch.manual_seed(555)
 
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # !wget http://nlp.stanford.edu/data/glove.6B.zip
 # !unzip glove*.zip
 
@@ -47,7 +51,7 @@ with open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 embed = torch.zeros((len(glv)+2 , glv_size))
 ind =2
 
@@ -65,14 +69,14 @@ for x in glv:
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 sentences = dataset['train']['sentence']
 testsent = dataset['test']['sentence']
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 stop_words = set(stopwords.words('english'))
@@ -92,7 +96,7 @@ def tokenize(sentences):
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 def build_vocab(sentences):
     vocab = set()
     X = list()
@@ -114,7 +118,7 @@ def build_vocab(sentences):
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 def build_input(sentences ,word2index, text2int):
     X =[]
     Y =[]
@@ -136,7 +140,7 @@ def build_input(sentences ,word2index, text2int):
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 def build_input_test(sentences ,word2index):
     X =[]
     for tokens in sentences:
@@ -152,15 +156,40 @@ def build_input_test(sentences ,word2index):
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 tokens , max_len = tokenize(sentences)
 vocab , int2text , text2int = build_vocab(tokens)
 X,Y = build_input(tokens , word2index,text2int)
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# === BEFORE (original) ===
+# from torch.utils.data import Dataset, DataLoader
+# class  data(Dataset):
+#     def __init__(self , X,Y,vs , padsz):
+#         self.X = X
+#         self.Y = Y
+#         self.vocab_size = vs
+#         self.mx = padsz
+#     def __len__(self):
+#         return len(self.X)
+#     def __getitem__(self , index):
+#         dif = len(self.mx - self.X[index] )
+#         _x = self.X[index]
+#         _y = self.Y[index]
+#         if dif > 0:
+#             a = torch.zeros(self.mx)
+#             b = torch.zeros(self.mx)
+#             a[:len(_x)] = _x
+#             b[:len(_y)] = _y
+#             _x = a
+#             _y = torch.zeros( ( self.mx, self.vocab_size))
+#             _y [torch.arange(self.mx),b.long()] =1
+#         return _x.long() , _y.long()
+
+# === AFTER (edited) ===
 from torch.utils.data import Dataset, DataLoader
 class  data(Dataset):
     def __init__(self , X,Y,vs , padsz):
@@ -171,42 +200,43 @@ class  data(Dataset):
     def __len__(self):
         return len(self.X)
     def __getitem__(self , index):
-        dif = len(self.mx - self.X[index] )
+        dif = self.mx - len(self.X[index])
         _x = self.X[index]
         _y = self.Y[index]
-        if dif > 0:
-            a = torch.zeros(self.mx)
-            b = torch.zeros(self.mx)
-            a[:len(_x)] = _x
-            b[:len(_y)] = _y
-            _x = a
-            _y = torch.zeros( ( self.mx, self.vocab_size))
-            _y [torch.arange(self.mx),b.long()] =1
-        return _x.long() , _y.long()
+        
+        a = torch.zeros(self.mx)
+        b = torch.zeros(self.mx)
+        a[:len(_x)] = _x
+        b[:len(_y)] = _y
+        _x = a
+        _y = torch.zeros((self.mx, self.vocab_size))
+        _y[torch.arange(self.mx), b.long()] = 1
+        
+        return _x.long(), _y.long()
 
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 elmotrain = data(X,Y, len(vocab),40)
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 traindata = DataLoader(elmotrain, batch_size=32 )
 
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 tokens_test,ml = tokenize(testsent)
 X_test = build_input_test(tokens_test , word2index)
 
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 class elmo(torch.nn.Module):
     def __init__(self , vocab_size,dim ,classes = 2, embed = None):
         super(elmo, self).__init__()
@@ -270,15 +300,20 @@ class elmo(torch.nn.Module):
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'not run'}
-model = elmo(len(vocab) , glv_size)
+# cell_state: edited
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
+# === BEFORE (original) ===
+# model = elmo(len(vocab) , glv_size)
+# optimizer = torch.optim.Adam(model.parameters())
+
+# === AFTER (edited) ===
+model = elmo(len(embed), glv_size)
 optimizer = torch.optim.Adam(model.parameters())
 
 #%%
 # --- [CELL 16]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
 def train( traindata,epochs = 5):
 
     for x in range(epochs):
@@ -307,7 +342,7 @@ def train( traindata,epochs = 5):
 #%%
 # --- [CELL 17]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
 ylb =[0 if x<0.5 else 1 for x in dataset['train']['label']]
 yl = dataset['train']['label']
 
@@ -317,7 +352,7 @@ yt = dataset['test']['label']
 #%%
 # --- [CELL 18]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
 # === BEFORE (original) ===
 # class sentimentdata(Dataset):
 #     def __init__(self , X,Y ):
@@ -338,35 +373,34 @@ yt = dataset['test']['label']
 
 # === AFTER (edited) ===
 class sentimentdata(Dataset):
-    def __init__(self , X,Y, pad_size):
+    def __init__(self , X,Y, padsz=40):
         self.X = X
         self.Y = Y
-        self.pad_size = pad_size
+        self.mx = padsz
     def __len__(self):
         return len(self.X)
     def __getitem__(self , index):
         x = self.X[index]
-        y= self.Y[index]
-        # Pad x to pad_size
-        if len(x) < self.pad_size:
-            padded_x = torch.zeros(self.pad_size)
-            padded_x[:len(x)] = x
-            x = padded_x
-        elif len(x) > self.pad_size:
-            x = x[:self.pad_size]
+        y = self.Y[index]
+        
+        # Pad x to self.mx
+        a = torch.zeros(self.mx)
+        a[:len(x)] = x
+        x = a
+        
+        # Convert y to one-hot encoding for MSE loss (binary classification)
+        y_onehot = torch.zeros(2)
+        y_onehot[y] = 1.0
+        
+        return x.long(), y_onehot.long()
+st_train_loader = sentimentdata(X ,ylb)
+st_test_loader = sentimentdata(X ,ytb)
 
-        return x,y
-
-# Determine max length from X
-max_len_x = max(len(x) for x in X)
-st_train_loader = sentimentdata(X ,ylb, max_len_x)
-st_test_loader = sentimentdata(X ,ytb, max_len_x)
-
-st_train = DataLoader(st_train_loader, batch_size=5)
-st_test= DataLoader(st_test_loader, batch_size=5)
+st_train = DataLoader(st_train_loader, batch_size=5 )
+st_test= DataLoader(st_test_loader, batch_size=5 )
 
 #%%
 # --- [CELL 19]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
 train(st_train,2)

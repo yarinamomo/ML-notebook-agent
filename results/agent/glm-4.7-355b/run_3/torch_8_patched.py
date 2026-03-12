@@ -118,10 +118,11 @@ train_nwms_pixVals = createPixelArr(out_array_nwm[:90]) # 1000
 # X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1)
 
 # === AFTER (edited) ===
-# Combine watermarked (label=1) and non-watermarked (label=0) images
+# Combine watermarked and non-watermarked images
 X = np.concatenate([train_wms_pixVals, train_nwms_pixVals], axis=0)
-y = np.concatenate([np.ones(len(train_wms_pixVals)), np.zeros(len(train_nwms_pixVals))], axis=0)
-
+# Create labels: 0 for non-watermarked, 1 for watermarked
+y = np.array([0] * len(train_nwms_pixVals) + [1] * len(train_wms_pixVals))
+# Split into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
 
 #%%
@@ -167,94 +168,9 @@ model_ft.classifier = nn.Sequential(
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
-# === BEFORE (original) ===
-# device = torch.device('cpu') # 'cuda:0'
-# 
-# def train_model(model, train_loader, test_loader, criterion, optimizer, num_epochs=80):
-#     since = time.time()
-# 
-#     val_acc_history = []
-#     train_acc_history = []
-# 
-#     best_model_wts = copy.deepcopy(model.state_dict())
-#     best_acc = 0.0
-# 
-#     for epoch in range(num_epochs):
-#         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
-#         print('-' * 10)
-# 
-#         model.train()
-# 
-#         running_loss = 0.0
-#         running_corrects = 0
-# 
-#         for inputs, labels in tqdm(train_loader):
-#             inputs = inputs.to(device)
-#             labels = labels.to(device)
-# 
-#             optimizer.zero_grad()
-# 
-#             with torch.set_grad_enabled(True):
-#                 with torch.cuda.amp.autocast():
-#                     outputs = model(inputs)
-#                     loss = criterion(outputs, labels)
-# 
-#                 _, preds = torch.max(outputs, 1)
-# 
-#                 loss.backward()
-#                 optimizer.step()
-# 
-#             running_loss += loss.item() * inputs.size(0)
-#             running_corrects += torch.sum(preds == labels.data)
-# 
-#         epoch_loss = running_loss / len(train_loader.dataset)
-#         epoch_acc = running_corrects.double() / len(train_loader.dataset)
-# 
-#         print('Train Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
-#         train_acc_history.append(epoch_acc)
-# 
-#         model.eval()
-# 
-#         running_loss = 0.0
-#         running_corrects = 0
-# 
-#         for inputs, labels in tqdm(test_loader):
-#             inputs = inputs.to(device)
-#             labels = labels.to(device)
-# 
-#             with torch.set_grad_enabled(False):
-#                 with torch.cuda.amp.autocast():
-#                     outputs = model(inputs)
-#                     loss = criterion(outputs, labels)
-# 
-#                 _, preds = torch.max(outputs, 1)
-# 
-#             running_loss += loss.item() * inputs.size(0)
-#             running_corrects += torch.sum(preds == labels.data)
-# 
-#         epoch_loss = running_loss / len(test_loader.dataset)
-#         epoch_acc = running_corrects.double() / len(test_loader.dataset)
-# 
-#         print('Test Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
-#         val_acc_history.append(epoch_acc)
-# 
-#         if epoch_acc > best_acc:
-#             best_acc = epoch_acc
-#             best_model_wts = copy.deepcopy(model.state_dict())
-# 
-#         print()
-# 
-#     time_elapsed = time.time() - since
-#     print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
-#     print('Best val Acc: {:4f}'.format(best_acc))
-# 
-#     model.load_state_dict(best_model_wts)
-#     return model, train_acc_history, val_acc_history
-
-# === AFTER (edited) ===
-device = torch.device('cpu')
+device = torch.device('cpu') # 'cuda:0'
 
 def train_model(model, train_loader, test_loader, criterion, optimizer, num_epochs=80):
     since = time.time()
@@ -274,15 +190,17 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
         running_loss = 0.0
         running_corrects = 0
 
-        for batch_idx, (inputs, labels) in enumerate(train_loader):
+        for inputs, labels in tqdm(train_loader):
             inputs = inputs.to(device)
             labels = labels.to(device)
 
             optimizer.zero_grad()
 
             with torch.set_grad_enabled(True):
-                outputs = model(inputs)
-                loss = criterion(outputs, labels)
+                with torch.cuda.amp.autocast():
+                    outputs = model(inputs)
+                    loss = criterion(outputs, labels)
+
                 _, preds = torch.max(outputs, 1)
 
                 loss.backward()
@@ -290,9 +208,6 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
 
             running_loss += loss.item() * inputs.size(0)
             running_corrects += torch.sum(preds == labels.data)
-
-            if batch_idx % 5 == 0:
-                print(f"  Batch {batch_idx}/{len(train_loader)}")
 
         epoch_loss = running_loss / len(train_loader.dataset)
         epoch_acc = running_corrects.double() / len(train_loader.dataset)
@@ -305,13 +220,15 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
         running_loss = 0.0
         running_corrects = 0
 
-        for batch_idx, (inputs, labels) in enumerate(test_loader):
+        for inputs, labels in tqdm(test_loader):
             inputs = inputs.to(device)
             labels = labels.to(device)
 
             with torch.set_grad_enabled(False):
-                outputs = model(inputs)
-                loss = criterion(outputs, labels)
+                with torch.cuda.amp.autocast():
+                    outputs = model(inputs)
+                    loss = criterion(outputs, labels)
+
                 _, preds = torch.max(outputs, 1)
 
             running_loss += loss.item() * inputs.size(0)
@@ -369,39 +286,28 @@ class MyDataset(Dataset):
         return len(self.X)
 
     def __getitem__(self, idx):
-        # Convert from [H, W, C] to [C, H, W] and normalize to 0-1
-        image = torch.from_numpy(self.X[idx]).float().permute(2, 0, 1) / 255.0
+        image = torch.from_numpy(self.X[idx]).permute(2, 0, 1).float()
         label = torch.tensor(self.y[idx], dtype=torch.long)
         return image, label
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
-# === BEFORE (original) ===
-# train_dataset = MyDataset(X_train, y_train)
-# train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-
-# === AFTER (edited) ===
 train_dataset = MyDataset(X_train, y_train)
-train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 
 #%%
 # --- [CELL 16]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
-# === BEFORE (original) ===
-# test_dataset = MyDataset(X_test, y_test)
-# test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
-
-# === AFTER (edited) ===
 test_dataset = MyDataset(X_test, y_test)
-test_loader = DataLoader(test_dataset, batch_size=8, shuffle=False)
+test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
 #%%
 # --- [CELL 17]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 21}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
 # === BEFORE (original) ===
 # import warnings
 # warnings.filterwarnings("ignore")

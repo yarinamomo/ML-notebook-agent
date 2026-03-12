@@ -145,28 +145,33 @@ train_generator = train_datagen.flow_from_directory(
 )
 
 
-base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224,224,3))
 
-# Add classification layers
-x = Flatten()(base_model.output)
-x = Dense(512, activation='relu')(x)
-predictions = Dense(7, activation='softmax')(x)
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, Flatten
 
-base_model = Model(inputs=base_model.input, outputs=predictions)
+model = Sequential()
+model.add(base_model)
+model.add(Flatten())
+model.add(Dense(4096, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(4096, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(7, activation='softmax'))
 
-# Freeze the VGG16 layers, keep the new layers trainable
-for layer in base_model.layers[:-2]:
+
+for layer in base_model.layers:
     layer.trainable = False
 
 
-base_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 
-base_model.fit(
+model.fit(
     train_generator,
     steps_per_epoch=len(train_generator),
     epochs=10,
 )
 
 
-base_model.save('data/updated_vgg_face_weights.h5')
+model.save('data/updated_vgg_face_weights.h5')

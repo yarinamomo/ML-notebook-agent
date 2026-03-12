@@ -212,7 +212,7 @@ device = 'cpu'
 train_transform = transforms.Compose([
     transforms.Resize((64, 64)),
     transforms.ToTensor(),
-    transforms.Normalize((0.5,), (0.5,)),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
 ])
 
 train_dataset = datasets.ImageFolder(root='data_small/eyes data', transform=train_transform)
@@ -220,12 +220,26 @@ dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# === BEFORE (original) ===
+# def show_images(images):
+#     fig, ax = plt.subplots(figsize=(20, 20))
+#     ax.set_xticks([]); ax.set_yticks([])
+#     ax.imshow(make_grid(images.detach(), nrow=22).permute(1, 2, 0))
+# 
+# def show_batch(dl):
+#     for images, _ in dl:
+#         show_images(images)
+#         break
+
+# === AFTER (edited) ===
 def show_images(images):
     fig, ax = plt.subplots(figsize=(20, 20))
     ax.set_xticks([]); ax.set_yticks([])
-    ax.imshow(make_grid(images.detach(), nrow=22).permute(1, 2, 0))
+    # Denormalize images from [-1, 1] to [0, 1]
+    images = (images + 1) / 2
+    ax.imshow(make_grid(images.detach(), nrow=22).permute(1, 2, 0).clip(0, 1))
 
 def show_batch(dl):
     for images, _ in dl:

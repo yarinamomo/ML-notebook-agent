@@ -454,4 +454,4 @@ else:
 # np.savetxt('images.txt', images, delimiter=',', fmt='%d')
 
 # === AFTER (edited) ===
-np.save('images.npy', images)
+np.savetxt('images.txt', images.reshape(-1, images.shape[-1]), delimiter=',', fmt='%d')

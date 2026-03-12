@@ -79,5 +79,5 @@ for images, labels in train_ds.take(1):
   for i in range(6):
     ax = plt.subplot(3, 3, i + 1)
     plt.imshow(images[i].numpy().astype("uint8"))
-    plt.title(class_names[np.argmax(labels[i])])
+    plt.title(class_names[tf.argmax(labels[i])])
     plt.axis("off")

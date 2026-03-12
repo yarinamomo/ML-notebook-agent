@@ -175,11 +175,6 @@ print(bert_model.config.hidden_size)
 # tf.keras.utils.plot_model(bert_model)
 
 # === AFTER (edited) ===
-# BERT model architecture summary
-print("BERT Model Architecture:")
-print("- Base model: bert-base-uncased")
-print("- Hidden size:", bert_model.config.hidden_size)
-print("- Number of hidden layers:", bert_model.config.num_hidden_layers)
-print("- Number of attention heads:", bert_model.config.num_attention_heads)
-print("- Intermediate size:", bert_model.config.intermediate_size)
-print("\nModel can be visualized in PyTorch using torchviz or similar packages if needed.")
+# bert_model is a PyTorch model; to visualize architecture, use torch summary or print the model
+print(bert_model.config)
+print(f"Number of parameters: {sum(p.numel() for p in bert_model.parameters())}")

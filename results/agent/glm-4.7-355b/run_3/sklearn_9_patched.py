@@ -57,7 +57,7 @@ print('F1 score:', f1_score(y_valid, y_pred))
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # #elasticnet
 # log_reg2 = LogisticRegression(max_iter=1000, solver='liblinear', penalty='elasticnet')
@@ -67,7 +67,7 @@ print('F1 score:', f1_score(y_valid, y_pred))
 # print('F1 score:', f1_score(y_valid, y_pred, average = "weighted"))
 
 # === AFTER (edited) ===
-log_reg2 = LogisticRegression(max_iter=1000, solver='saga', penalty='elasticnet', l1_ratio=0.5)
+log_reg2 = LogisticRegression(max_iter=1000, solver='saga', penalty='elasticnet')
 log_reg2.fit(X_train, y_train)
 y_pred = log_reg2.predict(X_valid)
 

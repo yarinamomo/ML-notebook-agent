@@ -30,7 +30,7 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # read data
 df = pd.read_csv('data/measures_v2.csv', 
                  usecols=[0,1,2,3,4,5,6,7,8,9,10,11])
@@ -98,7 +98,7 @@ y_pred = model.predict(X_test)
 #%%
 # --- [CELL 8]: ---
 # cell_state: edited
-# execution_status: {'status': 'timeout', 'done': True, 'execution_count': None}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 # === BEFORE (original) ===
 # params = {}
 # params['tree_method'] = 'hist' # fix (for testing locally), use cpu instead of gpu
@@ -151,12 +151,14 @@ test_preds = None
 kf_rmse = []
 for fold, (train_idx, valid_idx) in enumerate(KFold(n_splits=n_splits, shuffle=True).split(X_train,y_train)):
 
-    X_trn, y_trn = X_train.iloc[train_idx], y_train.iloc[train_idx]
-    X_valid, y_valid = X_train.iloc[valid_idx], y_train.iloc[valid_idx]
+    X_tr = X_train.iloc[train_idx]
+    y_tr = y_train.iloc[train_idx]
+    X_valid = X_train.iloc[valid_idx]
+    y_valid = y_train.iloc[valid_idx]
 
 
     model = XGBRegressor(**params)
-    model.fit(X_trn, y_trn,
+    model.fit(X_tr, y_tr,
             eval_set=[(X_valid, y_valid)],
             eval_metric='rmse', verbose=False)
 

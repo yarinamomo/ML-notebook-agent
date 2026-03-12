@@ -50,28 +50,61 @@ test_df = test_df.drop("Id", axis=1)
 # test_df = pd.get_dummies(test_df, columns=list(test_df))
 
 # === AFTER (edited) ===
-# Identify categorical columns
+# Identify categorical and numeric columns
 categorical_cols = train_df.select_dtypes(include=['object']).columns.tolist()
-print("Categorical columns:", categorical_cols)
+numeric_cols = train_df.select_dtypes(include=[np.number]).columns.tolist()
 
-# Concatenate train and test to ensure consistent columns after encoding
-train_df['is_train'] = 1
-test_df['is_train'] = 0
-combined_df = pd.concat([train_df, test_df], axis=0, ignore_index=True)
+# Remove 'Class' from numeric_cols as it's the target variable and not in test_df
+if 'Class' in numeric_cols:
+    numeric_cols.remove('Class')
 
-# Apply one-hot encoding to categorical columns only
-combined_df = pd.get_dummies(combined_df, columns=categorical_cols, drop_first=True)
+print("Train categorical columns:", categorical_cols)
+print("Test categorical columns:", test_df.select_dtypes(include=['object']).columns.tolist())
+print("\nNumeric columns (excluding Class):", numeric_cols)
 
-# Split back into train and test
-train_df = combined_df[combined_df['is_train'] == 1].copy()
-test_df = combined_df[combined_df['is_train'] == 0].copy()
+# Categorical columns that exist in both datasets
+common_categorical_cols = [col for col in categorical_cols if col in test_df.columns]
+train_only_categorical_cols = [col for col in categorical_cols if col not in test_df.columns]
 
-# Drop the is_train column
-train_df = train_df.drop('is_train', axis=1)
-test_df = test_df.drop('is_train', axis=1)
+print("\nCommon categorical columns:", common_categorical_cols)
+print("Train-only categorical columns:", train_only_categorical_cols)
 
-print("Train shape after encoding:", train_df.shape)
+# Encode common categorical columns using OneHotEncoder
+encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+train_encoded = encoder.fit_transform(train_df[common_categorical_cols])
+test_encoded = encoder.transform(test_df[common_categorical_cols])
+
+# Get feature names for encoded columns
+encoded_feature_names = encoder.get_feature_names_out(common_categorical_cols)
+
+# Create DataFrames with encoded features
+train_encoded_df = pd.DataFrame(train_encoded, columns=encoded_feature_names, index=train_df.index)
+test_encoded_df = pd.DataFrame(test_encoded, columns=encoded_feature_names, index=test_df.index)
+
+# For train-only categorical columns, encode them separately
+if train_only_categorical_cols:
+    train_only_encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+    train_only_encoded = train_only_encoder.fit_transform(train_df[train_only_categorical_cols])
+    train_only_encoded_df = pd.DataFrame(train_only_encoded, 
+                                        columns=train_only_encoder.get_feature_names_out(train_only_categorical_cols),
+                                        index=train_df.index)
+else:
+    train_only_encoded_df = pd.DataFrame(index=train_df.index)
+
+# Create empty DataFrame for test with train-only encoded columns (all zeros)
+test_only_encoded_df = pd.DataFrame(0, index=test_df.index, columns=train_only_encoded_df.columns)
+
+# Ensure numeric columns exist in both datasets
+common_numeric_cols = [col for col in numeric_cols if col in test_df.columns]
+
+# Combine everything
+train_df = pd.concat([train_df[numeric_cols], train_encoded_df, train_only_encoded_df], axis=1)
+test_df = pd.concat([test_df[common_numeric_cols], test_encoded_df, test_only_encoded_df], axis=1)
+
+print("\nTrain shape after encoding:", train_df.shape)
 print("Test shape after encoding:", test_df.shape)
+print("\nTrain column count:", len(train_df.columns))
+print("Test column count:", len(test_df.columns))
 
 #%%
 # --- [CELL 5]: ---
