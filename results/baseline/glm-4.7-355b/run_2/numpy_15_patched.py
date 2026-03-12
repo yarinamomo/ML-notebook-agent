@@ -80,17 +80,10 @@ y_ts_arr = y_test.values
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
-# === BEFORE (original) ===
-# def weightInitialization(n_features):
-#     w = np.zeros((1,n_features))
-#     b = 0
-#     return w,b
-
-# === AFTER (edited) ===
 def weightInitialization(n_features):
-    w = np.zeros((n_features, 1))
+    w = np.zeros((1,n_features))
     b = 0
     return w,b
 
@@ -174,29 +167,54 @@ def model_train(X, Y, num_iterations, learning_rate):
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# === BEFORE (original) ===
+# def model_predict(w, b, X, Y, learning_rate, no_iterations):
+#     costs = []
+#     for i in range(no_iterations):
+#         #
+#         grads, cost = model_optimize(w,b,X,Y)
+#         #
+#         dw = grads["dw"]
+#         db = grads["db"]
+#         #weight update
+#         w = w - (learning_rate * (dw.T))
+#         b = b - (learning_rate * db)
+#         #
+#         
+#         if (i % 100 == 0):
+#             costs.append(cost)
+#             #print("Cost after %i iteration is %f" %(i, cost))
+#     
+#     #final parameters
+#     coeff = {"w": w, "b": b}
+#     gradient = {"dw": dw, "db": db}
+#     
+#     return coeff, gradient, costs
+
+# === AFTER (edited) ===
 def model_predict(w, b, X, Y, learning_rate, no_iterations):
     costs = []
     for i in range(no_iterations):
-        #
+
         grads, cost = model_optimize(w,b,X,Y)
-        #
+
         dw = grads["dw"]
         db = grads["db"]
-        #weight update
-        w = w - (learning_rate * (dw.T))
+
+        w = w - (learning_rate * dw)
         b = b - (learning_rate * db)
-        #
-        
+
+
         if (i % 100 == 0):
             costs.append(cost)
-            #print("Cost after %i iteration is %f" %(i, cost))
-    
-    #final parameters
+
+
+
     coeff = {"w": w, "b": b}
     gradient = {"dw": dw, "db": db}
-    
+
     return coeff, gradient, costs
 
 #%%
@@ -213,7 +231,7 @@ def predict(final_pred, m):
 #%%
 # --- [CELL 16]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 17}
 #Get number of features
 n_features = X_tr_arr.shape[1]
 print('Number of Features', n_features)

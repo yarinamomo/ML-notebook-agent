@@ -175,6 +175,5 @@ print(bert_model.config.hidden_size)
 # tf.keras.utils.plot_model(bert_model)
 
 # === AFTER (edited) ===
-import tensorflow as tf
-# Print the model architecture (PyTorch equivalent of model visualization)
+# Print BERT model architecture
 print(bert_model)

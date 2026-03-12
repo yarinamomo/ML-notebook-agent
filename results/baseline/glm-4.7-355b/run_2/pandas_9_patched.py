@@ -28,21 +28,37 @@ df = pd.read_csv("data/IMDb_All_Genres_etf_clean1.csv")
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # clean_df = df[(df["Total Gross (millions)"]!="$0.00M") & (df["Total Gross (millions)"]!="Gross Unkown")].copy()
 # clean_df = clean_df[clean_df['Censor']!="(Banned)"]
 
 # === AFTER (edited) ===
-# Strip whitespace from column names to handle any formatting issues
-clean_df = df.copy()
-clean_df.columns = clean_df.columns.str.strip()
+# First, let's see what columns are actually available in the dataframe
+print("Available columns:")
+print(df.columns.tolist())
 
-# Print available columns to check the exact column names
-print("Available columns:", clean_df.columns.tolist())
+# Try to find the correct column name for gross/earnings
+gross_col = None
+for col in df.columns:
+    if 'gross' in col.lower():
+        gross_col = col
+        print(f"\nFound gross column: '{gross_col}'")
 
-# Filter the data - using the corrected column names
-clean_df = clean_df[(clean_df["Total Gross (millions)"]!="$0.00M") & (clean_df["Total Gross (millions)"]!="Gross Unkown")].copy()
-clean_df = clean_df[clean_df['Censor']!="(Banned)"]
-
-print(f"Filtered dataframe has {len(clean_df)} rows")
+# If found, use it; otherwise print a message
+if gross_col:
+    # Also find the Censor column
+    censor_col = None
+    for col in df.columns:
+        if 'censor' in col.lower():
+            censor_col = col
+            print(f"Found censor column: '{censor_col}'")
+    
+    if censor_col:
+        clean_df = df[(df[gross_col]!="$0.00M") & (df[gross_col]!="Gross Unkown")].copy()
+        clean_df = clean_df[clean_df[censor_col]!="(Banned)"]
+        print(f"\nFiltered dataframe shape: {clean_df.shape}")
+    else:
+        print("\nCensor column not found!")
+else:
+    print("\nGross column not found!")

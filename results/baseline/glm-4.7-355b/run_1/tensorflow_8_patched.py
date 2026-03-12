@@ -263,7 +263,6 @@ def GridSizeReductionBlock(inputs, filters):
 inputs = Input(shape=(size, size, 1))
 
 
-
 x = Conv2D(filters=64, kernel_size=(3, 3), strides=(2, 2), padding='same', use_bias=False)(inputs)
 x = BatchNormalization()(x)
 x = Activation('relu')(x)

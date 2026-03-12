@@ -63,9 +63,17 @@ for column in string_columns:
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-X = train_ds.drop(['SalePrice'], axis = 1)
+# === BEFORE (original) ===
+# X = train_ds.drop(['SalePrice'], axis = 1)
+# y = train_ds['SalePrice']
+
+# === AFTER (edited) ===
+# Align training features with test features to prevent prediction errors
+# test_ds is missing these columns (they had >1 nulls in test but not in train)
+columns_to_drop = ['MSZoning', 'Utilities', 'BsmtFullBath', 'BsmtHalfBath', 'Functional']
+X = train_ds.drop(['SalePrice'] + columns_to_drop, axis = 1)
 y = train_ds['SalePrice']
 
 #%%
@@ -106,26 +114,13 @@ test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis =
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
-# === BEFORE (original) ===
-# for column in test_ds:
-#     null_count = test_ds[column].isnull().sum()
-#     if null_count > 1:
-#         print(f"Dropping column {column} with {null_count} missing values.")
-#         test_ds.drop(column, axis = 1, inplace = True)
-
-# === AFTER (edited) ===
 for column in test_ds:
     null_count = test_ds[column].isnull().sum()
     if null_count > 1:
         print(f"Dropping column {column} with {null_count} missing values.")
         test_ds.drop(column, axis = 1, inplace = True)
-
-# Ensure test_ds has the same columns as train_ds
-# Keep only columns that exist in train_ds
-columns_to_keep = [col for col in test_ds.columns if col in train_ds.columns]
-test_ds = test_ds[columns_to_keep]
 
 #%%
 # --- [CELL 13]: ---

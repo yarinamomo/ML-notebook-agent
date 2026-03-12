@@ -76,8 +76,8 @@ scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-# Convert target variable to numeric (1 for 'Yes', 0 for 'No')
-y_train = y_train.map({'Yes': 1, 'No': 0})
-y_test = y_test.map({'Yes': 1, 'No': 0})
+# Convert categorical target to numerical (No -> 0, Yes -> 1)
+y_train = y_train.map({'No': 0, 'Yes': 1})
+y_test = y_test.map({'No': 0, 'Yes': 1})
 
 logreg.fit(X_train, y_train)

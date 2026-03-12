@@ -250,8 +250,6 @@ def testAccuracy():
     with torch.no_grad():
         for data in testing_set_loader:
             images, labels = data
-            images = images.to(device)
-            labels = labels.to(device)
 
             outputs = model(images)
 
@@ -279,19 +277,20 @@ def train(num_epochs):
         running_loss = 0.0
         running_acc = 0.0
 
-        for i, (images, labels) in enumerate(training_set_loader, 0):
+        for i, (images, classes) in enumerate(training_set_loader, 0):
 
 
             images = Variable(images.to(device))
 
-            labels = Variable(labels.to(device))
+            classes = torch.tensor(classes)
+            classes = Variable(classes.to(device))
 
 
             optimizer.zero_grad()
 
             outputs = model(images)
 
-            loss = loss_fn(outputs, labels)
+            loss = loss_fn(outputs, classes)
 
             loss.backward()
 

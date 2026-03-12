@@ -210,9 +210,9 @@ device = 'cpu'
 
 
 train_transform = transforms.Compose([
-    transforms.Resize((64, 64)),
+    transforms.Resize((64, 64)),  # Resize all images to 64x64
     transforms.ToTensor(),
-    transforms.Normalize((0.5,), (0.5,)),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),  # Normalize for 3 channels
 ])
 
 train_dataset = datasets.ImageFolder(root='data_small/eyes data', transform=train_transform)

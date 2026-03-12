@@ -96,7 +96,6 @@ y = df["Age"]
 
 
 N = 50
-filas = (len(nombres_col.columns) + col - 1) // col  # Calculate rows needed
 fig, axs = plt.subplots(filas, col, figsize=(25, 10))
 
 for i in range(filas):

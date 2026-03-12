@@ -228,7 +228,7 @@ for epoch in range(n_epoch):
         optimizer.zero_grad()
 
         outputs = model(sekil)
-        loss = loss_fn(outputs, netice.unsqueeze(1))
+        loss = loss_fn(outputs.squeeze(), netice)
 
         loss.backward()
         optimizer.step()

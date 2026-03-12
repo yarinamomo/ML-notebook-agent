@@ -174,7 +174,8 @@ X,Y = build_input(tokens , word2index,text2int)
 #         return _x.long() , _y.long()
 
 # === AFTER (edited) ===
-class data(Dataset):
+from torch.utils.data import Dataset, DataLoader
+class  data(Dataset):
     def __init__(self , X,Y,vs , padsz):
         self.X = X
         self.Y = Y
@@ -186,13 +187,14 @@ class data(Dataset):
         dif = self.mx - len(self.X[index])
         _x = self.X[index]
         _y = self.Y[index]
-        a = torch.zeros(self.mx)
-        b = torch.zeros(self.mx)
-        a[:len(_x)] = _x
-        b[:len(_y)] = _y
-        _x = a
-        _y = torch.zeros((self.mx, self.vocab_size))
-        _y[torch.arange(self.mx), b.long()] = 1
+        if dif > 0:
+            a = torch.zeros(self.mx)
+            b = torch.zeros(self.mx)
+            a[:len(_x)] = _x
+            b[:len(_y)] = _y
+            _x = a
+            _y = torch.zeros( ( self.mx, self.vocab_size))
+            _y [torch.arange(self.mx),b.long()] =1
         return _x.long() , _y.long()
 
 #%%

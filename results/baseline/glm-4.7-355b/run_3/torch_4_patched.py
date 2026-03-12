@@ -144,7 +144,7 @@ vocab = Vocab(train_df)
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # import torch.nn as nn
 # import torch.nn.functional as F
@@ -186,21 +186,18 @@ vocab = Vocab(train_df)
 #         return batch_outputs, attn_scores
 
 # === AFTER (edited) ===
-import torch.nn as nn
-import torch.nn.functional as F
-
 class Attention(nn.Module):
     '''Scaled Dot-Product Attention'''
     def __init__(self, hidden_size):
         super(Attention, self).__init__()
-        self.weight = nn.Parameter(torch.Tensor(hidden_size, hidden_size))
+        self.weight = nn.Parameter(torch.Tensor((hidden_size, hidden_size)))
         self.weight.data.normal_(mean=0.0, std=0.05)
 
-        self.bias = nn.Parameter(torch.Tensor(hidden_size))
+        self.bias = nn.Parameter(torch.Tensor((hidden_size,)))
         b = np.zeros(hidden_size, dtype=np.float32)
-        self.bias.data.copy_(torch.from_numpy(b).float().to(device))
+        self.bias.data.copy_(torch.from_numpy(b))
 
-        self.query = nn.Parameter(torch.Tensor(hidden_size))
+        self.query = nn.Parameter(torch.Tensor((hidden_size,)))
         self.query.data.normal_(mean=0.0, std=0.05)
 
     def forward(self, batch_hidden, batch_masks):
@@ -228,7 +225,7 @@ class Attention(nn.Module):
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 word2vec_path = 'data/word2vec.txt'
 dropout = 0.15
 word_hidden_size = 128
@@ -283,7 +280,7 @@ class WordLSTMEncoder(nn.Module):
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 sent_hidden_size = 256
 sent_num_layers = 2
 
@@ -312,7 +309,7 @@ class SentEncoder(nn.Module):
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'not run'}
 class Model(nn.Module):
     def __init__(self, vocab):
         super(Model, self).__init__()

@@ -143,13 +143,13 @@ from sklearn.metrics import confusion_matrix, classification_report
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'not run'}
 example_text = 'I will watch #Memento tonight!'
 bert_input = tokenizer(example_text, padding='max_length', max_length = 15,
                       truncation = True, return_tensors = 'pt')
@@ -157,7 +157,7 @@ bert_input = tokenizer(example_text, padding='max_length', max_length = 15,
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
+# execution_status: {'status': 'not run'}
 input_ids = torch.tensor(bert_input.input_ids)
 attention_mask = torch.tensor(bert_input.attention_mask)
 bert_model = BertModel.from_pretrained('bert-base-uncased')
@@ -169,11 +169,19 @@ print(bert_model.config.hidden_size)
 #%%
 # --- [CELL 12]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # import tensorflow as tf
 # tf.keras.utils.plot_model(bert_model)
 
 # === AFTER (edited) ===
-import tensorflow as tf
+# Print the BERT model architecture (PyTorch model)
 print(bert_model)
+
+# Alternatively, to visualize the model structure more clearly
+print("\n\nModel Configuration:")
+print(f"Hidden size: {bert_model.config.hidden_size}")
+print(f"Number of attention heads: {bert_model.config.num_attention_heads}")
+print(f"Number of hidden layers: {bert_model.config.num_hidden_layers}")
+print(f"Vocabulary size: {bert_model.config.vocab_size}")
+print(f"Max position embeddings: {bert_model.config.max_position_embeddings}")

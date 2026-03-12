@@ -34,25 +34,30 @@ df = pd.read_csv("data/IMDb_All_Genres_etf_clean1.csv")
 # clean_df = clean_df[clean_df['Censor']!="(Banned)"]
 
 # === AFTER (edited) ===
-# Print actual column names to see what they are
-print("Column names in dataframe:")
+# First, print available columns to debug
+print("Available columns:")
 print(df.columns.tolist())
 
-# Try to find the correct column name
+# Try to find the correct column name - it might have extra whitespace 
 gross_col = None
-censor_col = None
 for col in df.columns:
-    if 'Gross' in col and 'Total' in col:
+    if "Gross" in col and "total" in str(col).lower():
         gross_col = col
-    if 'Censor' in col:
-        censor_col = col
+        break
 
-print(f"\nFound Gross column: '{gross_col}'")
-print(f"Found Censor column: '{censor_col}'")
-
-# Use the actual column names found
-if gross_col and censor_col:
+if gross_col:
+    print(f"\nFound Total Gross column: '{gross_col}'")
     clean_df = df[(df[gross_col]!="$0.00M") & (df[gross_col]!="Gross Unkown")].copy()
-    clean_df = clean_df[clean_df[censor_col]!="(Banned)"]
 else:
-    print("Could not find required columns")
+    # Try other possible column names
+    if "Total Gross (millions)" in df.columns:
+        clean_df = df[(df["Total Gross (millions)"]!="$0.00M") & (df["Total Gross (millions)"]!="Gross Unkown")].copy()
+    else:
+        # Use the column as is from the dataframe
+        clean_df = df.copy()
+
+# Remove censored movies if Censor column exists
+if 'Censor' in df.columns:
+    clean_df = clean_df[clean_df['Censor']!="(Banned)"]
+
+print(f"\nclean_df shape: {clean_df.shape}")

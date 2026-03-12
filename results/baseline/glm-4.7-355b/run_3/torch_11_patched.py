@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
 from datasets import load_dataset
 import torch
 import torch.nn.functional as F
@@ -147,33 +147,8 @@ X,Y = build_input(tokens , word2index,text2int)
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# from torch.utils.data import Dataset, DataLoader
-# class  data(Dataset):
-#     def __init__(self , X,Y,vs , padsz):
-#         self.X = X
-#         self.Y = Y
-#         self.vocab_size = vs
-#         self.mx = padsz
-#     def __len__(self):
-#         return len(self.X)
-#     def __getitem__(self , index):
-#         dif = len(self.mx - self.X[index] )
-#         _x = self.X[index]
-#         _y = self.Y[index]
-#         if dif > 0:
-#             a = torch.zeros(self.mx)
-#             b = torch.zeros(self.mx)
-#             a[:len(_x)] = _x
-#             b[:len(_y)] = _y
-#             _x = a
-#             _y = torch.zeros( ( self.mx, self.vocab_size))
-#             _y [torch.arange(self.mx),b.long()] =1
-#         return _x.long() , _y.long()
-
-# === AFTER (edited) ===
 from torch.utils.data import Dataset, DataLoader
 class  data(Dataset):
     def __init__(self , X,Y,vs , padsz):
@@ -184,24 +159,18 @@ class  data(Dataset):
     def __len__(self):
         return len(self.X)
     def __getitem__(self , index):
+        dif = len(self.mx - self.X[index] )
         _x = self.X[index]
         _y = self.Y[index]
-        
-        # Always create tensors of size self.mx
-        a = torch.zeros(self.mx)
-        b = torch.zeros(self.mx)
-        
-        # Copy data (truncate if longer than self.mx)
-        copy_len = min(len(_x), self.mx)
-        a[:copy_len] = _x[:copy_len]
-        b[:copy_len] = _y[:copy_len]
-        
-        # Create one-hot encoded target
-        _x = a.long()
-        _y = torch.zeros(self.mx, self.vocab_size)
-        _y[torch.arange(self.mx), b.long()] = 1
-        
-        return _x , _y.long()
+        if dif > 0:
+            a = torch.zeros(self.mx)
+            b = torch.zeros(self.mx)
+            a[:len(_x)] = _x
+            b[:len(_y)] = _y
+            _x = a
+            _y = torch.zeros( ( self.mx, self.vocab_size))
+            _y [torch.arange(self.mx),b.long()] =1
+        return _x.long() , _y.long()
 
 #%%
 # --- [CELL 11]: ---
@@ -335,8 +304,27 @@ yt = dataset['test']['label']
 
 #%%
 # --- [CELL 18]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# class sentimentdata(Dataset):
+#     def __init__(self , X,Y ):
+#         self.X = X
+#         self.Y = Y
+#     def __len__(self):
+#         return len(self.X)
+#     def __getitem__(self , index):
+#         x = self.X[index]
+#         y= self.Y[index]#torch.zeros(2)
+# #         y[self.Y[index]] = 1
+#         return x,y
+# st_train_loader = sentimentdata(X ,ylb)
+# st_test_loader = sentimentdata(X ,ytb)
+# 
+# st_train = DataLoader(st_train_loader, batch_size=5 )
+# st_test= DataLoader(st_test_loader, batch_size=5 )
+
+# === AFTER (edited) ===
 class sentimentdata(Dataset):
     def __init__(self , X,Y ):
         self.X = X
@@ -345,14 +333,24 @@ class sentimentdata(Dataset):
         return len(self.X)
     def __getitem__(self , index):
         x = self.X[index]
-        y= self.Y[index]#torch.zeros(2)
-#         y[self.Y[index]] = 1
-        return x,y
-st_train_loader = sentimentdata(X ,ylb)
-st_test_loader = sentimentdata(X ,ytb)
+        y = self.Y[index]
+        # Pad x to length 40
+        if len(x) >= 40:
+            x = x[:40]
+        else:
+            x = torch.cat([x, torch.zeros(40 - len(x))])
+        # Pad y to length 40
+        if len(y) >= 40:
+            y = y[:40]
+        else:
+            y = torch.cat([y, torch.zeros(40 - len(y))])
+        return x.long(), y.long()
+
+st_train_loader = sentimentdata(X , ylb)
+st_test_loader = sentimentdata(X_test , ytb)
 
 st_train = DataLoader(st_train_loader, batch_size=5 )
-st_test= DataLoader(st_test_loader, batch_size=5 )
+st_test = DataLoader(st_test_loader, batch_size=5 )
 
 #%%
 # --- [CELL 19]: ---

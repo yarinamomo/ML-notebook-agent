@@ -112,18 +112,9 @@ train_nwms_pixVals = createPixelArr(out_array_nwm[:90]) # 1000
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-# === BEFORE (original) ===
-# X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1)
-
-# === AFTER (edited) ===
-# Combine watermarked and non-watermarked data
-X_all = np.concatenate([train_wms_pixVals, train_nwms_pixVals], axis=0)
-y_all = np.concatenate([np.ones(len(train_wms_pixVals)), np.zeros(len(train_nwms_pixVals))], axis=0)
-
-# Split into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X_all, y_all, train_size=0.8, random_state=1)
+X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1)
 
 #%%
 # --- [CELL 10]: ---
@@ -262,18 +253,34 @@ optimizer = optim.AdamW(params=model_ft.parameters(), lr=0.2e-5)
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
+# === BEFORE (original) ===
+# class MyDataset(Dataset):
+#     def __init__(self, X, y):
+#         self.X = X
+#         self.y = y
+#         
+#     def __len__(self):
+#         return len(self.X)
+#     
+#     def __getitem__(self, idx):
+#         return self.X[idx], self.y[idx]
+
+# === AFTER (edited) ===
 class MyDataset(Dataset):
     def __init__(self, X, y):
         self.X = X
         self.y = y
-        
+
     def __len__(self):
         return len(self.X)
-    
+
     def __getitem__(self, idx):
-        return self.X[idx], self.y[idx]
+        # PyTorch expects (C, H, W) format, but numpy gives (H, W, C)
+        image = torch.from_numpy(self.X[idx]).permute(2, 0, 1).float() / 255.0
+        label = torch.tensor(self.y[idx]).long()
+        return image, label
 
 #%%
 # --- [CELL 15]: ---

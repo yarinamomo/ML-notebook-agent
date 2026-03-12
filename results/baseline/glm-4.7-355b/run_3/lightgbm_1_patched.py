@@ -126,16 +126,30 @@ from sklearn.manifold import TSNE
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-# https://distill.pub/2016/misread-tsne/
-tsne_model = TSNE(perplexity=25, n_components=2, init='pca', n_iter=250, random_state=23) # n_iter=5000 for fast reproducing and fixing purposes
+# === BEFORE (original) ===
+# # https://distill.pub/2016/misread-tsne/
+# tsne_model = TSNE(perplexity=25, n_components=2, init='pca', n_iter=250, random_state=23) # n_iter=5000 for fast reproducing and fixing purposes
+# df_tsne = tsne_model.fit_transform(train2[features])
+# 
+# df_tsne_te = tsne_model.fit_transform(test2[features])
+# df_TSNE_te = pd.DataFrame(df_tsne_te, columns=['tsne1', 'tsne2'])
+# df_TSNE_te['Id'] = test.index
+# df_TSNE_te = df_TSNE_te.set_index('Id')
+
+# === AFTER (edited) ===
+tsne_model = TSNE(perplexity=25, n_components=2, init='pca', n_iter=250, random_state=23)
 df_tsne = tsne_model.fit_transform(train2[features])
 
 df_tsne_te = tsne_model.fit_transform(test2[features])
 df_TSNE_te = pd.DataFrame(df_tsne_te, columns=['tsne1', 'tsne2'])
 df_TSNE_te['Id'] = test.index
 df_TSNE_te = df_TSNE_te.set_index('Id')
+
+# Create full df_TSNE for all training rows (not filtered)
+df_TSNE = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
+df_TSNE['quality'] = train[conf.target].values
 
 #%%
 # --- [CELL 15]: ---
@@ -161,18 +175,10 @@ plt.show()
 
 #%%
 # --- [CELL 16]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
-# === BEFORE (original) ===
-# df_tmp = train2.drop(columns=['quality'])
-# train3 = pd.concat([df_tmp, df_TSNE], axis=1)
-# test3 = pd.concat([test2, df_TSNE_te], axis=1)
-
-# === AFTER (edited) ===
 df_tmp = train2.drop(columns=['quality'])
-# Drop duplicate columns and quality column from df_TSNE before concatenating
-df_TSNE_to_add = df_TSNE.drop(columns=['quality', 'tsne1', 'tsne2'])
-train3 = pd.concat([df_tmp, df_TSNE_to_add], axis=1)
+train3 = pd.concat([df_tmp, df_TSNE], axis=1)
 test3 = pd.concat([test2, df_TSNE_te], axis=1)
 
 #%%
@@ -196,14 +202,14 @@ warnings.filterwarnings('ignore')
 #%%
 # --- [CELL 18]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 19}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
 y = train3[conf.target]
 X = train3.drop([conf.target], axis=1)
 
 #%%
 # --- [CELL 19]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
 scores =[]
 
 def find_out_params_model(trial):
@@ -232,6 +238,6 @@ def find_out_params_model(trial):
 #%%
 # --- [CELL 20]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 21}
 study = optuna.create_study(direction="maximize")
 study.optimize(find_out_params_model, n_trials=2)

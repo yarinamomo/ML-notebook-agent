@@ -100,8 +100,8 @@ model_name = "gpt2"
 model = GPT2LMHeadModel.from_pretrained(model_name)
 tokenizer = GPT2Tokenizer.from_pretrained(model_name)
 
-# GPT2 doesn't have a pad token by default, set it to eos_token_id
-tokenizer.pad_token_id = tokenizer.eos_token_id
+# GPT2 doesn't have a pad token by default, so we need to set one
+tokenizer.pad_token = tokenizer.eos_token
 
 generated_responses = []
 

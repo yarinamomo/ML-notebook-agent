@@ -98,7 +98,7 @@ def encode_sentence(s):
 #   return inputs
 
 # === AFTER (edited) ===
-def bert_encode(hypotheses, premises, tokenizer, max_len):
+def bert_encode(hypotheses, premises, tokenizer, max_len=50):
 
   num_examples = len(hypotheses)
 
@@ -112,31 +112,26 @@ def bert_encode(hypotheses, premises, tokenizer, max_len):
   cls = [tokenizer.convert_tokens_to_ids(['[CLS]'])]*sentence1.shape[0]
   input_word_ids = tf.concat([cls, sentence1, sentence2], axis=-1)
 
-  input_mask = tf.ones_like(input_word_ids).to_tensor()
+  input_mask = tf.ones_like(input_word_ids).to_tensor(shape=[None, max_len])
 
   type_cls = tf.zeros_like(cls)
   type_s1 = tf.zeros_like(sentence1)
   type_s2 = tf.ones_like(sentence2)
   input_type_ids = tf.concat(
-      [type_cls, type_s1, type_s2], axis=-1).to_tensor()
+      [type_cls, type_s1, type_s2], axis=-1).to_tensor(shape=[None, max_len])
 
   inputs = {
-      'input_word_ids': input_word_ids.to_tensor()[:, :max_len],
-      'input_mask': input_mask[:, :max_len],
-      'input_type_ids': input_type_ids[:, :max_len]}
+      'input_word_ids': input_word_ids.to_tensor(shape=[None, max_len]),
+      'input_mask': input_mask,
+      'input_type_ids': input_type_ids}
 
   return inputs
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer)
-
-# === AFTER (edited) ===
-max_len = 50
-train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer, max_len)
+train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer)
 
 #%%
 # --- [CELL 7]: ---

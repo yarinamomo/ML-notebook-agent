@@ -30,7 +30,7 @@ df=pd.read_csv('data/3711.csv');df
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # sns.set_style('darkgrid')
 # fig, ax = plt.subplots(6, 1, figsize=(5, 20))#Original was 9,1
@@ -42,7 +42,8 @@ df=pd.read_csv('data/3711.csv');df
 
 # === AFTER (edited) ===
 sns.set_style('darkgrid')
-fig, ax = plt.subplots(len(list(df.columns.values)), 1, figsize=(5, 20))
+n_cols = len(df.columns)
+fig, ax = plt.subplots(n_cols, 1, figsize=(5, n_cols * 3))
 
 for i, col in enumerate(list(df.columns.values)):
     axes_box  = ax[i]

@@ -145,21 +145,35 @@ train_generator = train_datagen.flow_from_directory(
 )
 
 
-base_model = VGG16(weights='imagenet', include_top=True, classes=7)
+base_model = VGG16(weights='imagenet', include_top=False)
 
 
 for layer in base_model.layers:
     layer.trainable = False
 
+# Add custom classifier on top
+x = base_model.output
+x = Flatten()(x)
+x = Dense(4096, activation='relu')(x)
+x = Dropout(0.5)(x)
+x = Dense(4096, activation='relu')(x)
+x = Dropout(0.5)(x)
+predictions = Dense(7, activation='softmax')(x)
 
-base_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+from tensorflow.keras.models import Model
+model = Model(inputs=base_model.input, outputs=predictions)
+
+for layer in base_model.layers:
+    layer.trainable = False
+
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 
-base_model.fit(
+model.fit(
     train_generator,
     steps_per_epoch=len(train_generator),
     epochs=10,
 )
 
 
-base_model.save('data/updated_vgg_face_weights.h5')
+model.save('data/updated_vgg_face_weights.h5')

@@ -97,10 +97,8 @@ for i in tqdm(range(len(labels))):
     except FileNotFoundError:
         continue
     img = image.img_to_array(img)
-
-
-    x = np.expand_dims(img.copy(), axis=0)
-    X_data[i] = x / 255.0
+    
+    X_data[i] = img / 255.0
 
 
 print('\nTrain Images shape: ',X_data.shape,' size: {:,}'.format(X_data.size))

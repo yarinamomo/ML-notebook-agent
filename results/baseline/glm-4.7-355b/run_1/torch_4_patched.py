@@ -143,49 +143,8 @@ vocab = Vocab(train_df)
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# import torch.nn as nn
-# import torch.nn.functional as F
-# 
-# class Attention(nn.Module):
-#     '''Scaled Dot-Product Attention'''
-#     def __init__(self, hidden_size):
-#         super(Attention, self).__init__()
-#         self.weight = nn.Parameter(torch.Tensor(hidden_size, hidden_size))
-#         self.weight.data.normal_(mean=0.0, std=0.05)
-#         
-#         self.bias = nn.Parameter(torch.Tensor(hidden_size))
-#         b = np.zeros(hidden_size, dtype=np.float32)
-#         self.bias.data.copy_(torch.from_numpy(b))
-#         
-#         self.query = nn.Parameter(torch.Tensor(hidden_size))
-#         self.query.data.normal_(mean=0.0, std=0.05)
-#         
-#     def forward(self, batch_hidden, batch_masks):
-#         # batch_hidden: batch_size x len x hidden_size (2 * hidden_size of lstm)
-#         # batch_masks: batch_size x len
-#         
-#         # broadcast机制
-#         key = torch.matmul(batch_hidden, self.weight) + self.bias  # b x len x hidden
-#         
-#         outputs = torch.matmul(key, self.query)  # b x len
-#         
-#         # 填充一个很小的负数，softmax后就会变为0
-#         masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32)) 
-#         
-#         attn_scores = F.softmax(masked_outputs, dim=1)  # b x len
-#         
-#         # 经过softmax后可能存在nan，因此将这些位置都变为0
-#         masked_attn_scores = attn_scores.masked_fill((1 - batch_masks).bool(), 0.0)
-#         
-#         # 矩阵批量乘法（batch matrix-matrix product）函数
-#         batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)  # b x hidden
-#         
-#         return batch_outputs, attn_scores
-
-# === AFTER (edited) ===
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -193,43 +152,95 @@ class Attention(nn.Module):
     '''Scaled Dot-Product Attention'''
     def __init__(self, hidden_size):
         super(Attention, self).__init__()
-        # Use torch.empty() explicitly instead of torch.Tensor(size)
-        self.weight = nn.Parameter(torch.empty(hidden_size, hidden_size))
+        self.weight = nn.Parameter(torch.Tensor(hidden_size, hidden_size))
         self.weight.data.normal_(mean=0.0, std=0.05)
-
-        # Use torch.zeros() explicitly for bias initialization
-        self.bias = nn.Parameter(torch.zeros(hidden_size, dtype=torch.float32))
-
-        # Use torch.empty() explicitly instead of torch.Tensor(size)
-        self.query = nn.Parameter(torch.empty(hidden_size))
+        
+        self.bias = nn.Parameter(torch.Tensor(hidden_size))
+        b = np.zeros(hidden_size, dtype=np.float32)
+        self.bias.data.copy_(torch.from_numpy(b))
+        
+        self.query = nn.Parameter(torch.Tensor(hidden_size))
         self.query.data.normal_(mean=0.0, std=0.05)
-
+        
     def forward(self, batch_hidden, batch_masks):
-
-
-
-
-        key = torch.matmul(batch_hidden, self.weight) + self.bias
-
-        outputs = torch.matmul(key, self.query)
-
-
-        masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32))
-
-        attn_scores = F.softmax(masked_outputs, dim=1)
-
-
+        # batch_hidden: batch_size x len x hidden_size (2 * hidden_size of lstm)
+        # batch_masks: batch_size x len
+        
+        # broadcast机制
+        key = torch.matmul(batch_hidden, self.weight) + self.bias  # b x len x hidden
+        
+        outputs = torch.matmul(key, self.query)  # b x len
+        
+        # 填充一个很小的负数，softmax后就会变为0
+        masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32)) 
+        
+        attn_scores = F.softmax(masked_outputs, dim=1)  # b x len
+        
+        # 经过softmax后可能存在nan，因此将这些位置都变为0
         masked_attn_scores = attn_scores.masked_fill((1 - batch_masks).bool(), 0.0)
-
-
-        batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)
-
+        
+        # 矩阵批量乘法（batch matrix-matrix product）函数
+        batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)  # b x hidden
+        
         return batch_outputs, attn_scores
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# === BEFORE (original) ===
+# word2vec_path = 'data/word2vec.txt'
+# dropout = 0.15
+# word_hidden_size = 128
+# word_num_layers = 2
+# 
+# class WordLSTMEncoder(nn.Module):
+#     '''
+#     结合word2vec（预训练）和nn.Embedding()（待训练）的词向量表示，然后进一步用lstm提取序列信息，更新词向量表示
+#     '''
+#     def __init__(self, vocab):
+#         super(WordLSTMEncoder, self).__init__()
+#         self.dropout = nn.Dropout(dropout)
+#         self.word_dims = num_features #100
+#         
+#         self.word_embed = nn.Embedding(vocab.word_size, self.word_dims, padding_idx=0)
+#         
+#         extword_embed = vocab.load_pretrained_embs(word2vec_path)
+#         extword_size, word_dims = extword_embed.shape
+#         
+#         self.extword_embed = nn.Embedding(extword_size, word_dims, padding_idx=0)
+#         self.extword_embed.weight.data.copy_(torch.from_numpy(extword_embed))
+#         self.extword_embed.weight.requires_grad = False
+#         
+#         input_size = self.word_dims
+#         
+#         self.word_lstm = nn.LSTM(input_size=input_size, 
+#                                  hidden_size=word_hidden_size,
+#                                  num_layers=word_num_layers,  # LSTM层的数量
+#                                  batch_first=True,
+#                                  bidirectional=True)
+#         
+#     def forward(self, word_ids, extword_ids, batch_masks):
+#         # word_ids: sen_num x sent_len
+#         # extword_ids: sen_num x sent_len
+#         # batch_masks: sen_num x sent_len
+#         
+#         word_embed = self.word_embed(word_ids)  # sen_num x sent_len x 100
+#         extword_embed = self.extword_embed(extword_ids)
+#         batch_embed = word_embed + extword_embed
+#         
+#         if self.training:
+#             batch_embed = self.dropout(batch_embed)
+#             
+#         hiddens, _ = self.word_lstm(batch_embed)  # sen_num x sent_len x hidden*2
+#         hiddens = hiddens * batch_masks.unsqueeze(2)
+#         
+#         if self.training:
+#             hiddens = self.dropout(hiddens)
+#             
+#         return hiddens
+
+# === AFTER (edited) ===
 word2vec_path = 'data/word2vec.txt'
 dropout = 0.15
 word_hidden_size = 128
@@ -242,43 +253,45 @@ class WordLSTMEncoder(nn.Module):
     def __init__(self, vocab):
         super(WordLSTMEncoder, self).__init__()
         self.dropout = nn.Dropout(dropout)
-        self.word_dims = num_features #100
-        
+        self.word_dims = num_features
+
         self.word_embed = nn.Embedding(vocab.word_size, self.word_dims, padding_idx=0)
-        
+
         extword_embed = vocab.load_pretrained_embs(word2vec_path)
         extword_size, word_dims = extword_embed.shape
-        
+
         self.extword_embed = nn.Embedding(extword_size, word_dims, padding_idx=0)
-        self.extword_embed.weight.data.copy_(torch.from_numpy(extword_embed))
+        # Convert numpy array to torch tensor with explicit dtype before copying
+        extword_tensor = torch.tensor(extword_embed, dtype=torch.float32)
+        self.extword_embed.weight.data.copy_(extword_tensor)
         self.extword_embed.weight.requires_grad = False
-        
+
         input_size = self.word_dims
-        
-        self.word_lstm = nn.LSTM(input_size=input_size, 
+
+        self.word_lstm = nn.LSTM(input_size=input_size,
                                  hidden_size=word_hidden_size,
-                                 num_layers=word_num_layers,  # LSTM层的数量
+                                 num_layers=word_num_layers,
                                  batch_first=True,
                                  bidirectional=True)
-        
+
     def forward(self, word_ids, extword_ids, batch_masks):
-        # word_ids: sen_num x sent_len
-        # extword_ids: sen_num x sent_len
-        # batch_masks: sen_num x sent_len
-        
-        word_embed = self.word_embed(word_ids)  # sen_num x sent_len x 100
+
+
+
+
+        word_embed = self.word_embed(word_ids)
         extword_embed = self.extword_embed(extword_ids)
         batch_embed = word_embed + extword_embed
-        
+
         if self.training:
             batch_embed = self.dropout(batch_embed)
-            
-        hiddens, _ = self.word_lstm(batch_embed)  # sen_num x sent_len x hidden*2
+
+        hiddens, _ = self.word_lstm(batch_embed)
         hiddens = hiddens * batch_masks.unsqueeze(2)
-        
+
         if self.training:
             hiddens = self.dropout(hiddens)
-            
+
         return hiddens
 
 #%%

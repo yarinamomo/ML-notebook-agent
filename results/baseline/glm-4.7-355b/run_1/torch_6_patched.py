@@ -127,76 +127,38 @@ train_dataloader = DataLoader(customDataset, batch_size=64,shuffle=True, num_wor
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# #trial torch model
-# class AnswerModel(torch.nn.Module):
-# 
-#     def __init__(self):
-#         super(AnswerModel, self).__init__()
-#         
-#         self.norm0 = torch.nn.LayerNorm(1536).to(device)
-#         self.dropout0 = torch.nn.Dropout(0.5).to(device)
-#         self.linear1 = torch.nn.Linear(1536, 512).to(device)
-#         #check layer norm
-#         self.norm1 = torch.nn.LayerNorm(512).to(device)
-#         self.dropout1 = torch.nn.Dropout(0.5).to(device)
-#         
-#         self.activation = torch.nn.ReLU().to(device)
-#         
-#         self.linear2 = torch.nn.Linear(512 , 6294).to(device)
-#         
-#         self.aux = torch.nn.Linear(512,4).to(device)
-#         self.dropout1 = torch.nn.Dropout(0.5).to(device)
-#         self.gate = torch.nn.Linear(4, 6294).to(device)
-#         self.sigmoid=torch.nn.Sigmoid().to(device)
-#         
-#         
-#     def forward(self, x):
-#         x = self.norm0(x).to(device)
-#         x = self.dropout0(x).to(device)
-#         
-#         x= self.linear1(x).to(device)
-#         x = self.dropout1(x).to(device)
-#         
-#         xaux =self.aux(x).to(device)
-#         xaux =self.gate(xaux).to(device)
-#         vqa = self.linear2(x).to(device)
-#         out = vqa * self.sigmoid(xaux)
-#         return out,xaux
-# model= AnswerModel().to(device)
-# print(model)
-
-# === AFTER (edited) ===
+#trial torch model
 class AnswerModel(torch.nn.Module):
 
     def __init__(self):
         super(AnswerModel, self).__init__()
-
+        
         self.norm0 = torch.nn.LayerNorm(1536).to(device)
         self.dropout0 = torch.nn.Dropout(0.5).to(device)
         self.linear1 = torch.nn.Linear(1536, 512).to(device)
-
+        #check layer norm
         self.norm1 = torch.nn.LayerNorm(512).to(device)
         self.dropout1 = torch.nn.Dropout(0.5).to(device)
-
+        
         self.activation = torch.nn.ReLU().to(device)
-
+        
         self.linear2 = torch.nn.Linear(512 , 6294).to(device)
-
-        self.aux = torch.nn.Linear(512, 6294).to(device)
-        self.gate = torch.nn.Linear(6294, 6294).to(device)
+        
+        self.aux = torch.nn.Linear(512,4).to(device)
+        self.dropout1 = torch.nn.Dropout(0.5).to(device)
+        self.gate = torch.nn.Linear(4, 6294).to(device)
         self.sigmoid=torch.nn.Sigmoid().to(device)
-
-
+        
+        
     def forward(self, x):
         x = self.norm0(x).to(device)
         x = self.dropout0(x).to(device)
-
+        
         x= self.linear1(x).to(device)
         x = self.dropout1(x).to(device)
-
+        
         xaux =self.aux(x).to(device)
         xaux =self.gate(xaux).to(device)
         vqa = self.linear2(x).to(device)
@@ -274,7 +236,7 @@ def run_model(model,dataloader, optimizer,train = True ):
 
 
         loss_ = loss(output, label).to(device)
-        loss_aux=loss(out_aux,label).to(device)
+        loss_aux=loss(out_aux[:,:4],label).to(device)
         mod_loss = loss_+loss_aux
         mod_loss.backward()
         total_loss+=mod_loss.item()

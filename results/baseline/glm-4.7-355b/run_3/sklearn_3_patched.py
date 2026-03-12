@@ -50,24 +50,26 @@ test_df = test_df.drop("Id", axis=1)
 # test_df = pd.get_dummies(test_df, columns=list(test_df))
 
 # === AFTER (edited) ===
-# Identify categorical columns (object dtype)
+# Identify categorical columns
 categorical_cols = train_df.select_dtypes(include=['object']).columns.tolist()
 
-# Use OneHotEncoder to consistently encode both train and test
-encoder = OneHotEncoder(handle_unknown="ignore", sparse=False)
+# Store numeric columns
+numeric_cols = [col for col in train_df.columns if col not in categorical_cols]
+
+# Use OneHotEncoder to create consistent columns across train and test
+encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+
+# Fit and transform on training data
 train_encoded = encoder.fit_transform(train_df[categorical_cols])
+train_encoded_df = pd.DataFrame(train_encoded, columns=encoder.get_feature_names_out(categorical_cols))
+
+# Transform test data
 test_encoded = encoder.transform(test_df[categorical_cols])
+test_encoded_df = pd.DataFrame(test_encoded, columns=encoder.get_feature_names_out(categorical_cols))
 
-# Get encoded feature names
-encoded_feature_names = encoder.get_feature_names_out(categorical_cols)
-
-# Create dataframes with encoded features
-train_encoded_df = pd.DataFrame(train_encoded, columns=encoded_feature_names, index=train_df.index)
-test_encoded_df = pd.DataFrame(test_encoded, columns=encoded_feature_names, index=test_df.index)
-
-# Drop original categorical columns and add encoded ones
-train_df = pd.concat([train_df.drop(categorical_cols, axis=1), train_encoded_df], axis=1)
-test_df = pd.concat([test_df.drop(categorical_cols, axis=1), test_encoded_df], axis=1)
+# Combine numeric and encoded categorical columns
+train_df = pd.concat([train_df[numeric_cols], train_encoded_df], axis=1)
+test_df = pd.concat([test_df[numeric_cols], test_encoded_df], axis=1)
 
 #%%
 # --- [CELL 5]: ---

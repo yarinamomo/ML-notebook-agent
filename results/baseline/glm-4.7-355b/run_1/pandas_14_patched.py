@@ -102,9 +102,8 @@ for i in range(filas):
     for j in range(col):
         n = i * col + j
         if n < len(nombres_col.columns):
-            col_name = nombres_col.columns[n]
-            axs[i, j].set_title(col_name)
-            axs[i, j].scatter(df[col_name][:N], y[:N])
+            axs[i, j].set_title(nombres_col.columns[n])
+            axs[i, j].scatter(df[nombres_col.columns[n]][:N], y[:N])
 
 fig.tight_layout()
 plt.show()

@@ -42,7 +42,7 @@ test_df = test_df.drop("Id", axis=1)
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # # One-hot encoding
 # encoder = OneHotEncoder(handle_unknown="ignore")
@@ -50,32 +50,30 @@ test_df = test_df.drop("Id", axis=1)
 # test_df = pd.get_dummies(test_df, columns=list(test_df))
 
 # === AFTER (edited) ===
-# Get categorical columns (object or category dtype)
-categorical_cols = train_df.select_dtypes(include=['object', 'category']).columns.tolist()
+encoder = OneHotEncoder(handle_unknown="ignore")
+train_df = pd.get_dummies(train_df, columns=list(train_df))
+test_df = pd.get_dummies(test_df, columns=list(test_df))
 
-# Apply get_dummies to both datasets to ensure consistent columns
-# First encode train data
-train_df = pd.get_dummies(train_df, columns=categorical_cols, drop_first=False)
-test_df = pd.get_dummies(test_df, columns=categorical_cols, drop_first=False)
-
-# Ensure both datasets have the same columns
+# Align columns between train and test sets
 train_cols = set(train_df.columns)
 test_cols = set(test_df.columns)
 
-# Add missing columns to each dataframe with 0s
+# Add missing columns to both sets with zeros
 for col in train_cols - test_cols:
     test_df[col] = 0
     
 for col in test_cols - train_cols:
     train_df[col] = 0
 
-# Ensure same column order
-test_df = test_df[train_df.columns]
+# Ensure both have the same column order
+common_cols = list(train_cols | test_cols)
+train_df = train_df[common_cols]
+test_df = test_df[common_cols]
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # Data processing
 scaler = StandardScaler()
 train_df = scaler.fit_transform(train_df)

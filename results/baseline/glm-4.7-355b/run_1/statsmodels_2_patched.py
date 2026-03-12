@@ -127,7 +127,7 @@ plt.show()
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 7}
 # === BEFORE (original) ===
 # from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 # 
@@ -146,9 +146,9 @@ plt.show()
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 plt.figure(figsize=(12, 6))
-plot_acf(residuals, lags=40, title='ACF of Residuals')
+plot_acf(residuals, lags=50, title='ACF of Residuals')
 plt.show()
 
 plt.figure(figsize=(12, 6))
-plot_pacf(residuals, lags=40, title='PACF of Residuals')
+plot_pacf(residuals, lags=50, title='PACF of Residuals')
 plt.show()

@@ -290,4 +290,3 @@ dft_encoded.head()
 
 # === AFTER (edited) ===
 final_pred = best_estimator.predict(dft_encoded)
-final_pred

@@ -222,9 +222,9 @@ for epoch in range(NUM_EPOCHS):
 # === AFTER (edited) ===
 import matplotlib.pyplot as plt
 def visual():
-    n=4
+    n=6
     k=0
-    z = torch.randn((16, 100, 1, 1)).to(device)
+    z = torch.randn((n*n, 100, 1, 1)).to(device)
     out= gen(z)
     plt.figure(figsize=(16,16))
     out = out.cpu()

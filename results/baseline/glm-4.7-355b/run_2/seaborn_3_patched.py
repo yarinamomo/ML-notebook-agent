@@ -141,8 +141,7 @@ for col in num_cols:
     num_summary(df, col, True)
 
 for col in num_cols:
-    sns.histplot(df[col])
-    plt.show()
+    sns.barplot(x=col, data=df)
 
 for col in num_cols:
     sns.boxplot(data=df, x=col)

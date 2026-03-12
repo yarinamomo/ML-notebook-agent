@@ -196,28 +196,15 @@ class SiameseNetwork(nn.Module):
             nn.Dropout2d(p=0.3),
         )
 
-        # Calculate the flattened size from the CNN output
-        self.cnn_output_size = self._get_conv_output_size()
-
-        # Dynamically scale the FC layers based on CNN output size
-        self.fc1_hidden_size = int(500 * (self.cnn_output_size / 4500))  # Scale proportionally
-        self.fc1_output_size = int(1024 * (self.fc1_hidden_size / 500))
-
         self.fc1 = nn.Sequential(
-            nn.Linear(self.cnn_output_size, self.fc1_hidden_size),
+            nn.Linear(26112, 1024),
             nn.ReLU(inplace=True),
             nn.Dropout2d(p=0.5),
 
-            nn.Linear(self.fc1_hidden_size, 128),
+            nn.Linear(1024, 128),
             nn.ReLU(inplace=True),
 
             nn.Linear(128,2))
-
-    def _get_conv_output_size(self):
-        # Create a dummy batch to get the actual output size from the CNN
-        dummy_input = torch.zeros(1, 3, IMAGE_HEIGHT, IMAGE_WIDTH)
-        dummy_output = self.cnn1(dummy_input)
-        return dummy_output.view(1, -1).size(1)
 
     def forward_once(self, x):
 
@@ -262,7 +249,7 @@ class ContrastiveLoss(torch.nn.Module):
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 11}
 net = SiameseNetwork()#.cuda()
 # Decalre Loss Function
 criterion = ContrastiveLoss()

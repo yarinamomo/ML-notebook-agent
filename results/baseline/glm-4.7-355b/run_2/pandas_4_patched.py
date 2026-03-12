@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 
@@ -24,7 +24,7 @@ print(os.listdir("data"))
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 data = pd.read_csv('data/fer2013.csv')
 #check data shape
 data.shape
@@ -32,7 +32,7 @@ data.shape
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 import pandas as pd
 
 # créer une nouvelle colonne nommée "disgust_images"
@@ -51,7 +51,7 @@ print(data.shape)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 #check target labels
 emotion_map = {0: 'Angry', 2:'Fear', 3: 'Happy', 4: 'Sad', 5: 'Surprise', 6: 'Neutral'}
 emotion_counts = data['emotion'].value_counts(sort=False).reset_index()
@@ -62,7 +62,7 @@ emotion_counts
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # def row2image(row):
 #     pixels, emotion = row['pixels'], emotion_map[row['emotion']]#extrait les pixels et l'émotion de la ligne de données. Les pixels sont stockés en tant que chaîne de caractères contenant tous les pixels séparés par des espaces.
@@ -98,15 +98,17 @@ def row2image(row):
 
     return image, emotion
 
+# Get the list of available emotions (excluding 1 which was removed)
+available_emotions = data['emotion'].unique()
+available_emotions.sort()
+
 plt.figure(0, figsize=(16,10))
-for i in range(1,8):
-    if i-1 == 1:  # Skip disgust (emotion 1 was removed)
-        continue
-    face = data[data['emotion'] == i-1].iloc[0]
+for idx, emotion_id in enumerate(available_emotions[:6]):
+    face = data[data['emotion'] == emotion_id].iloc[0]
 
     img, label = row2image(face)
-    plt.subplot(2,4,i)
-    plt.imshow(img[0])
+    plt.subplot(2,3,idx+1)
+    plt.imshow(img)
     plt.title(label)
 
 plt.show()

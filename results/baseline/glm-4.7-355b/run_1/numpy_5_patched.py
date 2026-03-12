@@ -454,4 +454,7 @@ else:
 # np.savetxt('images.txt', images, delimiter=',', fmt='%d')
 
 # === AFTER (edited) ===
-np.save('images.npy', images)
+# Reshape images to 2D for saving with np.savetxt
+# Shape is (1, 20, 32, 32, 3) -> flatten to (num_samples * height * width, channels)
+images_2d = images.reshape(-1, images.shape[-1])
+np.savetxt('images.txt', images_2d, delimiter=',', fmt='%d')

@@ -85,22 +85,41 @@ for i in tp_nonwatermarked:
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# dimension to resize to 
-width = 196 # only certain dimensions work due to UpSampling (196x196 works, 148x148 works)
+# === BEFORE (original) ===
+# # dimension to resize to 
+# width = 196 # only certain dimensions work due to UpSampling (196x196 works, 148x148 works)
+# height = 196
+# dim = (width, height) # set the dimensions
+# def createPixelArr(files):
+#     data = []
+#     for image in files:
+#         try: # take each image and use imread to get the pixel values in a matrix 
+#             img_arr = cv2.imread(image, cv2.IMREAD_COLOR)
+#             img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
+#             resized_arr = cv2.resize(img_arr, (width, height)) # rescale the image so every image is of the same dimension
+#             data.append(resized_arr) # add the matrix of pixel values 
+#         except Exception as e:
+#             print(e) # some error thrown in imread or resize
+#     return np.array(data)
+
+# === AFTER (edited) ===
+width = 196
 height = 196
-dim = (width, height) # set the dimensions
+dim = (width, height)
 def createPixelArr(files):
     data = []
     for image in files:
-        try: # take each image and use imread to get the pixel values in a matrix 
+        try:
             img_arr = cv2.imread(image, cv2.IMREAD_COLOR)
             img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
-            resized_arr = cv2.resize(img_arr, (width, height)) # rescale the image so every image is of the same dimension
-            data.append(resized_arr) # add the matrix of pixel values 
+            resized_arr = cv2.resize(img_arr, (width, height))
+            # Transpose from HWC to CHW for PyTorch
+            resized_arr = np.transpose(resized_arr, (2, 0, 1))
+            data.append(resized_arr)
         except Exception as e:
-            print(e) # some error thrown in imread or resize
+            print(e)
     return np.array(data)
 
 #%%
@@ -112,16 +131,9 @@ train_nwms_pixVals = createPixelArr(out_array_nwm[:90]) # 1000
 
 #%%
 # --- [CELL 9]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
-# === BEFORE (original) ===
-# X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1)
-
-# === AFTER (edited) ===
-X = np.concatenate([train_wms_pixVals, train_nwms_pixVals], axis=0)
-y = np.concatenate([np.ones(len(train_wms_pixVals)), np.zeros(len(train_nwms_pixVals))], axis=0)
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
+X_train, X_test, y_train, y_test = train_test_split(train_wms_pixVals, train_nwms_pixVals, train_size=0.8, random_state=1)
 
 #%%
 # --- [CELL 10]: ---
@@ -260,34 +272,18 @@ optimizer = optim.AdamW(params=model_ft.parameters(), lr=0.2e-5)
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-# === BEFORE (original) ===
-# class MyDataset(Dataset):
-#     def __init__(self, X, y):
-#         self.X = X
-#         self.y = y
-#         
-#     def __len__(self):
-#         return len(self.X)
-#     
-#     def __getitem__(self, idx):
-#         return self.X[idx], self.y[idx]
-
-# === AFTER (edited) ===
 class MyDataset(Dataset):
     def __init__(self, X, y):
         self.X = X
         self.y = y
-
+        
     def __len__(self):
         return len(self.X)
-
+    
     def __getitem__(self, idx):
-        # Convert numpy array to tensor and reorder from (H, W, C) to (C, H, W)
-        x = torch.from_numpy(self.X[idx]).permute(2, 0, 1).float() / 255.0
-        y = self.y[idx]
-        return x, y
+        return self.X[idx], self.y[idx]
 
 #%%
 # --- [CELL 15]: ---

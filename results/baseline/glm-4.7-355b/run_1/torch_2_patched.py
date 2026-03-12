@@ -146,17 +146,13 @@ def check_label_name(predictions, weights):
 
 
 def model_quantization(model, backend='x86', save=False):
-
     model.qconfig = torch.quantization.get_default_qconfig(backend)
     torch.backends.quantized.engine = backend
 
     quantized_model = torch.quantization.quantize_dynamic(model, qconfig_spec={torch.nn.Linear}, dtype=torch.qint8)
-    
-    # Skip TorchScript compilation for ViT models as they have incompatible attention layers
-    # scripted_quantized_model = torch.jit.script(quantized_model)
+    # Skip scripting for ViT as MultiheadAttention layers are not compatible with torch.jit.script
     if save:
-        torch.save(quantized_model, "vit_quantized.pt")
-    
+        torch.save(quantized_model.state_dict(), "vit_quantized.pt")
     return quantized_model
 
 

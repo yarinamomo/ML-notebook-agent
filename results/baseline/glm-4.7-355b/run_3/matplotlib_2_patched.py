@@ -59,7 +59,7 @@ import torch.nn.functional as F
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
@@ -116,7 +116,7 @@ labels_array = np.array(labels_array)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 2}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 train_images, test_images, train_labels, test_labels = train_test_split(
     images_array, labels_array, test_size=0.3
 )
@@ -127,7 +127,7 @@ print(train_labels.shape)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -145,7 +145,7 @@ for i in range(num_images_to_plot):
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 import numpy as np
 from scipy.ndimage import zoom
 
@@ -168,7 +168,7 @@ print(resized_images.shape)
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 import torch
 
 import torch
@@ -219,7 +219,7 @@ train_loader = DataLoader(custom_dataset, batch_size=batch_size, shuffle=shuffle
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # === BEFORE (original) ===
 # plt.imshow(custom_dataset.images[1][0, :, :])  # Displaying the first channel of the image
 # plt.imshow(custom_dataset.labels[0])  # Displaying the first channel of the image
@@ -228,7 +228,9 @@ train_loader = DataLoader(custom_dataset, batch_size=batch_size, shuffle=shuffle
 # plt.show()
 
 # === AFTER (edited) ===
-plt.imshow(custom_dataset.images[1][0, :, :])
+import numpy as np
+import matplotlib.pyplot as plt
 
+plt.imshow(custom_dataset.images[1][0, :, :])
 plt.title(f"Label: {labels_array[1]}")
 plt.show()

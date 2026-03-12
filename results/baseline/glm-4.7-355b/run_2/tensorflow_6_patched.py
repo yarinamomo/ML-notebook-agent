@@ -186,15 +186,36 @@ model.compile(optimizer = optimizer , loss = "categorical_crossentropy", metrics
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
-# Set a learning rate annealer定义学习率退火算法。定义回调函数，在训练时，相应的回调函数的方法就会被在各自的阶段被调用。
-# https://keras.io/zh/callbacks/
-# https://keras.io/zh/callbacks/#reducelronplateau
-learning_rate_reduction = ReduceLROnPlateau(monitor='val_acc', 
-                                            patience=3, 
-                                            verbose=1, 
-                                            factor=0.5, 
+# === BEFORE (original) ===
+# # Set a learning rate annealer定义学习率退火算法。定义回调函数，在训练时，相应的回调函数的方法就会被在各自的阶段被调用。
+# # https://keras.io/zh/callbacks/
+# # https://keras.io/zh/callbacks/#reducelronplateau
+# learning_rate_reduction = ReduceLROnPlateau(monitor='val_acc', 
+#                                             patience=3, 
+#                                             verbose=1, 
+#                                             factor=0.5, 
+#                                             min_lr=0.00001)
+# '''
+# 
+# 在您提供的代码中，learningratereduction是ReduceLROnPlateau回调函数的一个实例，用于在模型训练过程中动态地减小学习率。
+# 具体来说，它监视了验证集的准确性（即'monitor'='valacc'），并且如果在3个时期内没有改进，
+# 则减小学习率（即'patience'=3）。该调用还指定了减小因子（即'factor'=0.5）和最小学习率（即'minlr'=0.00001），
+# 以便在执行减少操作时进行限制，从而保持学习率的稳定性和有效性。如果您想要更好地了解ReduceLROnPlateau的工作原理和参数设置，
+# 
+# verbose是ReduceLROnPlateau回调函数的一个可选参数，用于控制输出详细程度的标志。
+# 如果verbose=1，则在执行时期减少操作时将输出一条消息，以指示学习率的更新和当前的状态。
+# 如果verbose=0，则不会输出任何消息。通常情况下，verbose的默认值为0，因为它可以大大减少输出的噪声和干扰。
+# 如果您需要更详细的输出和信息，可以将verbose的值设置为1或更高
+# 可以查看Keras文档：https://keras.io/callbacks/#reducelronplateau。
+# '''
+
+# === AFTER (edited) ===
+learning_rate_reduction = ReduceLROnPlateau(monitor='val_accuracy',
+                                            patience=3,
+                                            verbose=1,
+                                            factor=0.5,
                                             min_lr=0.00001)
 '''
 
@@ -273,24 +294,13 @@ history = model.fit(datagen.flow(X_train,Y_train, batch_size=batch_size),
 
 #%%
 # --- [CELL 17]: ---
-# cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 18}
-# === BEFORE (original) ===
-# fig, ax = plt.subplots(2,1)
-# ax[0].plot(history.history['loss'], color='b', label="Training loss")
-# ax[0].plot(history.history['val_loss'], color='r', label="validation loss",axes =ax[0])
-# legend = ax[0].legend(loc='best', shadow=True)
-# 
-# ax[1].plot(history.history['acc'], color='b', label="Training accuracy")
-# ax[1].plot(history.history['val_acc'], color='r',label="Validation accuracy")
-# legend = ax[1].legend(loc='best', shadow=True)
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 18}
 fig, ax = plt.subplots(2,1)
 ax[0].plot(history.history['loss'], color='b', label="Training loss")
 ax[0].plot(history.history['val_loss'], color='r', label="validation loss",axes =ax[0])
 legend = ax[0].legend(loc='best', shadow=True)
 
-ax[1].plot(history.history['accuracy'], color='b', label="Training accuracy")
-ax[1].plot(history.history['val_accuracy'], color='r',label="Validation accuracy")
+ax[1].plot(history.history['acc'], color='b', label="Training accuracy")
+ax[1].plot(history.history['val_acc'], color='r',label="Validation accuracy")
 legend = ax[1].legend(loc='best', shadow=True)

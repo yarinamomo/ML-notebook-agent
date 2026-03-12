@@ -147,33 +147,8 @@ X,Y = build_input(tokens , word2index,text2int)
 
 #%%
 # --- [CELL 10]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# from torch.utils.data import Dataset, DataLoader
-# class  data(Dataset):
-#     def __init__(self , X,Y,vs , padsz):
-#         self.X = X
-#         self.Y = Y
-#         self.vocab_size = vs
-#         self.mx = padsz
-#     def __len__(self):
-#         return len(self.X)
-#     def __getitem__(self , index):
-#         dif = len(self.mx - self.X[index] )
-#         _x = self.X[index]
-#         _y = self.Y[index]
-#         if dif > 0:
-#             a = torch.zeros(self.mx)
-#             b = torch.zeros(self.mx)
-#             a[:len(_x)] = _x
-#             b[:len(_y)] = _y
-#             _x = a
-#             _y = torch.zeros( ( self.mx, self.vocab_size))
-#             _y [torch.arange(self.mx),b.long()] =1
-#         return _x.long() , _y.long()
-
-# === AFTER (edited) ===
 from torch.utils.data import Dataset, DataLoader
 class  data(Dataset):
     def __init__(self , X,Y,vs , padsz):
@@ -184,17 +159,17 @@ class  data(Dataset):
     def __len__(self):
         return len(self.X)
     def __getitem__(self , index):
+        dif = len(self.mx - self.X[index] )
         _x = self.X[index]
         _y = self.Y[index]
-        
-        a = torch.zeros(self.mx)
-        b = torch.zeros(self.mx)
-        a[:len(_x)] = _x
-        b[:len(_y)] = _y
-        _x = a
-        _y = torch.zeros( ( self.mx, self.vocab_size))
-        if len(b) > 0:
-            _y [torch.arange(len(b)),b.long()] =1
+        if dif > 0:
+            a = torch.zeros(self.mx)
+            b = torch.zeros(self.mx)
+            a[:len(_x)] = _x
+            b[:len(_y)] = _y
+            _x = a
+            _y = torch.zeros( ( self.mx, self.vocab_size))
+            _y [torch.arange(self.mx),b.long()] =1
         return _x.long() , _y.long()
 
 #%%
@@ -329,24 +304,64 @@ yt = dataset['test']['label']
 
 #%%
 # --- [CELL 18]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'not run'}
+# === BEFORE (original) ===
+# class sentimentdata(Dataset):
+#     def __init__(self , X,Y ):
+#         self.X = X
+#         self.Y = Y
+#     def __len__(self):
+#         return len(self.X)
+#     def __getitem__(self , index):
+#         x = self.X[index]
+#         y= self.Y[index]#torch.zeros(2)
+# #         y[self.Y[index]] = 1
+#         return x,y
+# st_train_loader = sentimentdata(X ,ylb)
+# st_test_loader = sentimentdata(X ,ytb)
+# 
+# st_train = DataLoader(st_train_loader, batch_size=5 )
+# st_test= DataLoader(st_test_loader, batch_size=5 )
+
+# === AFTER (edited) ===
 class sentimentdata(Dataset):
-    def __init__(self , X,Y ):
+    def __init__(self , X, Y, padsz, vocab_size ):
         self.X = X
         self.Y = Y
+        self.mx = padsz
+        self.vocab_size = vocab_size
     def __len__(self):
         return len(self.X)
     def __getitem__(self , index):
         x = self.X[index]
-        y= self.Y[index]#torch.zeros(2)
-#         y[self.Y[index]] = 1
-        return x,y
-st_train_loader = sentimentdata(X ,ylb)
-st_test_loader = sentimentdata(X ,ytb)
+        y = self.Y[index]
+        
+        # Pad/truncate x to self.mx
+        if len(x) >= self.mx:
+            _x = x[:self.mx]
+        else:
+            _x = torch.zeros(self.mx)
+            _x[:len(x)] = x
+        
+        # Pad/truncate y to self.mx and create one-hot encoding
+        if len(y) >= self.mx:
+            _y = y[:self.mx]
+        else:
+            _y = torch.zeros(self.mx)
+            _y[:len(y)] = y
+        
+        # Create one-hot encoding for y
+        _y_onehot = torch.zeros((self.mx, self.vocab_size))
+        _y_onehot[torch.arange(self.mx), _y.long()] = 1
+        
+        return _x.long(), _y_onehot.long()
 
-st_train = DataLoader(st_train_loader, batch_size=5 )
-st_test= DataLoader(st_test_loader, batch_size=5 )
+st_train_loader = sentimentdata(X, ylb, 40, len(vocab))
+st_test_loader = sentimentdata(X, ytb, 40, len(vocab))
+
+st_train = DataLoader(st_train_loader, batch_size=5)
+st_test = DataLoader(st_test_loader, batch_size=5)
 
 #%%
 # --- [CELL 19]: ---

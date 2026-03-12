@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import numpy as np
 import pandas as pd
 import os, datetime, sys, random, time
@@ -26,7 +26,7 @@ print(test_data.head())
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # remove id 
 dev_train=train_data.drop("Unnamed: 0",axis=1)
 # 测试集也做同样操作
@@ -36,7 +36,7 @@ dev_test=test_data.drop("Unnamed: 0",axis=1)
 #%%
 # --- [CELL 2]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 # === BEFORE (original) ===
 # import seaborn as sns
 # # 检查数据正负样本是否平衡

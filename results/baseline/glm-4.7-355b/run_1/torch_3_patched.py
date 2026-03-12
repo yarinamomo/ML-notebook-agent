@@ -24,15 +24,35 @@ from torch import nn
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# === BEFORE (original) ===
+# class CustomModelMultichoice(nn.Module):
+#     def __init__(self,config,num_choice):
+#         super(CustomModelMultichoice,self).__init__()
+#         model = AutoModelForMultipleChoice.from_config(config)
+#         model.classifier = nn.Linear(768,2)
+#         self.model = model
+#         ## add activation
+#         self.sigmoid = nn.Sigmoid()
+#         self.num_choice = num_choice
+#     def forward(self,input_ids = None,token_type_ids = None ,attention_mask = None,labels = None):
+#         outputs = self.model(input_ids=input_ids,token_type_ids=token_type_ids,attention_mask=attention_mask)
+#         logits = self.sigmoid(outputs.logits)
+#         loss = None
+#         if labels is not None:
+#             loss_func = nn.NLLLoss()
+#             loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))
+#         return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states= None,attentions =None)
+
+# === AFTER (edited) ===
 class CustomModelMultichoice(nn.Module):
     def __init__(self,config,num_choice):
         super(CustomModelMultichoice,self).__init__()
         model = AutoModelForMultipleChoice.from_config(config)
-        model.classifier = nn.Linear(768,2)
+        model.classifier = nn.Linear(768,num_choice)
         self.model = model
-        ## add activation
+
         self.sigmoid = nn.Sigmoid()
         self.num_choice = num_choice
     def forward(self,input_ids = None,token_type_ids = None ,attention_mask = None,labels = None):
@@ -41,22 +61,17 @@ class CustomModelMultichoice(nn.Module):
         loss = None
         if labels is not None:
             loss_func = nn.NLLLoss()
-            loss = loss_func(logits.view(-1,self.num_choice),labels.view(-1))
-        return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states= None,attentions =None)
+            log_probs = torch.log(logits.clamp(min=1e-9))
+            loss = loss_func(log_probs.reshape(-1,self.num_choice),labels.flatten())
+        return MultipleChoiceModelOutput(loss = loss,logits=logits,hidden_states = None,attentions =None)
 
 #%%
 # --- [CELL 5]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
-# === BEFORE (original) ===
-# config = AutoConfig.from_pretrained(MODEL_NAME_CHOICE)
-# 
-# CustomModel = CustomModelMultichoice(config,3)
-
-# === AFTER (edited) ===
 config = AutoConfig.from_pretrained(MODEL_NAME_CHOICE)
 
-CustomModel = CustomModelMultichoice(config,2)
+CustomModel = CustomModelMultichoice(config,3)
 
 #%%
 # --- [CELL 6]: ---

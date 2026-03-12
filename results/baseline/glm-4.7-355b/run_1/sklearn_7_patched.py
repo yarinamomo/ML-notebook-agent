@@ -44,9 +44,12 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
 
-# Encode categorical variables using one-hot encoding
-X = pd.get_dummies(df.drop(['Spending Score (1-100)'], axis=1), drop_first=True)
+X = df.drop(['Spending Score (1-100)'], axis=1)
 y = df['Spending Score (1-100)']
+
+# Encode categorical variables
+X = pd.get_dummies(X, drop_first=True)
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 

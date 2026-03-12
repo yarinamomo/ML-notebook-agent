@@ -68,8 +68,15 @@ labels = np.array([1,1,1,1,1,0,0,0,0,0])
 # docs = np.array([np.array(pad_sequences(tokenize_text(i)), maxlen=max_length) for i in docs])
 
 # === AFTER (edited) ===
+import numpy as np
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import Tokenizer
 
-max_length = 768
+max_length = 50
 
-docs = np.array([pad_sequences([tokenize_text(i)], maxlen=max_length)[0] for i in docs])
+# Tokenize all documents first
+tokenized_docs = [tokenize_text(doc) for doc in docs]
+
+# Pad all sequences together
+docs = pad_sequences(tokenized_docs, maxlen=max_length, padding='post')
+docs = np.array(docs)

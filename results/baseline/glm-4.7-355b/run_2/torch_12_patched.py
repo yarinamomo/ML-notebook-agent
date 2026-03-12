@@ -102,7 +102,7 @@ tokenizer = GPT2Tokenizer.from_pretrained(model_name)
 
 # Set pad_token for GPT2 (it doesn't have one by default)
 tokenizer.pad_token = tokenizer.eos_token
-tokenizer.pad_token_id = tokenizer.eos_token_id
+
 
 generated_responses = []
 

@@ -63,21 +63,21 @@ CsvPath   = 'data/breast-level_annotations (1).csv.zip'
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 3}
 df = pd.read_csv(CsvPath)
 df.head(3)
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'not run'}
 X= []
 y=[]
 
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'not run'}
 # === BEFORE (original) ===
 # import imageio
 # for i in range(df.shape[0]): # range(50)
@@ -98,9 +98,10 @@ for i in range(df.shape[0]):
 
     path = InputPath+df.laterality[i]+'-'+df.view_position[i]+'/'+df.image_id[i]+'.png'
     if os.path.exists(path):
-        img = cv2.imread(path, cv2.IMREAD_COLOR)
+        img = cv2.imread(path,0)
         img_size = cv2.resize(img, (100, 100), interpolation = cv2.INTER_LINEAR)
-
+        # Convert grayscale to 3-channel (BGR) for compatibility with the model
+        img_size = cv2.cvtColor(img_size, cv2.COLOR_GRAY2BGR)
 
         X.append(img_size)
 
@@ -109,7 +110,7 @@ for i in range(df.shape[0]):
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
+# execution_status: {'status': 'not run'}
 Y = []
 import re
 for i in y:
@@ -118,19 +119,19 @@ for i in y:
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+# execution_status: {'status': 'not run'}
 X = np.array(X)
 
 #%%
 # --- [CELL 7]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# execution_status: {'status': 'not run'}
 Y = np.array(Y)
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
+# execution_status: {'status': 'not run'}
 train_images, val_images, train_labels, val_labels=train_test_split(X, Y,
                                                                       test_size=0.3, random_state=42)
 val_images,test_images, val_labels, test_labels=train_test_split(val_images, val_labels,
@@ -144,7 +145,7 @@ print('Number of       test samples : {}'.format(test_images.shape[0]))
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'not run'}
 from keras.layers import Dense, Conv2D , MaxPool2D , Flatten , Dropout , MaxPooling2D, BatchNormalization
 from tensorflow.keras.optimizers import Adam
 model = Sequential(name = 'VGG19')
@@ -198,5 +199,5 @@ model.summary()
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'not run'}
 history = model.fit(train_images, train_labels, batch_size = 16, epochs=2, validation_data=(val_images, val_labels), verbose = 1)

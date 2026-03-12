@@ -60,7 +60,6 @@ def procData(data, name_count, RescuerID):
     data["RescuerID"] = RescuerID.transform(data["RescuerID"])
     data["RescuerID"] = data["RescuerID"].fillna(-1)
 
-
     data["NameNull"] = data["Name"].isnull()
     data["NameLen"] = data["Name"].fillna("").str.len()
     data["SinNombre"] = data["Name"].str.lower().replace(" ", "") == "nonameyet"

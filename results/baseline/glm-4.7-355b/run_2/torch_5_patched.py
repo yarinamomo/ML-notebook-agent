@@ -277,19 +277,18 @@ def train(num_epochs):
         running_loss = 0.0
         running_acc = 0.0
 
-        for i, (images, classes) in enumerate(training_set_loader, 0):
+        for i, (images, labels) in enumerate(training_set_loader, 0):
 
 
             images = Variable(images.to(device))
-
-            classes = Variable(classes.to(device))
+            labels = Variable(labels.to(device))
 
 
             optimizer.zero_grad()
 
             outputs = model(images)
 
-            loss = loss_fn(outputs, classes)
+            loss = loss_fn(outputs, labels)
 
             loss.backward()
 

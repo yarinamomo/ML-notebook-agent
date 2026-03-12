@@ -96,7 +96,9 @@ if not os.path.isfile(training_binary_path):
   for filename in tqdm(os.listdir(faces_path)):
       path = os.path.join(faces_path,filename)
       image = Image.open(path).resize((GENERATE_SQUARE,
-            GENERATE_SQUARE),Image.LANCZOS).convert('RGB')
+            GENERATE_SQUARE),Image.LANCZOS)
+      # Convert to RGB to ensure consistent channel count
+      image = image.convert('RGB')
       training_data.append(np.asarray(image))
   training_data = np.reshape(training_data,(-1,GENERATE_SQUARE,
             GENERATE_SQUARE,3))
@@ -105,6 +107,7 @@ if not os.path.isfile(training_binary_path):
 
 
   print("Saving training image binary...")
+  np.save(training_binary_path, training_data)
 
   elapsed = time.time()-start
 

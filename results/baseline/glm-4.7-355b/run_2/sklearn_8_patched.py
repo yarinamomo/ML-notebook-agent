@@ -117,8 +117,6 @@ val_predictions = RF.predict(x)
 # print("Accuracy: ", accuracy)
 
 # === AFTER (edited) ===
-val_predictions = RF.predict(x)
-
 accuracy = accuracy_score(y, val_predictions)
 
 print("Accuracy: ", accuracy)

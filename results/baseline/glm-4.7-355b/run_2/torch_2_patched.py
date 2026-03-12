@@ -146,42 +146,17 @@ def check_label_name(predictions, weights):
 
 
 def model_quantization(model, backend='x86', save=False):
-    import torch.nn as nn
-    
-    # Prepare the model for quantization
-    model.qconfig = torch.quantization.get_default_qconfig(backend)
+    # Set the quantization engine
     torch.backends.quantized.engine = backend
-
-    # Only quantize compatible Linear layers, excluding those in attention mechanisms
-    # For ViT, we need to be more selective about which Linear layers we quantize
-    qconfig_spec = {
-        torch.nn.Linear: {
-            'weight_observer': torch.quantization.default_observer,
-            'activation_observer': torch.quantization.default_observer,
-        }
-    }
     
-    try:
-        # Try dynamic quantization (works for some Linear layers)
-        quantized_model = torch.quantization.quantize_dynamic(
-            model, 
-            qconfig_spec={nn.Linear}, 
-            dtype=torch.qint8
-        )
-    except:
-        # If dynamic quantization fails, return the original model with fp16 conversion
-        print("Dynamic quantization not fully supported for this model architecture.")
-        print("Using FP16 model instead.")
-        quantized_model = model.half()
+    # Apply dynamic quantization to the model - only quantizing Linear layers
+    quantized_model = torch.quantization.quantize_dynamic(
+        model, 
+        qconfig_spec={torch.nn.Linear}, 
+        dtype=torch.qint8
+    )
     
-    if save:
-        try:
-            scripted_quantized_model = torch.jit.script(quantized_model)
-            scripted_quantized_model.save("vit_scripted_quantized.pt")
-        except:
-            print("Could not script the model. Saving without scripting.")
-            torch.save(quantized_model, "vit_quantized.pt")
-    
+    # Return the quantized model
     return quantized_model
 
 
@@ -197,7 +172,7 @@ def inference(model, dataloader, class_dict, device, image_num_stop=40000):
     total_correct = 0
     total_samples = 0
     start_time = time.time()
-    model.to(device)
+    model = model.to(device)
     model.eval()
 
     with torch.no_grad():
@@ -231,7 +206,7 @@ def inference(model, dataloader, class_dict, device, image_num_stop=40000):
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # Step 1: Initialize model with the best available weights
 weights = ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
 model = vit_b_16(weights=weights)

@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -15,7 +15,7 @@ from tensorflow.keras.optimizers import Adam
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 import pathlib
 data_dir = "data_small/Training_Handwritten_marathi_Character_Fusion/Data_set"
 data_dir = pathlib.Path(data_dir)
@@ -24,7 +24,7 @@ print(data_dir)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 img_height,img_width=200,200
 batch_size=32
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
@@ -39,7 +39,7 @@ train_ds = tf.keras.preprocessing.image_dataset_from_directory(
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 val_ds = tf.keras.preprocessing.image_dataset_from_directory(
   data_dir,
   validation_split=0.25,
@@ -52,14 +52,14 @@ val_ds = tf.keras.preprocessing.image_dataset_from_directory(
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 class_names = train_ds.class_names
 print(class_names)
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # === BEFORE (original) ===
 # import matplotlib.pyplot as plt
 # 
@@ -79,5 +79,5 @@ for images, labels in train_ds.take(1):
   for i in range(6):
     ax = plt.subplot(3, 3, i + 1)
     plt.imshow(images[i].numpy().astype("uint8"))
-    plt.title(class_names[tf.argmax(labels[i]).numpy()])
+    plt.title(class_names[np.argmax(labels[i])])
     plt.axis("off")

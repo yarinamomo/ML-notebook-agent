@@ -80,11 +80,11 @@ data_df_1.head()
 # plt.show();
 
 # === AFTER (edited) ===
-var = data_df.columns.values
+var = df.columns.values
 
 i = 0
-t0 = data_df.loc[data_df['Class'] == 0]
-t1 = data_df.loc[data_df['Class'] == 1]
+t0 = df.loc[df['Class'] == 0]
+t1 = df.loc[df['Class'] == 1]
 
 sns.set_style('whitegrid')
 plt.figure()

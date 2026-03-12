@@ -31,7 +31,7 @@ df.loc[df.BAD == 0, 'STATUS'] = 'PAID'
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # # %%opts Histogram[width=700 height=400 tools=['hover'] xrotation=0]{+axiswise +framewise}
 # 
@@ -81,13 +81,23 @@ dd={}
 
 for col in cols:
 
-    freq, edges = np.histogram(df[col].dropna().values)
+    freq, edges = np.histogram(df[col].values)
     dd[col] = hv.Histogram((edges, freq), label='ALL Loans').redim.label(x=' ')
 
-    freq, edges = np.histogram(g.get_group('PAID')[col].dropna().values, bins=edges)
+    col_data_paid = g.get_group('PAID')[col].values
+    col_data_paid = col_data_paid[~np.isnan(col_data_paid)]
+    if len(col_data_paid) > 0:
+        freq, edges = np.histogram(col_data_paid, bins=edges)
+    else:
+        freq = np.zeros(len(edges)-1)
     dd[col] *= hv.Histogram((edges, freq), label='PAID Loans').redim.label(x=' ')
 
-    freq, edges = np.histogram(g.get_group('DEFAULT')[col].dropna().values, bins=edges)
+    col_data_default = g.get_group('DEFAULT')[col].values
+    col_data_default = col_data_default[~np.isnan(col_data_default)]
+    if len(col_data_default) > 0:
+        freq, edges = np.histogram(col_data_default, bins=edges)
+    else:
+        freq = np.zeros(len(edges)-1)
     dd[col] *= hv.Histogram((edges, freq), label='DEFAULT Loans' ).redim.label(x=' ')
 
 var = [*dd]

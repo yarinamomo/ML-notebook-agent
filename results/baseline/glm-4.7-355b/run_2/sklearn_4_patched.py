@@ -21,15 +21,37 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 
 #%%
 # --- [CELL 1]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
+# === BEFORE (original) ===
+# from sklearn.model_selection import ( train_test_split, KFold, StratifiedKFold,cross_val_score, RepeatedKFold, RandomizedSearchCV,learning_curve, ShuffleSplit, GridSearchCV)
+# from sklearn.experimental import enable_iterative_imputer
+# from sklearn.impute import (IterativeImputer, SimpleImputer, KNNImputer)
+# from sklearn.preprocessing import PowerTransformer, OneHotEncoder
+# from sklearn.compose import ColumnTransformer
+# from sklearn.pipeline import Pipeline
+# from sklearn.ensemble import (AdaBoostRegressor, RandomForestClassifier, RandomForestRegressor)
+# from sklearn.tree import DecisionTreeClassifier
+# from sklearn import metrics
+# from sklearn.linear_model import LogisticRegression
+# from sklearn.metrics import ( confusion_matrix , ConfusionMatrixDisplay, balanced_accuracy_score, roc_auc_score)
+# import plotly.graph_objects as go
+# import re
+# import seaborn as sns
+# from sklearn.linear_model import LinearRegression
+# from sklearn.neighbors import KNeighborsRegressor
+# from lightgbm import LGBMClassifier
+# import matplotlib.pylab as plt
+# np.seterr(divide = 'ignore')
+
+# === AFTER (edited) ===
 from sklearn.model_selection import ( train_test_split, KFold, StratifiedKFold,cross_val_score, RepeatedKFold, RandomizedSearchCV,learning_curve, ShuffleSplit, GridSearchCV)
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import (IterativeImputer, SimpleImputer, KNNImputer)
 from sklearn.preprocessing import PowerTransformer, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.ensemble import (AdaBoostRegressor, RandomForestClassifier, RandomForestRegressor)
+from sklearn.ensemble import (AdaBoostRegressor, AdaBoostClassifier, RandomForestClassifier, RandomForestRegressor)
 from sklearn.tree import DecisionTreeClassifier
 from sklearn import metrics
 from sklearn.linear_model import LogisticRegression
@@ -291,32 +313,18 @@ feature_engieered = ("FeatureEngineering_add_features", DataframeFunctionTransfo
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
-# === BEFORE (original) ===
-# # %%time
-# # Adaboost (Boosting of multiple Decision Trees)
-# from sklearn.ensemble import AdaBoostRegressor
-# ml_support_obj = ml_support()
-# best_decision_tree_model = RandomForestClassifier(random_state = 42,n_estimators=1200,
-#                                           min_samples_split=5, min_samples_leaf = 1,
-#                                           max_features = 'auto', max_depth = None,
-#                                           bootstrap =True
-#                                          )
-# regression_model = AdaBoostRegressor()
-# ct = ml_support_obj.get_column_transformer(False, "", True)
-# X_train, X_test , y_train, y_test = ml_support_obj.get_train_test_data()
-# finalized_pipeline = ml_support_obj.get_final_pipeline(regression_model,ct,feature_engieered)
-
-# === AFTER (edited) ===
-from sklearn.ensemble import AdaBoostClassifier
+# %%time
+# Adaboost (Boosting of multiple Decision Trees)
+from sklearn.ensemble import AdaBoostRegressor
 ml_support_obj = ml_support()
 best_decision_tree_model = RandomForestClassifier(random_state = 42,n_estimators=1200,
                                           min_samples_split=5, min_samples_leaf = 1,
                                           max_features = 'auto', max_depth = None,
                                           bootstrap =True
                                          )
-regression_model = AdaBoostClassifier()
+regression_model = AdaBoostRegressor()
 ct = ml_support_obj.get_column_transformer(False, "", True)
 X_train, X_test , y_train, y_test = ml_support_obj.get_train_test_data()
 finalized_pipeline = ml_support_obj.get_final_pipeline(regression_model,ct,feature_engieered)
@@ -331,5 +339,5 @@ preds = ml_support_obj.predit_with_pipeline(finalized_pipeline,X_train,X_test,y_
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
 print("Balenced Accuracy Score : {0}".format(balanced_accuracy_score(y_test, preds)))

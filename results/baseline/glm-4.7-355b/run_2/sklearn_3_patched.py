@@ -19,7 +19,7 @@ from sklearn.metrics import accuracy_score
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # load the data
 train_df = pd.read_csv('data/train_synthetic.csv')
 test_df = pd.read_csv('data/test_synthetic.csv')
@@ -28,13 +28,13 @@ greeks_df = pd.read_csv('data/greeks_synthetic.csv')
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 train_df = pd.merge(train_df, greeks_df, on="Id")
 
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 # Remove the first column
 train_df = train_df.drop("Id", axis=1)
 test_df = test_df.drop("Id", axis=1)
@@ -42,7 +42,7 @@ test_df = test_df.drop("Id", axis=1)
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # # One-hot encoding
 # encoder = OneHotEncoder(handle_unknown="ignore")
@@ -50,39 +50,31 @@ test_df = test_df.drop("Id", axis=1)
 # test_df = pd.get_dummies(test_df, columns=list(test_df))
 
 # === AFTER (edited) ===
-# Identify categorical columns (non-numeric columns)
-categorical_cols = train_df.select_dtypes(include=['object']).columns.tolist()
-numeric_cols = [col for col in train_df.columns if col not in categorical_cols and col != 'Class']
+encoder = OneHotEncoder(handle_unknown="ignore")
 
-# Use OneHotEncoder for consistent encoding
-encoder = OneHotEncoder(handle_unknown="ignore", sparse=False)
+# Apply get_dummies to both dataframes
+train_df = pd.get_dummies(train_df)
+test_df = pd.get_dummies(test_df)
 
-# Fit and transform on train data
-if categorical_cols:
-    train_encoded = encoder.fit_transform(train_df[categorical_cols])
-    test_encoded = encoder.transform(test_df[categorical_cols])
-    
-    # Get feature names from encoder
-    encoded_feature_names = encoder.get_feature_names_out(categorical_cols)
-    
-    # Create dataframes with encoded features
-    train_encoded_df = pd.DataFrame(train_encoded, columns=encoded_feature_names, index=train_df.index)
-    test_encoded_df = pd.DataFrame(test_encoded, columns=encoded_feature_names, index=test_df.index)
-    
-    # Combine numeric and encoded features
-    train_numeric_df = train_df[numeric_cols]
-    test_numeric_df = test_df[numeric_cols]
-    
-    train_df = pd.concat([train_numeric_df, train_encoded_df], axis=1)
-    test_df = pd.concat([test_numeric_df, test_encoded_df], axis=1)
-else:
-    # No categorical columns, keep as is
-    pass
+# Align train and test to have the same columns
+# Get the union of all columns
+all_columns = set(train_df.columns) | set(test_df.columns)
+
+# Add missing columns with zeros
+for col in all_columns:
+    if col not in train_df.columns:
+        train_df[col] = 0
+    if col not in test_df.columns:
+        test_df[col] = 0
+
+# Ensure same column order
+train_df = train_df[sorted(all_columns)]
+test_df = test_df[sorted(all_columns)]
 
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # Data processing
 scaler = StandardScaler()
 train_df = scaler.fit_transform(train_df)

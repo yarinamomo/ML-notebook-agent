@@ -59,28 +59,25 @@ print('Avg', AvgRating)
 # print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rating_df['rating'])))
 
 # === AFTER (edited) ===
-user_ids = rating_df["user_id"].unique().tolist()[:1000]
+# First sample the data
+rating_df = rating_df.sample(frac=1, random_state=73)
+rating_df = rating_df.head(1000)
+
+# Then create encodings based on the sampled data
+user_ids = rating_df["user_id"].unique().tolist()
 user2user_encoded = {x: i for i, x in enumerate(user_ids)}
 user_encoded2user = {i: x for i, x in enumerate(user_ids)}
 rating_df["user"] = rating_df["user_id"].map(user2user_encoded)
 n_users = len(user2user_encoded)
 
-anime_ids = rating_df["anime_id"].unique().tolist()[:1000]
+anime_ids = rating_df["anime_id"].unique().tolist()
 anime2anime_encoded = {x: i for i, x in enumerate(anime_ids)}
 anime_encoded2anime = {i: x for i, x in enumerate(anime_ids)}
 rating_df["anime"] = rating_df["anime_id"].map(anime2anime_encoded)
 n_animes = len(anime2anime_encoded)
 
-# Filter to only include rows with valid mappings (drop NaN values)
-rating_df = rating_df.dropna(subset=['user', 'anime'])
-
-# Convert to integer type
-rating_df["user"] = rating_df["user"].astype(int)
-rating_df["anime"] = rating_df["anime"].astype(int)
-
 print("Num of users: {}, Num of animes: {}".format(n_users, n_animes))
 print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rating_df['rating'])))
-print("Total rows after filtering: {}".format(len(rating_df)))
 
 #%%
 # --- [CELL 5]: ---

@@ -177,9 +177,9 @@ print(bert_model.config.hidden_size)
 # === AFTER (edited) ===
 import tensorflow as tf
 
-# Print the BERT model architecture (PyTorch model)
-print(bert_model)
-
-# Alternatively, you could print the model config
-print("\nModel Config:")
-print(bert_model.config)
+# Note: bert_model is a PyTorch model, so tf.keras.utils.plot_model cannot be used
+# Model architecture info:
+print(f"BERT Model Architecture: {bert_model.__class__.__name__}")
+print(f"Number of layers: {bert_model.config.num_hidden_layers}")
+print(f"Hidden size: {bert_model.config.hidden_size}")
+print(f"Attention heads: {bert_model.config.num_attention_heads}")

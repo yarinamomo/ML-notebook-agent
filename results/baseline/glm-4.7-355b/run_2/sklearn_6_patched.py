@@ -44,13 +44,31 @@ train_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis 
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-for column in train_ds:
-    null_count = train_ds[column].isnull().sum()
-    if null_count > 1:
-        print(f"Dropping column {column} with {null_count} missing values.")
-        train_ds.drop(column, axis = 1, inplace = True)
+# === BEFORE (original) ===
+# for column in train_ds:
+#     null_count = train_ds[column].isnull().sum()
+#     if null_count > 1:
+#         print(f"Dropping column {column} with {null_count} missing values.")
+#         train_ds.drop(column, axis = 1, inplace = True)
+
+# === AFTER (edited) ===
+# First, identify columns to drop (with >1 null values) from both datasets
+columns_to_drop_train = [column for column in train_ds if train_ds[column].isnull().sum() > 1]
+columns_to_drop_test = [column for column in test_ds if test_ds[column].isnull().sum() > 1]
+
+# Take the union of columns to drop from both datasets
+columns_to_drop = set(columns_to_drop_train).union(set(columns_to_drop_test))
+
+# Drop columns from train_ds
+for column in columns_to_drop:
+    if column in train_ds.columns:
+        null_count = train_ds[column].isnull().sum()
+        print(f"Dropping column {column} with {null_count} missing values (train).")
+        train_ds.drop(column, axis=1, inplace=True)
+
+# Also ensure the same columns are dropped from test_ds
 
 #%%
 # --- [CELL 5]: ---
@@ -106,21 +124,12 @@ test_ds.drop(['Id', 'MoSold', 'GarageYrBlt', 'Condition1', 'Condition2'], axis =
 
 #%%
 # --- [CELL 12]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
-# === BEFORE (original) ===
-# for column in test_ds:
-#     null_count = test_ds[column].isnull().sum()
-#     if null_count > 1:
-#         print(f"Dropping column {column} with {null_count} missing values.")
-#         test_ds.drop(column, axis = 1, inplace = True)
-
-# === AFTER (edited) ===
-# Only drop columns from test_ds that were also dropped from train_ds (i.e., are not in train_ds columns)
-# This ensures both datasets have the same feature set
-for column in test_ds.columns:
-    if column not in train_ds.columns:
-        print(f"Dropping column {column} (missing in train_ds).")
+for column in test_ds:
+    null_count = test_ds[column].isnull().sum()
+    if null_count > 1:
+        print(f"Dropping column {column} with {null_count} missing values.")
         test_ds.drop(column, axis = 1, inplace = True)
 
 #%%

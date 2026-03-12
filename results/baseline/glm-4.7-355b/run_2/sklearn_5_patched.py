@@ -51,12 +51,9 @@ y_pred = clf.predict(x_test)
 
 # === AFTER (edited) ===
 from sklearn import metrics
-confusion_matrix = metrics.confusion_matrix(y_test , y_pred)
+cm = metrics.confusion_matrix(y_test, y_pred)
 
-# Get actual class labels from the model
-class_labels = clf.classes_
-
-cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix , display_labels=class_labels)
+cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix=cm)
 
 cm_display.plot()
 plt.show()

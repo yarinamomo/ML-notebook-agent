@@ -793,7 +793,7 @@ def evaluate(model):
     print('Test accuracy:', scores[1])
 
 
-def predict(model, image_idx, test_images, class_names):
+def predict(model, image_idx):
     layer_names = ['conv1', 'conv2', 'conv3', 'conv4']
     num_features = 4
 
@@ -803,8 +803,7 @@ def predict(model, image_idx, test_images, class_names):
     image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
     pred = np.argmax(model.predict(image))
 
-    true_label_idx = dataset['test_labels'][image_idx].item()
-    plot_sample(dataset['test_images'][image_idx], class_names[true_label_idx], class_names[pred])
+    plot_sample(dataset['test_images'][image_idx], classes[dataset['test_labels'][image_idx][0]], classes[pred])
 
 
 
@@ -831,7 +830,7 @@ def plot_weights(model):
 
 if __name__ == '__main__':
 
-    class_names = [
+    classes = [
         "airplane",
         "automobile",
         "bird",
@@ -862,8 +861,6 @@ if __name__ == '__main__':
     train_labels = to_categorical(dataset['train_labels'].flatten())
     validation_labels = to_categorical(dataset['validation_labels'].flatten())
     test_labels = to_categorical(dataset['test_labels'].flatten())
-
-    print(train_images.shape, train_labels.shape, validation_images.shape, validation_labels.shape, test_images.shape, test_labels.shape)
 
     if os.path.isfile('model.h5'):
         print('\n--- Loading model ---')
@@ -899,7 +896,7 @@ if __name__ == '__main__':
 
     print('\n--- Predicting image from test set ---')
     image_idx = 40
-    predict(model, image_idx, test_images, class_names)
+    predict(model, image_idx)
 
     print('\n--- Plotting weight distributions ---')
     plot_weights(model)

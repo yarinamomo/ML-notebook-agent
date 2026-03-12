@@ -115,11 +115,10 @@ data[data['Distance']==0].shape
 # plt.show()
 
 # === AFTER (edited) ===
-data['PDweek'] = pd.Categorical(data['PDweek'], categories=range(7), ordered=True)
-data['PDweek'] = data['PDweek'].cat.rename_categories(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
+data['DayOfWeek'] = data['PDweek'].astype('category').cat.rename_categories(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
 
 
-average_duration = data.groupby('PDweek')['Duration'].mean()
+average_duration = data.groupby('DayOfWeek')['Duration'].mean()
 
 
 plt.plot(average_duration.index, average_duration.values)

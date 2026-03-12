@@ -107,13 +107,23 @@ class SiameseDataset(Dataset):
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: unchanged
+# cell_state: edited
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
+# === BEFORE (original) ===
+# training_csv="data_small/pairs.csv"
+# training_dir="data_small/archive/images_labeled/"
+# resize = transform=transforms.Compose([transforms.Resize(size),
+#                                        transforms.ToTensor()
+#                                      ])
+# siamese_dataset = SiameseDataset(training_csv, training_dir, transform=resize)
+
+# === AFTER (edited) ===
 training_csv="data_small/pairs.csv"
 training_dir="data_small/archive/images_labeled/"
-resize = transform=transforms.Compose([transforms.Resize(size),
-                                       transforms.ToTensor()
-                                     ])
+resize = transforms.Compose([transforms.Grayscale(num_output_channels=1),  # Keep grayscale (1 channel)
+                             transforms.Resize(size),
+                             transforms.ToTensor()
+                           ])
 siamese_dataset = SiameseDataset(training_csv, training_dir, transform=resize)
 
 #%%
@@ -176,7 +186,7 @@ class SiameseNetwork(nn.Module):
         super(SiameseNetwork, self).__init__()
 
         self.cnn1 = nn.Sequential(
-            nn.Conv2d(3, 96, kernel_size=5,stride=1),
+            nn.Conv2d(1, 96, kernel_size=5,stride=1),  # Changed from 3 to 1 channel for grayscale
             nn.ReLU(inplace=True),
             nn.LocalResponseNorm(5,alpha=0.0001,beta=0.75,k=2),
             nn.MaxPool2d(3, stride=2),
@@ -196,15 +206,17 @@ class SiameseNetwork(nn.Module):
             nn.Dropout2d(p=0.3),
         )
 
+        # The input size for the first Linear layer is calculated based on the CNN output
+        # After CNN layers: 256 * 8 * 2 = 4096
         self.fc1 = nn.Sequential(
-            nn.Linear(256*9*12, 500),
+            nn.Linear(4096, 500),  # Changed from 4500 to 4096
             nn.ReLU(inplace=True),
             nn.Dropout2d(p=0.5),
 
-            nn.Linear(500, 128),
+            nn.Linear(500, 128),  # Changed from 1024 to 500
             nn.ReLU(inplace=True),
 
-            nn.Linear(128,2))
+            nn.Linear(128, 2))
 
     def forward_once(self, x):
 
@@ -249,7 +261,7 @@ class ContrastiveLoss(torch.nn.Module):
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 11}
 net = SiameseNetwork()#.cuda()
 # Decalre Loss Function
 criterion = ContrastiveLoss()

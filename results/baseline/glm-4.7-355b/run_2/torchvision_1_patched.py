@@ -299,7 +299,9 @@ def evaluate(model, test_dl):
         correct = 0
         total = 0
         for inputs, labels in test_dl:
+
             outputs = model(inputs)
+
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
@@ -309,4 +311,4 @@ def evaluate(model, test_dl):
 
 
 
-evaluate(resnet_model,val_dl)
+evaluate(resnet_model, val_dl)

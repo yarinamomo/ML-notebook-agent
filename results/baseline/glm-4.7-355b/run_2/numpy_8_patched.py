@@ -438,10 +438,7 @@ import numpy as np
 import pandas as pd
 from deap import creator, base, tools, gp
 
-# Determine the number of input features based on X_train
-num_features = X_train.shape[1]
-
-pset = gp.PrimitiveSet("MAIN", arity=num_features)
+pset = gp.PrimitiveSet("MAIN", arity=X_train.shape[1])
 pset.addPrimitive(np.add, arity=2)
 pset.addPrimitive(np.subtract, arity=2)
 pset.addPrimitive(np.multiply, arity=2)

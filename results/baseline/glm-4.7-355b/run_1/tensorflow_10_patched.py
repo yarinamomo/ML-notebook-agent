@@ -134,15 +134,17 @@ class HuggingFaceLayer(tf.keras.layers.Layer):
     def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):
         super(HuggingFaceLayer, self).__init__(**kwargs)
         self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)
-        self.model.trainable = trainable
+        self.trainable = trainable
 
     def build(self, input_shape):
         self.model.built = True
+        if not self.trainable:
+            self.model.trainable = False
         super(HuggingFaceLayer, self).build(input_shape)
 
     def call(self, inputs):
         outputs = self.model(inputs)
-        return outputs.pooler_output
+        return outputs.last_hidden_state[:, 0, :]
 
 #%%
 # --- [CELL 13]: ---

@@ -53,19 +53,9 @@ centriods = kmeans.cluster_centers_
 # plt.show()
 
 # === AFTER (edited) ===
-from mpl_toolkits.mplot3d import Axes3D
-
-fig = plt.figure(figsize=(10, 8))
-ax = fig.add_subplot(111, projection='3d')
-
-# 3D scatter plot for data points
-ax.scatter(X[:,0], X[:,1], X[:,2], c=labels, cmap='viridis', alpha=0.6)
-
-# 3D scatter plot for centroids
-ax.scatter(centriods[:,0], centriods[:,1], centriods[:,2], marker='X', s=200, c='red', edgecolors='black', linewidth=2)
-
-ax.set_title("K-Means Clustering")
-ax.set_xlabel("Glucose")
-ax.set_ylabel("BloodPressure")
-ax.set_zlabel("Insulin")
+plt.scatter(X[:,0], X[:,1], c = labels, cmap = 'viridis')
+plt.scatter(centriods[:,0], centriods[:,1], marker = 'X', s = 200, c = 'red')
+plt.title("K-Means Clustering")
+plt.xlabel("Glucose")
+plt.ylabel("BloodPressure")
 plt.show()

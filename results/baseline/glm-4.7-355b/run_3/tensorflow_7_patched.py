@@ -112,55 +112,31 @@ def bert_encode(hypotheses, premises, tokenizer, max_len=50):
   cls = [tokenizer.convert_tokens_to_ids(['[CLS]'])]*sentence1.shape[0]
   input_word_ids = tf.concat([cls, sentence1, sentence2], axis=-1)
 
-  input_mask = tf.ones_like(input_word_ids).to_tensor()
+  input_mask = tf.ones_like(input_word_ids).to_tensor(default_value=0, shape=[num_examples, max_len])
 
   type_cls = tf.zeros_like(cls)
   type_s1 = tf.zeros_like(sentence1)
   type_s2 = tf.ones_like(sentence2)
   input_type_ids = tf.concat(
-      [type_cls, type_s1, type_s2], axis=-1).to_tensor()
+      [type_cls, type_s1, type_s2], axis=-1).to_tensor(default_value=0, shape=[num_examples, max_len])
 
   inputs = {
-      'input_word_ids': input_word_ids.to_tensor()[:, :max_len],
-      'input_mask': input_mask[:, :max_len],
-      'input_type_ids': input_type_ids[:, :max_len]}
+      'input_word_ids': input_word_ids.to_tensor(default_value=0, shape=[num_examples, max_len]),
+      'input_mask': input_mask,
+      'input_type_ids': input_type_ids}
 
   return inputs
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 7}
-# === BEFORE (original) ===
-# train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer)
-
-# === AFTER (edited) ===
-train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer, max_len=max_len)
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
+train_input = bert_encode(train.premise.values, train.hypothesis.values, tokenizer)
 
 #%%
 # --- [CELL 7]: ---
-# cell_state: edited
-# execution_status: {'status': 'not run'}
-# === BEFORE (original) ===
-# max_len = 50
-# from transformers import BertTokenizer, TFBertModel
-# 
-# 
-# def build_model():
-#     bert_encoder = TFBertModel.from_pretrained(model_name)
-#     input_word_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_word_ids")
-#     input_mask = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_mask")
-#     input_type_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_type_ids")
-#     
-#     embedding = bert_encoder([input_word_ids, input_mask, input_type_ids])[0]
-#     output = tf.keras.layers.Dense(3, activation='softmax')(embedding[:,0,:])
-#     
-#     model = tf.keras.Model(inputs=[input_word_ids, input_mask, input_type_ids], outputs=output)
-#     model.compile(tf.keras.optimizers.Adam(lr=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-#     
-#     return model
-
-# === AFTER (edited) ===
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 max_len = 50
 from transformers import BertTokenizer, TFBertModel
 
@@ -170,19 +146,19 @@ def build_model():
     input_word_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_word_ids")
     input_mask = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_mask")
     input_type_ids = tf.keras.Input(shape=(max_len,), dtype=tf.int32, name="input_type_ids")
-
+    
     embedding = bert_encoder([input_word_ids, input_mask, input_type_ids])[0]
     output = tf.keras.layers.Dense(3, activation='softmax')(embedding[:,0,:])
-
+    
     model = tf.keras.Model(inputs=[input_word_ids, input_mask, input_type_ids], outputs=output)
-    model.compile(tf.keras.optimizers.Adam(learning_rate=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-
+    model.compile(tf.keras.optimizers.Adam(lr=1e-5), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    
     return model
 
 #%%
 # --- [CELL 8]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 9}
 with strategy.scope():
     model = build_model()
     model.summary()
@@ -190,5 +166,5 @@ with strategy.scope():
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 model.fit(train_input, train.label.values, epochs = 2, verbose = 1, batch_size = 64, validation_split = 0.2)

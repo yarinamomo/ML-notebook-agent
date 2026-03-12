@@ -156,7 +156,7 @@ def create_model(input_shape=(224, 224, 3)):
     x = Dense(56, activation='relu')(x)
     x = Dropout(0.1)(x)
 
-    outputs = Dense(2, activation='sigmoid')(x)
+    outputs = Dense(2, activation='softmax')(x)
 
     model = Model(inputs, outputs)
 

@@ -19,9 +19,9 @@ df["DriveTrain"]=df["DriveTrain"].astype("category")
 #%%
 # --- [CELL 3]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 4}
 # === BEFORE (original) ===
 # df["MSRP"]=pd.to_numeric(df["MSRP"])
 
 # === AFTER (edited) ===
-df["MSRP"]=pd.to_numeric(df["MSRP"].str.replace("$", "", regex=False).str.replace(",", "", regex=False).str.strip())
+df["MSRP"]=pd.to_numeric(df["MSRP"].astype(str).str.replace('$', '').str.replace(',', '').str.strip())

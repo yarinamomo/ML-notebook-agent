@@ -71,11 +71,16 @@ anime_encoded2anime = {i: x for i, x in enumerate(anime_ids)}
 rating_df["anime"] = rating_df["anime_id"].map(anime2anime_encoded)
 n_animes = len(anime2anime_encoded)
 
-# Drop rows with NaN values in 'user' or 'anime' columns
+# Filter out rows where mapping resulted in NaN (unmatched user_id or anime_id)
 rating_df = rating_df.dropna(subset=['user', 'anime'])
+
+# Convert to integers after filtering
+rating_df["user"] = rating_df["user"].astype(int)
+rating_df["anime"] = rating_df["anime"].astype(int)
 
 print("Num of users: {}, Num of animes: {}".format(n_users, n_animes))
 print("Min rating: {}, Max rating: {}".format(min(rating_df['rating']), max(rating_df['rating'])))
+print("Total rows after filtering: {}".format(len(rating_df)))
 
 #%%
 # --- [CELL 5]: ---

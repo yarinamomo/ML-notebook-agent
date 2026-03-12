@@ -40,40 +40,8 @@ PIL.Image.open(str(princess[1]))
 # batch_size,epochs = 64,10
 
 # === AFTER (edited) ===
-image_height, image_width = PIL.Image.open(str(princess[1])).size
+image_width, image_height = PIL.Image.open(str(princess[1])).size
 batch_size,epochs = 64,10
-
-# Validate all images and remove corrupted ones
-import os
-from PIL import Image
-
-valid_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.JPEG', '.JPG', '.PNG'}
-
-for class_dir in data_dir.iterdir():
-    if class_dir.is_dir():
-        for img_file in list(class_dir.iterdir()):
-            # Check file extension
-            if img_file.suffix not in valid_extensions:
-                try:
-                    os.remove(img_file)
-                    print(f"Removed invalid file: {img_file}")
-                except Exception as e:
-                    print(f"Error removing {img_file}: {e}")
-                continue
-            
-            # Try to open the image to check if it's valid
-            try:
-                with Image.open(img_file) as img:
-                    img.verify()
-                # Re-open to load the image (verify() closes the file)
-                with Image.open(img_file) as img:
-                    img.load()
-            except Exception as e:
-                try:
-                    os.remove(img_file)
-                    print(f"Removed corrupted image: {img_file}")
-                except Exception as e2:
-                    print(f"Error removing {img_file}: {e2}")
 
 #%%
 # --- [CELL 5]: ---
@@ -160,5 +128,5 @@ model.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentro
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 13}
 history = model.fit(train_ds,validation_data=val_ds, epochs=1)

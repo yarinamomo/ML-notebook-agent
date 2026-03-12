@@ -149,15 +149,15 @@ params['n_jobs'] = 4
 n_splits = 10
 test_preds = None
 kf_rmse = []
+
 for fold, (train_idx, valid_idx) in enumerate(KFold(n_splits=n_splits, shuffle=True).split(X_train,y_train)):
 
-    X_fold_train = X_train.iloc[train_idx]
-    y_fold_train = y_train.iloc[train_idx]
+    X_train_fold, y_train_fold = X_train.iloc[train_idx], y_train.iloc[train_idx]
     X_valid, y_valid = X_train.iloc[valid_idx], y_train.iloc[valid_idx]
 
 
     model = XGBRegressor(**params)
-    model.fit(X_fold_train, y_fold_train,
+    model.fit(X_train_fold, y_train_fold,
             eval_set=[(X_valid, y_valid)],
             eval_metric='rmse', verbose=False)
 

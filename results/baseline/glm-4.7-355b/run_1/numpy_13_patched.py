@@ -78,18 +78,20 @@ def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
             mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, fmax=fmax, fmin=fmin)
             logam = librosa.power_to_db(mel)
             data.append(logam)
-            
-            # Track the maximum length
+            # Track the maximum time dimension
             if logam.shape[1] > max_harm_length:
                 max_harm_length = logam.shape[1]
-    
-    # Pad all spectrograms to the same length
+
+    # Pad all arrays to the same length
     padded_data = []
-    for spec in data:
-        pad_width = max_harm_length - spec.shape[1]
-        padded_spec = np.pad(spec, ((0, 0), (0, pad_width)), mode='constant', constant_values=0)
-        padded_data.append(padded_spec)
-    
+    for arr in data:
+        pad_width = max_harm_length - arr.shape[1]
+        if pad_width > 0:
+            padded_arr = np.pad(arr, ((0, 0), (0, pad_width)), mode='constant')
+        else:
+            padded_arr = arr
+        padded_data.append(padded_arr)
+
     data = np.array(padded_data)
     return data
 

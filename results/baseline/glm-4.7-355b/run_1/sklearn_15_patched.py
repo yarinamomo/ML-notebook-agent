@@ -72,12 +72,15 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # === AFTER (edited) ===
 logreg = LogisticRegression(max_iter=1000)
 
+# Encode target variable to numeric (0 and 1)
+y = y.map({'No': 0, 'Yes': 1})
+
+# Split the data again after encoding
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Scale only the features, not the target variable
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
-
-# Convert categorical target to numeric (Yes -> 1, No -> 0)
-y_train = y_train.map({'Yes': 1, 'No': 0})
-y_test = y_test.map({'Yes': 1, 'No': 0})
 
 logreg.fit(X_train, y_train)

@@ -348,7 +348,6 @@ def predict(image_path, model, topk=5):
 
 # === AFTER (edited) ===
 import matplotlib.pyplot as plt
-import random
 
 
 def display_image(image_path):
@@ -357,9 +356,8 @@ def display_image(image_path):
 
 model = load_checkpoint('checkpoint.pth')
 
-# Extract image paths from test_ds.imgs (which contains tuples of (path, label))
-test_image_paths = [img[0] for img in test_ds.imgs]
-test_image_path = random.choice(test_image_paths)
+
+test_image_path = np.random.choice(list(test_ds.imgs))[0]
 display_image(test_image_path)
 
 probs, classes = predict(test_image_path, model)
@@ -371,7 +369,7 @@ print("Classes:", class_names)
 
 
 for i in range(5):
-    test_image_path = random.choice(test_image_paths)
+    test_image_path = np.random.choice(list(test_ds.imgs))[0]
     display_image(test_image_path)
 
     probs, classes = predict(test_image_path, model)

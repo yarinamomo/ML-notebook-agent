@@ -74,6 +74,4 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 
 max_length = 768
 
-# Tokenize all documents first, then pad them together
-tokenized_docs = [tokenize_text(i) for i in docs]
-docs = np.array(pad_sequences(tokenized_docs, maxlen=max_length))
+docs = np.array([pad_sequences([tokenize_text(i)], maxlen=max_length).reshape(-1) for i in docs])

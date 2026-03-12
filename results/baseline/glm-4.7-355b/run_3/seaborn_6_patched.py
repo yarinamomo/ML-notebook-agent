@@ -32,9 +32,9 @@ df["sex"] = df["sex"].map({"male" : 0,"female" : 1})
 #%%
 # --- [CELL 4]: ---
 # cell_state: edited
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 5}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # === BEFORE (original) ===
 # sns.violinplot(df, x='species')
 
 # === AFTER (edited) ===
-sns.violinplot(df, y='species')
+sns.countplot(data=df, x='species')

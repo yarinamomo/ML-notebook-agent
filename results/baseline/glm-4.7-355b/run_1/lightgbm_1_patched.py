@@ -139,40 +139,30 @@ df_TSNE_te = df_TSNE_te.set_index('Id')
 
 #%%
 # --- [CELL 15]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
-df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
-df_TSNE = pd.concat([df_tmp,train[conf.target]], axis=1)
-
-df_TSNE = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
-
-groups = df_TSNE.groupby(conf.target)
-
-#https://stackoverflow.com/questions/21654635/scatter-plots-in-pandas-pyplot-how-to-plot-by-category
-fig, ax = plt.subplots(figsize=(12, 12))
-ax.margins(0.05) # Optional, just adds 5% padding to the autoscaling
-for name, group in groups:
-    ax.plot(group.tsne1, group.tsne2, marker='o', linestyle='', ms=12, label=name)
-ax.legend()
-#plt.xlim(-75, -80)
-#plt.ylim(-5, 5)
-
-plt.show()
-
-#%%
-# --- [CELL 16]: ---
 # cell_state: edited
-# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
 # === BEFORE (original) ===
-# df_tmp = train2.drop(columns=['quality'])
-# train3 = pd.concat([df_tmp, df_TSNE], axis=1)
-# test3 = pd.concat([test2, df_TSNE_te], axis=1)
+# df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
+# df_TSNE = pd.concat([df_tmp,train[conf.target]], axis=1)
+# 
+# df_TSNE = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
+# 
+# groups = df_TSNE.groupby(conf.target)
+# 
+# #https://stackoverflow.com/questions/21654635/scatter-plots-in-pandas-pyplot-how-to-plot-by-category
+# fig, ax = plt.subplots(figsize=(12, 12))
+# ax.margins(0.05) # Optional, just adds 5% padding to the autoscaling
+# for name, group in groups:
+#     ax.plot(group.tsne1, group.tsne2, marker='o', linestyle='', ms=12, label=name)
+# ax.legend()
+# #plt.xlim(-75, -80)
+# #plt.ylim(-5, 5)
+# 
+# plt.show()
 
 # === AFTER (edited) ===
 df_tmp = pd.DataFrame(df_tsne, columns=['tsne1', 'tsne2'])
 df_TSNE = pd.concat([df_tmp,train[conf.target]], axis=1)
-
-df_TSNE = df_TSNE[(df_TSNE.quality == 4) | (df_TSNE.quality == 7)]
 
 groups = df_TSNE.groupby(conf.target)
 
@@ -186,6 +176,14 @@ ax.legend()
 
 
 plt.show()
+
+#%%
+# --- [CELL 16]: ---
+# cell_state: unchanged
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 17}
+df_tmp = train2.drop(columns=['quality'])
+train3 = pd.concat([df_tmp, df_TSNE], axis=1)
+test3 = pd.concat([test2, df_TSNE_te], axis=1)
 
 #%%
 # --- [CELL 17]: ---
@@ -208,14 +206,14 @@ warnings.filterwarnings('ignore')
 #%%
 # --- [CELL 18]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 19}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 19}
 y = train3[conf.target]
 X = train3.drop([conf.target], axis=1)
 
 #%%
 # --- [CELL 19]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 20}
 scores =[]
 
 def find_out_params_model(trial):
@@ -244,6 +242,6 @@ def find_out_params_model(trial):
 #%%
 # --- [CELL 20]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 21}
 study = optuna.create_study(direction="maximize")
 study.optimize(find_out_params_model, n_trials=2)

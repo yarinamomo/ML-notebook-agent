@@ -174,30 +174,8 @@ optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 
 #%%
 # --- [CELL 14]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
-# === BEFORE (original) ===
-# def test_model(model):
-#     model.eval()
-#     correct = 0
-#     total = 0
-# 
-#     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# 
-#     with torch.no_grad():
-#         for inputs, labels in test_loader:
-#             inputs, labels = inputs.to(device), labels.to(device)
-#             outputs = model(inputs)
-#             _, predicted = torch.max(outputs, 1)
-#             total += labels.size(0)
-#             correct += (predicted == labels).sum().item()
-# 
-#     accuracy = 100 * correct / total
-#     print(f'Accuracy on the test data: {accuracy:.2f}%')
-# 
-# test_model(model)
-
-# === AFTER (edited) ===
 def test_model(model):
     model.eval()
     correct = 0
@@ -209,10 +187,9 @@ def test_model(model):
         for inputs, labels in test_loader:
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)
-            # For binary classification with sigmoid, use threshold instead of max
-            predicted = (outputs > 0.5).float()
+            _, predicted = torch.max(outputs, 1)
             total += labels.size(0)
-            correct += (predicted.squeeze() == labels).sum().item()
+            correct += (predicted == labels).sum().item()
 
     accuracy = 100 * correct / total
     print(f'Accuracy on the test data: {accuracy:.2f}%')
@@ -251,8 +228,9 @@ for epoch in range(n_epoch):
         optimizer.zero_grad()
 
         outputs = model(sekil)
-        # Squeeze outputs to match target shape [batch_size] instead of [batch_size, 1]
-        loss = loss_fn(outputs.squeeze(), netice)
+        # Reshape netice to match outputs shape for BCELoss
+        netice = netice.unsqueeze(1)
+        loss = loss_fn(outputs, netice)
 
         loss.backward()
         optimizer.step()

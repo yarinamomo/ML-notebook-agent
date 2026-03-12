@@ -50,14 +50,14 @@ class CustomModelMultichoice(nn.Module):
     def __init__(self,config,num_choice):
         super(CustomModelMultichoice,self).__init__()
         model = AutoModelForMultipleChoice.from_config(config)
-        model.classifier = nn.Linear(768,num_choice)
+        model.classifier = nn.Linear(config.hidden_size,num_choice)
         self.model = model
 
-        self.sigmoid = nn.Sigmoid()
+        self.log_softmax = nn.LogSoftmax(dim=-1)
         self.num_choice = num_choice
     def forward(self,input_ids = None,token_type_ids = None ,attention_mask = None,labels = None):
         outputs = self.model(input_ids=input_ids,token_type_ids=token_type_ids,attention_mask=attention_mask)
-        logits = self.sigmoid(outputs.logits)
+        logits = self.log_softmax(outputs.logits)
         loss = None
         if labels is not None:
             loss_func = nn.NLLLoss()

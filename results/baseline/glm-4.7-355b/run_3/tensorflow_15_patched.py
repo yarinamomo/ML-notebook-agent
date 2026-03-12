@@ -115,7 +115,7 @@ model.compile(
 #%%
 # --- [CELL 9]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 10}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 10}
 history = model.fit(
     train_ds,
     validation_data=val_ds,
@@ -136,7 +136,7 @@ history = model.fit(
 #%%
 # --- [CELL 10]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 11}
 results = model.evaluate(test_ds, verbose=0)
 print("    Test Loss: {:.5f}".format(results[0]))
 print("Test Accuracy: {:.2f}%".format(results[1] * 100))
@@ -144,13 +144,13 @@ print("Test Accuracy: {:.2f}%".format(results[1] * 100))
 #%%
 # --- [CELL 11]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 12}
 predictions = (model.predict(test_ds) >= 0.5)
 
 #%%
 # --- [CELL 12]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # === BEFORE (original) ===
 # predictions = np.array([])
 # labels =  np.array([])
@@ -164,7 +164,7 @@ predictions = (model.predict(test_ds) >= 0.5)
 predictions = np.array([])
 labels =  np.array([])
 for x, y in test_ds:
-  predictions = np.concatenate([predictions, (model.predict(x) > 0.5).astype(int).flatten()])
-  labels = np.concatenate([labels, y.numpy().astype(int).flatten()])
+  predictions = np.concatenate([predictions, np.argmax(model.predict(x), axis=-1)])
+  labels = np.concatenate([labels, np.argmax(y.numpy(), axis=-1)])
 
 tf.math.confusion_matrix(labels=labels, predictions=predictions).numpy()

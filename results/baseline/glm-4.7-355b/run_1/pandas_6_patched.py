@@ -36,8 +36,10 @@ df
 # #This Error is occuring due to some string values in Order ID Column
 
 # === AFTER (edited) ===
-# Remove rows where Order ID is not numeric (e.g., header rows)
-df = df[~df['Order ID'].astype(str).str.contains('Order ID')]
-# Convert Order ID to int
+# Convert Order ID to numeric, coercing errors to NaN
+df['Order ID'] = pd.to_numeric(df['Order ID'], errors='coerce')
+# Drop rows where Order ID is NaN (couldn't be converted)
+df = df.dropna(subset=['Order ID'])
+# Convert to int
 df['Order ID'] = df['Order ID'].astype('int')
 df

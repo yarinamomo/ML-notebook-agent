@@ -31,7 +31,7 @@ warnings.filterwarnings("ignore")
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 # TPU or GPU detection
 # Detect hardware, return appropriate distribution strategy
 try:
@@ -54,7 +54,7 @@ print(f'REPLICAS: {REPLICAS}')
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 BATCH_SIZE = 16 * REPLICAS
 WARMUP_EPOCHS = 3
 WARMUP_LEARNING_RATE = 1e-4 * REPLICAS
@@ -69,7 +69,7 @@ ES_PATIENCE = 5
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 model_path = f'model_{HEIGHT}x{WIDTH}.h5'
 
 # GCS_PATH = KaggleDatasets().get_gcs_path('tpu-getting-started') + f'/tfrecords-jpeg-{HEIGHT}x{WIDTH}'
@@ -107,7 +107,7 @@ CLASSES = [
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 # Datasets utility functions
 AUTO = tf.data.experimental.AUTOTUNE # instructs the API to read from multiple files if available.
 
@@ -203,7 +203,7 @@ def count_data_items(filenames):
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 # Train data
 NUM_TRAINING_IMAGES = count_data_items(TRAINING_FILENAMES)
 train_dataset = get_training_dataset_preview(ordered=True)
@@ -224,7 +224,7 @@ test_dataset = get_test_dataset(ordered=True)
 #%%
 # --- [CELL 6]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 # === BEFORE (original) ===
 # train_agg = np.asarray([[label, (y_train == index).sum()] for index, label in enumerate(CLASSES)])
 # valid_agg = np.asarray([[label, (y_valid == index).sum()] for index, label in enumerate(CLASSES)])
@@ -242,19 +242,21 @@ test_dataset = get_test_dataset(ordered=True)
 # plt.show()
 
 # === AFTER (edited) ===
-train_agg = [[label, (y_train == index).sum()] for index, label in enumerate(CLASSES)]
-valid_agg = [[label, (y_valid == index).sum()] for index, label in enumerate(CLASSES)]
+train_agg = [[label, int((y_train == index).sum())] for index, label in enumerate(CLASSES)]
+valid_agg = [[label, int((y_valid == index).sum())] for index, label in enumerate(CLASSES)]
 
-train_df = pd.DataFrame(train_agg, columns=['label', 'count'])
-valid_df = pd.DataFrame(valid_agg, columns=['label', 'count'])
+train_x = [count for label, count in train_agg]
+train_y = [label for label, count in train_agg]
+valid_x = [count for label, count in valid_agg]
+valid_y = [label for label, count in valid_agg]
 
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(24, 64))
 
-ax1 = sns.barplot(x='count', y='label', data=train_df, order=CLASSES, ax=ax1)
+ax1 = sns.barplot(x=train_x, y=train_y, order=CLASSES, ax=ax1)
 ax1.set_title('Train', fontsize=30)
 ax1.tick_params(labelsize=16)
 
-ax2 = sns.barplot(x='count', y='label', data=valid_df, order=CLASSES, ax=ax2)
+ax2 = sns.barplot(x=valid_x, y=valid_y, order=CLASSES, ax=ax2)
 ax2.set_title('Validation', fontsize=30)
 ax2.tick_params(labelsize=16)
 

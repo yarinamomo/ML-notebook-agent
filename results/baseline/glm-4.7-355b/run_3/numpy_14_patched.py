@@ -210,14 +210,14 @@ checkpoint_ensemble = ModelCheckpoint(filepath_weights_ensemble, monitor='val_ac
 #%%
 # --- [CELL 12]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 13}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 13}
 # only fit when there are trainable parameters
 history_ensemble = ensemble_model.fit(train_generator, epochs=2, validation_data=validation_generator, callbacks=[early_stop, checkpoint_ensemble])
 
 #%%
 # --- [CELL 13]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 14}
 # ensemble_model.load_weights('/kaggle/working/save_weights/best_weights_ensemble-01-0.9752.tf')
 # test_loss, test_acc = ensemble_model.evaluate(test_generator)
 # print('Test accuracy:', test_acc)
@@ -226,7 +226,7 @@ ensemble_model.evaluate(test_generator)
 #%%
 # --- [CELL 14]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 15}
 y_pred = ensemble_model.predict(test_generator)
 print("One-hot encoded predicted labels:")
 print(y_pred)
@@ -236,7 +236,7 @@ print(y_pred_classes)
 #%%
 # --- [CELL 15]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 16}
 # === BEFORE (original) ===
 # #ensemble_model.load_weights('/kaggle/working/save_weights/best_weights_ensemble-31-0.9690.tf')
 # #y_pred = ensemble_model.predict(test_generator)
@@ -255,6 +255,5 @@ print(y_pred_classes)
 # === AFTER (edited) ===
 y_pred = ensemble_model.predict(test_generator)
 y_pred_classes = np.argmax(y_pred, axis=1)
-
 
 y_true_classes = test_generator.classes

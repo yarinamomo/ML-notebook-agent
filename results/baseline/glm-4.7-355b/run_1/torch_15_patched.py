@@ -228,7 +228,9 @@ for epoch in range(n_epoch):
         optimizer.zero_grad()
 
         outputs = model(sekil)
-        loss = loss_fn(outputs.squeeze(), netice.float())
+        # Reshape target to match output shape [batch_size, 1]
+        netice = netice.unsqueeze(1).float()
+        loss = loss_fn(outputs, netice)
 
         loss.backward()
         optimizer.step()

@@ -36,7 +36,6 @@ df
 # #This Error is occuring due to some string values in Order ID Column
 
 # === AFTER (edited) ===
-df['Order ID'] = pd.to_numeric(df['Order ID'], errors='coerce')
-df = df[df['Order ID'].notna()]  # Remove rows where conversion failed
+# Filter out any rows where 'Order ID' is the header string appearing in the data
+df = df[df['Order ID'] != 'Order ID']
 df['Order ID'] = df['Order ID'].astype('int')
-df

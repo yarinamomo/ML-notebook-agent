@@ -80,17 +80,14 @@ dd={}
 
 
 for col in cols:
-    # Remove NaN values from the column before histogramming
-    all_values = df[col].values[~np.isnan(df[col].values)]
-    freq, edges = np.histogram(all_values)
+
+    freq, edges = np.histogram(df[col].values[~np.isnan(df[col].values)])
     dd[col] = hv.Histogram((edges, freq), label='ALL Loans').redim.label(x=' ')
 
-    paid_values = g.get_group('PAID').loc[:, col].values[~np.isnan(g.get_group('PAID').loc[:, col].values)]
-    freq, edges = np.histogram(paid_values, bins=edges)
+    freq, edges = np.histogram(g.get_group('PAID')[col].values[~np.isnan(g.get_group('PAID')[col].values)], bins=edges)
     dd[col] *= hv.Histogram((edges, freq), label='PAID Loans').redim.label(x=' ')
 
-    default_values = g.get_group('DEFAULT').loc[:, col].values[~np.isnan(g.get_group('DEFAULT').loc[:, col].values)]
-    freq, edges = np.histogram(default_values, bins=edges)
+    freq, edges = np.histogram(g.get_group('DEFAULT')[col].values[~np.isnan(g.get_group('DEFAULT')[col].values)], bins=edges)
     dd[col] *= hv.Histogram((edges, freq), label='DEFAULT Loans' ).redim.label(x=' ')
 
 var = [*dd]

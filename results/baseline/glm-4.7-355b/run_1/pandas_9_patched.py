@@ -34,30 +34,30 @@ df = pd.read_csv("data/IMDb_All_Genres_etf_clean1.csv")
 # clean_df = clean_df[clean_df['Censor']!="(Banned)"]
 
 # === AFTER (edited) ===
-# First, let's see what the actual column names are
-print("Column names in the DataFrame:")
+# First, let's check what columns are available in the DataFrame
+print("Available columns in the DataFrame:")
 print(df.columns.tolist())
 
-# Now try to find columns that might be related to gross
-print("\nColumns containing 'Gross':")
-gross_cols = [col for col in df.columns if 'Gross' in col or 'gross' in col]
-print(gross_cols)
+# Try to find the correct column name related to gross revenue
+gross_column = None
+for col in df.columns:
+    if 'gross' in col.lower() or 'total' in col.lower():
+        gross_column = col
+        print(f"\nFound potential gross column: '{gross_column}'")
+        break
 
-# Check for Censor column too
-print("\nColumns containing 'Censor':")
-censor_cols = [col for col in df.columns if 'Censor' in col or 'censor' in col]
-print(censor_cols)
-
-# Now apply the filters with the correct column names
-# Based on the column names printed above, adjust the filtering accordingly
-clean_df = df.copy()
-
-# Filter out rows with "$0.00M" or "Gross Unkown" in the Total Gross column
-if 'Total Gross (millions)' in df.columns:
-    clean_df = clean_df[(clean_df["Total Gross (millions)"]!="$0.00M") & (clean_df["Total Gross (millions)"]!="Gross Unkown")]
-
-# Filter out rows with "(Banned)" in the Censor column
-if 'Censor' in df.columns:
-    clean_df = clean_df[clean_df['Censor']!="(Banned)"]
-
-print(f"\nFiltered dataset shape: {clean_df.shape}")
+if gross_column:
+    # Filter out rows with "$0.00M" and "Gross Unkown" values
+    clean_df = df[(df[gross_column]!="$0.00M") & (df[gross_column]!="Gross Unkown")].copy()
+    
+    # Filter out banned movies
+    if 'Censor' in df.columns:
+        clean_df = clean_df[clean_df['Censor']!="(Banned)"]
+    else:
+        print("\nNote: 'Censor' column not found")
+        clean_df = clean_df.copy()
+    
+    print(f"\nFiltered DataFrame has {len(clean_df)} rows")
+else:
+    print("\nError: Could not find a gross-related column")
+    clean_df = df.copy()

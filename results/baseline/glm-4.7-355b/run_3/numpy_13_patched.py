@@ -67,7 +67,7 @@ path = "data_small/"
 def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
 
     data = []
-    max_time_length = 0
+    max_harm_length = 0
 
     for dirname, _, filenames in os.walk(path):
         for filename in filenames:
@@ -77,23 +77,20 @@ def FeatureExtractor(path, n_mels, fmax=20000, fmin=20):
             y, sr = librosa.load(full_path)
             mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, fmax=fmax, fmin=fmin)
             logam = librosa.power_to_db(mel)
-            
-            # Track the maximum time dimension
-            if logam.shape[1] > max_time_length:
-                max_time_length = logam.shape[1]
-            
             data.append(logam)
 
-    # Pad all arrays to have the same time dimension
-    padded_data = []
-    for arr in data:
-        # Calculate how much to pad
-        pad_width = max_time_length - arr.shape[1]
-        # Pad with zeros (or constant value)
-        padded = np.pad(arr, ((0, 0), (0, pad_width)), mode='constant', constant_values=0)
-        padded_data.append(padded)
+    # Find the maximum length across all spectrograms
+    max_length = max(arr.shape[1] for arr in data)
     
-    data = np.array(padded_data)
+    # Pad all spectrograms to the same length
+    data_padded = []
+    for arr in data:
+        pad_width = max_length - arr.shape[1]
+        # Pad with the minimum value (or 0) to mimic silence
+        padded = np.pad(arr, ((0, 0), (0, pad_width)), mode='constant', constant_values=arr.min())
+        data_padded.append(padded)
+    
+    data = np.array(data_padded)
     return data
 
 #%%

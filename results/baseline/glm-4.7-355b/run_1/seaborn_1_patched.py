@@ -245,13 +245,17 @@ test_dataset = get_test_dataset(ordered=True)
 train_agg = np.asarray([[label, (y_train == index).sum()] for index, label in enumerate(CLASSES)])
 valid_agg = np.asarray([[label, (y_valid == index).sum()] for index, label in enumerate(CLASSES)])
 
+# Convert counts to float64 to ensure numeric type
+train_counts = train_agg[..., 1].astype(np.float64)
+valid_counts = valid_agg[..., 1].astype(np.float64)
+
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(24, 64))
 
-ax1 = sns.barplot(x=train_agg[...,1].astype(int), y=train_agg[...,0], order=CLASSES, ax=ax1)
+ax1 = sns.barplot(x=train_counts, y=train_agg[...,0], order=CLASSES, ax=ax1)
 ax1.set_title('Train', fontsize=30)
 ax1.tick_params(labelsize=16)
 
-ax2 = sns.barplot(x=valid_agg[...,1].astype(int), y=valid_agg[...,0], order=CLASSES, ax=ax2)
+ax2 = sns.barplot(x=valid_counts, y=valid_agg[...,0], order=CLASSES, ax=ax2)
 ax2.set_title('Validation', fontsize=30)
 ax2.tick_params(labelsize=16)
 

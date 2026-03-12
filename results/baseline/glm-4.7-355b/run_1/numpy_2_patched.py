@@ -34,4 +34,4 @@ X_train,X_test,Y_train,Y_test=train_test_split(X.values,Y.values,test_size=0.2)
 # train_houseprice=X_train.join(Y_train)
 
 # === AFTER (edited) ===
-train_houseprice = pd.concat([pd.DataFrame(X_train), pd.Series(Y_train, name='price')], axis=1)
+train_houseprice = pd.DataFrame(X_train, columns=X.columns).join(pd.Series(Y_train, name='price'))

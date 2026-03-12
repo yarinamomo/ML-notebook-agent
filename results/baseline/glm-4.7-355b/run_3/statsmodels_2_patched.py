@@ -78,41 +78,9 @@ sarima_data.head()
 
 #%%
 # --- [CELL 4]: ---
-# cell_state: edited
+# cell_state: unchanged
 # execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
-# === BEFORE (original) ===
-# # Data Splitting
-# train_end_date = '2017-09-30'
-# pred_start_date = '2017-10-01'
-# pred_end_date = '2017-12-31'
-# 
-# y_train = sarima_data.loc[:train_end_date, 'sales']
-# y_val = sarima_data.loc[pred_start_date:pred_end_date, 'sales']
-# 
-# exog_columns = ['year','day_of_week', 'month_cos']
-# # So far 3 of these has highest corr with sales
-# 
-# exog_train = train_subset.loc[:train_end_date, exog_columns]
-# exog_val = train_subset.loc[pred_start_date:pred_end_date, exog_columns]
-# 
-# # Model Parameters
-# p, d, q = 1, 1, 1
-# P, D, Q, s = 1, 1, 1, 7
-# # d - number of times to difference it to become stationary
-# # Model Training with exogenous variables
-# # For instance, if the PACF shuts off (i.e., values become very close to zero) after 2 lags, then p=2
-# # For example, if the ACF cuts off after 1 lag, then q=1
-# model = SARIMAX(y_train, exog=exog_train, order=(p, d, q), seasonal_order=(P, D, Q, s))
-# results = model.fit(maxiter=150, disp=-1) # Iterations of the optimizer
-# 
-# # Forecasting with exogenous variables
-# y_pred = results.predict(start=pd.Timestamp(pred_start_date), end=pd.Timestamp(pred_end_date), exog=exog_val, dynamic=False)
-# 
-# # Model Evaluation
-# rmse = mean_squared_error(y_val, y_pred, squared=False)
-# print(f'RMSE: {rmse}')
-
-# === AFTER (edited) ===
+# Data Splitting
 train_end_date = '2017-09-30'
 pred_start_date = '2017-10-01'
 pred_end_date = '2017-12-31'
@@ -121,26 +89,25 @@ y_train = sarima_data.loc[:train_end_date, 'sales']
 y_val = sarima_data.loc[pred_start_date:pred_end_date, 'sales']
 
 exog_columns = ['year','day_of_week', 'month_cos']
-
+# So far 3 of these has highest corr with sales
 
 exog_train = train_subset.loc[:train_end_date, exog_columns]
 exog_val = train_subset.loc[pred_start_date:pred_end_date, exog_columns]
 
-
+# Model Parameters
 p, d, q = 1, 1, 1
 P, D, Q, s = 1, 1, 1, 7
-
-
-
-
+# d - number of times to difference it to become stationary
+# Model Training with exogenous variables
+# For instance, if the PACF shuts off (i.e., values become very close to zero) after 2 lags, then p=2
+# For example, if the ACF cuts off after 1 lag, then q=1
 model = SARIMAX(y_train, exog=exog_train, order=(p, d, q), seasonal_order=(P, D, Q, s))
-results = model.fit(maxiter=150, disp=-1)
+results = model.fit(maxiter=150, disp=-1) # Iterations of the optimizer
 
+# Forecasting with exogenous variables
+y_pred = results.predict(start=pd.Timestamp(pred_start_date), end=pd.Timestamp(pred_end_date), exog=exog_val, dynamic=False)
 
-predicted_all = results.predict(start=pd.Timestamp(pred_start_date), end=pd.Timestamp(pred_end_date), exog=exog_val, dynamic=False)
-y_pred = predicted_all.loc[pred_start_date:pred_end_date]
-
-
+# Model Evaluation
 rmse = mean_squared_error(y_val, y_pred, squared=False)
 print(f'RMSE: {rmse}')
 
@@ -159,17 +126,29 @@ plt.show()
 
 #%%
 # --- [CELL 6]: ---
-# cell_state: unchanged
-# execution_status: {'status': 'error', 'done': True, 'execution_count': 1}
+# cell_state: edited
+# execution_status: {'status': 'error', 'done': True, 'execution_count': 7}
+# === BEFORE (original) ===
+# from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+# 
+# plt.figure(figsize=(12, 6))
+# plot_acf(residuals, lags=180, title='ACF of Residuals')
+# plt.show()
+# 
+# plt.figure(figsize=(12, 6))
+# plot_pacf(residuals, lags=180, title='PACF of Residuals')
+# plt.show()
+# 
+# # Ideal: no significant autocorrelation
+# # Ideally, for a well-fitted model, the autocorrelations for all lags should fall within the blue shaded region (the confidence intervals). If any spikes exceed this area, it suggests that there's some pattern in the residuals at that particular lag that the model hasn't captured.
+
+# === AFTER (edited) ===
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 plt.figure(figsize=(12, 6))
-plot_acf(residuals, lags=180, title='ACF of Residuals')
+plot_acf(residuals, lags=90, title='ACF of Residuals')
 plt.show()
 
 plt.figure(figsize=(12, 6))
-plot_pacf(residuals, lags=180, title='PACF of Residuals')
+plot_pacf(residuals, lags=90, title='PACF of Residuals')
 plt.show()
-
-# Ideal: no significant autocorrelation
-# Ideally, for a well-fitted model, the autocorrelations for all lags should fall within the blue shaded region (the confidence intervals). If any spikes exceed this area, it suggests that there's some pattern in the residuals at that particular lag that the model hasn't captured.

@@ -92,7 +92,7 @@ y_ts_arr = y_test.values
 def weightInitialization(n_features):
     w = np.zeros((n_features, 1))
     b = 0
-    return w,b
+    return w, b
 
 #%%
 # --- [CELL 11]: ---

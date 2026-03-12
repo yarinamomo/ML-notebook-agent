@@ -1,6 +1,6 @@
 # --- [CELL 0]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 1}
 from IPython.display import Image, display
 import os
 import random
@@ -42,7 +42,7 @@ for category_name in selected_categories:
 #%%
 # --- [CELL 1]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 2}
 from torchvision.datasets import ImageFolder
 import torchvision.transforms as transforms
 
@@ -53,7 +53,7 @@ dataset = ImageFolder(directory_path, transform = transformations)
 #%%
 # --- [CELL 2]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 3}
 import matplotlib.pyplot as plt # for reporducing and fixing purposes
 import torch
 
@@ -90,7 +90,7 @@ show_images(transformed)
 #%%
 # --- [CELL 3]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 4}
 from torch.utils.data import random_split
 
 class_mapping = transformed.class_to_idx
@@ -117,7 +117,7 @@ print(len(train_ds), len(val_ds), len(test_ds))
 #%%
 # --- [CELL 4]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 5}
 from torch.utils.data import DataLoader
 
 batch_size = 25
@@ -130,7 +130,7 @@ val_dl = DataLoader(val_ds, batch_size*2, num_workers = 0, pin_memory = False)
 #%%
 # --- [CELL 5]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 6}
 import torch.nn as nn
 def accuracy(outputs, labels):
     _, preds = torch.max(outputs, dim=1)
@@ -164,7 +164,7 @@ class ImageClassificationBase(nn.Module):
 #%%
 # --- [CELL 6]: ---
 # cell_state: unchanged
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 7}
 import torchvision.models as models
 class ResNet(ImageClassificationBase):
     def __init__(self):
@@ -183,7 +183,7 @@ model = ResNet()
 #%%
 # --- [CELL 7]: ---
 # cell_state: edited
-# execution_status: {'status': 'not run'}
+# execution_status: {'status': 'ok', 'done': True, 'execution_count': 8}
 # === BEFORE (original) ===
 # import torch
 # import torch.nn as nn

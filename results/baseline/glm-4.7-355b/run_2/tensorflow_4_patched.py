@@ -252,10 +252,9 @@ from sklearn.model_selection import train_test_split
 train_data = train_data.astype('float32') / 255
 test_data = test_data.astype('float32') / 255
 
-
-# Reshape data from (batch, 1, height, width) to (batch, height, width) for LSTM
-train_data = train_data.reshape(train_data.shape[0], train_data.shape[2], train_data.shape[3])
-test_data = test_data.reshape(test_data.shape[0], test_data.shape[2], test_data.shape[3])
+# Remove extra dimension: (n, 1, 224, 224) -> (n, 224, 224) for LSTM input
+train_data = np.squeeze(train_data, axis=1)
+test_data = np.squeeze(test_data, axis=1)
 
 
 model = keras.Sequential([

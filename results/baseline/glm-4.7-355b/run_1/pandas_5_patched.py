@@ -127,5 +127,5 @@ test=test.drop('id',axis=1)
 
 # === AFTER (edited) ===
 for column in cat_feat:
-    x_train[column] = x_train[column].astype(float).astype(int)
-    x_test[column] = x_test[column].astype(float).astype(int)
+    x_train[column] = x_train[column].astype('float').astype('int')
+    x_test[column] = x_test[column].astype('float').astype('int')

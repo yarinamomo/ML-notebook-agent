@@ -57,15 +57,14 @@ RescuerID = LabelEncoder().fit(train["RescuerID"])
 
 def procData(data, name_count, RescuerID):
 
-    data = data.join(name_count, on ="RescuerID").rename(columns={"name_count": "rescuer_count"})
     data["RescuerID"] = RescuerID.transform(data["RescuerID"])
     data["RescuerID"] = data["RescuerID"].fillna(-1)
-
 
     data["NameNull"] = data["Name"].isnull()
     data["NameLen"] = data["Name"].fillna("").str.len()
     data["SinNombre"] = data["Name"].str.lower().replace(" ", "") == "nonameyet"
-    data = data.join(name_count, on="Name")
+    data = data.join(name_count, on="Name", rsuffix="_cnt")
+    data.rename(columns={"name_count_cnt": "name_count"}, inplace=True)
     data["name_count"] = data["name_count"].fillna(0)
 
     data = data.drop(["Name", "RescuerID", "Description"], axis=1)
