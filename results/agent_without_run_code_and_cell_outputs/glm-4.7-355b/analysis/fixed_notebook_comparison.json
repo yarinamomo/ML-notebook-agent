@@ -1,7 +1,7 @@
 {
   "metadata": {
     "results_root": "results",
-    "benchmark_dir": "JunoBench/benchmark",
+    "benchmark_dir": "JunoBench\\benchmark",
     "ignore_empty_lines": true,
     "similarity_threshold": 1.0,
     "similarity_function": null,
@@ -9,11 +9,11 @@
     "model": "glm-4.7-355b"
   },
   "statistics": {
-    "summaries_compared": 256,
+    "summaries_compared": 260,
     "classification_counts": {
-      "Valid": 45,
+      "Valid": "45 (17.31%)",
       "Valid With Extra Changes": 17,
-      "Plausible": 194
+      "Plausible": 198
     },
     "errors": 0
   },
@@ -2370,6 +2370,59 @@
       }
     },
     {
+      "summary_path": "agent_without_run_code_and_cell_outputs/glm-4.7-355b/run_1/tensorflow_10_summary.json",
+      "result_group": "agent_without_run_code_and_cell_outputs",
+      "model": "glm-4.7-355b",
+      "run": "run_1",
+      "instance": "tensorflow_10",
+      "status": "Submitted",
+      "classification": "Plausible",
+      "match_reason": "summary_cell_mismatch",
+      "summary_cell_match_reasons": {
+        "12": "mismatch",
+        "14": "mismatch"
+      },
+      "reference_notebook": "JunoBench/benchmark/tensorflow_10/tensorflow_10_fixed.ipynb",
+      "original_code_cell_count": 15,
+      "reference_code_cell_count": 15,
+      "alignment_applied": true,
+      "reference_changed_cells": [
+        12,
+        13,
+        14
+      ],
+      "summary_changed_cells": [
+        12,
+        14
+      ],
+      "reference_change_count": 3,
+      "summary_change_count": 2,
+      "comparison": {
+        "missing_reference_changes": [
+          13
+        ],
+        "extra_summary_changes": [],
+        "mismatched_shared_changes": [
+          12,
+          14
+        ],
+        "mismatch_details": [
+          {
+            "cell_index": 12,
+            "original": "class HuggingFaceLayer(tf.keras.layers.Layer):\n    def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):\n        super(HuggingFaceLayer, self).__init__(**kwargs)\n        self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)\n        self.trainable = trainable\n\n    def build(self, input_shape):\n        self.model.built = True\n        if not self.trainable:\n            self.model.trainable = False\n        super(HuggingFaceLayer, self).build(input_shape)\n\n    def call(self, inputs, **kwargs):\n        outputs = self.model(inputs, **kwargs)\n        return outputs",
+            "reference_fixed": "class HuggingFaceLayer(tf.keras.layers.Layer):\n    def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):\n        super(HuggingFaceLayer, self).__init__(**kwargs)\n        self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)\n        self.trainable = trainable\n\n    def build(self, input_shape):\n        self.model.built = True\n        if not self.trainable:\n            self.model.trainable = False\n        super(HuggingFaceLayer, self).build(input_shape)\n\n    def call(self, inputs, **kwargs):\n        outputs = self.model(inputs, **kwargs)\n        # fix 1 ---------- need to explicitly use the model output's tensors\n#         return outputs\n        return outputs.last_hidden_state[:, 0, :]",
+            "summary_final": "class HuggingFaceLayer(tf.keras.layers.Layer):\n    def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):\n        super(HuggingFaceLayer, self).__init__(**kwargs)\n        self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)\n        self.trainable = trainable\n\n    def build(self, input_shape):\n        self.model.built = True\n        if not self.trainable:\n            self.model.trainable = False\n        super(HuggingFaceLayer, self).build(input_shape)\n\n    def call(self, inputs):\n        outputs = self.model(inputs)\n        return outputs"
+          },
+          {
+            "cell_index": 14,
+            "original": "\nmodel.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])\nmodel.fit(train_data, train_labels, epochs=10)",
+            "reference_fixed": "import numpy as np\n\n# Compile and train the model\nmodel.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])\n\n# fix 3---------Pass a dictionary of input tensors to model.fit().\n# model.fit(train_data, train_labels, epochs=10)\nmodel.fit(\n    x={'input_ids': np.array(train_hg['input_ids']), 'attention_mask': np.array(train_hg['attention_mask'])},\n    y=np.array(train_hg['label']),\n    epochs=2,\n    batch_size=32\n)",
+            "summary_final": "# Prepare the training data correctly using processed_data\nimport numpy as np\n\n# Extract the required fields from processed_data\ninput_ids = np.array([item['input_ids'] for item in processed_data])\nattention_mask = np.array([item['attention_mask'] for item in processed_data])\nlabels = np.array([item['label'] for item in processed_data])\n\n# Create a dataset with proper input format for BERT\ntrain_dataset = tf.data.Dataset.from_tensor_slices((\n    {\n        'input_ids': input_ids,\n        'attention_mask': attention_mask\n    },\n    labels\n))\n\n# Define the model using the Functional API\ntf.keras.backend.clear_session()\n\n# Define inputs separately\ninput_ids_input = tf.keras.Input(shape=(128,), dtype=tf.int32, name='input_ids')\nattention_mask_input = tf.keras.Input(shape=(128,), dtype=tf.int32, name='attention_mask')\n\n# Create the BERT model\nbert_model = TFAutoModel.from_pretrained('bert-base-uncased')\n\n# Use a wrapper layer to call BERT properly and return the tensor\nclass BertWrapperLayer(tf.keras.layers.Layer):\n    def __init__(self, bert_model, **kwargs):\n        super(BertWrapperLayer, self).__init__(**kwargs)\n        self.bert_model = bert_model\n    \n    def call(self, inputs):\n        input_ids, attention_mask = inputs\n        outputs = self.bert_model(input_ids=input_ids, attention_mask=attention_mask)\n        # Return only the [CLS] token representation (first token of the sequence)\n        return outputs.last_hidden_state[:, 0, :]\n\n# Wrap BERT and get the [CLS] token representation\nbert_wrapper = BertWrapperLayer(bert_model)\ncls_output = bert_wrapper([input_ids_input, attention_mask_input])\n\n# Add classification layer\noutput = tf.keras.layers.Dense(1, activation='sigmoid')(cls_output)\n\n# Create the model\nmodel = tf.keras.Model(inputs=[input_ids_input, attention_mask_input], outputs=output)\n\n# Compile and train the model\nmodel.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])\nmodel.fit(train_dataset.batch(8), epochs=10)"
+          }
+        ]
+      }
+    },
+    {
       "summary_path": "agent_without_run_code_and_cell_outputs/glm-4.7-355b/run_1/tensorflow_11_summary.json",
       "result_group": "agent_without_run_code_and_cell_outputs",
       "model": "glm-4.7-355b",
@@ -3180,6 +3233,46 @@
         "extra_summary_changes": [],
         "mismatched_shared_changes": [],
         "mismatch_details": []
+      }
+    },
+    {
+      "summary_path": "agent_without_run_code_and_cell_outputs/glm-4.7-355b/run_1/torch_2_summary.json",
+      "result_group": "agent_without_run_code_and_cell_outputs",
+      "model": "glm-4.7-355b",
+      "run": "run_1",
+      "instance": "torch_2",
+      "status": "Submitted",
+      "classification": "Plausible",
+      "match_reason": "summary_cell_mismatch",
+      "summary_cell_match_reasons": {
+        "3": "mismatch"
+      },
+      "reference_notebook": "JunoBench/benchmark/torch_2/torch_2_fixed.ipynb",
+      "original_code_cell_count": 5,
+      "reference_code_cell_count": 5,
+      "alignment_applied": true,
+      "reference_changed_cells": [
+        3
+      ],
+      "summary_changed_cells": [
+        3
+      ],
+      "reference_change_count": 1,
+      "summary_change_count": 1,
+      "comparison": {
+        "missing_reference_changes": [],
+        "extra_summary_changes": [],
+        "mismatched_shared_changes": [
+          3
+        ],
+        "mismatch_details": [
+          {
+            "cell_index": 3,
+            "original": "def check_label_name(predictions, weights):\n    for prediction in predictions:\n        class_id = prediction.argmax().item()\n        print(class_id)\n        score = prediction[class_id].item()\n        category_name = weights.meta[\"categories\"][class_id]\n        print(f\"{category_name}: {100 * score:.1f}%\")\n        print(\"\\n\")\n\n\ndef model_quantization(model, backend='x86', save=False):\n\n    model.qconfig = torch.quantization.get_default_qconfig(backend)\n    torch.backends.quantized.engine = backend\n\n    quantized_model = torch.quantization.quantize_dynamic(model, qconfig_spec={torch.nn.Linear}, dtype=torch.qint8)\n    scripted_quantized_model = torch.jit.script(quantized_model)\n    if save:\n        scripted_quantized_model.save(\"vit_scripted_quantized.pt\")\n\n\ndef labels_process(labels, class_dict):\n\n    labels = [class_dict[int(label)] for label in labels]\n    labels = [int(num) for num in labels]\n    labels = torch.tensor(labels)\n    return labels\n\ndef inference(model, dataloader, class_dict, device, image_num_stop=40000):\n    index_stop = image_num_stop // 8\n    total_correct = 0\n    total_samples = 0\n    start_time = time.time()\n    model.to(device)\n    model.eval()\n\n    with torch.no_grad():\n        for index, (images, labels) in enumerate(dataloader):\n            images = images.to(device)\n\n\n            labels = labels_process(labels, class_dict)\n            labels = labels.to(device)\n\n            predictions = model(images)\n            predicted_labels = torch.argmax(predictions, dim=1) + 1\n\n            total_correct += (predicted_labels == labels).sum().item()\n            total_samples += labels.size(0)\n\n            if index % 50 == 0:\n                print(\"{} images were processed out of 50,000\".format(8 * index))\n\n            if index == index_stop:\n                print(\"Number of images processed: {} stopping now\".format(index_stop*8))\n                print(\"stopped checking because of errors for the entire dataset \\n \")\n                break\n\n    accuracy = total_correct / total_samples\n    end_time = time.time()\n    duration = (end_time - start_time) / 60\n\n    return accuracy, duration",
+            "reference_fixed": "def check_label_name(predictions, weights):\n    for prediction in predictions:\n        class_id = prediction.argmax().item()\n        print(class_id)\n        score = prediction[class_id].item()\n        category_name = weights.meta[\"categories\"][class_id]\n        print(f\"{category_name}: {100 * score:.1f}%\")\n        print(\"\\n\")\n        \n        \ndef model_quantization(model, backend='x86', save=False):\n    # Use 'x86' for server inference (the old 'fbgemm' is still available but 'x86' is the recommended default) and ``qnnpack`` for mobile inference.\n    model.qconfig = torch.quantization.get_default_qconfig(backend)\n    torch.backends.quantized.engine = backend\n\n    quantized_model = torch.quantization.quantize_dynamic(model, qconfig_spec={torch.nn.Linear}, dtype=torch.qint8)\n    \n    # fix --- Fails at the scripting step because ViT contains non-scriptable patterns (especially in MultiheadAttention)\n    # fix by skipping TorchScript, which can still get a quantized model in memory and use it for inference\n#     scripted_quantized_model = torch.jit.script(quantized_model)\n\n    if save:\n#         scripted_quantized_model.save(\"vit_scripted_quantized.pt\")\n        torch.save(quantized_model.state_dict(), \"vit_quantized_state_dict.pth\")\n        \n        \ndef labels_process(labels, class_dict):\n    # Change labels because of dataset idx\n    labels = [class_dict[int(label)] for label in labels]\n    labels = [int(num) for num in labels]\n    labels = torch.tensor(labels)\n    return labels\n    \ndef inference(model, dataloader, class_dict, device, image_num_stop=40000):\n    index_stop = image_num_stop // 8\n    total_correct = 0\n    total_samples = 0\n    start_time = time.time()\n    model.to(device)\n    model.eval()\n    \n    with torch.no_grad():\n        for index, (images, labels) in enumerate(dataloader):\n            images = images.to(device)\n        \n            # Change labels because of dataset idx\n            labels = labels_process(labels, class_dict)\n            labels = labels.to(device)\n        \n            predictions = model(images)\n            predicted_labels = torch.argmax(predictions, dim=1) + 1  # Add 1 to predicted labels\n            \n            total_correct += (predicted_labels == labels).sum().item()\n            total_samples += labels.size(0)\n        \n            if index % 50 == 0:\n                print(\"{} images were processed out of 50,000\".format(8 * index))\n            \n            if index == index_stop:\n                print(\"Number of images processed: {} stopping now\".format(index_stop*8))\n                print(\"stopped checking because of errors for the entire dataset \\n \")\n                break\n            \n    accuracy = total_correct / total_samples\n    end_time = time.time()\n    duration = (end_time - start_time) / 60\n    \n    return accuracy, duration\n    ",
+            "summary_final": "def check_label_name(predictions, weights):\n    for prediction in predictions:\n        class_id = prediction.argmax().item()\n        print(class_id)\n        score = prediction[class_id].item()\n        category_name = weights.meta[\"categories\"][class_id]\n        print(f\"{category_name}: {100 * score:.1f}%\")\n        print(\"\\n\")\n\n\ndef model_quantization(model, backend='x86', save=False):\n\n    model.qconfig = torch.quantization.get_default_qconfig(backend)\n    torch.backends.quantized.engine = backend\n\n    quantized_model = torch.quantization.quantize_dynamic(model, qconfig_spec={torch.nn.Linear}, dtype=torch.qint8)\n    \n    if save:\n        torch.save(quantized_model.state_dict(), \"vit_quantized.pt\")\n    \n    return quantized_model\n\n\ndef labels_process(labels, class_dict):\n\n    labels = [class_dict[int(label)] for label in labels]\n    labels = [int(num) for num in labels]\n    labels = torch.tensor(labels)\n    return labels\n\ndef inference(model, dataloader, class_dict, device, image_num_stop=40000):\n    index_stop = image_num_stop // 8\n    total_correct = 0\n    total_samples = 0\n    start_time = time.time()\n    model.to(device)\n    model.eval()\n\n    with torch.no_grad():\n        for index, (images, labels) in enumerate(dataloader):\n            images = images.to(device)\n\n\n            labels = labels_process(labels, class_dict)\n            labels = labels.to(device)\n\n            predictions = model(images)\n            predicted_labels = torch.argmax(predictions, dim=1) + 1\n\n            total_correct += (predicted_labels == labels).sum().item()\n            total_samples += labels.size(0)\n\n            if index % 50 == 0:\n                print(\"{} images were processed out of 50,000\".format(8 * index))\n\n            if index == index_stop:\n                print(\"Number of images processed: {} stopping now\".format(index_stop*8))\n                print(\"stopped checking because of errors for the entire dataset \\n \")\n                break\n\n    accuracy = total_correct / total_samples\n    end_time = time.time()\n    duration = (end_time - start_time) / 60\n\n    return accuracy, duration"
+          }
+        ]
       }
     },
     {
@@ -5769,6 +5862,59 @@
             "original": "from statsmodels.graphics.tsaplots import plot_acf, plot_pacf\n\nplt.figure(figsize=(12, 6))\nplot_acf(residuals, lags=180, title='ACF of Residuals')\nplt.show()\n\nplt.figure(figsize=(12, 6))\nplot_pacf(residuals, lags=180, title='PACF of Residuals')\nplt.show()\n\n\n",
             "reference_fixed": "from statsmodels.graphics.tsaplots import plot_acf, plot_pacf\n\n# fix ------------- Ensure lags do not exceed available data length\n# plot_acf(residuals, lags=180, title='ACF of Residuals')\n\nmax_acf_lags = min(len(residuals) - 1, 180)  # ACF limit\nmax_pacf_lags = min(len(residuals) // 2 - 1, 180)  # PACF limit (50% rule)\n\nplt.figure(figsize=(12, 6))\nplot_acf(residuals, lags=max_acf_lags, title='ACF of Residuals') # fix ------------- replace lags\nplt.show()\n\nplt.figure(figsize=(12, 6))\nplot_pacf(residuals, lags=max_pacf_lags, title='PACF of Residuals') # fix ------------- replace lags\nplt.show()\n\n# Ideal: no significant autocorrelation\n# Ideally, for a well-fitted model, the autocorrelations for all lags should fall within the blue shaded region (the confidence intervals). If any spikes exceed this area, it suggests that there's some pattern in the residuals at that particular lag that the model hasn't captured.",
             "summary_final": "from statsmodels.graphics.tsaplots import plot_acf, plot_pacf\n\nplt.figure(figsize=(12, 6))\nplot_acf(residuals, lags=90, title='ACF of Residuals')\nplt.show()\n\nplt.figure(figsize=(12, 6))\nplot_pacf(residuals, lags=45, title='PACF of Residuals')\nplt.show()"
+          }
+        ]
+      }
+    },
+    {
+      "summary_path": "agent_without_run_code_and_cell_outputs/glm-4.7-355b/run_2/tensorflow_10_summary.json",
+      "result_group": "agent_without_run_code_and_cell_outputs",
+      "model": "glm-4.7-355b",
+      "run": "run_2",
+      "instance": "tensorflow_10",
+      "status": "Submitted",
+      "classification": "Plausible",
+      "match_reason": "summary_cell_mismatch",
+      "summary_cell_match_reasons": {
+        "12": "mismatch",
+        "14": "mismatch"
+      },
+      "reference_notebook": "JunoBench/benchmark/tensorflow_10/tensorflow_10_fixed.ipynb",
+      "original_code_cell_count": 15,
+      "reference_code_cell_count": 15,
+      "alignment_applied": true,
+      "reference_changed_cells": [
+        12,
+        13,
+        14
+      ],
+      "summary_changed_cells": [
+        12,
+        14
+      ],
+      "reference_change_count": 3,
+      "summary_change_count": 2,
+      "comparison": {
+        "missing_reference_changes": [
+          13
+        ],
+        "extra_summary_changes": [],
+        "mismatched_shared_changes": [
+          12,
+          14
+        ],
+        "mismatch_details": [
+          {
+            "cell_index": 12,
+            "original": "class HuggingFaceLayer(tf.keras.layers.Layer):\n    def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):\n        super(HuggingFaceLayer, self).__init__(**kwargs)\n        self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)\n        self.trainable = trainable\n\n    def build(self, input_shape):\n        self.model.built = True\n        if not self.trainable:\n            self.model.trainable = False\n        super(HuggingFaceLayer, self).build(input_shape)\n\n    def call(self, inputs, **kwargs):\n        outputs = self.model(inputs, **kwargs)\n        return outputs",
+            "reference_fixed": "class HuggingFaceLayer(tf.keras.layers.Layer):\n    def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):\n        super(HuggingFaceLayer, self).__init__(**kwargs)\n        self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)\n        self.trainable = trainable\n\n    def build(self, input_shape):\n        self.model.built = True\n        if not self.trainable:\n            self.model.trainable = False\n        super(HuggingFaceLayer, self).build(input_shape)\n\n    def call(self, inputs, **kwargs):\n        outputs = self.model(inputs, **kwargs)\n        # fix 1 ---------- need to explicitly use the model output's tensors\n#         return outputs\n        return outputs.last_hidden_state[:, 0, :]",
+            "summary_final": "class HuggingFaceLayer(tf.keras.layers.Layer):\n    def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):\n        super(HuggingFaceLayer, self).__init__(**kwargs)\n        self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)\n        self.trainable = trainable\n\n    def build(self, input_shape):\n        self.model.built = True\n        if not self.trainable:\n            self.model.trainable = False\n        super(HuggingFaceLayer, self).build(input_shape)\n\n    def call(self, inputs):\n        outputs = self.model(inputs)\n        return outputs.last_hidden_state"
+          },
+          {
+            "cell_index": 14,
+            "original": "\nmodel.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])\nmodel.fit(train_data, train_labels, epochs=10)",
+            "reference_fixed": "import numpy as np\n\n# Compile and train the model\nmodel.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])\n\n# fix 3---------Pass a dictionary of input tensors to model.fit().\n# model.fit(train_data, train_labels, epochs=10)\nmodel.fit(\n    x={'input_ids': np.array(train_hg['input_ids']), 'attention_mask': np.array(train_hg['attention_mask'])},\n    y=np.array(train_hg['label']),\n    epochs=2,\n    batch_size=32\n)",
+            "summary_final": "from transformers import TFAutoModelForSequenceClassification\n\n# Use TFAutoModelForSequenceClassification which handles the correct input format\nmodel = TFAutoModelForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=1)\n\n# Convert datasets to proper format\ntrain_encodings = {\n    'input_ids': tf.stack(train_hg['input_ids']),\n    'attention_mask': tf.stack(train_hg['attention_mask']),\n    'token_type_ids': tf.stack(train_hg['token_type_ids'])\n}\ntrain_labels_tensor = tf.convert_to_tensor(train_hg['label'], dtype=tf.float32)\n\n# Compile and train the model\nmodel.compile(optimizer='adam', \n              loss=model.hf_compute_loss,\n              metrics=['accuracy'])\n\nmodel.fit(train_encodings, train_labels_tensor, epochs=1)"
           }
         ]
       }
@@ -9252,6 +9398,59 @@
             "original": "from statsmodels.graphics.tsaplots import plot_acf, plot_pacf\n\nplt.figure(figsize=(12, 6))\nplot_acf(residuals, lags=180, title='ACF of Residuals')\nplt.show()\n\nplt.figure(figsize=(12, 6))\nplot_pacf(residuals, lags=180, title='PACF of Residuals')\nplt.show()\n\n\n",
             "reference_fixed": "from statsmodels.graphics.tsaplots import plot_acf, plot_pacf\n\n# fix ------------- Ensure lags do not exceed available data length\n# plot_acf(residuals, lags=180, title='ACF of Residuals')\n\nmax_acf_lags = min(len(residuals) - 1, 180)  # ACF limit\nmax_pacf_lags = min(len(residuals) // 2 - 1, 180)  # PACF limit (50% rule)\n\nplt.figure(figsize=(12, 6))\nplot_acf(residuals, lags=max_acf_lags, title='ACF of Residuals') # fix ------------- replace lags\nplt.show()\n\nplt.figure(figsize=(12, 6))\nplot_pacf(residuals, lags=max_pacf_lags, title='PACF of Residuals') # fix ------------- replace lags\nplt.show()\n\n# Ideal: no significant autocorrelation\n# Ideally, for a well-fitted model, the autocorrelations for all lags should fall within the blue shaded region (the confidence intervals). If any spikes exceed this area, it suggests that there's some pattern in the residuals at that particular lag that the model hasn't captured.",
             "summary_final": "from statsmodels.graphics.tsaplots import plot_acf, plot_pacf\n\n# Number of residuals is 92 (Oct 1 to Dec 31, 2017)\n# ACF: max lags is len(residuals) - 1\n# PACF: max lags is len(residuals) // 2 - 1 (50% of sample size)\nmax_lags_acf = min(180, len(residuals) - 1)\nmax_lags_pacf = len(residuals) // 2 - 1\n\nplt.figure(figsize=(12, 6))\nplot_acf(residuals, lags=max_lags_acf, title='ACF of Residuals')\nplt.show()\n\nplt.figure(figsize=(12, 6))\nplot_pacf(residuals, lags=max_lags_pacf, title='PACF of Residuals')\nplt.show()"
+          }
+        ]
+      }
+    },
+    {
+      "summary_path": "agent_without_run_code_and_cell_outputs/glm-4.7-355b/run_3/tensorflow_10_summary.json",
+      "result_group": "agent_without_run_code_and_cell_outputs",
+      "model": "glm-4.7-355b",
+      "run": "run_3",
+      "instance": "tensorflow_10",
+      "status": "Submitted",
+      "classification": "Plausible",
+      "match_reason": "summary_cell_mismatch",
+      "summary_cell_match_reasons": {
+        "12": "mismatch",
+        "14": "mismatch"
+      },
+      "reference_notebook": "JunoBench/benchmark/tensorflow_10/tensorflow_10_fixed.ipynb",
+      "original_code_cell_count": 15,
+      "reference_code_cell_count": 15,
+      "alignment_applied": true,
+      "reference_changed_cells": [
+        12,
+        13,
+        14
+      ],
+      "summary_changed_cells": [
+        12,
+        14
+      ],
+      "reference_change_count": 3,
+      "summary_change_count": 2,
+      "comparison": {
+        "missing_reference_changes": [
+          13
+        ],
+        "extra_summary_changes": [],
+        "mismatched_shared_changes": [
+          12,
+          14
+        ],
+        "mismatch_details": [
+          {
+            "cell_index": 12,
+            "original": "class HuggingFaceLayer(tf.keras.layers.Layer):\n    def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):\n        super(HuggingFaceLayer, self).__init__(**kwargs)\n        self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)\n        self.trainable = trainable\n\n    def build(self, input_shape):\n        self.model.built = True\n        if not self.trainable:\n            self.model.trainable = False\n        super(HuggingFaceLayer, self).build(input_shape)\n\n    def call(self, inputs, **kwargs):\n        outputs = self.model(inputs, **kwargs)\n        return outputs",
+            "reference_fixed": "class HuggingFaceLayer(tf.keras.layers.Layer):\n    def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):\n        super(HuggingFaceLayer, self).__init__(**kwargs)\n        self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)\n        self.trainable = trainable\n\n    def build(self, input_shape):\n        self.model.built = True\n        if not self.trainable:\n            self.model.trainable = False\n        super(HuggingFaceLayer, self).build(input_shape)\n\n    def call(self, inputs, **kwargs):\n        outputs = self.model(inputs, **kwargs)\n        # fix 1 ---------- need to explicitly use the model output's tensors\n#         return outputs\n        return outputs.last_hidden_state[:, 0, :]",
+            "summary_final": "class HuggingFaceLayer(tf.keras.layers.Layer):\n    def __init__(self, model_name, output_hidden_states=False, trainable=False, **kwargs):\n        super(HuggingFaceLayer, self).__init__(**kwargs)\n        self.model = TFAutoModel.from_pretrained(model_name, output_hidden_states=output_hidden_states)\n        self.trainable = trainable\n\n    def build(self, input_shape):\n        self.model.built = True\n        if not self.trainable:\n            self.model.trainable = False\n        super(HuggingFaceLayer, self).build(input_shape)\n\n    def call(self, inputs):\n        outputs = self.model(inputs)\n        return outputs.pooler_output"
+          },
+          {
+            "cell_index": 14,
+            "original": "\nmodel.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])\nmodel.fit(train_data, train_labels, epochs=10)",
+            "reference_fixed": "import numpy as np\n\n# Compile and train the model\nmodel.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])\n\n# fix 3---------Pass a dictionary of input tensors to model.fit().\n# model.fit(train_data, train_labels, epochs=10)\nmodel.fit(\n    x={'input_ids': np.array(train_hg['input_ids']), 'attention_mask': np.array(train_hg['attention_mask'])},\n    y=np.array(train_hg['label']),\n    epochs=2,\n    batch_size=32\n)",
+            "summary_final": "# Prepare the inputs for BERT model\ntrain_inputs = {\n    'input_ids': tf.convert_to_tensor(list(train_df['input_ids'])),\n    'attention_mask': tf.convert_to_tensor(list(train_df['attention_mask'])),\n    'token_type_ids': tf.convert_to_tensor(list(train_df['token_type_ids']))\n}\ntrain_labels_tensor = tf.convert_to_tensor(list(train_df['label']))\n\nmodel.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])\nmodel.fit(train_inputs, train_labels_tensor, epochs=10)"
           }
         ]
       }
