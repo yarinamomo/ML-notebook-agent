@@ -539,8 +539,9 @@ def build_group_report(
     records: list[dict[str, Any]],
     errors: list[dict[str, str]],
 ) -> dict[str, Any]:
+    count_valid = sum(1 for record in records if record["classification"] == VALID)
     classification_counts = {
-        VALID: sum(1 for record in records if record["classification"] == VALID),
+        VALID: f"{count_valid} ({(count_valid/ len(records) * 100 if records else 0):.2f}%)",
         VALID_WITH_EXTRA_CHANGES: sum(
             1 for record in records if record["classification"] == VALID_WITH_EXTRA_CHANGES
         ),
