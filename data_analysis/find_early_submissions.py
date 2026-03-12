@@ -20,6 +20,7 @@ def find_early_submissions(base_path: Path, max_step=5):
     """
     findings = defaultdict(list)
     all_submissions = []
+    all_instance_statuses = []
     
     for run_num in [1, 2, 3]:
         run_dir = base_path / f'run_{run_num}'
@@ -36,6 +37,14 @@ def find_early_submissions(base_path: Path, max_step=5):
             try:
                 with open(summary_file, 'r', encoding='utf-8', errors='ignore') as f:
                     summary = json.load(f)
+
+                # Track final status for every instance summary (not only submissions)
+                all_instance_statuses.append({
+                    'run': run_num,
+                    'instance': instance_id,
+                    'status': summary.get('metadata', {}).get('status', 'N/A'),
+                    'total_steps': summary.get('statistics', {}).get('total_steps', 'N/A')
+                })
                 
                 # Check operations for submissions
                 if 'operations' in summary:
@@ -64,63 +73,9 @@ def find_early_submissions(base_path: Path, max_step=5):
             except Exception as e:
                 print(f"  Error processing {summary_file.name}: {e}")
     
-    return findings, all_submissions
+    return findings, all_submissions, all_instance_statuses
 
-
-def print_findings(findings, all_submissions):
-    """Print the findings in a readable format."""
-    
-    print("\n" + "="*80)
-    print("EARLY SUBMISSION ANALYSIS")
-    print("="*80)
-    
-    # Print early submissions
-    if findings:
-        print(f"\nFound {sum(len(v) for v in findings.values())} early submissions (step <= 5):\n")
-        
-        for step_key in sorted(findings.keys()):
-            submissions = findings[step_key]
-            step_num = step_key.split('_')[1]
-            
-            print(f"\n{'='*80}")
-            print(f"STEP {step_num} SUBMISSIONS ({len(submissions)} instances)")
-            print(f"{'='*80}")
-            
-            for sub in submissions:
-                print(f"\nRun {sub['run']} - {sub['instance']}")
-                print(f"  Action: {sub['action']}")
-                print(f"  Step: {sub['step']} / {sub['total_steps']} total")
-                print(f"  Status: {sub['status']}")
-                print(f"  Success: {sub['success']}")
-    else:
-        print("\nNo early submissions found (step <= 5)")
-    
-    # Summary statistics
-    print(f"\n{'='*80}")
-    print("OVERALL SUBMISSION STATISTICS")
-    print(f"{'='*80}")
-    print(f"\nTotal submissions found: {len(all_submissions)}")
-    
-    # Group by step
-    step_counts = defaultdict(int)
-    for sub in all_submissions:
-        step_counts[sub['step']] += 1
-    
-    print("\nSubmissions by step:")
-    for step in sorted(step_counts.keys()):
-        print(f"  Step {step}: {step_counts[step]} submissions")
-    
-    # Group by run
-    run_counts = defaultdict(int)
-    for sub in all_submissions:
-        run_counts[sub['run']] += 1
-    
-    print("\nSubmissions by run:")
-    for run in sorted(run_counts.keys()):
-        print(f"  Run {run}: {run_counts[run]} submissions")
-
-
-def save_to_file(findings, all_submissions, output_file):
+def save_to_file(findings, all_submissions, all_instance_statuses, output_file, max_step):
     """Save findings to a file."""
     
     with open(output_file, 'w', encoding='utf-8') as f:
@@ -130,7 +85,7 @@ def save_to_file(findings, all_submissions, output_file):
         
         # Early submissions
         if findings:
-            f.write(f"Found {sum(len(v) for v in findings.values())} early submissions (step <= 5):\n\n")
+            f.write(f"Found {sum(len(v) for v in findings.values())} early submissions (step <= {max_step}):\n\n")
             
             for step_key in sorted(findings.keys()):
                 submissions = findings[step_key]
@@ -146,6 +101,33 @@ def save_to_file(findings, all_submissions, output_file):
                     f.write(f"  Step: {sub['step']} / {sub['total_steps']} total\n")
                     f.write(f"  Status: {sub['status']}\n")
                     f.write(f"  Success: {sub['success']}\n")
+        else:
+            f.write(f"No early submissions found (step <= {max_step}).\n")
+        # Status summary for all instance summaries
+        f.write(f"\n\n{'='*80}\n")
+        f.write("ALL INSTANCES BY FINAL STATUS\n")
+        f.write(f"{'='*80}\n\n")
+
+        final_status_counts = defaultdict(int)
+        for item in all_instance_statuses:
+            status_value = item.get('status', 'N/A')
+            if status_value is None:
+                status_value = 'N/A'
+            final_status_counts[str(status_value)] += 1
+
+        if final_status_counts:
+            for status in sorted(final_status_counts.keys()):
+                f.write(f"{status}: {final_status_counts[status]}\n")
+        else:
+            f.write("No instance summaries found.\n")
+
+        # Detailed final status list for all instances
+        f.write(f"\n\n{'='*80}\n")
+        f.write("ALL INSTANCES (sorted by run, instance)\n")
+        f.write(f"{'='*80}\n\n")
+
+        for item in sorted(all_instance_statuses, key=lambda x: (x['run'], x['instance'])):
+            f.write(f"Run {item['run']} | {item['instance']:<30s} | {item['status']}\n")
         
         # All submissions
         f.write(f"\n\n{'='*80}\n")
@@ -158,15 +140,13 @@ def save_to_file(findings, all_submissions, output_file):
     print(f"\nDetailed list saved to: {output_file}")
 
 
-def main(base_dir: Path, max_step=3):
+def main(base_dir: Path, max_step=2):
     
-    findings, all_submissions = find_early_submissions(base_dir, max_step=max_step)
-    
-    print_findings(findings, all_submissions)
+    findings, all_submissions, all_instance_statuses = find_early_submissions(base_dir, max_step=max_step)
     
     # Create output directory if it doesn't exist
     output_dir = Path(base_dir) / 'analysis'
     output_dir.mkdir(exist_ok=True)
     
     output_file = output_dir / 'early_submissions_report.txt'
-    save_to_file(findings, all_submissions, output_file)
+    save_to_file(findings, all_submissions, all_instance_statuses, output_file, max_step=max_step)
