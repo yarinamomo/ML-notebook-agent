@@ -1,9 +1,38 @@
-
 import math
 from collections import defaultdict
 import json
 from pathlib import Path
 import random
+
+
+def load_valid_exclusion_pairs(comparison_json_path: Path):
+    """Load (run/instance) keys where classification is exactly 'Valid'."""
+    if not comparison_json_path or not comparison_json_path.exists():
+        return set()
+
+    with open(comparison_json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    excluded = set()
+    for record in data.get("records", []):
+        if (record.get("classification")).upper() == "VALID":
+            run = record.get("run")
+            instance = record.get("instance")
+            if run and instance:
+                excluded.add(f"{run}/{instance}")
+    return excluded
+
+
+def infer_comparison_json_path(target_setting: str) -> Path | None:
+    """Infer fixed_notebook_comparison.json path from target_setting/model."""
+    target_path = Path(target_setting)
+
+    preferred = target_path / "analysis" / "fixed_notebook_comparison.json"
+    if preferred.exists():
+        return preferred
+    else:
+        print(f"Fixed comparison JSON not found at: {preferred}")
+        return None
 
 def calculate_sample_size(population_size, confidence_level=0.95, margin_error=0.05):
     """Calculate sample size for statistical sampling"""
@@ -12,7 +41,8 @@ def calculate_sample_size(population_size, confidence_level=0.95, margin_error=0
     
     # Formula: n = (Z^2 * p * (1-p)) / E^2
     # Using p = 0.5 for maximum variability (worst case)
-    p = 0.5
+    # Using p = 0.8 based on observed success rate (on 22 samples) to get a more realistic sample size
+    p = 0.8
     numerator = (z_score ** 2) * p * (1 - p)
     denominator = margin_error ** 2
     
@@ -70,12 +100,16 @@ def stratify_sample_on_library(instances, sample_size):
     return sampled
 
 
-def main(target_setting: str, if_random_sampling = True, random_sampling_config = {
-    "confidence_level": 0.9,
-    "margin_error": 0.1
-}, sample_size = 20, random_seed = 42):
+def main(target_setting: str, if_random_sampling = True, random_sampling_config = None,
+         sample_size = 20, random_seed = 42):
 
     random.seed(random_seed)
+
+    if if_random_sampling and (random_sampling_config is None):
+        random_sampling_config = {
+            "confidence_level": 0.95,
+            "margin_error": 0.05
+        }
 
     summary_path = Path(target_setting) / "overall_summary.json"
 
@@ -87,6 +121,23 @@ def main(target_setting: str, if_random_sampling = True, random_sampling_config 
         .get("outcome_distribution", {})
         .get("success_instances", [])
     )
+
+    fixed_comparison_path = infer_comparison_json_path(target_setting)
+
+    excluded_valid_pairs = load_valid_exclusion_pairs(fixed_comparison_path) if fixed_comparison_path else set()
+    if excluded_valid_pairs:
+        original_population_size = len(success_instances)
+        success_instances = [
+            item for item in success_instances
+            if item not in excluded_valid_pairs
+        ]
+        print(
+            "Excluded "
+            f"{original_population_size - len(success_instances)} 'Valid' cases "
+            f"from {fixed_comparison_path}"
+        )
+    elif fixed_comparison_path is None:
+        print("No fixed_notebook_comparison.json found automatically; skipping 'Valid' exclusions.")
 
     population_size = len(success_instances)
     if if_random_sampling:
@@ -114,9 +165,11 @@ def main(target_setting: str, if_random_sampling = True, random_sampling_config 
 
     output["target_setting"] = target_setting
     output["random_seed"] = random_seed
+    output["comparison_json_path"] = str(fixed_comparison_path) if fixed_comparison_path else None
+    output["excluded_valid_pairs_count"] = len(excluded_valid_pairs)
     output["population_size"] = population_size
     output["sample_size"] = sample_size
-    output["sampled_instances"] = sampled_instances
+    output["sampled_instances"] = dict.fromkeys(sampled_instances, "")
 
     output_dir = summary_path.parent / "analysis"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -137,6 +190,6 @@ if __name__ == "__main__":
     # if_random_sampling = False
     # sample_size = 20
     
-    target_setting = "results/baseline/glm-4.7-355b"
+    target_setting = "results/baseline_without_cell_outputs/glm-4.7-355b"
 
     main(target_setting = target_setting, if_random_sampling = if_random_sampling, random_sampling_config = random_sampling_config, random_seed = random_seed)
