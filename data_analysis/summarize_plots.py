@@ -7,6 +7,7 @@ taken by the LLM agent at each step of execution.
 
 import json
 import os
+import textwrap
 from collections import defaultdict
 from pathlib import Path
 import matplotlib.pyplot as plt
@@ -356,6 +357,49 @@ def create_comparison_chart(path1: str, path2: str, title: str, output_path: Pat
     print(f"Saved comparison chart to {final_path}")
     plt.close()
 
+
+def load_manual_validation_outcome(llm_dir: Path):
+    """Load the manual validation outcome string for a model directory if available."""
+    labeled_instances_path = llm_dir / 'analysis' / 'stratified_sampled_instances_labeled.json'
+    if not labeled_instances_path.exists():
+        return None
+
+    try:
+        with open(labeled_instances_path, 'r', encoding='utf-8') as f:
+            labeled_instances = json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"Warning: failed to load manual validation from {labeled_instances_path}: {e}")
+        return None
+
+    manual_validation = labeled_instances.get('manual_validation', {})
+    if not isinstance(manual_validation, dict):
+        return None
+
+    validation_outcome = manual_validation.get('validation_outcome')
+    if isinstance(validation_outcome, str) and validation_outcome.strip():
+        return validation_outcome
+
+    return None
+
+
+def format_setting_display_name(setting: str, width: int = 18):
+    """Format setting names for compact table display without overflowing cells."""
+    return textwrap.fill(setting.replace('_', ' ').title(), width=width)
+
+
+def get_table_column_widths(columns):
+    """Return matplotlib table column widths tuned for the comparison output."""
+    widths = {
+        'Setting': 0.24,
+        'Pass@K Rate': 0.14,
+        'Pass All K Rate': 0.16,
+        'Avg Run SR': 0.12,
+        'Std Run SR': 0.12,
+        'Correct Rate\n(CI 90%, MoE 10%)': 0.22,
+    }
+    default_width = 1.0 / max(len(columns), 1)
+    return [widths.get(column, default_width) for column in columns]
+
 def main(base_dir: Path):
     """Main function to generate all plots."""
     output_dir = base_dir / 'plots'
@@ -386,25 +430,8 @@ def main(base_dir: Path):
 def compare_performance_across_settings(results_dir: str = 'results', 
                                        settings: list = None,
                                        output_dir: str = None):
-    """
-    Compare performance metrics (pass@k rate, pass all k rate, average and std of run success rates)
-    across different settings and LLMs.
-    
-    Loads data from overall_summary.json files in results/{setting}/{llm}/
-    and creates separate comparison tables for each LLM with metrics:
-    - Pass@K Rate: Fraction of instances with at least one successful run
-    - Pass All K Rate: Fraction of instances where all K runs are successful
-    - Avg Run SR: Average success rate across all 3 runs
-    - Std Run SR: Standard deviation of success rates across the 3 runs
-    
-    Args:
-        results_dir: Path to the results directory (default: 'results')
-        settings: List of settings to compare (default: ['baseline', 'without_run_code', 'agent'])
-        output_dir: Directory to save output files (default: results_dir/data_analysis)
-    
-    Returns:
-        dict: Dictionary mapping LLM name to DataFrame with performance comparison for that LLM
-    """
+    correct_rate_col = 'Correct Rate\n(CI 90%, MoE 10%)'
+
     if settings is None:
         settings = ['baseline', 'without_run_code', 'agent']
     
@@ -458,6 +485,7 @@ def compare_performance_across_settings(results_dir: str = 'results',
                 run_sr_valid = [x for x in run_sr if not np.isnan(x)]
                 avg_run_sr = np.mean(run_sr_valid) if run_sr_valid else np.nan
                 std_run_sr = np.std(run_sr_valid) if len(run_sr_valid) > 1 else np.nan
+                manual_validation_outcome = load_manual_validation_outcome(llm_dir)
                 
                 row = {
                     'Setting': setting,
@@ -465,6 +493,7 @@ def compare_performance_across_settings(results_dir: str = 'results',
                     'Pass All K Rate': outcome_dist.get('pass_all_k_rate', np.nan),
                     'Avg Run SR': avg_run_sr,
                     'Std Run SR': std_run_sr,
+                    correct_rate_col: manual_validation_outcome,
                 }
                 
                 data_by_llm[llm_name].append(row)
@@ -493,30 +522,36 @@ def compare_performance_across_settings(results_dir: str = 'results',
         all_dfs[llm_name] = df
         
         # Create a formatted table visualization
-        fig, ax = plt.subplots(figsize=(12, 6))
+        fig, ax = plt.subplots(figsize=(14, 6))
         ax.axis('tight')
         ax.axis('off')
         
         # Format dataframe for display (round to 4 decimal places)
         df_display = df.copy()
-        df_display['Setting'] = df_display['Setting'].str.replace('_', ' ').str.title()
+        df_display['Setting'] = df_display['Setting'].apply(format_setting_display_name)
         for col in ['Pass@K Rate', 'Pass All K Rate', 'Avg Run SR', 'Std Run SR']:
             if col in df_display.columns:
                 df_display[col] = df_display[col].apply(lambda x: f"{x:.4f}" if pd.notna(x) else "N/A")
+        if correct_rate_col in df_display.columns:
+            df_display[correct_rate_col] = df_display[correct_rate_col].apply(
+                lambda x: x if isinstance(x, str) and x.strip() else 'N/A'
+            )
         
         # Create table
         table = ax.table(cellText=df_display.values, colLabels=df_display.columns,
-                         cellLoc='center', loc='center', 
+                         cellLoc='center', loc='center',
+                         colWidths=get_table_column_widths(list(df_display.columns)),
                          colColours=['#f0f0f0'] * len(df_display.columns))
         
         table.auto_set_font_size(False)
-        table.set_fontsize(11)
-        table.scale(1, 2.5)
+        table.set_fontsize(10)
+        table.scale(1, 2.8)
         
         # Alternate row colors
         for i in range(len(df_display) + 1):
             for j in range(len(df_display.columns)):
                 cell = table[(i, j)]
+                cell.get_text().set_wrap(True)
                 if i == 0:
                     cell.set_facecolor('#4472C4')
                     cell.set_text_props(weight='bold', color='white')
