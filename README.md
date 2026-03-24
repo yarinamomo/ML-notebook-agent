@@ -28,16 +28,18 @@ pip install -e .
 
 ## Code Quality
 
-This project uses Black code formatter for consistent code style.
+This project uses Black (formatting) and Ruff (linting) for consistent code quality.
 
 ### Installation
 
 ```bash
-# Install development dependencies (including Black)
+# Install development dependencies (including Black and Ruff)
 uv pip install -e ".[dev]"
 ```
 
-### Manual Formatting
+### Black Formatting
+
+**Manual formatting:**
 
 ```bash
 # Format all Python files
@@ -47,24 +49,66 @@ black --config .config/black.toml src/ tests/
 black --config .config/black.toml --check src/ tests/
 ```
 
+**Configuration in `.config/black.toml`:**
+- Line length: 88 characters
+- Target Python version: 3.11
+
+### Ruff Linting
+
+This project has a **two-phase** approach to linting with Ruff:
+
+**Phase 1 (Current):** Basic code quality rules (E, F, I)
+- ✅ E (pycodestyle): Basic style errors
+- ✅ F (Pyflakes): Import and undefined name errors
+- ✅ I (isort): Import order sorting
+
+**Manual linting:**
+
+```bash
+# Check for lint errors
+ruff check src/ tests/
+
+# Auto-fix lint issues (imports, unused variables, simple formatting)
+ruff check --fix src/ tests/
+
+# View remaining warnings
+ruff check src/ tests/
+```
+
+**Configuration in `ruff.toml`:**
+- Line length: 88 characters (matches Black)
+- Target version: py311
+- Rules: E, F, I (pycodestyle, Pyflakes, isort)
+
 ### Pre-commit Hooks
 
-Black is configured as a pre-commit hook to automatically format files before commits.
+Both Black and Ruff run automatically before commits.
 
 ```bash
 # Install pre-commit hooks (runs once)
 pre-commit install
 
-# Run pre-commit hooks manually
+# Run pre-commit hooks manually on all files
+pre-commit run --all-files
+
+# Run specific hooks
 pre-commit run black --all-files
+pre-commit run ruff --all-files
+pre-commit run ruff-format --all-files
 ```
 
-### Configuration
+### Known Issues (Deferred to Phase 2)
 
-Black configuration is in `.config/black.toml`:
-- Line length: 88 characters
-- Target Python version: 3.11
-- Matches project conventions in codebase
+The following Ruff warnings are documented for future resolution in **Phase 2** (QUAL-03):
+
+- **E501 (Line too long):** 38 warnings in `src/` and `tests/` with lines 89-116 characters
+- These warnings are **non-critical** and breaking them would hurt readability
+- They will be resolved using Ruff's `--unsafe-fixes` or documentation strings in Phase 2
+
+**Why defer E501?**
+- Many long lines are docstrings, error messages, or function descriptions that are clearer as single lines
+- Current phase 1 focus is eliminating critical errors (F841 undefined names, I001 import order)
+- Phase 2 will add stricter rules (D docstrings, N naming conventions) after type checking (QUAL-03)
 
 ## Trajectory Viewer
 
