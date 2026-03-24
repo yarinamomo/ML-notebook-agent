@@ -26,6 +26,46 @@ pip install -e .
 - Docker image with Jupyter (e.g., `yarinamomo/kaggle_python_env`)
 - OpenAI/Anthropic/Google API key (for mini-swe-agent features)
 
+## Code Quality
+
+This project uses Black code formatter for consistent code style.
+
+### Installation
+
+```bash
+# Install development dependencies (including Black)
+uv pip install -e ".[dev]"
+```
+
+### Manual Formatting
+
+```bash
+# Format all Python files
+black --config .config/black.toml src/ tests/
+
+# Check formatting without applying changes
+black --config .config/black.toml --check src/ tests/
+```
+
+### Pre-commit Hooks
+
+Black is configured as a pre-commit hook to automatically format files before commits.
+
+```bash
+# Install pre-commit hooks (runs once)
+pre-commit install
+
+# Run pre-commit hooks manually
+pre-commit run black --all-files
+```
+
+### Configuration
+
+Black configuration is in `.config/black.toml`:
+- Line length: 88 characters
+- Target Python version: 3.11
+- Matches project conventions in codebase
+
 ## Trajectory Viewer
 
 A web-based tool for inspecting agent trajectories. Shows the chat history on the left and the notebook state on the right, with inline git-style diffs for cell edits.
