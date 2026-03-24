@@ -97,6 +97,11 @@ pre-commit run ruff --all-files
 pre-commit run ruff-format --all-files
 ```
 
+### Continuous Integration
+
+Minimal CI runs on push/PR to check tests and code quality. See `.github/workflows/ci.yml`.
+```
+
 ### Known Issues (Deferred to Phase 2)
 
 The following Ruff warnings are documented for future resolution in **Phase 2** (QUAL-03):
