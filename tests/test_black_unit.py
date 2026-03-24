@@ -6,26 +6,18 @@ Tests verify Black is properly installed, configured, and accessible.
 
 import subprocess
 from pathlib import Path
+import pytest
 
 
 def test_black_installed():
     """Test that Black 24.10.0 is installed and accessible."""
-    result = subprocess.run(
-        ["uv", "run", "pip", "show", "black"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    # Test fails if Black is not installed
-    assert result.returncode == 0, "Black is not installed"
+    try:
+        import black
+    except ImportError as e:
+        pytest.fail(f"Black is not installed: {e}")
 
     # Verify version is 24.10.0
-    output_lines = result.stdout.split("\n")
-    version_line = [line for line in output_lines if line.startswith("Version:")]
-    assert len(version_line) == 1, "Version line not found in pip show output"
-
-    version = version_line[0].split(":")[1].strip()
+    version = black.__version__
     assert version == "24.10.0", f"Expected Black 24.10.0, found {version}"
 
 
