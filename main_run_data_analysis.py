@@ -8,8 +8,9 @@ from data_analysis import (
     summarize_statistics,
 )
 
+
 def main():
-    target_modes = ["baseline"] # , "agent", "without_run_code"
+    target_modes = ["baseline"]  # , "agent", "without_run_code"
     target_models = ["glm-4.7-355b"]
     for target_mode in target_modes:
         for target_model in target_models:
@@ -28,22 +29,25 @@ def main():
     summarize_plots.create_comparison_chart(
         "results/without_run_code/glm-4.7-355b",
         "results/agent/glm-4.7-355b",
-        "Tool Count Comparison - Without \"run_code\" Tool vs. Default Agent (glm-4.7-355b)",
+        'Tool Count Comparison - Without "run_code" Tool vs. Default Agent (glm-4.7-355b)',
         Path("results/data_analysis/tool_comparison_agents_without_run_code.png"),
-        label1="Agent without \"run_code\" tool",
+        label1='Agent without "run_code" tool',
         label2="Agent default",
-        mode="diff"
+        mode="diff",
     )
     summarize_plots.create_comparison_chart(
         "results/without_run_code/glm-4.7-355b",
         "results/agent/glm-4.7-355b",
-        "Tool Count Comparison - Without \"run_code\" Tool vs. Default Agent (glm-4.7-355b)",
+        'Tool Count Comparison - Without "run_code" Tool vs. Default Agent (glm-4.7-355b)',
         Path("results/data_analysis/tool_comparison_agents_without_run_code.png"),
-        label1="Agent without \"run_code\" tool",
+        label1='Agent without "run_code" tool',
         label2="Agent default",
-        mode="full"
+        mode="full",
     )
-    summarize_plots.compare_performance_across_settings(settings=['baseline', 'without_run_code', 'agent'])
+    summarize_plots.compare_performance_across_settings(
+        settings=["baseline", "without_run_code", "agent"]
+    )
+
 
 if __name__ == "__main__":
     main()
