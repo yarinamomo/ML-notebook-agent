@@ -1,30 +1,33 @@
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from queue import Empty, Queue
 from typing import Any, Callable, Optional, TypeAlias
 
 import typer
+
+from src.run_agent import get_instance_summary_path, run_single_instance
+from src.run_baseline import run_baseline_instance
 from src.utils.log import logger
 from src.utils.ui import get_progress_advance_fn, progress_live, set_ui_enabled
 from src.utils.yaml_parser import (
+    get_instances,
+    get_run_count,
+    get_trajectories_dir,
     load_config,
     load_api_keys,
+    prepare_config_for_threading,
     set_model_config,
-    get_run_count,
-    get_instances,
-    get_trajectories_dir,
-    prepare_config_for_threading
 )
-from src.run_agent import run_single_instance, get_instance_summary_path
-from src.run_baseline import run_baseline_instance
 
 app = typer.Typer(rich_markup_mode="rich")
 # --config points to the run-specific overlay. load_config() merges exactly two layers:
 # defaults from NOTEBOOK_AGENT_DEFAULTS_PATH (or config/defaults.yaml) and this overlay.
 CONFIG_PATH = Path(os.getenv("NOTEBOOK_AGENT_CONFIG_PATH", "./config/agent.yaml"))
-DEFAULTS_PATH = Path(os.getenv("NOTEBOOK_AGENT_DEFAULTS_PATH", "./config/defaults.yaml"))
+DEFAULTS_PATH = Path(
+    os.getenv("NOTEBOOK_AGENT_DEFAULTS_PATH", "./config/defaults.yaml")
+)
 
 SingleInstance: TypeAlias = tuple[str, int, Path]
 ProgressAdvanceFn: TypeAlias = Callable[[str], None]
@@ -33,20 +36,25 @@ RunNonThreadedFn: TypeAlias = Callable[[dict, SingleInstance, ProgressAdvanceFn]
 
 def read_api_keys(api_keys_file: Path) -> list[str]:
     """Read API keys from a text file, one per line.
-    
+
     Args:
         api_keys_file: Path to file containing API keys (one per line)
-        
+
     Returns:
         List of API key strings
     """
-    with open(api_keys_file, 'r') as f:
-        keys = [line.strip() for line in f if line.strip() and not line.strip().startswith('#')]
+    with open(api_keys_file, "r") as f:
+        keys = [
+            line.strip()
+            for line in f
+            if line.strip() and not line.strip().startswith("#")
+        ]
     return keys
+
 
 def should_skip_instance(output_dir, instance_name) -> bool:
     """Check if an instance should be skipped based on summary status.
-    
+
     Returns True if the instance should be skipped (already completed successfully),
     False if it should be run (doesn't exist or has failed/incomplete status).
     """
@@ -54,17 +62,17 @@ def should_skip_instance(output_dir, instance_name) -> bool:
 
     if not summary_path.exists():
         return False
-    
+
     try:
-        with open(summary_path, 'r') as f:
+        with open(summary_path, "r") as f:
             summary = json.load(f)
-        
+
         status = summary.get("metadata", {}).get("status", "")
-        
+
         # Do NOT skip if status is EnvironmentUnavailable or INCOMPLETE
         if status in ["EnvironmentUnavailable", "INCOMPLETE"]:
             return False
-        
+
         # Skip if status indicates successful completion
         return True
     except Exception as e:
@@ -84,22 +92,31 @@ def build_instances(config: dict, model_name: str) -> list[SingleInstance]:
 
     runs_to_execute = []
     for instance_name in get_instances(config):
-        if instance_name in IGNORED_INSTANCES or instance_name.startswith(IGNORED_PREFIXES):
+        if instance_name in IGNORED_INSTANCES or instance_name.startswith(
+            IGNORED_PREFIXES
+        ):
             logger.info(f"Skipping (filtered): {instance_name}")
             continue
         for run_num in range(1, number_of_runs + 1):
             run_output_dir = trajectories_dir / model_name / f"run_{run_num}"
             if skip_existing:
                 if should_skip_instance(run_output_dir, instance_name):
-                    logger.info(f"Skipping (already completed): {instance_name} run {run_num}")
+                    logger.info(
+                        f"Skipping (already completed): {instance_name} run {run_num}"
+                    )
                     continue
             run_output_dir.mkdir(parents=True, exist_ok=True)
             runs_to_execute.append((instance_name, run_num, run_output_dir))
-    
+
     return runs_to_execute
 
 
-def get_run_threaded_fn(config: dict, api_keys: list[str], runs_to_execute: list[SingleInstance], run_non_threaded: RunNonThreadedFn) -> Callable[[ProgressAdvanceFn], None]:
+def get_run_threaded_fn(
+    config: dict,
+    api_keys: list[str],
+    runs_to_execute: list[SingleInstance],
+    run_non_threaded: RunNonThreadedFn,
+) -> Callable[[ProgressAdvanceFn], None]:
     def run_threaded(progress_advance_fn: ProgressAdvanceFn):
         run_queue: Queue[SingleInstance] = Queue()
 
@@ -112,22 +129,30 @@ def get_run_threaded_fn(config: dict, api_keys: list[str], runs_to_execute: list
                 try:
                     run = run_queue.get_nowait()
                 except Empty:
-                    logger.info(f"Worker {worker_index} has no more runs to process and is exiting.")
+                    logger.info(
+                        f"Worker {worker_index} has no more runs to process and is exiting."
+                    )
                     break
-                logger.info(f"Worker {worker_index} picked up run: {run[0]} run {run[1]}")
+                logger.info(
+                    f"Worker {worker_index} picked up run: {run[0]} run {run[1]}"
+                )
                 run_non_threaded(config, run, progress_advance_fn)
                 logger.debug(f"Worker {worker_index} finished run.")
                 run_queue.task_done()
 
         with ThreadPoolExecutor(max_workers=len(api_keys)) as executor:
             futures = [
-                executor.submit(worker, prepare_config_for_threading(config, api_key, index), index)
+                executor.submit(
+                    worker, prepare_config_for_threading(config, api_key, index), index
+                )
                 for index, api_key in enumerate(api_keys)
             ]
             run_queue.join()
             for future in futures:
                 future.result()
+
     return run_threaded
+
 
 # fmt: off
 @app.command()
@@ -228,4 +253,3 @@ def main(
 
 if __name__ == "__main__":
     app()
-

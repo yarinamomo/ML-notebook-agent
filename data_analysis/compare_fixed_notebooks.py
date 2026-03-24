@@ -195,7 +195,9 @@ def rename_tolerant_ast_dump(code: str, ignore_empty_lines: bool = True) -> str 
 
 def cell_match_reason(left: str, right: str, config: ComparisonConfig) -> str:
     normalized_left = normalize_code(left, ignore_empty_lines=config.ignore_empty_lines)
-    normalized_right = normalize_code(right, ignore_empty_lines=config.ignore_empty_lines)
+    normalized_right = normalize_code(
+        right, ignore_empty_lines=config.ignore_empty_lines
+    )
 
     if normalized_left == normalized_right:
         return "exact_normalized"
@@ -205,8 +207,12 @@ def cell_match_reason(left: str, right: str, config: ComparisonConfig) -> str:
     if left_ast is not None and right_ast is not None and left_ast == right_ast:
         return "ast_equivalent"
 
-    left_renamed_ast = rename_tolerant_ast_dump(left, ignore_empty_lines=config.ignore_empty_lines)
-    right_renamed_ast = rename_tolerant_ast_dump(right, ignore_empty_lines=config.ignore_empty_lines)
+    left_renamed_ast = rename_tolerant_ast_dump(
+        left, ignore_empty_lines=config.ignore_empty_lines
+    )
+    right_renamed_ast = rename_tolerant_ast_dump(
+        right, ignore_empty_lines=config.ignore_empty_lines
+    )
     if (
         left_renamed_ast is not None
         and right_renamed_ast is not None
@@ -227,7 +233,9 @@ def cells_match(left: str, right: str, config: ComparisonConfig) -> bool:
     return cell_match_reason(left, right, config) != "mismatch"
 
 
-def apply_code_changes(original_cells: list[str], code_changes: list[dict[str, Any]]) -> list[str]:
+def apply_code_changes(
+    original_cells: list[str], code_changes: list[dict[str, Any]]
+) -> list[str]:
     final_cells = list(original_cells)
 
     def sort_key(change: dict[str, Any]) -> tuple[int, int]:
@@ -257,10 +265,14 @@ def compute_changed_cells(
     limit: int | None = None,
 ) -> dict[int, str]:
     changed_cells: dict[int, str] = {}
-    max_len = limit if limit is not None else max(len(original_cells), len(updated_cells))
+    max_len = (
+        limit if limit is not None else max(len(original_cells), len(updated_cells))
+    )
 
     for cell_index in range(max_len):
-        original = original_cells[cell_index] if cell_index < len(original_cells) else ""
+        original = (
+            original_cells[cell_index] if cell_index < len(original_cells) else ""
+        )
         updated = updated_cells[cell_index] if cell_index < len(updated_cells) else ""
         if not cells_match(original, updated, config):
             changed_cells[cell_index] = updated
@@ -287,7 +299,10 @@ def align_fixed_cells_to_original(
         for code in fixed_cells
     ]
 
-    aligned = [fixed_cells[i] if i < len(fixed_cells) else "" for i in range(len(original_cells))]
+    aligned = [
+        fixed_cells[i] if i < len(fixed_cells) else ""
+        for i in range(len(original_cells))
+    ]
     matcher = SequenceMatcher(a=normalized_original, b=normalized_fixed, autojunk=False)
 
     for tag, orig_start, orig_end, fixed_start, fixed_end in matcher.get_opcodes():
@@ -327,7 +342,11 @@ def classify_changes(
         return PLAUSIBLE, "summary_cell_mismatch", summary_cell_match_reasons
 
     if reference_changes.keys() == summary_changes.keys():
-        return VALID, "all_summary_cells_match_change_set_equal", summary_cell_match_reasons
+        return (
+            VALID,
+            "all_summary_cells_match_change_set_equal",
+            summary_cell_match_reasons,
+        )
 
     return (
         VALID_WITH_EXTRA_CHANGES,
@@ -358,14 +377,18 @@ def summarize_differences(
         extra_summary_changes.append(cell_index)
 
     for cell_index in sorted(reference_indices & summary_indices):
-        if not cells_match(reference_changes[cell_index], summary_changes[cell_index], config):
+        if not cells_match(
+            reference_changes[cell_index], summary_changes[cell_index], config
+        ):
             mismatched_shared_changes.append(cell_index)
 
     mismatch_details = []
     # Keep details focused on what the summary actually changed.
     detailed_indices = extra_summary_changes + mismatched_shared_changes
     for cell_index in detailed_indices:
-        original = original_cells[cell_index] if cell_index < len(original_cells) else ""
+        original = (
+            original_cells[cell_index] if cell_index < len(original_cells) else ""
+        )
         fixed = (
             aligned_fixed_cells[cell_index]
             if cell_index < len(aligned_fixed_cells)
@@ -398,7 +421,9 @@ def resolve_fixed_notebook(benchmark_dir: Path, instance_name: str) -> Path:
     if matches:
         return matches[0]
 
-    raise FileNotFoundError(f"Could not find fixed notebook for instance '{instance_name}'")
+    raise FileNotFoundError(
+        f"Could not find fixed notebook for instance '{instance_name}'"
+    )
 
 
 def analyze_summary_file(
@@ -415,9 +440,13 @@ def analyze_summary_file(
     instance_name = summary_path.stem.replace("_summary", "")
     fixed_notebook = resolve_fixed_notebook(benchmark_dir, instance_name)
     original_cells = extract_original_code_cells(summary.get("original_notebook", []))
-    final_cells = apply_code_changes(original_cells, summary.get("code_changes", []) or [])
+    final_cells = apply_code_changes(
+        original_cells, summary.get("code_changes", []) or []
+    )
     fixed_cells = load_notebook_code_cells(fixed_notebook)
-    aligned_fixed_cells = align_fixed_cells_to_original(original_cells, fixed_cells, config)
+    aligned_fixed_cells = align_fixed_cells_to_original(
+        original_cells, fixed_cells, config
+    )
     comparison_limit = len(original_cells)
 
     reference_changes = compute_changed_cells(
@@ -449,7 +478,9 @@ def analyze_summary_file(
 
     relative_path = Path(safe_relative_path(summary_path, results_root))
     relative_parts = relative_path.parts
-    run_name = next((part for part in relative_parts if part.startswith("run_")), "unknown")
+    run_name = next(
+        (part for part in relative_parts if part.startswith("run_")), "unknown"
+    )
     model_name = relative_parts[1] if len(relative_parts) > 1 else "unknown"
     result_group = relative_parts[0] if relative_parts else "unknown"
 
@@ -489,7 +520,9 @@ def analyze_results_directory(
 
     for summary_path in sorted(results_root.glob("**/run_*/*_summary.json")):
         try:
-            record = analyze_summary_file(summary_path, results_root, benchmark_dir, config)
+            record = analyze_summary_file(
+                summary_path, results_root, benchmark_dir, config
+            )
         except Exception as exc:
             errors.append(
                 {
@@ -505,9 +538,13 @@ def analyze_results_directory(
     classification_counts = {
         VALID: sum(1 for record in records if record["classification"] == VALID),
         VALID_WITH_EXTRA_CHANGES: sum(
-            1 for record in records if record["classification"] == VALID_WITH_EXTRA_CHANGES
+            1
+            for record in records
+            if record["classification"] == VALID_WITH_EXTRA_CHANGES
         ),
-        PLAUSIBLE: sum(1 for record in records if record["classification"] == PLAUSIBLE),
+        PLAUSIBLE: sum(
+            1 for record in records if record["classification"] == PLAUSIBLE
+        ),
     }
 
     return {
@@ -543,9 +580,13 @@ def build_group_report(
     classification_counts = {
         VALID: f"{count_valid} ({(count_valid/ len(records) * 100 if records else 0):.2f}%)",
         VALID_WITH_EXTRA_CHANGES: sum(
-            1 for record in records if record["classification"] == VALID_WITH_EXTRA_CHANGES
+            1
+            for record in records
+            if record["classification"] == VALID_WITH_EXTRA_CHANGES
         ),
-        PLAUSIBLE: sum(1 for record in records if record["classification"] == PLAUSIBLE),
+        PLAUSIBLE: sum(
+            1 for record in records if record["classification"] == PLAUSIBLE
+        ),
     }
 
     metadata = dict(base_report.get("metadata", {}))
@@ -595,17 +636,23 @@ def main() -> None:
             errors=group_errors,
         )
 
-        output_path = RESULTS_DIR / config_name / model_name / "analysis" / "fixed_notebook_comparison.json"
+        output_path = (
+            RESULTS_DIR
+            / config_name
+            / model_name
+            / "analysis"
+            / "fixed_notebook_comparison.json"
+        )
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(json.dumps(group_report, indent=2), encoding="utf-8")
 
         total_written += 1
         total_compared += len(group_records)
-        print(
-            f"Wrote {len(group_records)} summaries to {output_path}"
-        )
+        print(f"Wrote {len(group_records)} summaries to {output_path}")
 
-    print(f"Compared {total_compared} submitted summaries across {total_written} model reports")
+    print(
+        f"Compared {total_compared} submitted summaries across {total_written} model reports"
+    )
 
 
 if __name__ == "__main__":

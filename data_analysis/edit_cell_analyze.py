@@ -60,7 +60,11 @@ class EditCellAnalyzer:
             tree = ast.parse(code)
             calls: list[str] = []
             for node in ast.walk(tree):
-                if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "print":
+                if (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id == "print"
+                ):
                     src = ast.get_source_segment(code, node)
                     calls.append(self.normalize_print_source(src or "print()"))
             return Counter(calls)
@@ -68,14 +72,20 @@ class EditCellAnalyzer:
             lines = []
             for line in code.splitlines():
                 stripped = line.strip()
-                if stripped and not stripped.startswith("#") and re.search(r"\bprint\s*\(", stripped):
+                if (
+                    stripped
+                    and not stripped.startswith("#")
+                    and re.search(r"\bprint\s*\(", stripped)
+                ):
                     lines.append(self.normalize_print_source(stripped))
             return Counter(lines)
 
     def short_instance_name(self, relative_path: Path) -> str:
         """Return path in requested style: run_x/filename.json when possible."""
         parts = relative_path.parts
-        run_idx = next((i for i, part in enumerate(parts) if part.startswith("run_")), None)
+        run_idx = next(
+            (i for i, part in enumerate(parts) if part.startswith("run_")), None
+        )
         if run_idx is not None and run_idx + 1 < len(parts):
             return f"{parts[run_idx]}/{parts[-1]}"
         return str(relative_path).replace("\\", "/")
@@ -104,7 +114,9 @@ class EditCellAnalyzer:
         except SyntaxError:
             return []
 
-    def extract_print_call_counter_and_raw(self, code: str) -> tuple[Counter[str], dict[str, list[str]]]:
+    def extract_print_call_counter_and_raw(
+        self, code: str
+    ) -> tuple[Counter[str], dict[str, list[str]]]:
         """Return print call multiset and raw-source mapping keyed by normalized print source."""
         if not code:
             return Counter(), {}
@@ -115,7 +127,11 @@ class EditCellAnalyzer:
         try:
             tree = ast.parse(code)
             for node in ast.walk(tree):
-                if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "print":
+                if (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id == "print"
+                ):
                     src = ast.get_source_segment(code, node) or "print()"
                     key = self.normalize_print_source(src)
                     counter[key] += 1
@@ -124,7 +140,11 @@ class EditCellAnalyzer:
         except SyntaxError:
             for line in code.splitlines():
                 stripped = line.strip()
-                if stripped and not stripped.startswith("#") and re.search(r"\bprint\s*\(", stripped):
+                if (
+                    stripped
+                    and not stripped.startswith("#")
+                    and re.search(r"\bprint\s*\(", stripped)
+                ):
                     key = self.normalize_print_source(stripped)
                     counter[key] += 1
                     raw_map.setdefault(key, []).append(stripped)
@@ -150,7 +170,12 @@ class EditCellAnalyzer:
                 data = json.loads(file_path.read_text(encoding="utf-8"))
             except Exception as exc:
                 self.results["metadata"]["instances_without_cell_edits"].append(
-                    {"file": str(file_path.relative_to(self.root_directory)).replace("\\", "/"), "error": str(exc)}
+                    {
+                        "file": str(file_path.relative_to(self.root_directory)).replace(
+                            "\\", "/"
+                        ),
+                        "error": str(exc),
+                    }
                 )
                 continue
 
@@ -183,8 +208,12 @@ class EditCellAnalyzer:
                 if 0 <= cell_index < len(original_notebook):
                     original_code = self.parse_cell_code(original_notebook[cell_index])
 
-                original_prints, _ = self.extract_print_call_counter_and_raw(original_code)
-                changed_prints, changed_raw_map = self.extract_print_call_counter_and_raw(changed_code)
+                original_prints, _ = self.extract_print_call_counter_and_raw(
+                    original_code
+                )
+                changed_prints, changed_raw_map = (
+                    self.extract_print_call_counter_and_raw(changed_code)
+                )
 
                 newly_added_prints = changed_prints - original_prints
                 if sum(newly_added_prints.values()) > 0:
@@ -207,7 +236,9 @@ class EditCellAnalyzer:
                             }
                         )
 
-                original_try_excepts = set(self.extract_try_except_blocks(original_code))
+                original_try_excepts = set(
+                    self.extract_try_except_blocks(original_code)
+                )
                 changed_try_excepts = set(self.extract_try_except_blocks(changed_code))
                 newly_added_try_excepts = changed_try_excepts - original_try_excepts
 
@@ -227,7 +258,9 @@ class EditCellAnalyzer:
             edits_by_instance.append((instance_name, file_edits))
             unique_cell_edits_per_file.append(file_unique_cells)
             edits_with_added_prints_per_file.append(file_added_print_edit_count)
-            edits_with_added_try_excepts_per_file.append(file_added_try_except_edit_count)
+            edits_with_added_try_excepts_per_file.append(
+                file_added_try_except_edit_count
+            )
 
             run_accumulator.setdefault(
                 run_name,
@@ -240,28 +273,42 @@ class EditCellAnalyzer:
             )
             run_accumulator[run_name]["edits"].append(file_edits)
             run_accumulator[run_name]["unique_cells"].append(file_unique_cells)
-            run_accumulator[run_name]["added_print_edits"].append(file_added_print_edit_count)
-            run_accumulator[run_name]["added_try_except_edits"].append(file_added_try_except_edit_count)
+            run_accumulator[run_name]["added_print_edits"].append(
+                file_added_print_edit_count
+            )
+            run_accumulator[run_name]["added_try_except_edits"].append(
+                file_added_try_except_edit_count
+            )
 
             if file_edits == 0:
-                self.results["metadata"]["instances_without_cell_edits"].append(instance_name)
+                self.results["metadata"]["instances_without_cell_edits"].append(
+                    instance_name
+                )
 
         files_without = self.results["metadata"]["instances_without_cell_edits"]
         self.results["metadata"]["instances_without_cell_edits"] = sorted(files_without)
-        self.results["metadata"]["files_with_cell_edits"] = (
-            self.results["metadata"]["files_analyzed"] - len(files_without)
-        )
+        self.results["metadata"]["files_with_cell_edits"] = self.results["metadata"][
+            "files_analyzed"
+        ] - len(files_without)
 
         divisor = len(edits_per_file) if edits_per_file else 1
-        self.results["summary"]["avg_cell_edits"] = round(sum(edits_per_file) / divisor, 4)
+        self.results["summary"]["avg_cell_edits"] = round(
+            sum(edits_per_file) / divisor, 4
+        )
         max_cell_edits = max(edits_per_file) if edits_per_file else 0
         self.results["summary"]["max_cell_edits"] = max_cell_edits
         self.results["summary"]["max_cell_edit_instances"] = (
-            sorted(instance for instance, edits in edits_by_instance if edits == max_cell_edits)
+            sorted(
+                instance
+                for instance, edits in edits_by_instance
+                if edits == max_cell_edits
+            )
             if max_cell_edits > 1
             else []
         )
-        self.results["summary"]["avg_unique_cell_edits"] = round(sum(unique_cell_edits_per_file) / divisor, 4)
+        self.results["summary"]["avg_unique_cell_edits"] = round(
+            sum(unique_cell_edits_per_file) / divisor, 4
+        )
         self.results["summary"]["avg_cell_edits_with_added_prints"] = round(
             sum(edits_with_added_prints_per_file) / divisor,
             4,
@@ -270,17 +317,27 @@ class EditCellAnalyzer:
             sum(edits_with_added_try_excepts_per_file) / divisor,
             4,
         )
-        self.results["summary"]["examples_cell_edits_with_added_prints"] = examples_with_added_prints
-        self.results["summary"]["examples_cell_edits_with_added_try_excepts"] = examples_with_added_try_excepts
+        self.results["summary"][
+            "examples_cell_edits_with_added_prints"
+        ] = examples_with_added_prints
+        self.results["summary"][
+            "examples_cell_edits_with_added_try_excepts"
+        ] = examples_with_added_try_excepts
 
         by_run: dict[str, dict[str, float]] = {}
         for run_name, values in sorted(run_accumulator.items()):
             run_divisor = len(values["edits"]) if values["edits"] else 1
             by_run[run_name] = {
                 "avg_cell_edits": round(sum(values["edits"]) / run_divisor, 4),
-                "avg_unique_cell_edits": round(sum(values["unique_cells"]) / run_divisor, 4),
-                "avg_cell_edits_with_added_prints": round(sum(values["added_print_edits"]) / run_divisor, 4),
-                "avg_cell_edits_with_added_try_excepts": round(sum(values["added_try_except_edits"]) / run_divisor, 4),
+                "avg_unique_cell_edits": round(
+                    sum(values["unique_cells"]) / run_divisor, 4
+                ),
+                "avg_cell_edits_with_added_prints": round(
+                    sum(values["added_print_edits"]) / run_divisor, 4
+                ),
+                "avg_cell_edits_with_added_try_excepts": round(
+                    sum(values["added_try_except_edits"]) / run_divisor, 4
+                ),
             }
         self.results["summary"]["by_run"] = by_run
 
@@ -303,7 +360,9 @@ def main(target_dir: Path) -> None:
 
     print("Analysis complete")
     print(f"files_analyzed: {results['metadata']['files_analyzed']}")
-    print(f"files_without_cell_edits: {len(results['metadata']['instances_without_cell_edits'])}")
+    print(
+        f"files_without_cell_edits: {len(results['metadata']['instances_without_cell_edits'])}"
+    )
     print(f"avg_cell_edits: {results['summary']['avg_cell_edits']}")
     print(f"max_cell_edits: {results['summary']['max_cell_edits']}")
     if results["summary"]["max_cell_edit_instances"]:
@@ -311,6 +370,10 @@ def main(target_dir: Path) -> None:
         for instance in results["summary"]["max_cell_edit_instances"]:
             print(f"  - {instance}")
     print(f"avg_unique_cell_edits: {results['summary']['avg_unique_cell_edits']}")
-    print(f"avg_cell_edits_with_added_prints: {results['summary']['avg_cell_edits_with_added_prints']}")
-    print(f"avg_cell_edits_with_added_try_excepts: {results['summary']['avg_cell_edits_with_added_try_excepts']}")
+    print(
+        f"avg_cell_edits_with_added_prints: {results['summary']['avg_cell_edits_with_added_prints']}"
+    )
+    print(
+        f"avg_cell_edits_with_added_try_excepts: {results['summary']['avg_cell_edits_with_added_try_excepts']}"
+    )
     print(f"Saved: {output_file}")

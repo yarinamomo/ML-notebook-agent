@@ -21,7 +21,9 @@ def load_and_parse_notebook(nb_path: Path, parse_mode: str) -> NotebookNode:
             exec_count = cell.get("execution_count", None)
             first_line = _first_line(cell)
             is_reexecute = "[reexecute]" in first_line
-            is_valid_exec_count = exec_count is not None and (not is_buggy_mode or exec_count <= buggy_exec_count)  # type: ignore[operator]
+            is_valid_exec_count = exec_count is not None and (
+                not is_buggy_mode or exec_count <= buggy_exec_count
+            )  # type: ignore[operator]
             if is_reexecute or is_valid_exec_count:
                 selected.append(cell)
         nb.cells[:] = sorted(selected, key=lambda cell: cell["execution_count"])

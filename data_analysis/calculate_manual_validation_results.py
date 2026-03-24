@@ -23,9 +23,13 @@ def compute_manual_validation(sampled_instances: dict[str, Any]) -> dict[str, An
 
     total = len(labels)
     valid_count = sum(
-        1 for label in labels if isinstance(label, str) and label.strip().lower() == "valid"
+        1
+        for label in labels
+        if isinstance(label, str) and label.strip().lower() == "valid"
     )
-    validation_outcome = f"{valid_count}/{total} ({round((valid_count / total * 100.0), 2)}%)"
+    validation_outcome = (
+        f"{valid_count}/{total} ({round((valid_count / total * 100.0), 2)}%)"
+    )
     return {"status": status, "validation_outcome": validation_outcome}
 
 
@@ -35,7 +39,13 @@ def update_manual_validation_in_file(
     results_root: str | Path = "results",
 ) -> Path:
     """Update manual validation metrics in the labeled sampled-instances JSON file."""
-    json_path = Path(results_root) / setting / model / "analysis" / "stratified_sampled_instances_labeled.json"
+    json_path = (
+        Path(results_root)
+        / setting
+        / model
+        / "analysis"
+        / "stratified_sampled_instances_labeled.json"
+    )
     if not json_path.exists():
         raise FileNotFoundError(f"File not found: {json_path}")
 
@@ -64,7 +74,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Calculate and store manual validation percentage for sampled instances.",
     )
-    parser.add_argument("--setting", required=True, help="Result setting folder under results/.")
+    parser.add_argument(
+        "--setting", required=True, help="Result setting folder under results/."
+    )
     parser.add_argument(
         "--model",
         default="glm-4.7-355b",

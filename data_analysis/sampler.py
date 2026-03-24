@@ -23,6 +23,7 @@ def load_exact_matches(comparison_json_path: Path):
                 excluded.add(f"{run}/{instance}")
     return excluded
 
+
 def load_already_sampled_instances(sampled_json_path: Path):
     """Load already sampled instances and their existing validation labels."""
     if not sampled_json_path or not sampled_json_path.exists():
@@ -36,6 +37,7 @@ def load_already_sampled_instances(sampled_json_path: Path):
         return {}
     return sampled_instances
 
+
 def calculate_sample_size(population_size, confidence_level=0.95, margin_error=0.05):
     """Calculate sample size for statistical sampling"""
     if population_size <= 0:
@@ -43,21 +45,22 @@ def calculate_sample_size(population_size, confidence_level=0.95, margin_error=0
 
     # Z-score for 95% confidence level
     z_score = 1.96 if confidence_level == 0.95 else 1.645
-    
+
     # Formula: n = (Z^2 * p * (1-p)) / E^2
     # Using p = 0.5 for maximum variability (worst case)
     # Using p = 0.8 based on observed success rate (on 22 samples) to get a more realistic sample size
     p = 0.8
-    numerator = (z_score ** 2) * p * (1 - p)
-    denominator = margin_error ** 2
-    
+    numerator = (z_score**2) * p * (1 - p)
+    denominator = margin_error**2
+
     # Sample size for infinite population
     n_infinite = numerator / denominator
-    
+
     # Adjust for finite population
     n_adjusted = n_infinite / (1 + ((n_infinite - 1) / population_size))
-    
+
     return math.ceil(n_adjusted)
+
 
 def stratify_sample_on_library(instances, sample_size):
     """Stratify sample based on libraries (run_x/library_x) in success_instances, output a list of sampled instances (run_x/library_x)"""
@@ -69,7 +72,9 @@ def stratify_sample_on_library(instances, sample_size):
 
     def extract_library(instance):
         instance_name = instance.split("/", 1)[1] if "/" in instance else instance
-        return instance_name.rsplit("_", 1)[0] if "_" in instance_name else instance_name
+        return (
+            instance_name.rsplit("_", 1)[0] if "_" in instance_name else instance_name
+        )
 
     library_buckets = defaultdict(list)
     for instance in instances:
@@ -82,7 +87,9 @@ def stratify_sample_on_library(instances, sample_size):
     }
 
     diff = sample_size - sum(allocations.values())
-    libs_by_size = sorted(library_buckets, key=lambda lib: len(library_buckets[lib]), reverse=True)
+    libs_by_size = sorted(
+        library_buckets, key=lambda lib: len(library_buckets[lib]), reverse=True
+    )
     i = 0
     while diff != 0 and libs_by_size:
         lib = libs_by_size[i % len(libs_by_size)]
@@ -105,16 +112,17 @@ def stratify_sample_on_library(instances, sample_size):
     return sampled
 
 
-def main(target_setting: str, if_random_sampling = True, random_sampling_config = None,
-         sample_size = 20, random_seed = 42):
-
+def main(
+    target_setting: str,
+    if_random_sampling=True,
+    random_sampling_config=None,
+    sample_size=20,
+    random_seed=42,
+):
     random.seed(random_seed)
 
     if if_random_sampling and (random_sampling_config is None):
-        random_sampling_config = {
-            "confidence_level": 0.95,
-            "margin_error": 0.05
-        }
+        random_sampling_config = {"confidence_level": 0.95, "margin_error": 0.05}
 
     summary_path = Path(target_setting) / "overall_summary.json"
 
@@ -127,7 +135,9 @@ def main(target_setting: str, if_random_sampling = True, random_sampling_config 
         .get("success_instances", [])
     )
 
-    already_sampled_path = summary_path.parent / "analysis" / "stratified_sampled_instances_labeled.json"
+    already_sampled_path = (
+        summary_path.parent / "analysis" / "stratified_sampled_instances_labeled.json"
+    )
     already_sampled_instances = load_already_sampled_instances(already_sampled_path)
     already_sampled_keys = set(already_sampled_instances.keys())
 
@@ -139,21 +149,28 @@ def main(target_setting: str, if_random_sampling = True, random_sampling_config 
             random_sampling_config["confidence_level"],
             random_sampling_config["margin_error"],
         )
-        print(f"Calculated sample size: {target_sample_size} for population size: {population_size}")
+        print(
+            f"Calculated sample size: {target_sample_size} for population size: {population_size}"
+        )
     else:
-        print(f"Use predefined sample size: {target_sample_size} for population size: {population_size}")
+        print(
+            f"Use predefined sample size: {target_sample_size} for population size: {population_size}"
+        )
 
     # Already sampled instances are part of the final sample size.
     # Draw only the additional amount needed to reach target_sample_size.
     needed_new_samples = max(0, target_sample_size - len(already_sampled_keys))
     remaining_candidates = [
-        item for item in all_success_instances
-        if item not in already_sampled_keys
+        item for item in all_success_instances if item not in already_sampled_keys
     ]
-    sampled_instances = stratify_sample_on_library(remaining_candidates, needed_new_samples)
+    sampled_instances = stratify_sample_on_library(
+        remaining_candidates, needed_new_samples
+    )
 
     if needed_new_samples == 0:
-        print("Already sampled instances already meet/exceed target sample size. No new samples drawn.")
+        print(
+            "Already sampled instances already meet/exceed target sample size. No new samples drawn."
+        )
     else:
         print(
             f"Already sampled: {len(already_sampled_keys)}. "
@@ -162,8 +179,12 @@ def main(target_setting: str, if_random_sampling = True, random_sampling_config 
         )
 
     def sort_key(instance):
-        run_part, item_part = instance.split("/", 1) if "/" in instance else ("run_0", instance)
-        run_num = int(run_part.split("_")[-1]) if run_part.split("_")[-1].isdigit() else 0
+        run_part, item_part = (
+            instance.split("/", 1) if "/" in instance else ("run_0", instance)
+        )
+        run_num = (
+            int(run_part.split("_")[-1]) if run_part.split("_")[-1].isdigit() else 0
+        )
         library = item_part.rsplit("_", 1)[0] if "_" in item_part else item_part
         idx_str = item_part.rsplit("_", 1)[-1] if "_" in item_part else "0"
         item_idx = int(idx_str) if idx_str.isdigit() else 0
@@ -179,19 +200,22 @@ def main(target_setting: str, if_random_sampling = True, random_sampling_config 
 
     sorted_instance_keys = sorted(final_sampled_instances.keys(), key=sort_key)
 
-    fixed_comparison_path = Path(target_setting) / "analysis" / "fixed_notebook_comparison.json"
+    fixed_comparison_path = (
+        Path(target_setting) / "analysis" / "fixed_notebook_comparison.json"
+    )
     exact_matches = load_exact_matches(fixed_comparison_path)
 
     # Auto-fill exact matches to "valid" only when no manual label exists.
     for instance in sorted_instance_keys:
         existing_label = final_sampled_instances.get(instance)
-        if (existing_label is None or str(existing_label).strip() == "") and instance in exact_matches:
+        if (
+            existing_label is None or str(existing_label).strip() == ""
+        ) and instance in exact_matches:
             final_sampled_instances[instance] = "valid"
 
     ordered_sampled_instances = {
         instance: final_sampled_instances[instance] for instance in sorted_instance_keys
     }
-
 
     output = {}
     if if_random_sampling:
@@ -214,17 +238,20 @@ def main(target_setting: str, if_random_sampling = True, random_sampling_config 
 
     print(f"Saved stratified sample to: {output_path}")
 
+
 if __name__ == "__main__":
     random_seed = 42
-    
+
     if_random_sampling = True
-    random_sampling_config = {
-        "confidence_level": 0.95,
-        "margin_error": 0.05
-    }
+    random_sampling_config = {"confidence_level": 0.95, "margin_error": 0.05}
     # if_random_sampling = False
     # sample_size = 20
-    
+
     target_setting = "results/agent/glm-4.7-355b"
 
-    main(target_setting = target_setting, if_random_sampling = if_random_sampling, random_sampling_config = random_sampling_config, random_seed = random_seed)
+    main(
+        target_setting=target_setting,
+        if_random_sampling=if_random_sampling,
+        random_sampling_config=random_sampling_config,
+        random_seed=random_seed,
+    )

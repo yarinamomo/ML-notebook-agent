@@ -6,17 +6,19 @@ Then run this to set up environment variables with API keys.
 
 from pathlib import Path
 
-def load_env():    
+
+def load_env():
     env_file = Path(__file__).parent / ".env"
-    
+
     if not env_file.exists():
         print("❌ No .env file found")
         return False
-    
+
     # Load .env file
     from dotenv import load_dotenv
+
     load_dotenv(env_file)
-    
+
     print("✅ Environment configured correctly")
     return True
 
