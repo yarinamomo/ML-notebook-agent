@@ -1,9 +1,9 @@
 """Helpers for parsing notebook operation commands and command detection."""
 
 import ast
+import re
 from dataclasses import dataclass
 from enum import Enum
-import re
 from typing import Any
 
 

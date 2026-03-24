@@ -1,19 +1,20 @@
+import threading
+import time
+from contextlib import contextmanager
+from typing import Callable, Iterator
+
 from rich.console import Console, Group
 from rich.live import Live
 from rich.panel import Panel
 from rich.progress import (
+    BarColumn,
     Progress,
     SpinnerColumn,
-    BarColumn,
     TaskID,
     TextColumn,
     TimeElapsedColumn,
 )
 from rich.text import Text
-from contextlib import contextmanager
-from typing import Callable, Iterator
-import threading
-import time
 
 console = Console()
 status_renderable = Text("")

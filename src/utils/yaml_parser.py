@@ -4,13 +4,13 @@ Handles configuration loading, parsing, and CLI overrides.
 """
 
 import copy
-import os
 from pathlib import Path
 from typing import Any
 
 import yaml
 from dotenv import load_dotenv
 from minisweagent.config import get_config_path
+
 from src.utils.log import logger
 
 

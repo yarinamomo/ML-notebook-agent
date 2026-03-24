@@ -1,7 +1,7 @@
 """Unit tests for UiAgent error handling around sandbox and notebook environment failures."""
 
-from contextlib import nullcontext
 import time
+from contextlib import nullcontext
 from types import SimpleNamespace
 
 import pytest

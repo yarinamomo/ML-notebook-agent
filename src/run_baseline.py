@@ -16,14 +16,13 @@ from typing import Optional, cast
 import litellm
 from jinja2 import StrictUndefined, Template
 
-from src.notebook_environment import NotebookEnvironment
 from src.CustomToolLitellmModel import CustomToolLitellmModel
+from src.notebook_environment import NotebookEnvironment
 from src.notebook_tools import EDIT_CELL_TOOL
+from src.run_agent import get_instance_summary_path, get_instance_trajectory_path
 from src.utils.format_nb_cells import format_cell_source_for_llm
 from src.utils.log import logger
 from src.utils.summary_util import build_summary
-from src.run_agent import get_instance_summary_path, get_instance_trajectory_path
-
 
 # ---------------------------------------------------------------------------
 # Baseline model: only exposes edit_cell to the LLM

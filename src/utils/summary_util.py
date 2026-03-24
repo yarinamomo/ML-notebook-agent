@@ -4,10 +4,10 @@ Parses the message array to extract LLM responses, operations, and code changes.
 """
 
 from datetime import datetime
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from minisweagent.agents.default import DefaultAgent
+    pass
 
 
 def extract_reasoning(msg: dict) -> str:

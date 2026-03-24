@@ -1,6 +1,6 @@
-from io import StringIO
 import re
 import tokenize
+from io import StringIO
 from typing import List, Optional, cast
 
 from nbformat import NotebookNode

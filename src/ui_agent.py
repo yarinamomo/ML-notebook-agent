@@ -1,13 +1,14 @@
 import json
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING, override
 
 from minisweagent.agents.default import DefaultAgent
 from minisweagent.exceptions import InterruptAgentFlow
-from src.utils.format_nb_cells import format_cell_source_for_llm
+
 import src.utils.ui as ui
+from src.utils.format_nb_cells import format_cell_source_for_llm
 from src.utils.summary_util import build_summary, extract_reasoning, find_action
-from typing import override, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.notebook_environment import NotebookEnvironment

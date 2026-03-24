@@ -5,21 +5,21 @@ This module creates an environment adapter that allows mini-swe-agent to work
 with the self-defined Docker-based Jupyter notebook sandbox.
 """
 
-from dataclasses import dataclass
-from typing import Any, Optional, TypedDict, Literal, cast
 from pathlib import Path
+from typing import Any, Literal, Optional, TypedDict, cast
+
+from minisweagent.exceptions import InterruptAgentFlow, Submitted
 from pydantic import BaseModel
 
-from minisweagent.exceptions import Submitted, InterruptAgentFlow
-from src.utils.nb_types import CellExecutionResult, ErrorOutput
 from src.utils.format_nb_cells import (
-    format_exec_result_for_llm,
     format_cell_source_for_llm,
+    format_exec_result_for_llm,
     format_initial_notebook,
 )
+from src.utils.log import logger
+from src.utils.nb_types import CellExecutionResult, ErrorOutput
 
 from .benchmark import BenchmarkProblem
-from src.utils.log import logger
 
 
 class EnvironmentResult(TypedDict):

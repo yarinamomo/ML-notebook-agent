@@ -4,19 +4,21 @@ Unit tests for DockerSandbox class.
 Tests core functionality with mocked Docker and WebSocket components.
 """
 
-import pytest
 import json
 from typing import cast
-from unittest.mock import Mock, MagicMock, patch, call, PropertyMock
+from unittest.mock import Mock, PropertyMock, patch
+
+import pytest
+
 from src.sandbox import DockerSandbox
-from src.utils.retry_sandbox import retry_on_failure, check_websocket_connected
 from src.ui_agent import EnvironmentUnavailable
 from src.utils.nb_types import (
-    StreamOutput,
-    ExecuteResultOutput,
-    ErrorOutput,
     CellExecutionResult,
+    ErrorOutput,
+    ExecuteResultOutput,
+    StreamOutput,
 )
+from src.utils.retry_sandbox import check_websocket_connected, retry_on_failure
 
 
 class TestDockerSandboxInit:

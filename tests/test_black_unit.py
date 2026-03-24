@@ -6,6 +6,7 @@ Tests verify Black is properly installed, configured, and accessible.
 
 import subprocess
 from pathlib import Path
+
 import pytest
 
 

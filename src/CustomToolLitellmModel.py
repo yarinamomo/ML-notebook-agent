@@ -1,15 +1,14 @@
-import logging
-
 import litellm
 from minisweagent.models.litellm_model import LitellmModel
 
-# Configure logging
-from src.utils.log import logger
 from src.notebook_tools import (
     NOTEBOOK_TOOLS,
     parse_notebook_tool_actions,
     parse_tool_calls_from_content,
 )
+
+# Configure logging
+from src.utils.log import logger
 
 
 class CustomToolLitellmModel(LitellmModel):

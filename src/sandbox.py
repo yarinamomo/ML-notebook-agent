@@ -1,17 +1,18 @@
-from typing import Optional, cast, Dict, Any
-import time
-import requests
-import docker
-import websocket
+import datetime
 import json
-import uuid
+import os
 import threading
-from functools import wraps
+import time
+import uuid
+from typing import Any, Dict, Optional
+
+import docker
+import requests
+import websocket
+
 from src.utils.log import logger
 from src.utils.nb_types import CellExecutionResult
 from src.utils.retry_sandbox import check_websocket_connected, retry_on_failure
-import os
-import datetime
 
 
 class DockerSandbox:
@@ -288,7 +289,7 @@ class DockerSandbox:
 
                     try:
                         self._interrupt_kernel()
-                    except Exception as e:
+                    except Exception:
                         logger.exception("Failed to interrupt kernel")
 
                     # Wait a bit for interrupt to take effect

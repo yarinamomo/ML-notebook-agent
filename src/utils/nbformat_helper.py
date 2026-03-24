@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import List, cast
+
 from nbformat import NO_CONVERT, NotebookNode, read
+
 from src.utils.nb_types import CellExecutionResult, NotebookCell
 
 

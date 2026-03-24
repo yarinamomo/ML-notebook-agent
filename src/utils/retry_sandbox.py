@@ -4,9 +4,10 @@ Retry decorators for sandbox operations.
 
 import time
 from functools import wraps
-from typing import Callable, TYPE_CHECKING
-from src.utils.log import logger
+from typing import TYPE_CHECKING, Callable
+
 from src.ui_agent import EnvironmentUnavailable
+from src.utils.log import logger
 
 if TYPE_CHECKING:
     from src.sandbox import DockerSandbox

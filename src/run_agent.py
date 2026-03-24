@@ -2,10 +2,10 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from src.notebook_environment import NotebookEnvironment
 from src.CustomToolLitellmModel import CustomToolLitellmModel
-from src.utils.log import logger
+from src.notebook_environment import NotebookEnvironment
 from src.ui_agent import UiAgent
+from src.utils.log import logger
 
 
 def get_instance_trajectory_path(run_output_dir: Path, instance_name: str) -> Path:

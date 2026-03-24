@@ -5,14 +5,14 @@ Tests real Docker container and Jupyter kernel interactions.
 Requires the Docker image specified by the layered agent config to be available.
 """
 
+import logging
 import os
+import time
+from pathlib import Path
 
 import pytest
-import time
-import logging
-from pathlib import Path
+
 from src.sandbox import DockerSandbox
-from src.ui_agent import EnvironmentUnavailable
 from src.utils.log import logger
 from src.utils.yaml_parser import load_config
 

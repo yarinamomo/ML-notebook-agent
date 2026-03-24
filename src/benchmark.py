@@ -1,19 +1,20 @@
-from typing import List, Optional
-from pathlib import Path
+import copy
+import logging
 import os
 import shutil
 import time
-import copy
+from pathlib import Path
+from typing import List
 
 from nbformat import NotebookNode
+
+from src.sandbox import DockerSandbox
+from src.utils.nb_types import CellExecutionResult, NotebookCell
 from src.utils.nbformat_helper import (
     get_cell_source,
     load_and_parse_notebook,
     save_cells,
 )
-from src.utils.nb_types import CellExecutionResult, NotebookCell
-from src.sandbox import DockerSandbox
-import logging
 
 
 def setup_environment(src, dst):

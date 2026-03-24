@@ -1,7 +1,7 @@
 """Unit tests for UiAgent summary generation with summary_util integration."""
 
-from contextlib import nullcontext
 import json
+from contextlib import nullcontext
 from types import SimpleNamespace
 
 import pytest

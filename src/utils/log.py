@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 from rich.logging import RichHandler
+
 from src.utils.ui import console
 
 
