@@ -260,7 +260,7 @@ class TestKernelRestart:
 
     def test_restart_kernel(self, sandbox):
         """Test explicit kernel restart."""
-        original_kernel_id = sandbox.kernel_id
+        _original_kernel_id = sandbox.kernel_id
 
         # Restart the kernel
         sandbox.restart_kernel()
@@ -345,9 +345,6 @@ class TestOutputFormats:
         result = sandbox.run("import sys\nprint('stderr message', file=sys.stderr)")
 
         # Should have stream output (stderr)
-        stream_outputs = [
-            o for o in result["outputs"] if o.get("output_type") == "stream"
-        ]
         # stderr may be captured as well
         assert len(result["outputs"]) > 0
 
