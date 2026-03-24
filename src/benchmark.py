@@ -6,7 +6,11 @@ import time
 import copy
 
 from nbformat import NotebookNode
-from src.utils.nbformat_helper import get_cell_source, load_and_parse_notebook, save_cells
+from src.utils.nbformat_helper import (
+    get_cell_source,
+    load_and_parse_notebook,
+    save_cells,
+)
 from src.utils.nb_types import CellExecutionResult, NotebookCell
 from src.sandbox import DockerSandbox
 import logging
@@ -25,14 +29,15 @@ def setup_environment(src, dst):
 
     # Copy recursively
     shutil.copytree(src, dst)
-    
+
     # Ensure filesystem buffers are flushed (Unix only)
     if os.name != "nt" and hasattr(os, "sync"):
         os.sync()
 
+
 def _remove_directory_with_retry(path: Path, max_retries: int = 3, delay: float = 1.0):
     """Remove directory with retry logic for Docker mounted volumes.
-    
+
     Args:
         path: Directory path to remove
         max_retries: Number of retry attempts
@@ -47,41 +52,68 @@ def _remove_directory_with_retry(path: Path, max_retries: int = 3, delay: float 
                 return
         except OSError as e:
             if attempt < max_retries - 1:
-                logging.warning(f"Failed to remove {path} (attempt {attempt + 1}/{max_retries}), retrying in {delay}s: {e}")
+                logging.warning(
+                    f"Failed to remove {path} (attempt {attempt + 1}/{max_retries}), retrying in {delay}s: {e}"
+                )
                 time.sleep(delay)
             else:
                 raise
-    
+
     # Final check - if directory still exists, raise error
     if path.exists():
         raise OSError(f"Failed to remove directory {path} after {max_retries} attempts")
 
+
 # actual environment for the agent
 class BenchmarkProblem:
-    def __init__(self, sandbox_settings: dict, source_path: Path, output_dir: Path, problem_mode: str = "JunoBench_Buggy", docker_source_path: str = "docker_source", timeout: int = 600):
+    def __init__(
+        self,
+        sandbox_settings: dict,
+        source_path: Path,
+        output_dir: Path,
+        problem_mode: str = "JunoBench_Buggy",
+        docker_source_path: str = "docker_source",
+        timeout: int = 600,
+    ):
         self.source_path = source_path
-        self.docker_source_path = Path(docker_source_path).resolve() / f"sandbox_{sandbox_settings['port']}"
+        self.docker_source_path = (
+            Path(docker_source_path).resolve() / f"sandbox_{sandbox_settings['port']}"
+        )
         self.output_dir = output_dir
         setup_environment(self.source_path, self.docker_source_path)
         # Extract target_nb_instance from source_path
         target_nb_instance = self.source_path.name
-        self.problem_file = self.docker_source_path / f"{target_nb_instance}_reproduced.ipynb"
+        self.problem_file = (
+            self.docker_source_path / f"{target_nb_instance}_reproduced.ipynb"
+        )
         if not self.problem_file.exists():
-            raise FileNotFoundError(f"{target_nb_instance}_reproduced.ipynb not found in {self.docker_source_path}")
+            raise FileNotFoundError(
+                f"{target_nb_instance}_reproduced.ipynb not found in {self.docker_source_path}"
+            )
 
-        self.sandbox: DockerSandbox = DockerSandbox(mount_volume=str(self.docker_source_path), **sandbox_settings)
-        self.sandbox.start()  
+        self.sandbox: DockerSandbox = DockerSandbox(
+            mount_volume=str(self.docker_source_path), **sandbox_settings
+        )
+        self.sandbox.start()
         # self.sandbox.run("print(\"Hello World\")")
-        self.sandbox.run(f"import sys\nsys.modules['__main__'].__file__ = '/app/container/{target_nb_instance}_reproduced.ipynb'")
+        self.sandbox.run(
+            f"import sys\nsys.modules['__main__'].__file__ = '/app/container/{target_nb_instance}_reproduced.ipynb'"
+        )
 
-        self._initial_notebook = load_and_parse_notebook(self.problem_file, problem_mode)
+        self._initial_notebook = load_and_parse_notebook(
+            self.problem_file, problem_mode
+        )
         self._cells: List[NotebookCell] = copy.deepcopy(self._initial_notebook.cells)
         # for cell_info in self._cells:
         #     print(cell_info)
-        self._cell_states: dict[int, str] = dict()  # cell_id -> state (edited/unchanged)
-        self._exec_states: dict[int, CellExecutionResult] = dict()  # cell_id -> execution result
+        self._cell_states: dict[int, str] = (
+            dict()
+        )  # cell_id -> state (edited/unchanged)
+        self._exec_states: dict[int, CellExecutionResult] = (
+            dict()
+        )  # cell_id -> execution result
         # Store original cell contents for tracking true original state
-        self.timeout = timeout # TODO Move into sandbox settings.
+        self.timeout = timeout  # TODO Move into sandbox settings.
 
     def get_initial_notebook(self) -> NotebookNode:
         return self._initial_notebook
@@ -94,32 +126,54 @@ class BenchmarkProblem:
 
     def get_cell(self, index: int) -> NotebookCell:
         return self._safe_get_cell(index)
-    
+
     def edit_cell(self, index: int, new_content: str):
-        cell = self._safe_get_cell(index)        
+        cell = self._safe_get_cell(index)
         cell["source"] = new_content
         self._cell_states[index] = "edited"
-        self._exec_states.pop(index, None) # reset execution state since content changed
-        save_cells(self._cells, self._initial_notebook, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
+        self._exec_states.pop(
+            index, None
+        )  # reset execution state since content changed
+        save_cells(
+            self._cells,
+            self._initial_notebook,
+            self._cell_states,
+            self._exec_states,
+            self.source_path.name,
+            self.output_dir,
+        )
 
     def run_cell(self, index: int) -> CellExecutionResult:
-        result = self.sandbox.run( self._get_cell_source(index), timeout=self.timeout)
+        result = self.sandbox.run(self._get_cell_source(index), timeout=self.timeout)
         self._exec_states[index] = result
-        save_cells(self._cells, self._initial_notebook, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
+        save_cells(
+            self._cells,
+            self._initial_notebook,
+            self._cell_states,
+            self._exec_states,
+            self.source_path.name,
+            self.output_dir,
+        )
         return result
 
     def run_all(self) -> List[CellExecutionResult]:
         codes = [self._get_cell_source(i) for i in range(len(self._cells))]
 
         results = self.sandbox.run_all(codes, timeout=self.timeout)
-        
+
         # Update execution states
         for i, result in enumerate(results):
             self._exec_states[i] = result
-        
-        save_cells(self._cells, self._initial_notebook, self._cell_states, self._exec_states, self.source_path.name, self.output_dir)
-        return results
 
+        save_cells(
+            self._cells,
+            self._initial_notebook,
+            self._cell_states,
+            self._exec_states,
+            self.source_path.name,
+            self.output_dir,
+        )
+        return results
 
     def execute_python_command(self, command: str):
         if not self._cells:
@@ -135,16 +189,20 @@ class BenchmarkProblem:
                 self.sandbox.stop()
             except Exception as e:
                 logging.warning(f"Error stopping sandbox: {e}")
-        
+
         # Give Docker time to release volume locks
         time.sleep(0.5)
-        
+
         # Clean up the mount path (docker_source_path)
         if self.docker_source_path and self.docker_source_path.exists():
             try:
-                _remove_directory_with_retry(self.docker_source_path, max_retries=3, delay=1.0)
+                _remove_directory_with_retry(
+                    self.docker_source_path, max_retries=3, delay=1.0
+                )
             except Exception as e:
-                logging.warning(f"⚠️ Warning: Could not clean up mount path {self.docker_source_path}: {e}")
+                logging.warning(
+                    f"⚠️ Warning: Could not clean up mount path {self.docker_source_path}: {e}"
+                )
 
     def _safe_get_cell(self, index: int) -> NotebookCell:
         if 0 <= index < len(self._cells):

@@ -12,6 +12,7 @@ def get_instance_trajectory_path(run_output_dir: Path, instance_name: str) -> Pa
     """Construct the trajectory file path for a given instance."""
     return run_output_dir / f"{instance_name}.traj.json"
 
+
 def get_instance_summary_path(run_output_dir: Path, instance_name: str) -> Path:
     return run_output_dir / f"{instance_name}_summary.json"
 
@@ -22,18 +23,18 @@ def run_single_instance(
     output_dir: Path,
 ) -> tuple[str, Optional[str]]:
     """Run a single instance with a specific model and run number.
-    
+
     Returns:
         tuple: (exit_status, submission)
     """
     # Create model instance
     model = CustomToolLitellmModel(**config.get("model", {}))
-    
+
     # Create environment
     env = NotebookEnvironment(
         instance_name=instance_name,
         output_dir=output_dir,
-        **config.get("environment", {})
+        **config.get("environment", {}),
     )
 
     # Create and run agent
@@ -55,9 +56,9 @@ def run_single_instance(
         summary_path = get_instance_summary_path(output_dir, instance_name)
         agent.save_summary(summary_path)
         logger.info(f"Saved summary to: {summary_path}")
-        
+
         # Close environment
         env.close()
         time.sleep(2)  # Ensure clean shutdown
-    
+
     return exit_status, submission

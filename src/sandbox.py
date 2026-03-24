@@ -13,8 +13,17 @@ from src.utils.retry_sandbox import check_websocket_connected, retry_on_failure
 import os
 import datetime
 
+
 class DockerSandbox:
-    def __init__(self, image_name, base_url="http://127.0.0.1", port=8888, token="Super_Duper_Secret_Token", mount_volume=None, start_command=None):
+    def __init__(
+        self,
+        image_name,
+        base_url="http://127.0.0.1",
+        port=8888,
+        token="Super_Duper_Secret_Token",
+        mount_volume=None,
+        start_command=None,
+    ):
         self.image_name = image_name
         self.base_url = base_url
         self.port = port
@@ -44,10 +53,14 @@ class DockerSandbox:
             detach=True,
             tty=True,
             stdin_open=True,
-            volumes={self.mount_volume: {'bind': '/app/container', 'mode': 'rw'}} if self.mount_volume else None,
-            ports={'8888/tcp': self.port},
+            volumes=(
+                {self.mount_volume: {"bind": "/app/container", "mode": "rw"}}
+                if self.mount_volume
+                else None
+            ),
+            ports={"8888/tcp": self.port},
             command=self.start_command,
-            environment={"HOME": "/app/container"}
+            environment={"HOME": "/app/container"},
         )
 
         # Only set user on Unix systems to give write permissions to mounted volume without needing to change permissions on host
@@ -55,8 +68,7 @@ class DockerSandbox:
             docker_kwargs["user"] = f"{os.getuid()}:{os.getgid()}"
 
         self.container = self.docker_client.containers.run(
-            self.image_name,
-            **docker_kwargs
+            self.image_name, **docker_kwargs
         )
 
         # Wait until server is ready
@@ -70,7 +82,9 @@ class DockerSandbox:
         url = f"{self.base_url}:{self.port}/api/status"
         for _ in range(timeout):
             try:
-                r = requests.get(url, headers={"Authorization": f"Token {self.token}"}, timeout=2)
+                r = requests.get(
+                    url, headers={"Authorization": f"Token {self.token}"}, timeout=2
+                )
                 if r.status_code == 200:
                     return
             except Exception as exc:
@@ -85,21 +99,21 @@ class DockerSandbox:
                 f"{self.base_url}:{self.port}/api/kernels",
                 headers={"Authorization": f"Token {self.token}"},
                 json={},
-                timeout=10
+                timeout=10,
             )
             resp.raise_for_status()
             kernel_info = resp.json()
-            self.kernel_id = kernel_info['id']
+            self.kernel_id = kernel_info["id"]
             logger.info(f"Created kernel: {self.kernel_id}")
         except Exception as exc:
             logger.exception("Failed to create kernel")
             raise RuntimeError("Failed to create kernel") from exc
-    
+
     def _start_websocket(self):
         """Establish WebSocket connection to existing kernel."""
         if not self.kernel_id:
             raise RuntimeError("No kernel ID available for WebSocket connection")
-        
+
         try:
             # Connect WebSocket
             ws_url = f"ws://127.0.0.1:{self.port}/api/kernels/{self.kernel_id}/channels?token={self.token}"
@@ -107,20 +121,20 @@ class DockerSandbox:
                 ws_url,
                 on_message=self._on_ws_message,
                 on_error=self._on_ws_error,
-                on_close=self._on_ws_close
+                on_close=self._on_ws_close,
             )
-            
+
             # Run WebSocket in background thread
             self.ws_thread = threading.Thread(target=self.ws.run_forever, daemon=True)
             self.ws_thread.start()
-            
+
             # Wait for WebSocket to actually connect (not just started)
             self._wait_for_websocket_connection()
             logger.info("WebSocket connected for kernel %s", self.kernel_id)
         except Exception as exc:
             logger.exception("Failed to start WebSocket")
             raise RuntimeError("Failed to start WebSocket") from exc
-    
+
     def _wait_for_websocket_connection(self, timeout=10):
         """Wait for WebSocket to be properly connected."""
         start_time = time.time()
@@ -135,50 +149,62 @@ class DockerSandbox:
         """Handle incoming WebSocket messages from kernel."""
         try:
             msg = json.loads(message)
-            msg_type = msg.get('msg_type')
-            content = msg.get('content', {})
-            parent_msg_id = msg.get('parent_header', {}).get('msg_id')
-            
+            msg_type = msg.get("msg_type")
+            content = msg.get("content", {})
+            parent_msg_id = msg.get("parent_header", {}).get("msg_id")
+
             if parent_msg_id not in self.execution_results:
                 return
-            
+
             result = self.execution_results[parent_msg_id]
-            
+
             # Accumulate outputs from different message types
-            if msg_type == 'stream':
-                result['outputs'].append({
-                    'output_type': 'stream',
-                    'name': content.get('name', 'stdout'),
-                    'text': content.get('text', '')
-                })
-            elif msg_type == 'execute_result':
-                result['outputs'].append({
-                    'output_type': 'execute_result',
-                    'data': content.get('data', {}),
-                    'execution_count': content.get('execution_count')
-                })
-            elif msg_type == 'display_data':
-                result['outputs'].append({
-                    'output_type': 'display_data',
-                    'data': content.get('data', {}),
-                    'metadata': content.get('metadata', {})
-                })
-            elif msg_type == 'error':
-                result['outputs'].append({
-                    'output_type': 'error',
-                    'ename': content.get('ename', ''),
-                    'evalue': content.get('evalue', ''),
-                    'traceback': content.get('traceback', [])
-                })
-            elif msg_type == 'execute_reply':
-                result['status'] = content.get('status', 'unknown')
-                result['execution_count'] = content.get('execution_count')
-                result['done'] = True
-                logger.debug("Execution %s completed with status: %s", parent_msg_id, result['status'])
-                
+            if msg_type == "stream":
+                result["outputs"].append(
+                    {
+                        "output_type": "stream",
+                        "name": content.get("name", "stdout"),
+                        "text": content.get("text", ""),
+                    }
+                )
+            elif msg_type == "execute_result":
+                result["outputs"].append(
+                    {
+                        "output_type": "execute_result",
+                        "data": content.get("data", {}),
+                        "execution_count": content.get("execution_count"),
+                    }
+                )
+            elif msg_type == "display_data":
+                result["outputs"].append(
+                    {
+                        "output_type": "display_data",
+                        "data": content.get("data", {}),
+                        "metadata": content.get("metadata", {}),
+                    }
+                )
+            elif msg_type == "error":
+                result["outputs"].append(
+                    {
+                        "output_type": "error",
+                        "ename": content.get("ename", ""),
+                        "evalue": content.get("evalue", ""),
+                        "traceback": content.get("traceback", []),
+                    }
+                )
+            elif msg_type == "execute_reply":
+                result["status"] = content.get("status", "unknown")
+                result["execution_count"] = content.get("execution_count")
+                result["done"] = True
+                logger.debug(
+                    "Execution %s completed with status: %s",
+                    parent_msg_id,
+                    result["status"],
+                )
+
         except Exception as e:
             logger.exception("Error handling WebSocket message")
-            logger.exception(e) 
+            logger.exception(e)
 
     def _on_ws_error(self, ws, error):
         """Handle WebSocket errors."""
@@ -187,95 +213,113 @@ class DockerSandbox:
 
     def _on_ws_close(self, ws, close_status_code, close_msg):
         """Handle WebSocket closure."""
-        logger.info("WebSocket closed (code: %s, msg: %s)", close_status_code, close_msg)
+        logger.info(
+            "WebSocket closed (code: %s, msg: %s)", close_status_code, close_msg
+        )
         self.ws = None
 
     def _is_websocket_connected(self) -> bool:
         """Check if WebSocket is properly connected."""
         try:
             return (
-                self.ws is not None 
-                and self.ws.sock is not None 
+                self.ws is not None
+                and self.ws.sock is not None
                 and self.ws.sock.connected
             )
         except Exception:
             return False
 
     def _run_cell(self, code: str, timeout=30) -> CellExecutionResult:
-        code = f"import os\nos.chdir('/app/container')\n{code}" # TODO Is this necessary?
+        code = (
+            f"import os\nos.chdir('/app/container')\n{code}"  # TODO Is this necessary?
+        )
         msg_id = str(uuid.uuid4())
         self.execution_results[msg_id] = {
-            'status': 'pending',
-            'outputs': [],
-            'done': False,
-            'execution_count': None
+            "status": "pending",
+            "outputs": [],
+            "done": False,
+            "execution_count": None,
         }
-        
+
         try:
             # Send execute request
             execute_msg = {
-                'header': {
-                    'msg_id': msg_id,
-                    'msg_type': 'execute_request',
-                    'session': self.session_id,
-                    'username': 'user',
-                    'date': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+                "header": {
+                    "msg_id": msg_id,
+                    "msg_type": "execute_request",
+                    "session": self.session_id,
+                    "username": "user",
+                    "date": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[
+                        :-3
+                    ]
+                    + "Z",
                 },
-                'metadata': {},
-                'content': {
-                    'code': code,
-                    'silent': False,
-                    'store_history': True,
-                    'user_expressions': {},
-                    'allow_stdin': False,
-                    'stop_on_error': True
+                "metadata": {},
+                "content": {
+                    "code": code,
+                    "silent": False,
+                    "store_history": True,
+                    "user_expressions": {},
+                    "allow_stdin": False,
+                    "stop_on_error": True,
                 },
-                'buffers': [],
-                'parent_header': {}
+                "buffers": [],
+                "parent_header": {},
             }
-            
+
             with self.ws_lock:
                 if not self._is_websocket_connected():
-                    raise RuntimeError("WebSocket disconnected before sending execution request")
-                self.ws.send(json.dumps(execute_msg)) # type: ignore - ws is set due to lock and connection check
-            
+                    raise RuntimeError(
+                        "WebSocket disconnected before sending execution request"
+                    )
+                self.ws.send(json.dumps(execute_msg))  # type: ignore - ws is set due to lock and connection check
+
             logger.debug(f"Sent execute request: {msg_id}")
-            
+
             # Wait for execution to complete with timeout
             start_time = time.time()
-            while not self.execution_results[msg_id]['done']:
+            while not self.execution_results[msg_id]["done"]:
                 elapsed = time.time() - start_time
                 if elapsed > timeout:
-                    logger.warning("Execution timeout after %.1f seconds, interrupting kernel...", elapsed)
-                    
+                    logger.warning(
+                        "Execution timeout after %.1f seconds, interrupting kernel...",
+                        elapsed,
+                    )
+
                     try:
                         self._interrupt_kernel()
                     except Exception as e:
                         logger.exception("Failed to interrupt kernel")
-                    
+
                     # Wait a bit for interrupt to take effect
                     time.sleep(1)
-                    
+
                     # Mark as done to stop waiting
-                    self.execution_results[msg_id]['done'] = True
-                    self.execution_results[msg_id]['status'] = 'timeout'
-                    
-                    logger.info(f"Code execution exceeded {timeout} seconds and was interrupted")
+                    self.execution_results[msg_id]["done"] = True
+                    self.execution_results[msg_id]["status"] = "timeout"
+
+                    logger.info(
+                        f"Code execution exceeded {timeout} seconds and was interrupted"
+                    )
                 elif not self.ws:
-                    raise RuntimeError("WebSocket disconnected while waiting for execution result")
+                    raise RuntimeError(
+                        "WebSocket disconnected while waiting for execution result"
+                    )
                 time.sleep(0.05)
-            
+
             result = self.execution_results.pop(msg_id)
-            if result['status'] == 'timeout':
+            if result["status"] == "timeout":
                 # Clean up and restart kernel
-                result['outputs'].append({
-                    'output_type': 'error',
-                    'ename': 'TimeoutError',
-                    'evalue': f"Execution exceeded timeout of {timeout} seconds and was interrupted",
-                    'traceback': []
-                })
+                result["outputs"].append(
+                    {
+                        "output_type": "error",
+                        "ename": "TimeoutError",
+                        "evalue": f"Execution exceeded timeout of {timeout} seconds and was interrupted",
+                        "traceback": [],
+                    }
+                )
             return result
-            
+
         except Exception as exc:
             self.execution_results.pop(msg_id, None)
             logger.exception("Execution failed: %s", exc)
@@ -290,17 +334,19 @@ class DockerSandbox:
     def run_all(self, codes: list[str], timeout=30) -> list[CellExecutionResult]:
         # Restart kernel to ensure clean state
         self.restart_kernel()
-        
+
         results = []
         for i, code in enumerate(codes):
             result = self._run_cell(code, timeout)
             results.append(result)
-            
+
             # Stop on error or timeout
             if result["status"] in ["error", "timeout"]:
-                logger.info(f"Code snippet {i + 1}/{len(codes)} execution failed with status={result['status']}. Stopping run_all.")
+                logger.info(
+                    f"Code snippet {i + 1}/{len(codes)} execution failed with status={result['status']}. Stopping run_all."
+                )
                 break
-        
+
         return results
 
     def _interrupt_kernel(self):
@@ -308,11 +354,11 @@ class DockerSandbox:
         try:
             if not self.kernel_id:
                 raise RuntimeError("No kernel ID available")
-            
+
             resp = requests.post(
                 f"{self.base_url}:{self.port}/api/kernels/{self.kernel_id}/interrupt",
                 headers={"Authorization": f"Token {self.token}"},
-                timeout=5
+                timeout=5,
             )
             resp.raise_for_status()
             logger.info("Interrupt signal sent to kernel %s", self.kernel_id)
@@ -329,13 +375,13 @@ class DockerSandbox:
                 except Exception:
                     pass
                 self.ws = None
-        
+
         # Wait for thread to finish
         if self.ws_thread and self.ws_thread.is_alive():
             self.ws_thread.join(timeout=2)
-        
+
         logger.debug("WebSocket connection closed")
-    
+
     def _stop_kernel(self):
         """Delete kernel via REST API."""
         if self.kernel_id:
@@ -343,14 +389,14 @@ class DockerSandbox:
                 requests.delete(
                     f"{self.base_url}:{self.port}/api/kernels/{self.kernel_id}",
                     headers={"Authorization": f"Token {self.token}"},
-                    timeout=5
+                    timeout=5,
                 )
                 logger.info("Deleted kernel: %s", self.kernel_id)
             except Exception as e:
                 logger.warning("Failed to delete kernel: %s", e)
-            
+
             self.kernel_id = None
-    
+
     def restart_kernel(self):
         """Restart kernel and reconnect WebSocket."""
         try:
@@ -373,7 +419,7 @@ class DockerSandbox:
             self._stop_kernel()
         except Exception as e:
             logger.exception("Error stopping kernel: %s", e)
-        
+
         try:
             if self.container:
                 self.container.kill()

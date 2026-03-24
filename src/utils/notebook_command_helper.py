@@ -43,7 +43,11 @@ def parse_notebook_command(command: str) -> NotebookCommand:
         raise ValueError(f"Unknown notebook operation: {name}")
 
     kind = command_map[name]
-    if kind in {NotebookCommandType.GET_CELL_COUNT, NotebookCommandType.GET_CELLS, NotebookCommandType.RUN_ALL}:
+    if kind in {
+        NotebookCommandType.GET_CELL_COUNT,
+        NotebookCommandType.GET_CELLS,
+        NotebookCommandType.RUN_ALL,
+    }:
         if args_str:
             raise ValueError(f"{name}() does not take arguments")
         return NotebookCommand(kind=kind, args=())
@@ -92,7 +96,7 @@ def strip_markdown_code_blocks(command: str) -> str:
             break
 
     if code_start != -1 and code_end != -1 and code_end > code_start:
-        return "\n".join(lines[code_start + 1:code_end]).strip()
+        return "\n".join(lines[code_start + 1 : code_end]).strip()
 
     return stripped
 
@@ -108,30 +112,30 @@ def is_notebook_command(command: str) -> bool:
 def is_mixed_notebook_and_bash(command: str) -> bool:
     """
     Check if command chains multiple operations using bash operators.
-    
-    Returns True if bash operators (&&, ;, |) appear OUTSIDE the notebook 
+
+    Returns True if bash operators (&&, ;, |) appear OUTSIDE the notebook
     operation's argument string, indicating:
     - Notebook + bash: '__NOTEBOOK_OP__run_code("x=1"); echo "hello"'
     - Notebook + notebook: '__NOTEBOOK_OP__run_code("x=1") && __NOTEBOOK_OP__get_cells()'
     - Multiple commands: '__NOTEBOOK_OP__run_all() | grep error'
-    
+
     Returns False for valid single operations:
     - Valid: '__NOTEBOOK_OP__run_code("print(1); print(2)")'  # ; is inside args
     """
     if not has_notebook_marker(command):
         return False
-    
+
     # Extract the part after __NOTEBOOK_OP__
     cmd = command.strip()
     if cmd.startswith("__NOTEBOOK_OP__"):
         cmd = cmd.replace("__NOTEBOOK_OP__", "", 1).strip()
-    
+
     # Check if it matches valid notebook command pattern: operation(args)
     # The $ anchor ensures nothing comes after the closing paren
     match = re.match(r"^([a-zA-Z_]\w*)\s*\((.*)\)\s*$", cmd)
     if match:
         return False  # Valid single notebook operation
-    
+
     # Doesn't match complete pattern - check for chaining operators
     return any(token in command for token in ("&&", ";", "|"))
 
@@ -143,9 +147,26 @@ def extract_notebook_command(command: str) -> str:
 def is_bash_command(command: str) -> bool:
     """Check if command looks like a bash command."""
     bash_indicators = [
-        "echo ", "cat ", "ls ", "pwd", "cd ", "mkdir ", "rm ", "touch ",
-        "grep ", "find ", "sed ", "awk ", "git ", "python ", "pip ",
-        "export ", "source ", "./", "bash ", "sh ",
+        "echo ",
+        "cat ",
+        "ls ",
+        "pwd",
+        "cd ",
+        "mkdir ",
+        "rm ",
+        "touch ",
+        "grep ",
+        "find ",
+        "sed ",
+        "awk ",
+        "git ",
+        "python ",
+        "pip ",
+        "export ",
+        "source ",
+        "./",
+        "bash ",
+        "sh ",
     ]
     command_lower = command.strip().lower()
     return any(command_lower.startswith(indicator) for indicator in bash_indicators)

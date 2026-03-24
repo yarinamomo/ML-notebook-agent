@@ -2,6 +2,7 @@
 YAML configuration parser for notebook agent.
 Handles configuration loading, parsing, and CLI overrides.
 """
+
 import copy
 import os
 from pathlib import Path
@@ -17,11 +18,7 @@ def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any
     """Recursively merge dictionaries where override values win."""
     merged = copy.deepcopy(base)
     for key, value in override.items():
-        if (
-            key in merged
-            and isinstance(merged[key], dict)
-            and isinstance(value, dict)
-        ):
+        if key in merged and isinstance(merged[key], dict) and isinstance(value, dict):
             merged[key] = _deep_merge(merged[key], value)
         else:
             merged[key] = copy.deepcopy(value)
@@ -31,11 +28,11 @@ def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any
 def load_config(config_spec: Path, defaults_spec: Path) -> dict[str, Any]:
     """
     Load configuration from YAML file.
-    
+
     Args:
         config_spec: Path to config file
         defaults_spec: Path to defaults file
-        
+
     Returns:
         Parsed configuration dictionary
     """
@@ -43,12 +40,14 @@ def load_config(config_spec: Path, defaults_spec: Path) -> dict[str, Any]:
 
     config_path = get_config_path(config_spec)
     defaults_path = get_config_path(defaults_spec)
-    with open(config_path, encoding='utf-8') as f:
-        config = yaml.safe_load(f) 
-    with open(defaults_path, encoding='utf-8') as f:
+    with open(config_path, encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+    with open(defaults_path, encoding="utf-8") as f:
         defaults = yaml.safe_load(f)
     merged_config = _deep_merge(defaults or {}, config or {})
-    logger.info(f"Loaded configuration from {config_path} with defaults from {defaults_path}")
+    logger.info(
+        f"Loaded configuration from {config_path} with defaults from {defaults_path}"
+    )
     logger.debug(f"Merged configuration: {merged_config}")
     return merged_config
 
@@ -56,7 +55,7 @@ def load_config(config_spec: Path, defaults_spec: Path) -> dict[str, Any]:
 def load_api_keys(config: dict[str, Any]) -> None:
     """
     Load API keys from .env file if configured.
-    
+
     Args:
         config: Configuration dictionary
     """
@@ -64,6 +63,7 @@ def load_api_keys(config: dict[str, Any]) -> None:
     if misc_config.get("if_local_key", False):
         logger.info("Loading API keys from .env file")
         from dotenv import load_dotenv
+
         load_dotenv(".env", override=True)
 
 
@@ -74,12 +74,12 @@ def apply_cli_overrides(
 ) -> dict[str, Any]:
     """
     Apply command-line overrides to configuration.
-    
+
     Args:
         config: Configuration dictionary
         cost_limit: Override cost limit
         run_count: Override run count
-        
+
     Returns:
         Updated configuration dictionary
     """
@@ -87,28 +87,30 @@ def apply_cli_overrides(
     if cost_limit is not None:
         config.setdefault("agent", {})["cost_limit"] = cost_limit
         logger.info(f"Cost limit overridden to: {cost_limit}")
-    
+
     # Store run_count override in misc section
     if run_count is not None:
         config.setdefault("misc", {})["run_count"] = run_count
         logger.info(f"Run count overridden to: {run_count}")
-    
+
     return config
 
 
-def set_model_config(config: dict[str, Any], model_name: str | None = None) -> str | None:
+def set_model_config(
+    config: dict[str, Any], model_name: str | None = None
+) -> str | None:
     """
     Select a model from the config and set it as config['model'].
-    
+
     Args:
         config: Configuration dictionary (modified in place)
         model_name: Model name to select. If None, the first model is used.
-        
+
     Returns:
         The selected model name, or None if selection failed
     """
     models_config = config.get("models", [])
-    
+
     # If no models list, fall back to legacy single model config
     if not models_config:
         legacy_model = config.get("model", {})
@@ -117,17 +119,19 @@ def set_model_config(config: dict[str, Any], model_name: str | None = None) -> s
             return None
         models_config = [legacy_model]
         logger.info("Using legacy single model configuration")
-    
+
     if model_name:
         matching = [m for m in models_config if m.get("model_name") == model_name]
         if not matching:
             available = [m.get("model_name", "unknown") for m in models_config]
-            logger.error(f"Model '{model_name}' not found in config. Available: {available}")
+            logger.error(
+                f"Model '{model_name}' not found in config. Available: {available}"
+            )
             return None
         model_config = matching[0]
     else:
         model_config = models_config[0]
-    
+
     config["model"] = model_config
     selected_name = model_config.get("model_name", None)
     logger.info(f"Using model: {selected_name}")
@@ -137,10 +141,10 @@ def set_model_config(config: dict[str, Any], model_name: str | None = None) -> s
 def get_run_count(config: dict[str, Any]) -> int:
     """
     Get the number of runs to execute.
-    
+
     Args:
         config: Configuration dictionary
-        
+
     Returns:
         Number of runs
     """
@@ -153,10 +157,10 @@ def get_run_count(config: dict[str, Any]) -> int:
 def discover_instances(source_path_parent: Path) -> list[str]:
     """
     Discover all instance directories in the source_path_parent.
-    
+
     Args:
         source_path_parent: Parent directory containing instances
-        
+
     Returns:
         Sorted list of instance names
     """
@@ -164,34 +168,39 @@ def discover_instances(source_path_parent: Path) -> list[str]:
     if not source_path_parent.exists():
         logger.warning(f"Source path parent does not exist: {source_path_parent}")
         return instances
-    
+
     for item in source_path_parent.iterdir():
         if item.is_dir():
             instances.append(item.name)
-    
+
     logger.info(f"Discovered {len(instances)} instances: {instances}")
     return sorted(instances)
 
 
-def get_instances(config: dict[str, Any], run_all_override: bool | None = None) -> list[str]:
+def get_instances(
+    config: dict[str, Any], run_all_override: bool | None = None
+) -> list[str]:
     """
     Get list of instances to run.
-    
+
     Args:
         config: Configuration dictionary
         run_all_override: CLI override for run_all_instances flag
-        
+
     Returns:
         List of instance names
     """
     env_config = config.get("environment", {})
     run_all_instances = (
-        run_all_override if run_all_override is not None 
+        run_all_override
+        if run_all_override is not None
         else env_config.get("run_all_instances", False)
     )
-    
+
     if run_all_instances:
-        source_path_parent = Path(env_config.get("source_path_parent", "example/JunoBench/"))
+        source_path_parent = Path(
+            env_config.get("source_path_parent", "example/JunoBench/")
+        )
         instances = discover_instances(source_path_parent)
         if not instances:
             logger.error(f"No instances found in {source_path_parent}")
@@ -199,17 +208,17 @@ def get_instances(config: dict[str, Any], run_all_override: bool | None = None) 
     else:
         instances = [env_config.get("target_nb_instance", "sklearn_1")]
         logger.info(f"Running single instance: {instances[0]}")
-    
+
     return instances
 
 
 def get_trajectories_dir(config: dict[str, Any]) -> Path:
     """
     Get trajectories directory path from config.
-    
+
     Args:
         config: Configuration dictionary
-        
+
     Returns:
         Path to trajectories directory
     """
@@ -219,7 +228,9 @@ def get_trajectories_dir(config: dict[str, Any]) -> Path:
     return trajectories_dir
 
 
-def prepare_config_for_threading(config: dict[str, Any], api_key: str, port_offset: int) -> dict[str, Any]:
+def prepare_config_for_threading(
+    config: dict[str, Any], api_key: str, port_offset: int
+) -> dict[str, Any]:
     config = copy.deepcopy(config)
     config.setdefault("model", {}).setdefault("model_kwargs", {})["api_key"] = api_key
     if port_offset > 0:

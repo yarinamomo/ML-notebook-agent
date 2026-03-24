@@ -8,8 +8,14 @@ from typing import Sequence
 
 
 def load_module():
-    module_path = Path(__file__).resolve().parents[1] / "data_analysis" / "compare_fixed_notebooks.py"
-    spec = importlib.util.spec_from_file_location("compare_fixed_notebooks", module_path)
+    module_path = (
+        Path(__file__).resolve().parents[1]
+        / "data_analysis"
+        / "compare_fixed_notebooks.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "compare_fixed_notebooks", module_path
+    )
     assert spec is not None
     assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -44,7 +50,12 @@ def write_notebook(path: Path, code_cells: list[str]) -> None:
     path.write_text(json.dumps(notebook), encoding="utf-8")
 
 
-def write_summary(path: Path, status: str, original_notebook: Sequence[object], code_changes: list[dict]) -> None:
+def write_summary(
+    path: Path,
+    status: str,
+    original_notebook: Sequence[object],
+    code_changes: list[dict],
+) -> None:
     payload = {
         "metadata": {"status": status},
         "original_notebook": original_notebook,
@@ -157,16 +168,26 @@ def test_analyze_results_directory_reports_all_three_categories(tmp_path: Path):
     results_dir = tmp_path / "results"
     benchmark_dir = tmp_path / "JunoBench" / "benchmark"
 
-    valid_original = ["# --- [CELL 0]: ---\n\na = 1\n", "# --- [CELL 1]: ---\n\nb = 1\n"]
-    extra_original = ["# --- [CELL 0]: ---\n\nx = 1\n", "# --- [CELL 1]: ---\n\ny = 1\n"]
+    valid_original = [
+        "# --- [CELL 0]: ---\n\na = 1\n",
+        "# --- [CELL 1]: ---\n\nb = 1\n",
+    ]
+    extra_original = [
+        "# --- [CELL 0]: ---\n\nx = 1\n",
+        "# --- [CELL 1]: ---\n\ny = 1\n",
+    ]
     plausible_original = ["# --- [CELL 0]: ---\n\nm = 1\n"]
 
     write_notebook(
         benchmark_dir / "valid_case" / "valid_case_fixed.ipynb",
         ["a = 2\n\n", "b = 1"],
     )
-    write_notebook(benchmark_dir / "extra_case" / "extra_case_fixed.ipynb", ["x = 2", "y = 1"])
-    write_notebook(benchmark_dir / "plausible_case" / "plausible_case_fixed.ipynb", ["m = 2"])
+    write_notebook(
+        benchmark_dir / "extra_case" / "extra_case_fixed.ipynb", ["x = 2", "y = 1"]
+    )
+    write_notebook(
+        benchmark_dir / "plausible_case" / "plausible_case_fixed.ipynb", ["m = 2"]
+    )
 
     write_summary(
         results_dir / "agent" / "model-a" / "run_1" / "valid_case_summary.json",
@@ -196,7 +217,9 @@ def test_analyze_results_directory_reports_all_three_categories(tmp_path: Path):
         [{"cell_index": 0, "step": 1, "code": "m = 2"}],
     )
 
-    report = compare_fixed_notebooks.analyze_results_directory(results_dir, benchmark_dir)
+    report = compare_fixed_notebooks.analyze_results_directory(
+        results_dir, benchmark_dir
+    )
     records = {record["instance"]: record for record in report["records"]}
 
     assert report["statistics"]["summaries_compared"] == 3
@@ -206,17 +229,26 @@ def test_analyze_results_directory_reports_all_three_categories(tmp_path: Path):
         compare_fixed_notebooks.PLAUSIBLE: 2,
     }
     assert records["valid_case"]["classification"] == compare_fixed_notebooks.VALID
-    assert records["valid_case"]["match_reason"] == "all_summary_cells_match_change_set_equal"
-    assert records["valid_case"]["summary_cell_match_reasons"] == {"0": "exact_normalized"}
+    assert (
+        records["valid_case"]["match_reason"]
+        == "all_summary_cells_match_change_set_equal"
+    )
+    assert records["valid_case"]["summary_cell_match_reasons"] == {
+        "0": "exact_normalized"
+    }
     assert records["valid_case"]["original_code_cell_count"] == 2
     assert records["valid_case"]["reference_code_cell_count"] == 2
     assert records["extra_case"]["classification"] == compare_fixed_notebooks.PLAUSIBLE
     assert records["extra_case"]["comparison"]["extra_summary_changes"] == [1]
-    assert records["plausible_case"]["classification"] == compare_fixed_notebooks.PLAUSIBLE
+    assert (
+        records["plausible_case"]["classification"] == compare_fixed_notebooks.PLAUSIBLE
+    )
     assert records["plausible_case"]["comparison"]["mismatched_shared_changes"] == [0]
 
 
-def test_analyze_results_directory_ignores_reference_cells_beyond_original_range(tmp_path: Path):
+def test_analyze_results_directory_ignores_reference_cells_beyond_original_range(
+    tmp_path: Path,
+):
     results_dir = tmp_path / "results"
     benchmark_dir = tmp_path / "JunoBench" / "benchmark"
 
@@ -233,7 +265,9 @@ def test_analyze_results_directory_ignores_reference_cells_beyond_original_range
         [{"cell_index": 0, "step": 1, "code": "a = 2"}],
     )
 
-    report = compare_fixed_notebooks.analyze_results_directory(results_dir, benchmark_dir)
+    report = compare_fixed_notebooks.analyze_results_directory(
+        results_dir, benchmark_dir
+    )
     record = report["records"][0]
 
     assert record["classification"] == compare_fixed_notebooks.VALID
@@ -269,7 +303,9 @@ def test_alignment_handles_prepended_fixed_setup_cell(tmp_path: Path):
         [{"cell_index": 1, "step": 1, "code": "a = 2"}],
     )
 
-    report = compare_fixed_notebooks.analyze_results_directory(results_dir, benchmark_dir)
+    report = compare_fixed_notebooks.analyze_results_directory(
+        results_dir, benchmark_dir
+    )
     record = report["records"][0]
 
     assert record["classification"] == compare_fixed_notebooks.VALID

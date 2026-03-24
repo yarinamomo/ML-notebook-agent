@@ -178,6 +178,7 @@ VALID_TOOL_NAMES = {t["function"]["name"] for t in NOTEBOOK_TOOLS}
 # Action parsing (replaces parse_toolcall_actions for notebook tools)
 # ---------------------------------------------------------------------------
 
+
 def parse_notebook_tool_actions(
     tool_calls: list,
     *,
@@ -202,7 +203,9 @@ def parse_notebook_tool_actions(
         raise FormatError(
             {
                 "role": "user",
-                "content": Template(format_error_template, undefined=StrictUndefined).render(
+                "content": Template(
+                    format_error_template, undefined=StrictUndefined
+                ).render(
                     error=(
                         "No tool calls found in the response. "
                         "Every response MUST include exactly one tool call."
@@ -236,9 +239,9 @@ def parse_notebook_tool_actions(
             raise FormatError(
                 {
                     "role": "user",
-                    "content": Template(format_error_template, undefined=StrictUndefined).render(
-                        actions=[], error=error_msg.strip()
-                    ),
+                    "content": Template(
+                        format_error_template, undefined=StrictUndefined
+                    ).render(actions=[], error=error_msg.strip()),
                     "extra": {"interrupt_type": "FormatError"},
                 }
             )
@@ -246,12 +249,14 @@ def parse_notebook_tool_actions(
         # Build a human-readable "command" string for logging / UI display
         command_repr = _build_command_repr(name, args)
 
-        actions.append({
-            "tool_name": name,
-            "arguments": args,
-            "tool_call_id": tool_call.id,
-            "command": command_repr,
-        })
+        actions.append(
+            {
+                "tool_name": name,
+                "arguments": args,
+                "tool_call_id": tool_call.id,
+                "command": command_repr,
+            }
+        )
 
     return actions
 
@@ -274,11 +279,13 @@ def _build_command_repr(name: str, args: dict) -> str:
 # (e.g. GLM which embeds <tool_call>...</tool_call> in content text)
 # ---------------------------------------------------------------------------
 
+
 # Lightweight mock to satisfy code that accesses tc.function.name / tc.function.arguments / tc.id
 class _MockFunction:
     def __init__(self, name: str, arguments: str):
         self.name = name
         self.arguments = arguments
+
 
 class _MockToolCall:
     def __init__(self, name: str, arguments: str, call_id: str | None = None):
@@ -386,7 +393,7 @@ def _parse_positional_args(tool_name: str, args_str: str) -> dict | None:
         return {}
 
     # Try keyword style first: cell_index=3, code="..."
-    kw_match = re.match(r'^([a-zA-Z_]\w*)\s*=', args_str)
+    kw_match = re.match(r"^([a-zA-Z_]\w*)\s*=", args_str)
     if kw_match:
         # Use a simple parser for key=value pairs
         result = {}
@@ -435,7 +442,9 @@ def _try_parse_value(s: str):
     except (json.JSONDecodeError, TypeError):
         pass
     # Try Python string literal
-    if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
+    if (s.startswith('"') and s.endswith('"')) or (
+        s.startswith("'") and s.endswith("'")
+    ):
         return s[1:-1]
     # Return as-is
     return s
@@ -450,7 +459,7 @@ def _split_first_arg(s: str) -> tuple[str | None, str]:
         if escape:
             escape = False
             continue
-        if c == '\\':
+        if c == "\\":
             escape = True
             continue
         if in_str:
@@ -460,12 +469,12 @@ def _split_first_arg(s: str) -> tuple[str | None, str]:
         if c in ('"', "'"):
             in_str = c
             continue
-        if c in ('(', '[', '{'):
+        if c in ("(", "[", "{"):
             depth += 1
-        elif c in (')', ']', '}'):
+        elif c in (")", "]", "}"):
             depth -= 1
-        elif c == ',' and depth == 0:
-            return s[:i].strip(), s[i + 1:].strip()
+        elif c == "," and depth == 0:
+            return s[:i].strip(), s[i + 1 :].strip()
     return None, s
 
 
@@ -480,31 +489,31 @@ def _safe_parse_kwargs(s: str) -> dict:
     remaining = s.strip()
     while remaining:
         # Match: identifier = value
-        kv_match = re.match(r'^([a-zA-Z_]\w*)\s*=\s*', remaining)
+        kv_match = re.match(r"^([a-zA-Z_]\w*)\s*=\s*", remaining)
         if not kv_match:
             break
         key = kv_match.group(1)
-        remaining = remaining[kv_match.end():]
+        remaining = remaining[kv_match.end() :]
         # Parse the value
         if remaining.startswith('"'):
             # Double-quoted string
             end = _find_closing_quote(remaining, '"')
             result[key] = remaining[1:end]
-            remaining = remaining[end + 1:].lstrip(', ')
+            remaining = remaining[end + 1 :].lstrip(", ")
         elif remaining.startswith("'"):
             # Single-quoted string
             end = _find_closing_quote(remaining, "'")
             result[key] = remaining[1:end]
-            remaining = remaining[end + 1:].lstrip(', ')
+            remaining = remaining[end + 1 :].lstrip(", ")
         else:
             # Non-string value: take until comma or end
-            comma_pos = remaining.find(',')
+            comma_pos = remaining.find(",")
             if comma_pos == -1:
                 val_str = remaining.strip()
-                remaining = ''
+                remaining = ""
             else:
                 val_str = remaining[:comma_pos].strip()
-                remaining = remaining[comma_pos + 1:].strip()
+                remaining = remaining[comma_pos + 1 :].strip()
             result[key] = _try_parse_value(val_str)
     return result
 
@@ -513,11 +522,10 @@ def _find_closing_quote(s: str, quote_char: str) -> int:
     """Find the index of the closing quote, handling escapes."""
     i = 1  # skip opening quote
     while i < len(s):
-        if s[i] == '\\':
+        if s[i] == "\\":
             i += 2
             continue
         if s[i] == quote_char:
             return i
         i += 1
     return len(s) - 1  # fallback: end of string
-

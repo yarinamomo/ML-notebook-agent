@@ -2,6 +2,7 @@
 Summary utility for generating execution summaries from agent messages.
 Parses the message array to extract LLM responses, operations, and code changes.
 """
+
 from datetime import datetime
 from typing import Any, TYPE_CHECKING
 
@@ -32,7 +33,12 @@ def find_action(actions: list[dict], tool_call_id: str) -> dict | None:
     return None
 
 
-def build_summary(messages: list[dict], cost: float | None, execution_time_seconds: float, initial_cells: list[str] | None) -> dict[str, Any]:
+def build_summary(
+    messages: list[dict],
+    cost: float | None,
+    execution_time_seconds: float,
+    initial_cells: list[str] | None,
+) -> dict[str, Any]:
     llm_responses: list[dict] = []
     operations: list[dict] = []
     code_changes: list[dict] = []
@@ -49,11 +55,13 @@ def build_summary(messages: list[dict], cost: float | None, execution_time_secon
             content = msg.get("content", "") or ""
             reasoning = extract_reasoning(msg)
 
-            llm_responses.append({
-                "step": step,
-                "content": content,
-                "reasoning": reasoning,
-            })
+            llm_responses.append(
+                {
+                    "step": step,
+                    "content": content,
+                    "reasoning": reasoning,
+                }
+            )
 
             # Track edit_cell actions for code-change tracking
             for action in msg.get("extra", {}).get("actions", []):
@@ -62,7 +70,9 @@ def build_summary(messages: list[dict], cost: float | None, execution_time_secon
                     cell_index = int(args.get("cell_index", -1))
                     code = args.get("code", "")
                     if cell_index >= 0:
-                        code_changes.append({"cell_index": cell_index, "step": step, "code": code})
+                        code_changes.append(
+                            {"cell_index": cell_index, "step": step, "code": code}
+                        )
 
         elif role == "tool":
             tool_call_id = msg.get("tool_call_id", "")
@@ -71,12 +81,18 @@ def build_summary(messages: list[dict], cost: float | None, execution_time_secon
             returncode = extra.get("returncode", 0)
 
             # Find the matching command from the preceding assistant message
-            matched = find_action(last_assistant.get("extra", {}).get("actions", []), tool_call_id)
+            matched = find_action(
+                last_assistant.get("extra", {}).get("actions", []), tool_call_id
+            )
             command = matched.get("command", "") if matched else ""
 
             # Calculate tool execution time
             execution_time = None
-            if last_assistant and msg.get("extra", {}).get("timestamp") and last_assistant.get("extra", {}).get("timestamp"):
+            if (
+                last_assistant
+                and msg.get("extra", {}).get("timestamp")
+                and last_assistant.get("extra", {}).get("timestamp")
+            ):
                 obs_timestamp = msg.get("extra", {}).get("timestamp")
                 llm_timestamp = last_assistant.get("extra", {}).get("timestamp")
                 execution_time = round(obs_timestamp - llm_timestamp, 4)
@@ -97,25 +113,31 @@ def build_summary(messages: list[dict], cost: float | None, execution_time_secon
             extra = msg.get("extra", {})
             exit_status = extra.get("exit_status", "")
             submission = extra.get("submission", "")
-            operations.append({
-                "step": step,
-                "action": exit_status,
-                "output": submission,
-                "return_code": 0 if exit_status == "Submitted" else 1,
-                "success": exit_status in ["Submitted", "Success"],
-            })
+            operations.append(
+                {
+                    "step": step,
+                    "action": exit_status,
+                    "output": submission,
+                    "return_code": 0 if exit_status == "Submitted" else 1,
+                    "success": exit_status in ["Submitted", "Success"],
+                }
+            )
 
     # Build code changes list (each edit as a separate entry with step)
     unique_cells_edited = len({c["cell_index"] for c in code_changes})
     successful_ops = sum(1 for op in operations if op.get("success", False))
-    
+
     # Calculate average tool execution time
     execution_times = [
         float(op["execution_time_seconds"])
         for op in operations
         if op.get("execution_time_seconds") is not None
     ]
-    avg_execution_time = round(sum(execution_times) / len(execution_times), 2) if execution_times else 0.0
+    avg_execution_time = (
+        round(sum(execution_times) / len(execution_times), 2)
+        if execution_times
+        else 0.0
+    )
 
     return {
         "metadata": {

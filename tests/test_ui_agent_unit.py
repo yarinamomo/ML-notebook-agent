@@ -68,7 +68,9 @@ class StubEnv:
 @pytest.fixture
 def quiet_ui(monkeypatch):
     monkeypatch.setattr("src.ui_agent.ui.wait_llm", lambda: nullcontext())
-    monkeypatch.setattr("src.ui_agent.ui.wait_tool", lambda *_args, **_kwargs: nullcontext())
+    monkeypatch.setattr(
+        "src.ui_agent.ui.wait_tool", lambda *_args, **_kwargs: nullcontext()
+    )
     monkeypatch.setattr("src.ui_agent.ui.system", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_agent.ui.agent", lambda *_args, **_kwargs: None)
 

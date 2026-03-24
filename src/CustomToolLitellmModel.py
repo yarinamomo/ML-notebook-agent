@@ -5,14 +5,22 @@ from minisweagent.models.litellm_model import LitellmModel
 
 # Configure logging
 from src.utils.log import logger
-from src.notebook_tools import NOTEBOOK_TOOLS, parse_notebook_tool_actions, parse_tool_calls_from_content
+from src.notebook_tools import (
+    NOTEBOOK_TOOLS,
+    parse_notebook_tool_actions,
+    parse_tool_calls_from_content,
+)
 
 
 class CustomToolLitellmModel(LitellmModel):
     """LitellmModel subclass that uses dedicated notebook tools instead of a single bash tool."""
 
     def __init__(self, *args, **kwargs):
-        logger.info("Initializing CustomToolLitellmModel with args: %s, kwargs: %s", args, kwargs)
+        logger.info(
+            "Initializing CustomToolLitellmModel with args: %s, kwargs: %s",
+            args,
+            kwargs,
+        )
         super().__init__(*args, **kwargs)
 
     # ------------------------------------------------------------------

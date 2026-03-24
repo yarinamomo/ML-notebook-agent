@@ -52,6 +52,7 @@ class BaselineLitellmModel(CustomToolLitellmModel):
 # Baseline execution
 # ---------------------------------------------------------------------------
 
+
 def run_baseline_instance(
     instance_name: str,
     config: dict,
@@ -82,19 +83,23 @@ def run_baseline_instance(
     summary_text: Optional[str] = None
     submission: Optional[str] = None
     initial_cells: list[str] = []
-    
+
     # Track messages and cost for build_summary
     messages: list[dict] = []
     response_cost = None
     try:
         # 1) Read all cells
         initial_notebook = env.get_initial_notebook()
-        initial_cells =[format_cell_source_for_llm(i, cell) for i, cell in enumerate(env.problem.get_cells())]
+        initial_cells = [
+            format_cell_source_for_llm(i, cell)
+            for i, cell in enumerate(env.problem.get_cells())
+        ]
         # Add system and user messages
         messages.append(model.format_message(role="system", content=system_template))
 
-        
-        user_prompt = Template(instance_template, undefined=StrictUndefined).render(initial_notebook=initial_notebook)
+        user_prompt = Template(instance_template, undefined=StrictUndefined).render(
+            initial_notebook=initial_notebook
+        )
         messages.append(model.format_message(role="user", content=user_prompt))
 
         # 3) Query the model once
@@ -112,16 +117,21 @@ def run_baseline_instance(
 
         # 4) Apply edits
 
-        outputs = [cast(dict, env.execute(action)) for action in response.get("extra", {}).get("actions", [])]
+        outputs = [
+            cast(dict, env.execute(action))
+            for action in response.get("extra", {}).get("actions", [])
+        ]
         messages.extend(model.format_observation_messages(response, outputs))
 
         # 5) Run all again to verify
-        verify_result = env.execute({
-            "tool_name": "run_all",
-            "arguments": {},
-            "tool_call_id": "baseline_run_all_verify",
-            "command": "run_all()",
-        })
+        verify_result = env.execute(
+            {
+                "tool_name": "run_all",
+                "arguments": {},
+                "tool_call_id": "baseline_run_all_verify",
+                "command": "run_all()",
+            }
+        )
         exit_status = "Success" if verify_result["returncode"] == 0 else "Failure"
         submission = verify_result.get("output")
         summary_text = f"Applied {len(actions)} edit(s)"
@@ -135,15 +145,14 @@ def run_baseline_instance(
         elapsed = time.monotonic() - start_time
 
         # Add exit message
-        messages.append({
-            "role": "exit",
-            "content": summary_text,
-            "extra": {
-                "exit_status": exit_status,
-                "submission": submission
-            },
-        })
-        
+        messages.append(
+            {
+                "role": "exit",
+                "content": summary_text,
+                "extra": {"exit_status": exit_status, "submission": submission},
+            }
+        )
+
         trajectory_path = get_instance_trajectory_path(output_dir, instance_name)
         trajectory_path.parent.mkdir(parents=True, exist_ok=True)
         trajectory = {"messages": messages}

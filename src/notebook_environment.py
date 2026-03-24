@@ -12,46 +12,57 @@ from pydantic import BaseModel
 
 from minisweagent.exceptions import Submitted, InterruptAgentFlow
 from src.utils.nb_types import CellExecutionResult, ErrorOutput
-from src.utils.format_nb_cells import format_exec_result_for_llm, format_cell_source_for_llm, format_initial_notebook
+from src.utils.format_nb_cells import (
+    format_exec_result_for_llm,
+    format_cell_source_for_llm,
+    format_initial_notebook,
+)
 
 from .benchmark import BenchmarkProblem
 from src.utils.log import logger
+
 
 class EnvironmentResult(TypedDict):
     output: str
     returncode: Literal[0, 1]
     exception_info: Optional[str]
 
+
 class NotebookEnvironmentConfig(BaseModel):
     """Configuration for the notebook environment."""
+
     source_path_parent: str = "example/JunoBench/"
     docker_image_name: str = "yarinamomo/junobench-simple"
     port: int = 8888
     docker_start_command: str | None = None
-    docker_mount_path: str =  "example/docker_mount/"
+    docker_mount_path: str = "example/docker_mount/"
     problem_mode: str = "JunoBench_Buggy"
     timeout: int = 600
     no_runtime_output: bool = False
 
+
 class NotebookEnvironment:
     """mini-swe-agent Environment for Jupyter Notebook Sandbox."""
+
     def __init__(
         self,
         instance_name: str,
         output_dir: Path,
         config_class: type = NotebookEnvironmentConfig,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize the notebook environment.
-        
+
         Args:
             config_class: Configuration class to use
             **kwargs: Configuration parameters (sandbox_settings, source_path, docker_mount_path, etc.)
         """
         self.config: NotebookEnvironmentConfig = config_class(**kwargs)
         self.source_path = Path(self.config.source_path_parent) / instance_name
-        self.is_submittable = False # Flag to track if submission is allowed (after successful run_all)
+        self.is_submittable = (
+            False  # Flag to track if submission is allowed (after successful run_all)
+        )
         self.problem: BenchmarkProblem = BenchmarkProblem(
             sandbox_settings={
                 "image_name": self.config.docker_image_name,
@@ -63,8 +74,8 @@ class NotebookEnvironment:
             problem_mode=self.config.problem_mode,
             docker_source_path=self.config.docker_mount_path,
             timeout=self.config.timeout,
-        )        
-    
+        )
+
     def execute(self, action: dict, cwd: str = "") -> EnvironmentResult:
         """Execute a structured tool action.
 
@@ -100,19 +111,25 @@ class NotebookEnvironment:
         if not self.problem.get_cell_count() and tool_name not in ("submit",):
             return self._wrap_error("Notebook not initialized")
         tmp_is_submittable = self.is_submittable
-        self.is_submittable = self.is_submittable and tool_name != "edit_cell"  # Reset submittable flag on edit_cell
+        self.is_submittable = (
+            self.is_submittable and tool_name != "edit_cell"
+        )  # Reset submittable flag on edit_cell
         match tool_name:
             case "get_cell_count":
                 return self._wrap_success(str(self.problem.get_cell_count()))
 
             case "get_cells":
                 cells = self.problem.get_cells()
-                cell_sources = [format_cell_source_for_llm(i, cell) for i, cell in enumerate(cells)]
+                cell_sources = [
+                    format_cell_source_for_llm(i, cell) for i, cell in enumerate(cells)
+                ]
                 return self._wrap_success("\n\n".join(cell_sources))
 
             case "get_cell":
                 index = int(args["cell_index"])
-                cell_source = format_cell_source_for_llm(index, self.problem.get_cell(index))
+                cell_source = format_cell_source_for_llm(
+                    index, self.problem.get_cell(index)
+                )
                 return self._wrap_success(cell_source)
 
             case "edit_cell":
@@ -132,7 +149,11 @@ class NotebookEnvironment:
                 result = self._wrap_execution_result(last_exec_result)
                 output_parts = []
                 for i, exec_result in enumerate(exec_results):
-                    cell_output = format_exec_result_for_llm(exec_result, if_truncate=True, no_runtime_output=self.config.no_runtime_output)
+                    cell_output = format_exec_result_for_llm(
+                        exec_result,
+                        if_truncate=True,
+                        no_runtime_output=self.config.no_runtime_output,
+                    )
                     output_parts.append(f"Cell {i}:\n{cell_output}")
 
                 result["output"] = "\n\n".join(output_parts)
@@ -145,14 +166,20 @@ class NotebookEnvironment:
 
             case "submit":
                 summary = args.get("summary", "")
-                raise Submitted({
-                    "role": "exit",
-                    "content": summary,
-                    "extra": {
-                        "exit_status": "Submitted" if tmp_is_submittable else "SubmittedWithErrors",
-                        "submission": summary,
-                    },
-                })
+                raise Submitted(
+                    {
+                        "role": "exit",
+                        "content": summary,
+                        "extra": {
+                            "exit_status": (
+                                "Submitted"
+                                if tmp_is_submittable
+                                else "SubmittedWithErrors"
+                            ),
+                            "submission": summary,
+                        },
+                    }
+                )
             case _:
                 return self._wrap_error(
                     f"Unknown tool '{tool_name}'. "
@@ -160,15 +187,17 @@ class NotebookEnvironment:
                     "edit_cell, run_cell, run_all, run_code, submit."
                 )
 
-
     def get_initial_notebook(self) -> str:
         """Get the original notebook content."""
-        return format_initial_notebook(self.problem.get_initial_notebook(), no_runtime_output=self.config.no_runtime_output)
+        return format_initial_notebook(
+            self.problem.get_initial_notebook(),
+            no_runtime_output=self.config.no_runtime_output,
+        )
 
     def get_template_vars(self, **kwargs) -> dict[str, Any]:
         """
         Get template variables for mini-swe-agent prompts.
-        
+
         Returns:
             dict: Template variables including notebook metadata and instructions
         """
@@ -178,23 +207,24 @@ class NotebookEnvironment:
             "docker_mount_path": self.config.docker_mount_path,
             "problem_mode": self.config.problem_mode,
             "container_working_dir": "/app/container",
-            
             # Notebook metadata
             "notebook_initialized": False,
             "cell_count": 0,
         }
-        
+
         # Add notebook-specific info if available
         if self.problem:
-            template_vars.update({
-                "notebook_initialized": True,
-                "cell_count": self.problem.get_cell_count(),
-                "notebook_access_hint": (
-                    "Use the get_cells tool to view all notebook cells. "
-                    f"The notebook has {self.problem.get_cell_count()} cells."
-                ),
-            })
-        
+            template_vars.update(
+                {
+                    "notebook_initialized": True,
+                    "cell_count": self.problem.get_cell_count(),
+                    "notebook_access_hint": (
+                        "Use the get_cells tool to view all notebook cells. "
+                        f"The notebook has {self.problem.get_cell_count()} cells."
+                    ),
+                }
+            )
+
         return template_vars
 
     def _wrap_success(self, output: str) -> EnvironmentResult:
@@ -204,40 +234,52 @@ class NotebookEnvironment:
             "exception_info": "",
         }
 
-    def _wrap_error(self, message: str, exception_info: Optional[str] = None) -> EnvironmentResult:
+    def _wrap_error(
+        self, message: str, exception_info: Optional[str] = None
+    ) -> EnvironmentResult:
         return {
             "output": message,
             "returncode": 1,
             "exception_info": exception_info or message,
         }
 
-    def _wrap_execution_result(self, exec_result: CellExecutionResult | None) -> EnvironmentResult:
+    def _wrap_execution_result(
+        self, exec_result: CellExecutionResult | None
+    ) -> EnvironmentResult:
         """Wrap a cell execution result into the standard tool output format."""
-        formatted_output = format_exec_result_for_llm(exec_result, if_truncate=True, no_runtime_output=self.config.no_runtime_output)
+        formatted_output = format_exec_result_for_llm(
+            exec_result,
+            if_truncate=True,
+            no_runtime_output=self.config.no_runtime_output,
+        )
         error = self._get_execution_error(exec_result)
         if error is not None:
-            self.is_submittable = False  # Mark as not submittable if there's an execution error
+            self.is_submittable = (
+                False  # Mark as not submittable if there's an execution error
+            )
             return self._wrap_error(formatted_output, exception_info=str(error))
         return self._wrap_success(formatted_output)
 
-    def _get_execution_error(self, exec_result: CellExecutionResult | None) -> Optional[ErrorOutput]:
+    def _get_execution_error(
+        self, exec_result: CellExecutionResult | None
+    ) -> Optional[ErrorOutput]:
         """Check if execution result contains errors."""
         if exec_result is None or not isinstance(exec_result, dict):
             return None
-                
+
         # Check for error outputs
-        outputs = exec_result.get('outputs', [])
+        outputs = exec_result.get("outputs", [])
         for out in outputs:
-            msg_type = out.get('output_type', '')
-            if msg_type == 'error':
+            msg_type = out.get("output_type", "")
+            if msg_type == "error":
                 return cast(ErrorOutput, out)
         return None
-    
+
     def close(self):
         """Cleanup the Docker container and resources."""
         if hasattr(self, "problem") and self.problem:
             self.problem.close()
-    
+
     def __del__(self):
         """Cleanup on deletion."""
         try:
@@ -254,4 +296,3 @@ class NotebookEnvironment:
                 }
             }
         }
-

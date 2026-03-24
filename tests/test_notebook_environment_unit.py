@@ -72,7 +72,9 @@ class FakeBenchmarkProblem:
 
 @pytest.fixture
 def env(monkeypatch, tmp_path):
-    monkeypatch.setattr("src.notebook_environment.BenchmarkProblem", FakeBenchmarkProblem)
+    monkeypatch.setattr(
+        "src.notebook_environment.BenchmarkProblem", FakeBenchmarkProblem
+    )
     return NotebookEnvironment(instance_name="dummy", output_dir=tmp_path)
 
 
@@ -125,7 +127,9 @@ def test_submit_becomes_invalid_after_error_following_run_all(env):
         ],
     }
 
-    run_cell_result = env.execute({"tool_name": "run_cell", "arguments": {"cell_index": 0}})
+    run_cell_result = env.execute(
+        {"tool_name": "run_cell", "arguments": {"cell_index": 0}}
+    )
 
     assert run_cell_result["returncode"] == 1
     assert _submit_exit_status(env) == "SubmittedWithErrors"

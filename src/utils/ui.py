@@ -53,18 +53,37 @@ def is_ui_enabled() -> bool:
 
 def ui_enabled_only(func):
     """Decorator that makes a function return None if UI is disabled."""
+
     def wrapper(*args, **kwargs):
         if not UI_ENABLED:
             return None
         return func(*args, **kwargs)
+
     return wrapper
 
 
 @ui_enabled_only
-def agent(step: int, output: str, *, action: str | None = None, return_code: int | None = None) -> None:
+def agent(
+    step: int, output: str, *, action: str | None = None, return_code: int | None = None
+) -> None:
     if action and return_code is not None:
-        console.print(Panel(f"Executed {action}, with Return Code {return_code}", title=f"🔧Tool Executed (Step {step})", style="yellow", title_align="left"))
-    console.print(Panel(_truncate(output), title=f"🤖Agent Response (Step {step})", style="green", title_align="left"))
+        console.print(
+            Panel(
+                f"Executed {action}, with Return Code {return_code}",
+                title=f"🔧Tool Executed (Step {step})",
+                style="yellow",
+                title_align="left",
+            )
+        )
+    console.print(
+        Panel(
+            _truncate(output),
+            title=f"🤖Agent Response (Step {step})",
+            style="green",
+            title_align="left",
+        )
+    )
+
 
 @ui_enabled_only
 def system(step: int, content: str, actions: str = "", reasoning: str = "") -> None:
@@ -77,16 +96,25 @@ def system(step: int, content: str, actions: str = "", reasoning: str = "") -> N
     parts.append(_truncate(content or ""))
     if actions:
         parts.append(f"[yellow]Actions:\n {_truncate(actions)}[/yellow]")
-    console.print(Panel("\n\n".join(parts), title=f"🧠LLM Response (Step {step})", style="cyan", title_align="left"))
+    console.print(
+        Panel(
+            "\n\n".join(parts),
+            title=f"🧠LLM Response (Step {step})",
+            style="cyan",
+            title_align="left",
+        )
+    )
 
 
 @ui_enabled_only
 def info(message: str) -> None:
     console.print(f"[bold cyan]▶[/] {message}")
 
+
 @ui_enabled_only
 def warn(message: str) -> None:
     console.print(f"[bold yellow]⚠[/] {message}")
+
 
 @ui_enabled_only
 def error(message: str) -> None:
@@ -94,6 +122,7 @@ def error(message: str) -> None:
 
 
 # ---------- Status / waiting helpers ----------
+
 
 @contextmanager
 def wait(label: str, *, color: str = "cyan"):
@@ -103,7 +132,7 @@ def wait(label: str, *, color: str = "cyan"):
     if not UI_ENABLED:
         yield
         return
-    
+
     status_renderable.plain = f"{label}…"
     status_renderable.style = color
     try:
@@ -112,6 +141,7 @@ def wait(label: str, *, color: str = "cyan"):
         status_renderable.plain = ""
         status_renderable.style = ""
 
+
 @contextmanager
 def wait_llm():
     """
@@ -119,6 +149,7 @@ def wait_llm():
     """
     with wait("🧠Calling LLM", color="cyan"):
         yield
+
 
 @contextmanager
 def wait_tool(command: str | None = None):
@@ -140,7 +171,9 @@ def format_eta(seconds: float | None) -> str:
 
 
 @contextmanager
-def progress_live(total: int, description: str, force_display: bool = False) -> Iterator[tuple[Progress, TaskID]]:
+def progress_live(
+    total: int, description: str, force_display: bool = False
+) -> Iterator[tuple[Progress, TaskID]]:
     progress = Progress(
         SpinnerColumn(),
         TextColumn("[bold]{task.description}"),
@@ -193,29 +226,34 @@ def get_progress_advance_fn(
 
     return advance_fn
 
+
 def _truncate(content: str, max_lines: int = 50, max_chars_per_line: int = 200) -> str:
     if content is None:
         content = ""
-    lines = content.split('\n')
+    lines = content.split("\n")
     was_truncated_lines = len(lines) > max_lines
-    
+
     # Truncate lines
     truncated_lines = lines[:max_lines]
-    
+
     # Truncate each line if too long
-    was_truncated_chars = any(len(line) > max_chars_per_line for line in truncated_lines)
+    was_truncated_chars = any(
+        len(line) > max_chars_per_line for line in truncated_lines
+    )
     truncated_lines = [line[:max_chars_per_line] for line in truncated_lines]
-    
-    result = '\n'.join(truncated_lines)
-    
+
+    result = "\n".join(truncated_lines)
+
     # Add truncation notices
     notices = []
     if was_truncated_lines:
-        notices.append(f"[dim yellow]... ({len(lines) - max_lines} more lines)[/dim yellow]")
+        notices.append(
+            f"[dim yellow]... ({len(lines) - max_lines} more lines)[/dim yellow]"
+        )
     if was_truncated_chars:
         notices.append("[dim yellow]... (some lines truncated)[/dim yellow]")
-    
+
     if notices:
         result += "\n\n" + "\n".join(notices)
-    
+
     return result

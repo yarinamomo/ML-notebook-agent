@@ -33,12 +33,8 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "integration: mark test as an integration test requiring Docker"
     )
-    config.addinivalue_line(
-        "markers", "unit: mark test as a unit test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow running"
-    )
+    config.addinivalue_line("markers", "unit: mark test as a unit test")
+    config.addinivalue_line("markers", "slow: mark test as slow running")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -47,11 +43,11 @@ def pytest_collection_modifyitems(config, items):
         # Mark integration tests
         if "integration" in str(item.fspath):
             item.add_marker(pytest.mark.integration)
-        
+
         # Mark unit tests
         if "unit" in str(item.fspath):
             item.add_marker(pytest.mark.unit)
-        
+
         # Mark slow tests
         slow_test_names = [
             "test_timeout",

@@ -27,7 +27,9 @@ class _ProblemStub:
 
 
 class _SummaryEnvStub:
-    def __init__(self, *, execute_result=None, execute_exception=None, initial_cells=None):
+    def __init__(
+        self, *, execute_result=None, execute_exception=None, initial_cells=None
+    ):
         self.problem = _ProblemStub(initial_cells)
         self._execute_result = execute_result or {
             "output": "Cell 0 edited successfully",
@@ -95,12 +97,16 @@ class _SummaryModelStub:
 @pytest.fixture
 def quiet_ui(monkeypatch):
     monkeypatch.setattr("src.ui_agent.ui.wait_llm", lambda: nullcontext())
-    monkeypatch.setattr("src.ui_agent.ui.wait_tool", lambda *_args, **_kwargs: nullcontext())
+    monkeypatch.setattr(
+        "src.ui_agent.ui.wait_tool", lambda *_args, **_kwargs: nullcontext()
+    )
     monkeypatch.setattr("src.ui_agent.ui.system", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_agent.ui.agent", lambda *_args, **_kwargs: None)
 
 
-def test_save_summary_includes_operations_code_changes_and_original_notebook(quiet_ui, tmp_path):
+def test_save_summary_includes_operations_code_changes_and_original_notebook(
+    quiet_ui, tmp_path
+):
     model = _SummaryModelStub(
         responses=[
             {
@@ -165,7 +171,10 @@ def test_save_summary_includes_operations_code_changes_and_original_notebook(qui
     assert summary["operations"][0]["success"] is True
     assert summary["operations"][1]["action"] == "Submitted"
     assert summary["code_changes"][0]["cell_index"] == 0
-    assert summary["llm_responses"][0]["reasoning"] == "Cell 0 likely has the failing line."
+    assert (
+        summary["llm_responses"][0]["reasoning"]
+        == "Cell 0 likely has the failing line."
+    )
 
 
 def test_save_summary_marks_environment_unavailable_as_failed(quiet_ui):

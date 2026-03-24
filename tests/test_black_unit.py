@@ -72,6 +72,7 @@ def test_black_check_runs():
     # Exit code 0 means files are already formatted
     # Exit code 1 means files need formatting (expected for this test)
     # Other exit codes indicate an error
-    assert result.returncode in [0, 1], (
-        f"Black check failed with error: {result.stderr}"
-    )
+    assert result.returncode in [
+        0,
+        1,
+    ], f"Black check failed with error: {result.stderr}"
