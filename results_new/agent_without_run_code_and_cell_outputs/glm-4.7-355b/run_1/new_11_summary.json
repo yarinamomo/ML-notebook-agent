@@ -1,0 +1,204 @@
+{
+  "metadata": {
+    "generated_at": "2026-03-24T14:10:25.142177",
+    "execution_time_seconds": 4452.02,
+    "success": false,
+    "status": "AgentTimeout",
+    "cost": 0.0288
+  },
+  "statistics": {
+    "total_steps": 12,
+    "total_operations": 13,
+    "successful_operations": 8,
+    "failed_operations": 5,
+    "cells_edited": 2,
+    "unique_cells_edited": 2,
+    "avg_tool_execution_time_seconds": 364.45
+  },
+  "original_notebook": [
+    "# --- [CELL 0]: ---\n\n\n\n\n\nimport numpy as np\nimport pandas as pd\n\n\n\n\nimport os\nfor dirname, _, filenames in os.walk('/kaggle/input'):\n    for filename in filenames:\n        print(os.path.join(dirname, filename))\n\n\n",
+    "# --- [CELL 1]: ---\n\nimport tensorflow as tf\n\n\n",
+    "# --- [CELL 2]: ---\n\nimport tensorflow as tf\nfrom tensorflow.keras import layers, models\nfrom sklearn.utils import class_weight\nfrom sklearn.metrics import classification_report, confusion_matrix\nfrom sklearn.model_selection import train_test_split\nfrom tensorflow.keras.losses import SparseCategoricalCrossentropy\nimport cv2\nimport os\nimport numpy as np",
+    "# --- [CELL 3]: ---\n\nclass LNClassifier:\n    def __init__(self, base_path, input_size=(224, 224), test_size=0.2, val_size=0.1):\n        self.base_path = base_path\n        self.input_size = input_size\n        self.class_names = []\n\n\n        self.X, self.y = self.load_data()\n\n\n        self.X_train_val, self.X_test, self.y_train_val, self.y_test = train_test_split(\n            self.X, self.y,\n            test_size=test_size,\n            random_state=42,\n            stratify=self.y\n        )\n\n        val_ratio = val_size / (1 - test_size)\n        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(\n            self.X_train_val, self.y_train_val,\n            test_size=val_ratio,\n            random_state=42,\n            stratify=self.y_train_val\n        )\n\n        self.class_weights = class_weight.compute_class_weight(\n            'balanced',\n            classes=np.unique(self.y_train),\n            y=self.y_train\n        )\n        self.class_weight_dict = dict(enumerate(self.class_weights))\n\n\n        self.data_augmentation = tf.keras.Sequential([\n            layers.RandomFlip(\"horizontal\"),\n            layers.RandomRotation(0.2),\n            layers.RandomZoom(0.2),\n            layers.RandomContrast(0.2)\n        ])\n\n\n        self.optimizer = tf.keras.optimizers.SGD(learning_rate=1e-4, momentum=0.1, nesterov=True)\n\n    def load_data(self):\n        images = []\n        labels = []\n\n        for class_id, class_name in enumerate(self.class_names):\n            class_folder = os.path.join(self.base_path, class_name)\n            if os.path.isdir(class_folder):\n                for filename in os.listdir(class_folder):\n                    if filename.lower().endswith(('.png', '.jpg', '.jpeg')):\n                        image_path = os.path.join(class_folder, filename)\n                        image = cv2.imread(image_path)\n                        if image is not None:\n                            image = self.preprocess_image(image)\n                            images.append(image)\n                            labels.append(class_id)\n                        else:\n                            print(f\"Warning: Could not load image {image_path}\")\n            else:\n                print(f\"Warning: {class_folder} does not exist or is not a directory.\")\n\n        print(f\"Loaded {len(images)} images across {len(self.class_names)} classes.\")\n        return np.array(images), np.array(labels)\n\n    def preprocess_image(self, image):\n        \"\"\"Preprocess a single image.\"\"\"\n        image = cv2.resize(image, self.input_size)\n        image = image / 255.0\n        return image.astype(np.float32)\n\n    def build_model(self):\n        \"\"\"Build the model architecture.\"\"\"\n        base_model = tf.keras.applications.ResNet50(\n            weights='imagenet',\n            include_top=False,\n            input_shape=(224, 224, 3)\n        )\n\n\n        for layer in base_model.layers[:-30]:\n            layer.trainable = False\n\n        x = base_model.output\n        x = layers.GlobalAveragePooling2D()(x)\n        x = layers.BatchNormalization()(x)\n        x = layers.Dense(1024)(x)\n        x = layers.BatchNormalization()(x)\n        x = layers.Activation('relu')(x)\n        x = layers.Dropout(0.5)(x)\n        output = layers.Dense(len(self.class_names), activation='softmax')(x)\n\n        return models.Model(inputs=base_model.input, outputs=output)\n\n    def inspect_dataset(self, dataset):\n        \"\"\"Inspect the element_spec of a dataset.\"\"\"\n        print(f\"Dataset Element Spec: {dataset.element_spec}\")\n\n    def create_datasets(self, batch_size):\n        \"\"\"Create tf.data.Dataset objects and inspect them.\"\"\"\n        train_dataset = tf.data.Dataset.from_tensor_slices((self.X_train, self.y_train))\n        train_dataset = train_dataset.map(\n            lambda x, y: (self.data_augmentation(x), y)\n        ).batch(batch_size).cache().prefetch(tf.data.experimental.AUTOTUNE)\n\n        val_dataset = tf.data.Dataset.from_tensor_slices((self.X_val, self.y_val))            .batch(batch_size).cache().prefetch(tf.data.experimental.AUTOTUNE)\n\n\n        self.inspect_dataset(train_dataset)\n        self.inspect_dataset(val_dataset)\n\n        return train_dataset, val_dataset\n\n    @tf.function\n    def train_step(self, model, images, labels):\n        \"\"\"A single training step.\"\"\"\n        with tf.GradientTape() as tape:\n            predictions = model(images, training=True)\n            loss = SparseCategoricalCrossentropy(from_logits=False)(labels, predictions)\n        gradients = tape.gradient(loss, model.trainable_variables)\n        self.optimizer.apply_gradients(zip(gradients, model.trainable_variables))\n        return loss\n\n    def train(self, epochs=10, batch_size=32):\n        \"\"\"Train the model.\"\"\"\n\n        model = self.build_model()\n        model.compile(\n            optimizer=self.optimizer,\n            loss=SparseCategoricalCrossentropy(from_logits=False),\n            metrics=['accuracy']\n        )\n\n\n        train_dataset, val_dataset = self.create_datasets(batch_size)\n\n\n        for epoch in range(epochs):\n            print(f\"Epoch {epoch + 1}/{epochs}\")\n            for images, labels in train_dataset:\n                loss = self.train_step(model, images, labels)\n\n\n            val_loss, val_accuracy = model.evaluate(val_dataset)\n            print(f\"Validation Loss: {val_loss}, Validation Accuracy: {val_accuracy}\")\n\n        return model\n\n    def evaluate_final(self, model):\n        \"\"\"Evaluate model on the held-out test set.\"\"\"\n        y_pred = model.predict(self.X_test)\n        y_pred_classes = np.argmax(y_pred, axis=1)\n\n        print(\"Test Set Performance:\")\n        print(\"Classification Report:\")\n        print(classification_report(self.y_test, y_pred_classes,\n                                 target_names=self.class_names))\n\n        print(\"\\nConfusion Matrix:\")\n        print(confusion_matrix(self.y_test, y_pred_classes))\n\n        return y_pred, y_pred_classes",
+    "# --- [CELL 4]: ---\n\n\nclassifier = LNClassifier(\n    \"data/GLOMERULUS MULTIPLE STAINS\",\n    test_size=0.2,\n    val_size=0.1\n)\n\n\nmodel, history = classifier.train(epochs=10)\n\n\nfinal_predictions, final_pred_classes = classifier.evaluate_final(model)"
+  ],
+  "llm_responses": [
+    {
+      "step": 1,
+      "content": "I'll start by running all cells to verify the crash and understand the current state.<tool_call>run_all</tool_call>",
+      "reasoning": "Let me analyze the error. The cell 4 is trying to instantiate an `LNClassifier` and then train it. The error message is:\n\n`ValueError: With n_samples=0, test_size=0.2 and train_size=None, the resulting train set will be empty. Adjust any of the aforementioned parameters.`\n\nThis error is coming from the `train_test_split` call in the `__init__` method of the `LNClassifier` class. The issue is that `self.X, self.y = self.load_data()` is returning empty arrays (n_samples=0), which means no images were loaded.\n\nLooking at the `load_data` method, I can see that it iterates over `self.class_names`:\n\n```python\nfor class_id, class_name in enumerate(self.class_names):\n```\n\nThe problem is that `self.class_names` is initialized as an empty list `[]` in the `__init__` method:\n\n```python\nself.class_names = []\n```\n\nSo the `load_data` method never finds any class names to iterate over, so it loads 0 images.\n\nThe fix should be to populate `self.class_names` before calling `self.load_data()`. Looking at the code, it seems like the class names should be the subdirectories of the `base_path`. Let me modify the `__init__` method to populate `self.class_names` from the directories in `base_path`.\n\nI'll add code to get the class names from the subdirectories in `base_path` before calling `load_data()`."
+    },
+    {
+      "step": 2,
+      "content": "The error shows that `n_samples=0`, which means `load_data()` returned empty arrays. This is because `self.class_names` is initialized as an empty list, so the loop never executes. I need to populate `self.class_names` with actual class names from the directory structure before loading data.",
+      "reasoning": "The error is clear: \"With n_samples=0, test_size=0.2 and train_size=None, the resulting train set will be empty. Adjust any of the aforementioned parameters.\"\n\nThis means that the `load_data()` method in the LNClassifier class is returning empty arrays. Looking at the `load_data()` method in cell 3:\n\n```python\ndef load_data(self):\n    images = []\n    labels = []\n\n    for class_id, class_name in enumerate(self.class_names):\n        class_folder = os.path.join(self.base_path, class_name)\n        if os.path.isdir(class_folder):\n            for filename in os.listdir(class_folder):\n                if filename.lower().endswith(('.png', '.jpg', '.jpeg')):\n                    image_path = os.path.join(class_folder, filename)\n                    image = cv2.imread(image_path)\n                    if image is not None:\n                        image = self.preprocess_image(image)\n                        images.append(image)\n                        labels.append(class_id)\n                    else:\n                        print(f\"Warning: Could not load image {image_path}\")\n        else:\n            print(f\"Warning: {class_folder} does not exist or is not a directory.\")\n\n    print(f\"Loaded {len(images)} images across {len(self.class_names)} classes.\")\n    return np.array(images), np.array(labels)\n```\n\nThe issue is that `self.class_names` is initialized as an empty list `[]`:\n\n```python\nself.class_names = []\n```\n\nAnd then `load_data()` is trying to iterate over this empty list, so no images are loaded.\n\nThe problem is that `self.class_names` needs to be populated with the actual class names from the directory structure before calling `load_data()`.\n\nI need to fix this by adding a method to discover the class names from the base_path directory. Let me modify the `LNClassifier` class to first discover the class names before loading the data.\n\nActually, looking at the load_data method, it creates folders using class_names. So the fix should be to populate class_names from the subdirectories in base_path before calling load_data.\n\n\nI'll modify the initialization to automatically populate class_names by listing subdirectories in the base_path. This will ensure the method can iterate through available subdirectories and load images correctly."
+    },
+    {
+      "step": 3,
+      "content": "",
+      "reasoning": "I can see the issue. In the `__init__` method, `self.class_names` is initialized as an empty list `[]`, and then `load_data()` is called. However, `load_data()` iterates over `self.class_names`, which is empty, so no images are loaded.\n\nI need to populate `self.class_names` before calling `load_data()`. The class names should be derived from the directory structure - each subdirectory in the `base_path` represents a class.\n\nI'll add code to discover the class names from the directory before loading data."
+    },
+    {
+      "step": 4,
+      "content": "<tool_call>run_all</tool_call>",
+      "reasoning": "Now let me run all cells again to see if the fix works."
+    },
+    {
+      "step": 5,
+      "content": "",
+      "reasoning": "It seems cell 4 timed out. This is likely because the training takes a long time. Since the original crash was in cell 4 (the ValueError), I need to verify that the ValueError is no longer present. The timeout suggests the model training is running, which means the loading issue is fixed. Let me check cell 0 and cell 3 more carefully. I should run cell 0 again and then try to run cell 4 again to see if it can complete within a reasonable time, or at least verify that the ValueError is gone.\n\nActually, looking at the output again:\n- Cell 0, 1, 2, 3 all executed successfully (Status: ok)\n- Cell 4 timed out after 1800 seconds (30 minutes)\n\nThis is a timeout, not a crash/error. The original error was a ValueError, which seems to be fixed. The data is now loading (as seen from cells 0-3 executing fine). The timeout in cell 4 is likely because:\n1. Training with ResNet50 for 10 epochs\n2. Possibly no GPU available, making it slow\n\nHowever, the problem statement says \"Do not care if the cell does not CRASH but produces wrong output. Only focus on fixing CRASHES (ERRORs).\"\n\nThe timeout is not a crash - it's just that the execution is taking too long. The original ValueError crash has been fixed. Let me check cell 0 to see if it prints the data files available, to confirm the data path."
+    },
+    {
+      "step": 6,
+      "content": "",
+      "reasoning": "Cell 0 is OK. Let me run cell 1, 2, and 3 to get the kernel state updated."
+    },
+    {
+      "step": 7,
+      "content": "",
+      "reasoning": "Good. Now let me run cell 2."
+    },
+    {
+      "step": 8,
+      "content": "",
+      "reasoning": "Let me run cell 3 to make sure the class definition loads without error."
+    },
+    {
+      "step": 9,
+      "content": "",
+      "reasoning": "Good, cells 0-3 are working. Now let me run cell 4 which is where the original error occurred. This will test if my fix resolves the ValueError."
+    },
+    {
+      "step": 10,
+      "content": "",
+      "reasoning": "The error is now in cell 4. The issue is that `train()` returns only `model`, not `(model, history)`. The code tries to unpack two values but only one is returned.\n\nI need to fix cell 4 to not expect a history value from `train()`."
+    },
+    {
+      "step": 11,
+      "content": "",
+      "reasoning": "The issue is in cell 4. The `train()` method only returns the `model`, not a tuple `(model, history)`. The cell tries to unpack it as `model, history`, but `train()` only returns `model`. I need to fix the cell to just assign `model = classifier.train(epochs=10)` instead of trying to unpack two values."
+    },
+    {
+      "step": 12,
+      "content": "",
+      "reasoning": "Good, I've fixed the unpacking error. Now let me run the cell again to see if there are any other issues."
+    }
+  ],
+  "operations": [
+    {
+      "step": 1,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: error\n\n---ERROR---: ValueError: With n_samples=0, test_size=0.2 and train_size=None, the resulting train set will be empty. Adjust any of the aforementioned parameters.\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 12.533
+    },
+    {
+      "step": 2,
+      "action": "get_cell(cell_index=3)",
+      "output": "# --- [CELL 3]: ---\n\nclass LNClassifier:\n    def __init__(self, base_path, input_size=(224, 224), test_size=0.2, val_size=0.1):\n        self.base_path = base_path\n        self.input_size = input_size\n        self.class_names = []\n\n\n        self.X, self.y = self.load_data()\n\n\n        self.X_train_val, self.X_test, self.y_train_val, self.y_test = train_test_split(\n            self.X, self.y,\n            test_size=test_size,\n            random_state=42,\n            stratify=self.y\n        )\n\n        val_ratio = val_size / (1 - test_size)\n        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(\n            self.X_train_val, self.y_train_val,\n            test_size=val_ratio,\n            random_state=42,\n            stratify=self.y_train_val\n        )\n\n        self.class_weights = class_weight.compute_class_weight(\n            'balanced',\n            classes=np.unique(self.y_train),\n            y=self.y_train\n        )\n        self.class_weight_dict = dict(enumerate(self.class_weights))\n\n\n        self.data_augmentation = tf.keras.Sequential([\n            layers.RandomFlip(\"horizontal\"),\n            layers.RandomRotation(0.2),\n            layers.RandomZoom(0.2),\n            layers.RandomContrast(0.2)\n        ])\n\n\n        self.optimizer = tf.keras.optimizers.SGD(learning_rate=1e-4, momentum=0.1, nesterov=True)\n\n    def load_data(self):\n        images = []\n        labels = []\n\n        for class_id, class_name in enumerate(self.class_names):\n            class_folder = os.path.join(self.base_path, class_name)\n            if os.path.isdir(class_folder):\n                for filename in os.listdir(class_folder):\n                    if filename.lower().endswith(('.png', '.jpg', '.jpeg')):\n                        image_path = os.path.join(class_folder, filename)\n                        image = cv2.imread(image_path)\n                        if image is not None:\n                            image = self.preprocess_image(image)\n                            images.append(image)\n                            labels.append(class_id)\n                        else:\n                            print(f\"Warning: Could not load image {image_path}\")\n            else:\n                print(f\"Warning: {class_folder} does not exist or is not a directory.\")\n\n        print(f\"Loaded {len(images)} images across {len(self.class_names)} classes.\")\n        return np.array(images), np.array(labels)\n\n    def preprocess_image(self, image):\n        \"\"\"Preprocess a single image.\"\"\"\n        image = cv2.resize(image, self.input_size)\n        image = image / 255.0\n        return image.astype(np.float32)\n\n    def build_model(self):\n        \"\"\"Build the model architecture.\"\"\"\n        base_model = tf.keras.applications.ResNet50(\n            weights='imagenet',\n            include_top=False,\n            input_shape=(224, 224, 3)\n        )\n\n\n        for layer in base_model.layers[:-30]:\n            layer.trainable = False\n\n        x = base_model.output\n        x = layers.GlobalAveragePooling2D()(x)\n        x = layers.BatchNormalization()(x)\n        x = layers.Dense(1024)(x)\n        x = layers.BatchNormalization()(x)\n        x = layers.Activation('relu')(x)\n        x = layers.Dropout(0.5)(x)\n        output = layers.Dense(len(self.class_names), activation='softmax')(x)\n\n        return models.Model(inputs=base_model.input, outputs=output)\n\n    def inspect_dataset(self, dataset):\n        \"\"\"Inspect the element_spec of a dataset.\"\"\"\n        print(f\"Dataset Element Spec: {dataset.element_spec}\")\n\n    def create_datasets(self, batch_size):\n        \"\"\"Create tf.data.Dataset objects and inspect them.\"\"\"\n        train_dataset = tf.data.Dataset.from_tensor_slices((self.X_train, self.y_train))\n        train_dataset = train_dataset.map(\n            lambda x, y: (self.data_augmentation(x), y)\n        ).batch(batch_size).cache().prefetch(tf.data.experimental.AUTOTUNE)\n\n        val_dataset = tf.data.Dataset.from_tensor_slices((self.X_val, self.y_val))            .batch(batch_size).cache().prefetch(tf.data.experimental.AUTOTUNE)\n\n\n        self.inspect_dataset(train_dataset)\n        self.inspect_dataset(val_dataset)\n\n        return train_dataset, val_dataset\n\n    @tf.function\n    def train_step(self, model, images, labels):\n        \"\"\"A single training step.\"\"\"\n        with tf.GradientTape() as tape:\n            predictions = model(images, training=True)\n            loss = SparseCategoricalCrossentropy(from_logits=False)(labels, predictions)\n        gradients = tape.gradient(loss, model.trainable_variables)\n        self.optimizer.apply_gradients(zip(gradients, model.trainable_variables))\n        return loss\n\n    def train(self, epochs=10, batch_size=32):\n        \"\"\"Train the model.\"\"\"\n\n        model = self.build_model()\n        model.compile(\n            optimizer=self.optimizer,\n            loss=SparseCategoricalCrossentropy(from_logits=False),\n            metrics=['accuracy']\n        )\n\n\n        train_dataset, val_dataset = self.create_datasets(batch_size)\n\n\n        for epoch in range(epochs):\n            print(f\"Epoch {epoch + 1}/{epochs}\")\n            for images, labels in train_dataset:\n                loss = self.train_step(model, images, labels)\n\n\n            val_loss, val_accuracy = model.evaluate(val_dataset)\n            print(f\"Validation Loss: {val_loss}, Validation Accuracy: {val_accuracy}\")\n\n        return model\n\n    def evaluate_final(self, model):\n        \"\"\"Evaluate model on the held-out test set.\"\"\"\n        y_pred = model.predict(self.X_test)\n        y_pred_classes = np.argmax(y_pred, axis=1)\n\n        print(\"Test Set Performance:\")\n        print(\"Classification Report:\")\n        print(classification_report(self.y_test, y_pred_classes,\n                                 target_names=self.class_names))\n\n        print(\"\\nConfusion Matrix:\")\n        print(confusion_matrix(self.y_test, y_pred_classes))\n\n        return y_pred, y_pred_classes",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0061
+    },
+    {
+      "step": 3,
+      "action": "edit_cell(cell_index=3, code=<6128 chars>)",
+      "output": "Cell 3 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0057
+    },
+    {
+      "step": 4,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: None | Status: timeout\n\n---ERROR---: TimeoutError: Execution exceeded timeout of 1800 seconds and was interrupted\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 1807.4535
+    },
+    {
+      "step": 5,
+      "action": "run_cell(cell_index=0)",
+      "output": "Execution Count: 1 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.4008
+    },
+    {
+      "step": 6,
+      "action": "run_cell(cell_index=1)",
+      "output": "Execution Count: 2 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 2.3106
+    },
+    {
+      "step": 7,
+      "action": "run_cell(cell_index=2)",
+      "output": "Execution Count: 3 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.3098
+    },
+    {
+      "step": 8,
+      "action": "run_cell(cell_index=3)",
+      "output": "Execution Count: 4 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0544
+    },
+    {
+      "step": 9,
+      "action": "run_cell(cell_index=4)",
+      "output": "Execution Count: 5 | Status: error\n\n---ERROR---: TypeError: cannot unpack non-iterable Functional object\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 748.6499
+    },
+    {
+      "step": 10,
+      "action": "get_cell(cell_index=4)",
+      "output": "# --- [CELL 4]: ---\n\n\nclassifier = LNClassifier(\n    \"data/GLOMERULUS MULTIPLE STAINS\",\n    test_size=0.2,\n    val_size=0.1\n)\n\n\nmodel, history = classifier.train(epochs=10)\n\n\nfinal_predictions, final_pred_classes = classifier.evaluate_final(model)",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0422
+    },
+    {
+      "step": 11,
+      "action": "edit_cell(cell_index=4, code=<216 chars>)",
+      "output": "Cell 4 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0176
+    },
+    {
+      "step": 12,
+      "action": "run_cell(cell_index=4)",
+      "output": "Execution Count: None | Status: timeout\n\n---ERROR---: TimeoutError: Execution exceeded timeout of 1800 seconds and was interrupted\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 1801.6025
+    },
+    {
+      "step": 12,
+      "action": "AgentTimeout",
+      "output": "Agent execution exceeded total timeout of 3600 seconds",
+      "return_code": 1,
+      "success": false
+    }
+  ],
+  "code_changes": [
+    {
+      "cell_index": 3,
+      "step": 3,
+      "code": "class LNClassifier:\n    def __init__(self, base_path, input_size=(224, 224), test_size=0.2, val_size=0.1):\n        self.base_path = base_path\n        self.input_size = input_size\n        # Discover class names from subdirectories\n        self.class_names = [d for d in sorted(os.listdir(base_path)) \n                          if os.path.isdir(os.path.join(base_path, d))]\n        print(f\"Found {len(self.class_names)} classes: {self.class_names}\")\n\n\n        self.X, self.y = self.load_data()\n\n\n        self.X_train_val, self.X_test, self.y_train_val, self.y_test = train_test_split(\n            self.X, self.y,\n            test_size=test_size,\n            random_state=42,\n            stratify=self.y\n        )\n\n        val_ratio = val_size / (1 - test_size)\n        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(\n            self.X_train_val, self.y_train_val,\n            test_size=val_ratio,\n            random_state=42,\n            stratify=self.y_train_val\n        )\n\n        self.class_weights = class_weight.compute_class_weight(\n            'balanced',\n            classes=np.unique(self.y_train),\n            y=self.y_train\n        )\n        self.class_weight_dict = dict(enumerate(self.class_weights))\n\n\n        self.data_augmentation = tf.keras.Sequential([\n            layers.RandomFlip(\"horizontal\"),\n            layers.RandomRotation(0.2),\n            layers.RandomZoom(0.2),\n            layers.RandomContrast(0.2)\n        ])\n\n\n        self.optimizer = tf.keras.optimizers.SGD(learning_rate=1e-4, momentum=0.1, nesterov=True)\n\n    def load_data(self):\n        images = []\n        labels = []\n\n        for class_id, class_name in enumerate(self.class_names):\n            class_folder = os.path.join(self.base_path, class_name)\n            if os.path.isdir(class_folder):\n                for filename in os.listdir(class_folder):\n                    if filename.lower().endswith(('.png', '.jpg', '.jpeg')):\n                        image_path = os.path.join(class_folder, filename)\n                        image = cv2.imread(image_path)\n                        if image is not None:\n                            image = self.preprocess_image(image)\n                            images.append(image)\n                            labels.append(class_id)\n                        else:\n                            print(f\"Warning: Could not load image {image_path}\")\n            else:\n                print(f\"Warning: {class_folder} does not exist or is not a directory.\")\n\n        print(f\"Loaded {len(images)} images across {len(self.class_names)} classes.\")\n        return np.array(images), np.array(labels)\n\n    def preprocess_image(self, image):\n        \"\"\"Preprocess a single image.\"\"\"\n        image = cv2.resize(image, self.input_size)\n        image = image / 255.0\n        return image.astype(np.float32)\n\n    def build_model(self):\n        \"\"\"Build the model architecture.\"\"\"\n        base_model = tf.keras.applications.ResNet50(\n            weights='imagenet',\n            include_top=False,\n            input_shape=(224, 224, 3)\n        )\n\n\n        for layer in base_model.layers[:-30]:\n            layer.trainable = False\n\n        x = base_model.output\n        x = layers.GlobalAveragePooling2D()(x)\n        x = layers.BatchNormalization()(x)\n        x = layers.Dense(1024)(x)\n        x = layers.BatchNormalization()(x)\n        x = layers.Activation('relu')(x)\n        x = layers.Dropout(0.5)(x)\n        output = layers.Dense(len(self.class_names), activation='softmax')(x)\n\n        return models.Model(inputs=base_model.input, outputs=output)\n\n    def inspect_dataset(self, dataset):\n        \"\"\"Inspect the element_spec of a dataset.\"\"\"\n        print(f\"Dataset Element Spec: {dataset.element_spec}\")\n\n    def create_datasets(self, batch_size):\n        \"\"\"Create tf.data.Dataset objects and inspect them.\"\"\"\n        train_dataset = tf.data.Dataset.from_tensor_slices((self.X_train, self.y_train))\n        train_dataset = train_dataset.map(\n            lambda x, y: (self.data_augmentation(x), y)\n        ).batch(batch_size).cache().prefetch(tf.data.experimental.AUTOTUNE)\n\n        val_dataset = tf.data.Dataset.from_tensor_slices((self.X_val, self.y_val))            .batch(batch_size).cache().prefetch(tf.data.experimental.AUTOTUNE)\n\n\n        self.inspect_dataset(train_dataset)\n        self.inspect_dataset(val_dataset)\n\n        return train_dataset, val_dataset\n\n    @tf.function\n    def train_step(self, model, images, labels):\n        \"\"\"A single training step.\"\"\"\n        with tf.GradientTape() as tape:\n            predictions = model(images, training=True)\n            loss = SparseCategoricalCrossentropy(from_logits=False)(labels, predictions)\n        gradients = tape.gradient(loss, model.trainable_variables)\n        self.optimizer.apply_gradients(zip(gradients, model.trainable_variables))\n        return loss\n\n    def train(self, epochs=10, batch_size=32):\n        \"\"\"Train the model.\"\"\"\n\n        model = self.build_model()\n        model.compile(\n            optimizer=self.optimizer,\n            loss=SparseCategoricalCrossentropy(from_logits=False),\n            metrics=['accuracy']\n        )\n\n\n        train_dataset, val_dataset = self.create_datasets(batch_size)\n\n\n        for epoch in range(epochs):\n            print(f\"Epoch {epoch + 1}/{epochs}\")\n            for images, labels in train_dataset:\n                loss = self.train_step(model, images, labels)\n\n\n            val_loss, val_accuracy = model.evaluate(val_dataset)\n            print(f\"Validation Loss: {val_loss}, Validation Accuracy: {val_accuracy}\")\n\n        return model\n\n    def evaluate_final(self, model):\n        \"\"\"Evaluate model on the held-out test set.\"\"\"\n        y_pred = model.predict(self.X_test)\n        y_pred_classes = np.argmax(y_pred, axis=1)\n\n        print(\"Test Set Performance:\")\n        print(\"Classification Report:\")\n        print(classification_report(self.y_test, y_pred_classes,\n                                 target_names=self.class_names))\n\n        print(\"\\nConfusion Matrix:\")\n        print(confusion_matrix(self.y_test, y_pred_classes))\n\n        return y_pred, y_pred_classes"
+    },
+    {
+      "cell_index": 4,
+      "step": 11,
+      "code": "classifier = LNClassifier(\n    \"data/GLOMERULUS MULTIPLE STAINS\",\n    test_size=0.2,\n    val_size=0.1\n)\n\n\nmodel = classifier.train(epochs=10)\n\n\nfinal_predictions, final_pred_classes = classifier.evaluate_final(model)"
+    }
+  ]
+}
