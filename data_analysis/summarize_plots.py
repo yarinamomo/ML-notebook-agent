@@ -427,27 +427,26 @@ def main(base_dir: Path):
     print("="*60)
 
 
-def compare_performance_across_settings(results_dir: str = 'results', 
+def compare_performance_across_settings(results_dir: Path = Path('results'), 
                                        settings: list = None,
-                                       output_dir: str = None):
+                                       output_dir: Path = None):
     correct_rate_col = 'Correct Rate\n(CI 90%, MoE 10%)'
 
     if settings is None:
         settings = ['baseline', 'without_run_code', 'agent']
     
     if output_dir is None:
-        output_dir = Path(results_dir) / 'data_analysis'
+        output_dir = results_dir / 'data_analysis'
     else:
-        output_dir = Path(output_dir)
+        output_dir = output_dir
     
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    results_path = Path(results_dir)
     data_by_llm = defaultdict(list)
     
     # Iterate through each setting
     for setting in settings:
-        setting_path = results_path / setting
+        setting_path = results_dir / setting
         
         if not setting_path.exists():
             print(f"Warning: Setting directory not found: {setting_path}")

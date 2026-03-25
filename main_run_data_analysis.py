@@ -6,44 +6,52 @@ from data_analysis import (
     run_code_visualize,
     summarize_plots,
     summarize_statistics,
+    compare_fixed_notebooks,
 )
 
 def main():
-    target_modes = ["baseline"] # , "agent", "without_run_code"
+    results_dir = Path("results_new")
+    target_modes = ["baseline", "baseline_without_all_outputs", "baseline_without_cell_outputs", "agent", "agent_without_run_code_and_cell_outputs"]
     target_models = ["glm-4.7-355b"]
     for target_mode in target_modes:
         for target_model in target_models:
-            target_result_dir = Path(f"results/{target_mode}/{target_model}")
+            target_result_dir = results_dir / target_mode / target_model
 
             summarize_statistics.main(target_result_dir)
             if "baseline" not in target_mode:
                 summarize_plots.main(target_result_dir)
-                find_early_submissions.main(target_result_dir, max_step=3)
-            if "agent" in target_mode:
+                find_early_submissions.main(target_result_dir, max_step=2)
+            if target_mode == "agent":
                 # run_code_analyze.main(target_result_dir)
                 run_code_visualize.main(target_result_dir)
             edit_cell_analyze.main(target_result_dir)
 
+    compare_fixed_notebooks.main()
+
     # Create tool comparison chart per step across two settings: without "run_code" tool vs. default agent
     summarize_plots.create_comparison_chart(
-        "results/without_run_code/glm-4.7-355b",
-        "results/agent/glm-4.7-355b",
+        results_dir / "agent_without_run_code_and_cell_outputs" / "glm-4.7-355b",
+        results_dir / "agent" / "glm-4.7-355b",
         "Tool Count Comparison - Without \"run_code\" Tool vs. Default Agent (glm-4.7-355b)",
-        Path("results/data_analysis/tool_comparison_agents_without_run_code.png"),
+        results_dir / "data_analysis" / "tool_comparison_agents_without_run_code.png",
         label1="Agent without \"run_code\" tool",
         label2="Agent default",
         mode="diff"
     )
     summarize_plots.create_comparison_chart(
-        "results/without_run_code/glm-4.7-355b",
-        "results/agent/glm-4.7-355b",
+        results_dir / "agent_without_run_code_and_cell_outputs" / "glm-4.7-355b",
+        results_dir / "agent" / "glm-4.7-355b",
         "Tool Count Comparison - Without \"run_code\" Tool vs. Default Agent (glm-4.7-355b)",
-        Path("results/data_analysis/tool_comparison_agents_without_run_code.png"),
+        results_dir / "data_analysis" / "tool_comparison_agents_without_run_code.png",
         label1="Agent without \"run_code\" tool",
         label2="Agent default",
         mode="full"
     )
-    summarize_plots.compare_performance_across_settings(settings=['baseline', 'without_run_code', 'agent'])
+
+    summarize_plots.compare_performance_across_settings(
+        results_dir = results_dir,
+        settings=['baseline_without_all_outputs', 'baseline_without_cell_outputs', 'baseline', 'agent_without_run_code_and_cell_outputs', 'agent']
+    )
 
 if __name__ == "__main__":
     main()

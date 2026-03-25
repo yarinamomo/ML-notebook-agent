@@ -1,0 +1,1020 @@
+{
+  "operations": [
+    {
+      "run": 1,
+      "file": "new_1.traj",
+      "code": "import tensorflow as tf\nimport tensorflow.keras.backend as K\nfrom tensorflow.keras.layers import Input, Layer\n\nclass Attention(Layer):\n    def __init__(self, **kwargs):\n        super(Attention, self).__init__(**kwargs)\n\n    def build(self, input_shape):\n        self.W = self.add_weight(name='attention_weight', shape=(input_shape[-1], 1),\n                                 initializer='normal', trainable=True)\n        self.b = self.add_weight(name='attention_bias', shape=(input_shape[1], 1),\n                                 initializer='zeros', trainable=True)\n        super(Attention, self).build(input_shape)\n\n    def call(self, x):\n        e = K.tanh(K.dot(x, self.W) + self.b)\n        a = K.softmax(e, axis=1)\n        output = x * a\n        return K.sum(output, axis=1)\n\n# Test with batch size 2\nx = tf.random.normal((2, 8, 64))\natt = Attention()\natt.build(x.shape)\nprint(f\"W shape: {att.W.shape}\")\nprint(f\"b shape: {att.b.shape}\")\n\ny = att(x)\nprint(f\"Input shape: {x.shape}\")\nprint(f\"Output shape: {y.shape}\")",
+      "categories": [
+        "print_output",
+        "runinfo_structural"
+      ],
+      "imports": [
+        "tensorflow",
+        "tensorflow.keras.backend",
+        "tensorflow.keras.layers"
+      ],
+      "methods": [
+        "normal",
+        "__init__",
+        "build",
+        "dot",
+        "tanh",
+        "sum",
+        "add_weight",
+        "softmax"
+      ],
+      "print_count": 4
+    },
+    {
+      "run": 1,
+      "file": "new_1.traj",
+      "code": "# Re-execute necessary cells first\nimport pandas as pd\nimport numpy as np\nfrom sklearn.utils import shuffle\nimport re\nfrom sklearn.model_selection import train_test_split\nimport tensorflow as tf\nfrom transformers import AutoTokenizer, TFAutoModel\nfrom tensorflow.keras.layers import Input, Dense, Dropout, LSTM, Bidirectional, Conv1D, MaxPooling1D, GlobalMaxPooling1D, Flatten\nfrom tensorflow.keras.models import Model\nfrom tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint\nimport tensorflow.keras.backend as K\nfrom tensorflow.keras.layers import Layer\nimport keras\nfrom keras import ops\n\n# Cell 1\npath_bengali = \"data/BSMDD_v3_textcleaned.csv\"\ndf_bengali = pd.read_csv(path_bengali)\ndf_bengali = df_bengali[['text', 'label']].dropna()\ndf_bengali['text'] = df_bengali['text'].astype(str)\n\ndef clean_multilingual_tweets(text):\n    text = str(text)\n    text = re.sub(r'https?://\\S+|www\\.\\S+', '', text)\n    text = re.sub(r'@\\S+', '', text)\n    text = text.replace('[SEP]', ' ')\n    text = re.sub(r'<.*?>', '', text)\n    text = text.replace('\\n', ' ')\n    return text.strip()\n\ndf_combined = df_bengali\ndf_combined = shuffle(df_combined, random_state=42).reset_index(drop=True)\n\n# Cell 2\ndf_combined = df_combined.sample(frac=0.02, random_state=42)\nX = df_combined['text'].values\ny = df_combined['label'].values\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)\n\n# Cell 5\nMAX_LEN = 128\nMAX_CHUNKS = 8\nBATCH_SIZE = 2\nMODEL_NAME = \"sentence-transformers/LaBSE\"\ntokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)\n\n# Cell 6\ndef sliding_window_encode(texts, tokenizer, max_len=MAX_LEN, max_chunks=MAX_CHUNKS):\n    total_needed = max_len * max_chunks\n    encodings = tokenizer(\n        texts.tolist(),\n        add_special_tokens=True,\n        max_length=total_needed,\n        padding='max_length',\n        truncation=True,\n        return_tensors=\"np\"\n    )\n    input_ids = encodings['input_ids']\n    attention_masks = encodings['attention_mask']\n    transformed_ids = input_ids.reshape(-1, max_chunks, max_len)\n    transformed_masks = attention_masks.reshape(-1, max_chunks, max_len)\n    return transformed_ids, transformed_masks\n\ntrain_ids, train_masks = sliding_window_encode(X_train, tokenizer)\ntest_ids, test_masks = sliding_window_encode(X_test, tokenizer)\n\n# Cell 9\nclass Attention(Layer):\n    def __init__(self, **kwargs):\n        super(Attention, self).__init__(**kwargs)\n\n    def build(self, input_shape):\n        self.W = self.add_weight(name='attention_weight', shape=(input_shape[-1], 1),\n                                 initializer='normal', trainable=True)\n        self.b = self.add_weight(name='attention_bias', shape=(input_shape[1], 1),\n                                 initializer='zeros', trainable=True)\n        super(Attention, self).build(input_shape)\n\n    def call(self, x):\n        e = K.tanh(K.dot(x, self.W) + self.b)\n        a = K.softmax(e, axis=1)\n        output = x * a\n        return K.sum(output, axis=1)\n\nclass LaBSEEmbeddingLayer(keras.layers.Layer):\n    def __init__(self, model_name, **kwargs):\n        super().__init__(**kwargs)\n        self.labse_model = TFAutoModel.from_pretrained(model_name, from_pt=True)\n        self.labse_model.trainable = False\n        self.cnn = Conv1D(64, kernel_size=3, padding='same', activation='relu')\n        self.pool = MaxPooling1D(pool_size=2)\n        self.global_pool = GlobalMaxPooling1D()\n\n    def call(self, inputs):\n        input_ids, input_mask = inputs\n        flat_ids = ops.reshape(input_ids, (-1, MAX_LEN))\n        flat_mask = ops.reshape(input_mask, (-1, MAX_LEN))\n        embeddings = self.labse_model(flat_ids, attention_mask=flat_mask)[0]\n        x = self.cnn(embeddings)\n        x = self.pool(x)\n        x = self.global_pool(x)\n        output = ops.reshape(x, (-1, MAX_CHUNKS, 128))\n        return output\n\ndef build_sliding_window_model():\n    input_ids = Input(shape=(MAX_CHUNKS, MAX_LEN), dtype=tf.int32, name=\"input_ids\")\n    input_mask = Input(shape=(MAX_CHUNKS, MAX_LEN), dtype=tf.int32, name=\"attention_mask\")\n    window_features = LaBSEEmbeddingLayer(MODEL_NAME)([input_ids, input_mask])\n    x = Bidirectional(LSTM(32, return_sequences=True))(window_features)\n    x = Attention()(x)\n    x = Dense(32, activation='relu')(x)\n    x = Dropout(0.4)(x)\n    outputs = Dense(1, activation='sigmoid')(x)\n    model = Model(inputs=[input_ids, input_mask], outputs=outputs)\n    return model\n\nmodel = build_sliding_window_model()\n\n# Test with small batch\ntest_batch_ids = train_ids[:2]\ntest_batch_masks = train_masks[:2]\nprint(f\"Input shape: {test_batch_ids.shape}\")\nprint(f\"Labels shape: {y_train[:2].shape}\")\n\npred = model.predict([test_batch_ids, test_batch_masks], verbose=0)\nprint(f\"Prediction shape: {pred.shape}\")",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_type",
+        "runinfo_value"
+      ],
+      "imports": [
+        "pandas",
+        "numpy",
+        "sklearn.utils",
+        "re",
+        "sklearn.model_selection",
+        "tensorflow",
+        "transformers",
+        "tensorflow.keras.layers",
+        "tensorflow.keras.models",
+        "tensorflow.keras.callbacks",
+        "tensorflow.keras.backend",
+        "tensorflow.keras.layers",
+        "keras",
+        "keras"
+      ],
+      "methods": [
+        "build",
+        "strip",
+        "sub",
+        "cnn",
+        "softmax",
+        "from_pretrained",
+        "labse_model",
+        "sum",
+        "replace",
+        "sample",
+        "tolist",
+        "reset_index",
+        "__init__",
+        "tanh",
+        "read_csv",
+        "add_weight",
+        "dropna",
+        "predict",
+        "astype",
+        "dot",
+        "global_pool",
+        "pool",
+        "reshape"
+      ],
+      "print_count": 3
+    },
+    {
+      "run": 1,
+      "file": "new_1.traj",
+      "code": "# Simulate what LaBSEEmbeddingLayer should do\n# Input: (batch=2, chunks=8, seq_len=128)\n# After flatten: (2*8=16, 128)\n# Let's check what happens with GlobalMaxPooling1D on a sample\n\nimport tensorflow as tf\nfrom tensorflow.keras.layers import Input, Conv1D, MaxPooling1D, GlobalMaxPooling1D\n\n# Simulate embeddings from LaBSE: (batch*chunks, seq_len, embed_dim)\n# LaBSE BERT outputs 768 dimensions typically\ntest_embeddings = tf.random.normal((2*8, 128, 768))\n\ncnn = Conv1D(64, kernel_size=3, padding='same', activation='relu')\npool = MaxPooling1D(pool_size=2)\nglobal_pool = GlobalMaxPooling1D()\n\nx = cnn(test_embeddings)\nprint(f\"After CNN: {x.shape}\")\n\nx = pool(x)\nprint(f\"After pool: {x.shape}\")\n\nx = global_pool(x)\nprint(f\"After global_pool: {x.shape}\")\n\nx = tf.reshape(x, (2, 8, 128))  # This will fail\nprint(f\"After reshape: {x.shape}\")",
+      "categories": [
+        "print_output",
+        "runinfo_structural"
+      ],
+      "imports": [
+        "tensorflow",
+        "tensorflow.keras.layers"
+      ],
+      "methods": [
+        "normal",
+        "reshape"
+      ],
+      "print_count": 4
+    },
+    {
+      "run": 1,
+      "file": "new_1.traj",
+      "code": "# Verify the model output shape with actual data\nimport pandas as pd\nimport numpy as np\nfrom sklearn.utils import shuffle\nimport re\nfrom sklearn.model_selection import train_test_split\nimport tensorflow as tf\nfrom transformers import AutoTokenizer, TFAutoModel\nfrom tensorflow.keras.layers import Input, Dense, Dropout, LSTM, Bidirectional, Conv1D, MaxPooling1D, TimeDistributed, GlobalMaxPooling1D, Flatten\nfrom tensorflow.keras.models import Model\nfrom tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint\nimport tensorflow.keras.backend as K\nfrom tensorflow.keras.layers import Layer\nimport keras\nfrom keras import ops\n\n# Setup\npath_bengali = \"data/BSMDD_v3_textcleaned.csv\"\ndf_bengali = pd.read_csv(path_bengali)\ndf_bengali = df_bengali[['text', 'label']].dropna()\ndf_bengali['text'] = df_bengali['text'].astype(str)\n\ndef clean_multilingual_tweets(text):\n    text = str(text)\n    text = re.sub(r'https?://\\S+|www\\.\\S+', '', text)\n    text = re.sub(r'@\\S+', '', text)\n    text = text.replace('[SEP]', ' ')\n    text = re.sub(r'<.*?>', '', text)\n    text = text.replace('\\n', ' ')\n    return text.strip()\n\ndf_combined = df_bengali\ndf_combined = shuffle(df_combined, random_state=42).reset_index(drop=True)\ndf_combined = df_combined.sample(frac=0.02, random_state=42)\nX = df_combined['text'].values\ny = df_combined['label'].values\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)\n\nMAX_LEN = 128\nMAX_CHUNKS = 8\nBATCH_SIZE = 2\nMODEL_NAME = \"sentence-transformers/LaBSE\"\ntokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)\n\ndef sliding_window_encode(texts, tokenizer, max_len=MAX_LEN, max_chunks=MAX_CHUNKS):\n    total_needed = max_len * max_chunks\n    encodings = tokenizer(\n        texts.tolist(),\n        add_special_tokens=True,\n        max_length=total_needed,\n        padding='max_length',\n        truncation=True,\n        return_tensors=\"np\"\n    )\n    input_ids = encodings['input_ids']\n    attention_masks = encodings['attention_mask']\n    transformed_ids = input_ids.reshape(-1, max_chunks, max_len)\n    transformed_masks = attention_masks.reshape(-1, max_chunks, max_len)\n    return transformed_ids, transformed_masks\n\ntrain_ids, train_masks = sliding_window_encode(X_train, tokenizer)\ntest_ids, test_masks = sliding_window_encode(X_test, tokenizer)\n\nclass Attention(Layer):\n    def __init__(self, **kwargs):\n        super(Attention, self).__init__(**kwargs)\n\n    def build(self, input_shape):\n        self.W = self.add_weight(name='attention_weight', shape=(input_shape[-1], 1),\n                                 initializer='normal', trainable=True)\n        self.b = self.add_weight(name='attention_bias', shape=(input_shape[1], 1),\n                                 initializer='zeros', trainable=True)\n        super(Attention, self).build(input_shape)\n\n    def call(self, x):\n        e = K.tanh(K.dot(x, self.W) + self.b)\n        a = K.softmax(e, axis=1)\n        output = x * a\n        return K.sum(output, axis=1)\n\nclass LaBSEEmbeddingLayer(keras.layers.Layer):\n    def __init__(self, model_name, **kwargs):\n        super().__init__(**kwargs)\n        self.labse_model = TFAutoModel.from_pretrained(model_name, from_pt=True)\n        self.labse_model.trainable = False\n        self.cnn = Conv1D(64, kernel_size=3, padding='same', activation='relu')\n        self.pool = MaxPooling1D(pool_size=2)\n\n    def call(self, inputs):\n        input_ids, input_mask = inputs\n        flat_ids = ops.reshape(input_ids, (-1, MAX_LEN))\n        flat_mask = ops.reshape(input_mask, (-1, MAX_LEN))\n        embeddings = self.labse_model(flat_ids, attention_mask=flat_mask)[0]\n        x = self.cnn(embeddings)\n        x = self.pool(x)\n        output = ops.reshape(x, (-1, MAX_CHUNKS, MAX_LEN, 64))\n        return output\n\ndef build_sliding_window_model():\n    input_ids = Input(shape=(MAX_CHUNKS, MAX_LEN), dtype=tf.int32, name=\"input_ids\")\n    input_mask = Input(shape=(MAX_CHUNKS, MAX_LEN), dtype=tf.int32, name=\"attention_mask\")\n    window_features = LaBSEEmbeddingLayer(MODEL_NAME)([input_ids, input_mask])\n    x = TimeDistributed(Flatten())(window_features)\n    x = Bidirectional(LSTM(32, return_sequences=True))(x)\n    x = Attention()(x)\n    x = Dense(32, activation='relu')(x)\n    x = Dropout(0.4)(x)\n    outputs = Dense(1, activation='sigmoid')(x)\n    model = Model(inputs=[input_ids, input_mask], outputs=outputs)\n    return model\n\nmodel = build_sliding_window_model()\n\n# Test with batch size 2\ntest_batch_ids = train_ids[:2]\ntest_batch_masks = train_masks[:2]\n\nprint(f\"Input IDs shape: {test_batch_ids.shape}\")\nprint(f\"y_train[:2] shape: {y_train[:2].shape}\")\nprint(f\"y_train[:2] reshaped: {y_train[:2].reshape(-1, 1).shape}\")\n\npred = model.predict([test_batch_ids, test_batch_masks], batch_size=2, verbose=0)\nprint(f\"Prediction shape: {pred.shape}\")",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_type",
+        "runinfo_value"
+      ],
+      "imports": [
+        "pandas",
+        "numpy",
+        "sklearn.utils",
+        "re",
+        "sklearn.model_selection",
+        "tensorflow",
+        "transformers",
+        "tensorflow.keras.layers",
+        "tensorflow.keras.models",
+        "tensorflow.keras.callbacks",
+        "tensorflow.keras.backend",
+        "tensorflow.keras.layers",
+        "keras",
+        "keras"
+      ],
+      "methods": [
+        "build",
+        "strip",
+        "sub",
+        "cnn",
+        "softmax",
+        "from_pretrained",
+        "labse_model",
+        "sum",
+        "replace",
+        "sample",
+        "tolist",
+        "reset_index",
+        "__init__",
+        "tanh",
+        "read_csv",
+        "add_weight",
+        "dropna",
+        "predict",
+        "astype",
+        "dot",
+        "pool",
+        "reshape"
+      ],
+      "print_count": 4
+    },
+    {
+      "run": 1,
+      "file": "new_1.traj",
+      "code": "print(f\"Prediction shape: {pred.shape if 'pred' in locals() else 'Pred not defined'}\")",
+      "categories": [
+        "print_output",
+        "runinfo_structural"
+      ],
+      "imports": [],
+      "methods": [],
+      "print_count": 1
+    },
+    {
+      "run": 1,
+      "file": "new_1.traj",
+      "code": "# Rebuild and test the model\nclass Attention(Layer):\n    def __init__(self, **kwargs):\n        super(Attention, self).__init__(**kwargs)\n\n    def build(self, input_shape):\n        self.W = self.add_weight(name='attention_weight', shape=(input_shape[-1], 1),\n                                 initializer='normal', trainable=True)\n        self.b = self.add_weight(name='attention_bias', shape=(input_shape[1], 1),\n                                 initializer='zeros', trainable=True)\n        super(Attention, self).build(input_shape)\n\n    def call(self, x):\n        e = K.tanh(K.dot(x, self.W) + self.b)\n        a = K.softmax(e, axis=1)\n        output = x * a\n        return K.sum(output, axis=1)\n\nclass LaBSEEmbeddingLayer(keras.layers.Layer):\n    def __init__(self, model_name, **kwargs):\n        super().__init__(**kwargs)\n        self.labse_model = TFAutoModel.from_pretrained(model_name, from_pt=True)\n        self.labse_model.trainable = False\n        self.cnn = Conv1D(64, kernel_size=3, padding='same', activation='relu')\n        self.pool = MaxPooling1D(pool_size=2)\n\n    def call(self, inputs):\n        input_ids, input_mask = inputs\n        batch_size = tf.shape(input_ids)[0]\n        flat_ids = ops.reshape(input_ids, (-1, MAX_LEN))\n        flat_mask = ops.reshape(input_mask, (-1, MAX_LEN))\n        embeddings = self.labse_model(flat_ids, attention_mask=flat_mask)[0]\n        x = self.cnn(embeddings)\n        x = self.pool(x)\n        output = ops.reshape(x, (batch_size, MAX_CHUNKS, MAX_LEN // 2, 64))\n        return output\n\ndef build_sliding_window_model():\n    input_ids = Input(shape=(MAX_CHUNKS, MAX_LEN), dtype=tf.int32, name=\"input_ids\")\n    input_mask = Input(shape=(MAX_CHUNKS, MAX_LEN), dtype=tf.int32, name=\"attention_mask\")\n    window_features = LaBSEEmbeddingLayer(MODEL_NAME)([input_ids, input_mask])\n    x = TimeDistributed(Flatten())(window_features)\n    x = Bidirectional(LSTM(32, return_sequences=True))(x)\n    x = Attention()(x)\n    x = Dense(32, activation='relu')(x)\n    x = Dropout(0.4)(x)\n    outputs = Dense(1, activation='sigmoid')(x)\n    model = Model(inputs=[input_ids, input_mask], outputs=outputs)\n    return model\n\nmodel = build_sliding_window_model()\n\n# Test with batch size 2\ntest_batch_ids = train_ids[:2]\ntest_batch_masks = train_masks[:2]\n\nprint(f\"Input IDs shape: {test_batch_ids.shape}\")\npred = model.predict([test_batch_ids, test_batch_masks], batch_size=2, verbose=0)\nprint(f\"Prediction shape: {pred.shape}\")",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_type",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "labse_model",
+        "__init__",
+        "from_pretrained",
+        "build",
+        "dot",
+        "tanh",
+        "sum",
+        "add_weight",
+        "predict",
+        "shape",
+        "pool",
+        "cnn",
+        "softmax",
+        "reshape"
+      ],
+      "print_count": 2
+    },
+    {
+      "run": 1,
+      "file": "new_1.traj",
+      "code": "# Check the status of the training\nimport time\nprint(\"Waiting for training to complete...\")",
+      "categories": [
+        "print_output"
+      ],
+      "imports": [
+        "time"
+      ],
+      "methods": [],
+      "print_count": 1
+    },
+    {
+      "run": 1,
+      "file": "new_15.traj",
+      "code": "print(\"Train columns:\", train.columns.tolist())",
+      "categories": [
+        "print_output",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "tolist"
+      ],
+      "print_count": 1
+    },
+    {
+      "run": 1,
+      "file": "new_15.traj",
+      "code": "print(\"Target name values:\", train['target_name'].unique())\nprint(\"\\nFirst few rows:\")\nprint(train[['target_name', 'target']].head(10))",
+      "categories": [
+        "print_output",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "unique",
+        "head"
+      ],
+      "print_count": 3
+    },
+    {
+      "run": 1,
+      "file": "new_15.traj",
+      "code": "print(\"Test columns:\", test.columns.tolist())\nprint(\"\\nTest head:\")\nprint(test.head())",
+      "categories": [
+        "print_output",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "tolist",
+        "head"
+      ],
+      "print_count": 3
+    },
+    {
+      "run": 1,
+      "file": "new_15.traj",
+      "code": "# Check what variables exist\nprint(\"Variables created:\")\nfor var in ['train', 'test', 'preds', 'submission', 'X_train', 'y_train']:\n    if var in locals() or var in globals():\n        print(f\"  {var}: exists\")\n\n# Check if submission was created\ntry:\n    import os\n    if os.path.exists('submission.csv'):\n        print(\"\\nsubmission.csv created successfully\")\n        sub_df = pd.read_csv('submission.csv')\n        print(f\"Submission shape: {sub_df.shape}\")\n        print(sub_df.head())\nexcept Exception as e:\n    print(f\"\\nError checking submission: {e}\")",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [
+        "os"
+      ],
+      "methods": [
+        "read_csv",
+        "head",
+        "exists"
+      ],
+      "print_count": 6
+    },
+    {
+      "run": 1,
+      "file": "new_15.traj",
+      "code": "print(f\"Test DataFrame shape: {test.shape}\")\nprint(f\"\\nTest head:\\n{test.head(10)}\")\nprint(f\"\\nTest tail:\\n{test.tail(10)}\")\nprint(f\"\\nNumber of unique test images: {test['image_path'].nunique()}\")\nprint(f\"Number of test rows: {len(test)}\")",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "nunique",
+        "tail",
+        "head"
+      ],
+      "print_count": 5
+    },
+    {
+      "run": 1,
+      "file": "new_15.traj",
+      "code": "# Check sample submission format\nif os.path.exists('data/sample_submission.csv'):\n    sample = pd.read_csv('data/sample_submission.csv')\n    print(f\"Sample submission shape: {sample.shape}\")\n    print(f\"\\nSample columns: {sample.columns.tolist()}\")\n    print(f\"\\nSample head:\\n{sample.head(10)}\")\n    print(f\"\\nSample tail:\\n{sample.tail(10)}\")\nelse:\n    print(\"sample_submission.csv not found\")",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "exists",
+        "read_csv",
+        "tail",
+        "head",
+        "tolist"
+      ],
+      "print_count": 5
+    },
+    {
+      "run": 1,
+      "file": "new_15.traj",
+      "code": "# Verify the prediction metrics and submission are complete\nprint(\"Validation R2 Scores:\")\nfor col, model in preds.items():\n    print(f\"  {col}: Model trained\")\n\nprint(f\"\\nSubmission shape: {submission.shape}\")\nprint(f\"Submission columns: {submission.columns.tolist()}\")\nprint(f\"\\nSubmission preview:\")\nprint(submission)\nprint(f\"\\n✅ Code executed successfully - all cells completed without errors!\")",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "tolist",
+        "items"
+      ],
+      "print_count": 7
+    },
+    {
+      "run": 1,
+      "file": "new_16.traj",
+      "code": "print(f\"Type of capsule_config.categories: {type(capsule_config.categories)}\")\nprint(f\"Value: {capsule_config.categories}\")\nprint(f\"Type of capsule_config.categories[0]: {type(capsule_config.categories[0])}\")\nprint(f\"Value of [0]: {capsule_config.categories[0]}\")\nprint(f\"\\nModels in capsule_patchcore: {list(capsule_patchcore.models.keys())}\")",
+      "categories": [
+        "print_output",
+        "runinfo_type",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "keys"
+      ],
+      "print_count": 5
+    },
+    {
+      "run": 1,
+      "file": "new_2.traj",
+      "code": "import pandas as pd\n# Get all column names that contain 'SP' or 'Sp'\nsp_cols = [col for col in master_df.columns if 'SP' in col or col == 'Sp']\nprint(\"SP columns found:\", sp_cols)\nprint(\"Number of SP columns:\", len(sp_cols))\nsorted_cols = sorted(sp_cols, key=lambda x: (0 if x == 'Sp' else (1 if x == 'SP' else int(x.split('.')[1]))))\nprint(\"Sorted:\", sorted_cols)",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [
+        "pandas"
+      ],
+      "methods": [
+        "split"
+      ],
+      "print_count": 3
+    },
+    {
+      "run": 1,
+      "file": "new_3.traj",
+      "code": "# Let's see which columns are being selected as categorical\ncat_cols = data.select_dtypes(include=['object', 'category']).columns\nnum_cols = data.select_dtypes(include=['int64', 'float64']).columns\nprint(\"Categorical columns:\", list(cat_cols))\nprint(\"Numeric columns:\", list(num_cols))",
+      "categories": [
+        "print_output",
+        "runinfo_type",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "select_dtypes"
+      ],
+      "print_count": 2
+    },
+    {
+      "run": 1,
+      "file": "new_7.traj",
+      "code": "# Check the byteorder of APOGEE_ID and APOGEE2_TARGET2 columns in df\nprint(\"APOGEE_ID byteorder:\", df['APOGEE_ID'].dtype.byteorder if hasattr(df['APOGEE_ID'].dtype, 'byteorder') else None)\nprint(\"APOGEE2_TARGET2 byteorder:\", df['APOGEE2_TARGET2'].dtype.byteorder if hasattr(df['APOGEE2_TARGET2'].dtype, 'byteorder') else None)\nprint(\"\\nAPOGEE_ID dtype:\", df['APOGEE_ID'].dtype)\nprint(\"APOGEE2_TARGET2 dtype:\", df['APOGEE2_TARGET2'].dtype)",
+      "categories": [
+        "print_output",
+        "runinfo_type",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [],
+      "print_count": 4
+    },
+    {
+      "run": 2,
+      "file": "new_1.traj",
+      "code": "import tensorflow as tf\nprint(\"Batch size:\", BATCH_SIZE)\nprint(\"y_train shape:\", y_train.shape)\nprint(\"train_ids shape:\", train_ids.shape)\n\n# Try a test prediction\ntest_input = [train_ids[:BATCH_SIZE], train_masks[:BATCH_SIZE]]\nprint(\"\\nInput shapes:\")\nprint(\"  input_ids:\", test_input[0].shape)\nprint(\"  masks:\", test_input[1].shape)",
+      "categories": [
+        "print_output",
+        "runinfo_structural"
+      ],
+      "imports": [
+        "tensorflow"
+      ],
+      "methods": [],
+      "print_count": 6
+    },
+    {
+      "run": 2,
+      "file": "new_1.traj",
+      "code": "# Check what model outputs for a batch\nmodel_output = model.predict([train_ids[:BATCH_SIZE], train_masks[:BATCH_SIZE]], verbose=0)\nprint(\"Model output shape:\", model_output.shape)\nprint(\"Model output values:\", model_output[:5].flatten().round(3))\nprint(\"\\nExpected y for this batch:\", y_train[:BATCH_SIZE])",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "predict",
+        "round",
+        "flatten"
+      ],
+      "print_count": 3
+    },
+    {
+      "run": 2,
+      "file": "new_15.traj",
+      "code": "import pandas as pd\ntrain = pd.read_csv(\"data/train.csv\")\nprint(\"Train columns:\")\nfor col in train.columns:\n    print(f\"  '{col}'\")",
+      "categories": [
+        "print_output",
+        "runinfo_value"
+      ],
+      "imports": [
+        "pandas"
+      ],
+      "methods": [
+        "read_csv"
+      ],
+      "print_count": 2
+    },
+    {
+      "run": 2,
+      "file": "new_15.traj",
+      "code": "print(\"\\nUnique target_name values:\")\nprint(train['target_name'].unique())\nprint(\"\\nSample of train data:\\n\", train.head())",
+      "categories": [
+        "print_output",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "unique",
+        "head"
+      ],
+      "print_count": 3
+    },
+    {
+      "run": 2,
+      "file": "new_15.traj",
+      "code": "test = pd.read_csv(\"data/test.csv\")\nprint(\"Test columns:\")\nfor col in test.columns:\n    print(f\"  '{col}'\")\nprint(\"\\nSample of test data:\\n\", test.head())",
+      "categories": [
+        "print_output",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "read_csv",
+        "head"
+      ],
+      "print_count": 3
+    },
+    {
+      "run": 2,
+      "file": "new_15.traj",
+      "code": "sample = pd.read_csv(\"data/sample_submission.csv\")\nprint(\"Sample submission columns:\", sample.columns.tolist())\nprint(\"\\nSample submission:\")\nprint(sample.head())",
+      "categories": [
+        "print_output",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "read_csv",
+        "tolist",
+        "head"
+      ],
+      "print_count": 3
+    },
+    {
+      "run": 2,
+      "file": "new_15.traj",
+      "code": "import pandas as pd\ntrain = pd.read_csv(\"data/train.csv\")\nprint(\"Train data:\")\nprint(train.head())\nprint(\"\\nUnique target_name values:\", train[\"target_name\"].unique())\nprint(\"\\nShape:\", train.shape)\nprint(\"\\nChecking if image_path maps correctly:\")\nprint(train.groupby(\"image_path\")[\"target_name\"].count().head())",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [
+        "pandas"
+      ],
+      "methods": [
+        "count",
+        "read_csv",
+        "head",
+        "groupby",
+        "unique"
+      ],
+      "print_count": 6
+    },
+    {
+      "run": 2,
+      "file": "new_15.traj",
+      "code": "import pandas as pd\nimport numpy as np\n\ntrain = pd.read_csv(\"data/train.csv\")\ntarget_cols = [\"Dry_Green_g\",\"Dry_Dead_g\",\"Dry_Clover_g\",\"GDM_g\",\"Dry_Total_g\"]\nindex_cols = [\"sample_id\", \"image_path\", \"Sampling_Date\", \"State\", \"Species\", \"Pre_GSHH_NDVI\", \"Height_Ave_cm\"]\n\ntrain_pivot = train.pivot(index=index_cols, columns=\"target_name\", values=\"target\").reset_index()\ntrain_pivot.columns.name = None\n\nprint(\"After pivot, shape:\", train_pivot.shape)\nprint(\"\\nColumns:\", train_pivot.columns.tolist())\nprint(\"\\nFirst few rows:\")\nprint(train_pivot.head())\n\nprint(\"\\nChecking for NaN in target columns:\")\nprint(train_pivot[target_cols].isna().sum())\n\nprint(\"\\nBefore dropna, shape:\", train_pivot.shape)\ntrain_pivot = train_pivot.dropna(subset=target_cols)\nprint(\"After dropna, shape:\", train_pivot.shape)",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [
+        "pandas",
+        "numpy"
+      ],
+      "methods": [
+        "sum",
+        "read_csv",
+        "dropna",
+        "head",
+        "isna",
+        "tolist",
+        "pivot",
+        "reset_index"
+      ],
+      "print_count": 8
+    },
+    {
+      "run": 2,
+      "file": "new_15.traj",
+      "code": "import pandas as pd\n\ntrain = pd.read_csv(\"data/train.csv\")\nprint(\"Sample sample_ids:\")\nprint(train[\"sample_id\"].head(10))\n\n# Extract base sample ID (before the \"__\")\ntrain[\"base_id\"] = train[\"sample_id\"].apply(lambda x: x.split(\"__\")[0])\n\nprint(\"\\nUnique base_ids:\", train[\"base_id\"].nunique())\nprint(\"\\nRows per base_id:\")\nprint(train.groupby(\"base_id\").size().head())\n\n# Check that for each base_id, all other columns are the same\nfor col in [\"Sampling_Date\", \"State\", \"Species\", \"Pre_GSHH_NDVI\", \"Height_Ave_cm\"]:\n    unique_vals = train.groupby(\"base_id\")[col].nunique()\n    if unique_vals.max() > 1:\n        print(f\"Warning: {col} has varying values for base_ids\")",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [
+        "pandas"
+      ],
+      "methods": [
+        "split",
+        "max",
+        "size",
+        "read_csv",
+        "apply",
+        "head",
+        "nunique",
+        "groupby"
+      ],
+      "print_count": 6
+    },
+    {
+      "run": 2,
+      "file": "new_15.traj",
+      "code": "import pandas as pd\n\ntrain = pd.read_csv(\"data/train.csv\")\ntrain[\"base_id\"] = train[\"sample_id\"].apply(lambda x: x.split(\"__\")[0])\n\n# Now pivot correctly: one row per base_id, with target_name as columns\nindex_cols = [\"base_id\", \"image_path\", \"Sampling_Date\", \"State\", \"Species\", \"Pre_GSHH_NDVI\", \"Height_Ave_cm\"]\ntrain_pivot = train.pivot(index=index_cols, columns=\"target_name\", values=\"target\").reset_index()\ntrain_pivot.columns.name = None\n\nprint(\"After correct pivot, shape:\", train_pivot.shape)\nprint(\"\\nColumns:\", train_pivot.columns.tolist())\nprint(\"\\nFirst row:\")\nprint(train_pivot.iloc[0])\n\nprint(\"\\nChecking for NaN in target columns:\")\ntarget_cols = [\"Dry_Green_g\",\"Dry_Dead_g\",\"Dry_Clover_g\",\"GDM_g\",\"Dry_Total_g\"]\nprint(train_pivot[target_cols].isna().sum())",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [
+        "pandas"
+      ],
+      "methods": [
+        "split",
+        "sum",
+        "read_csv",
+        "apply",
+        "isna",
+        "tolist",
+        "pivot",
+        "reset_index"
+      ],
+      "print_count": 6
+    },
+    {
+      "run": 2,
+      "file": "new_15.traj",
+      "code": "import pandas as pd\n\ntrain = pd.read_csv(\"data/train.csv\")\ntrain[\"base_id\"] = train[\"sample_id\"].apply(lambda x: x.split(\"__\")[0])\n\n# This is what happened before - pivot with index columns that include the numeric columns\npivot_cols_with_num = [\"base_id\", \"image_path\", \"Sampling_Date\", \"State\", \"Species\", \"Pre_GSHH_NDVI\", \"Height_Ave_cm\"]\ntrain_pivot_numerics_in_index = train.pivot(index=pivot_cols_with_num, columns=\"target_name\", values=\"target\").reset_index()\ntrain_pivot_numerics_in_index.columns.name = None\n\nprint(\"Columns when numeric columns are in index:\")\nprint(train_pivot_numerics_in_index.columns.tolist())\nprint(\"\\nFirst row:\")\nprint(train_pivot_numerics_in_index.iloc[0])",
+      "categories": [
+        "print_output",
+        "runinfo_value"
+      ],
+      "imports": [
+        "pandas"
+      ],
+      "methods": [
+        "split",
+        "read_csv",
+        "apply",
+        "tolist",
+        "pivot",
+        "reset_index"
+      ],
+      "print_count": 4
+    },
+    {
+      "run": 2,
+      "file": "new_15.traj",
+      "code": "import os\nimport pandas as pd\n\n# Check if submission.csv exists\nif os.path.exists(\"submission.csv\"):\n    print(\"✅ submission.csv created successfully\")\n    sub = pd.read_csv(\"submission.csv\")\n    print(f\"Shape: {sub.shape}\")\n    print(\"\\nFirst few rows:\")\n    print(sub.head(10))\nelse:\n    print(\"❌ submission.csv not found\")\n\n# Check if we have the trained models\ntry:\n    # Get num_cols if available\n    print(\"\\nChecking execution status...\")\nexcept:\n    pass",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [
+        "os",
+        "pandas"
+      ],
+      "methods": [
+        "read_csv",
+        "head",
+        "exists"
+      ],
+      "print_count": 6
+    },
+    {
+      "run": 2,
+      "file": "new_15.traj",
+      "code": "test = pd.read_csv(\"data/test.csv\")\nprint(f\"Test CSV shape: {test.shape}\")\nprint(f\"\\nTest sample_ids:\")\nprint(test[\"sample_id\"].head(10))\n\nsub = pd.read_csv(\"submission.csv\")\nprint(f\"\\nSubmission shape: {sub.shape}\")\nprint(f\"\\nThe test data likely has {test.shape[0]} rows,\")\nprint(f\"but submission only has {sub.shape[0]} rows.\")",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "read_csv",
+        "head"
+      ],
+      "print_count": 6
+    },
+    {
+      "run": 2,
+      "file": "new_16.traj",
+      "code": "# Check the structure of models dict and the issue with the check\nimport inspect\nprint(\"Models keys:\", list(capsule_patchcore.models.keys()))\nprint(\"First char of 'capsule':\", 'capsule'[0])\nprint(\"'c' in models dict keys:\", 'c' in capsule_patchcore.models.keys())\nprint(\"'capsule' in models dict keys:\", 'capsule' in capsule_patchcore.models.keys())",
+      "categories": [
+        "print_output",
+        "runinfo_value"
+      ],
+      "imports": [
+        "inspect"
+      ],
+      "methods": [
+        "keys"
+      ],
+      "print_count": 4
+    },
+    {
+      "run": 2,
+      "file": "new_16.traj",
+      "code": "# Look at the precise error location - the check at line 59 is incorrect\nprintcell = '''\n    def run(self, category: str, n_samples: int = 50, warmup: int = 5) -> dict:\n        if category[0] not in self.patchcore.models:  # <-- BUG: checking category[0] instead of category\n'''\nprint(\"The bug is in the SingleCategoryBenchmark.run method - it checks 'category[0]' instead of 'category'\")",
+      "categories": [
+        "print_output"
+      ],
+      "imports": [],
+      "methods": [],
+      "print_count": 1
+    },
+    {
+      "run": 2,
+      "file": "new_2.traj",
+      "code": "import pandas as pd\nprint(master_df.columns.tolist())\nprint(f\"\\nTotal columns: {len(master_df.columns)}\")",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [
+        "pandas"
+      ],
+      "methods": [
+        "tolist"
+      ],
+      "print_count": 2
+    },
+    {
+      "run": 3,
+      "file": "new_1.traj",
+      "code": "print(f\"train_ids shape: {train_ids.shape}\")\nprint(f\"train_masks shape: {train_masks.shape}\")\nprint(f\"test_ids shape: {test_ids.shape}\")\nprint(f\"test_masks shape: {test_masks.shape}\")\nprint(f\"y_train shape: {y_train.shape}\")\nprint(f\"y_test shape: {y_test.shape}\")\nprint(f\"BATCH_SIZE: {BATCH_SIZE}\")",
+      "categories": [
+        "print_output",
+        "runinfo_structural"
+      ],
+      "imports": [],
+      "methods": [],
+      "print_count": 7
+    },
+    {
+      "run": 3,
+      "file": "new_1.traj",
+      "code": "from transformers import TFAutoModel\nimport tensorflow as tf\n\n# Load the model\nlabse = TFAutoModel.from_pretrained(\"sentence-transformers/LaBSE\", from_pt=True)\n\n# Test with a sample input\ntest_input = tf.constant([[1] * 128])\noutput = labse(test_input, attention_mask=tf.ones_like(test_input))\nprint(f\"Output keys: {output.keys()}\")\nprint(f\"last_hidden_state shape: {output['last_hidden_state'].shape}\")\nprint(f\"pooler_output shape: {output['pooler_output'].shape if 'pooler_output' in output else 'N/A'}\")",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [
+        "transformers",
+        "tensorflow"
+      ],
+      "methods": [
+        "keys",
+        "from_pretrained",
+        "ones_like",
+        "constant"
+      ],
+      "print_count": 3
+    },
+    {
+      "run": 3,
+      "file": "new_1.traj",
+      "code": "import numpy as np\n\n# Let's verify the model architecture is correct\nmodel = build_sliding_window_model()\nprint(f\"Model input shapes: {[i.shape for i in model.inputs]}\")\nprint(f\"Model output shape: {model.output_shape}\")\n\n# Verify data shapes match\nprint(f\"\\nData shapes:\")\nprint(f\"train_ids: {train_ids.shape}\")\nprint(f\"train_masks: {train_masks.shape}\")\nprint(f\"y_train: {y_train.shape}\")\n\n# Try running a single prediction to verify shapes work\nprint(f\"\\nTest sample prediction:\")\npred = model([train_ids[:4], train_masks[:4]])\nprint(f\"Prediction shape: {pred.shape}\")\nprint(f\"Expected labels shape: {y_train[:4].shape}\")\n\n# Check shape compatibility\ninput_batch_size = 4\noutput_batch_size = pred.shape[0]\nprint(f\"\\nInput batch size: {input_batch_size}\")\nprint(f\"Output batch size: {output_batch_size}\")",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [
+        "numpy"
+      ],
+      "methods": [],
+      "print_count": 11
+    },
+    {
+      "run": 3,
+      "file": "new_1.traj",
+      "code": "print(\"History object:\", history if 'history' in locals() else \"Not found yet\")\nif 'history' in locals():\n    print(\"History keys:\", history.history.keys())\n    print(\"Epochs trained:\", len(history.history.get('loss', [])))",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "keys",
+        "get"
+      ],
+      "print_count": 3
+    },
+    {
+      "run": 3,
+      "file": "new_11.traj",
+      "code": "import os\nbase_path = \"data/GLOMERULUS MULTIPLE STAINS\"\nprint(f\"Base path exists: {os.path.exists(base_path)}\")\nif os.path.exists(base_path):\n    print(f\"Contents: {os.listdir(base_path)}\")\n    print(f\"Is directory: {os.path.isdir(base_path)}\")",
+      "categories": [
+        "print_output",
+        "runinfo_value"
+      ],
+      "imports": [
+        "os"
+      ],
+      "methods": [
+        "isdir",
+        "exists",
+        "listdir"
+      ],
+      "print_count": 3
+    },
+    {
+      "run": 3,
+      "file": "new_15.traj",
+      "code": "import pandas as pd\ntrain = pd.read_csv(\"data/train.csv\")\nprint(\"Train columns:\")\nprint(train.columns.tolist())\nprint(\"\\nFirst few rows:\")\nprint(train.head())",
+      "categories": [
+        "print_output",
+        "runinfo_value"
+      ],
+      "imports": [
+        "pandas"
+      ],
+      "methods": [
+        "read_csv",
+        "tolist",
+        "head"
+      ],
+      "print_count": 4
+    },
+    {
+      "run": 3,
+      "file": "new_15.traj",
+      "code": "import pandas as pd\ntest = pd.read_csv(\"data/test.csv\")\nprint(\"Test columns:\")\nprint(test.columns.tolist())\nprint(\"\\nTest shape:\", test.shape)\nprint(\"\\nFirst few rows:\")\nprint(test.head())",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [
+        "pandas"
+      ],
+      "methods": [
+        "read_csv",
+        "tolist",
+        "head"
+      ],
+      "print_count": 5
+    },
+    {
+      "run": 3,
+      "file": "new_15.traj",
+      "code": "import pandas as pd\nimport numpy as np\n\ntrain = pd.read_csv(\"data/train.csv\")\ntrain_wide = train.pivot(index=['sample_id', 'image_path', 'Sampling_Date', 'State', 'Species', \n                                 'Pre_GSHH_NDVI', 'Height_Ave_cm'],\n                         columns='target_name', \n                         values='target').reset_index()\n\ntrain_unique = train_wide[['sample_id', 'image_path', 'State', 'Species', \n                           'Pre_GSHH_NDVI', 'Height_Ave_cm',\n                           'Dry_Green_g', 'Dry_Dead_g', 'Dry_Clover_g', 'GDM_g', 'Dry_Total_g']].drop_duplicates()\n\ntargets = train_unique[[\"Dry_Green_g\",\"Dry_Dead_g\",\"Dry_Clover_g\",\"GDM_g\",\"Dry_Total_g\"]]\nprint(\"Targets shape:\", targets.shape)\nprint(\"\\nNaN count per target:\")\nprint(targets.isna().sum())\nprint(\"\\nFirst rows of targets:\")\nprint(targets.head())",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [
+        "pandas",
+        "numpy"
+      ],
+      "methods": [
+        "sum",
+        "read_csv",
+        "head",
+        "isna",
+        "drop_duplicates",
+        "pivot",
+        "reset_index"
+      ],
+      "print_count": 5
+    },
+    {
+      "run": 3,
+      "file": "new_15.traj",
+      "code": "import pandas as pd\nimport numpy as np\n\ntrain = pd.read_csv(\"data/train.csv\")\nprint(\"Original train shape:\", train.shape)\nprint(\"\\nUnique sample_ids:\", train['sample_id'].nunique())\n\ntrain_wide = train.pivot(index=['sample_id', 'image_path', 'Sampling_Date', 'State', 'Species', \n                                 'Pre_GSHH_NDVI', 'Height_Ave_cm'],\n                         columns='target_name', \n                         values='target')\nprint(\"\\nAfter pivot shape:\", train_wide.shape)\nprint(\"\\nColumns after pivot:\")\nprint(train_wide.columns.tolist())\nprint(\"\\nReset index:\")\ntrain_wide = train_wide.reset_index()\nprint(\"Columns after reset_index:\")\nprint(train_wide.columns.tolist())\nprint(\"\\nFirst few rows:\")\nprint(train_wide.head())",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_value"
+      ],
+      "imports": [
+        "pandas",
+        "numpy"
+      ],
+      "methods": [
+        "read_csv",
+        "head",
+        "nunique",
+        "tolist",
+        "pivot",
+        "reset_index"
+      ],
+      "print_count": 10
+    },
+    {
+      "run": 3,
+      "file": "new_15.traj",
+      "code": "import pandas as pd\ntrain = pd.read_csv(\"data/train.csv\")\nprint(\"Train columns:\", train.columns.tolist())\nprint(\"\\nFirst 10 sample_ids:\")\nprint(train['sample_id'].head(10).tolist())\nprint(\"\\nCorresponding target_names:\")\nprint(train['target_name'].head(10).tolist())\nprint(\"\\nUnique sample_ids (first 10):\", train['sample_id'].unique()[:10])",
+      "categories": [
+        "print_output",
+        "runinfo_value"
+      ],
+      "imports": [
+        "pandas"
+      ],
+      "methods": [
+        "unique",
+        "read_csv",
+        "tolist",
+        "head"
+      ],
+      "print_count": 6
+    },
+    {
+      "run": 3,
+      "file": "new_15.traj",
+      "code": "import pandas as pd\ntest = pd.read_csv(\"data/test.csv\")\nprint(\"Test DataFrame shape:\", test.shape)\nprint(\"\\nTest rows:\")\nprint(test)\nprint(\"\\nUnique image_paths:\", test['image_path'].unique())",
+      "categories": [
+        "print_output",
+        "runinfo_structural"
+      ],
+      "imports": [
+        "pandas"
+      ],
+      "methods": [
+        "unique",
+        "read_csv"
+      ],
+      "print_count": 4
+    },
+    {
+      "run": 3,
+      "file": "new_2.traj",
+      "code": "print(master_df.columns.tolist())",
+      "categories": [
+        "print_output",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "tolist"
+      ],
+      "print_count": 1
+    },
+    {
+      "run": 3,
+      "file": "new_3.traj",
+      "code": "# Check what columns are being passed to eta_matrix\nfiltered_df = data.loc[:, data.columns != 'datetime']\nprint(\"Columns in filtered_df:\")\nprint(filtered_df.columns.tolist())\nprint(\"\\nDtypes:\")\nprint(filtered_df.dtypes)",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_type",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "tolist"
+      ],
+      "print_count": 4
+    },
+    {
+      "run": 3,
+      "file": "new_3.traj",
+      "code": "# Check which columns contain date/time related data that might cause sorting issues\nprint(\"Date column sample values:\")\nprint(data['Date'].head(10))\nprint(\"\\nDate column dtype:\")\nprint(data['Date'].dtype)\nprint(\"\\nTime column sample values:\")\nprint(data['Time'].head(10))\nprint(\"\\nTime column dtype:\")\nprint(data['Time'].dtype)\nprint(\"\\ndatetime column sample values:\")\nprint(data['datetime'].head(10))\nprint(\"\\ndatetime column dtype:\")\nprint(data['datetime'].dtype)",
+      "categories": [
+        "print_output",
+        "runinfo_type",
+        "runinfo_value"
+      ],
+      "imports": [],
+      "methods": [
+        "head"
+      ],
+      "print_count": 12
+    },
+    {
+      "run": 3,
+      "file": "new_3.traj",
+      "code": "import numpy as np\n\n# Let's try to sort unique values of Date column to see what happens\nprint(\"Trying to get and sort unique values of Date column:\")\ndate_vals = data['Date'].dropna().unique()\ntry:\n    sorted_vals = np.sort(date_vals)\n    print(\"Success, shape:\", sorted_vals.shape if hasattr(sorted_vals, 'shape') else len(sorted_vals))\nexcept TypeError as e:\n    print(f\"TypeError: {e}\")\n\nprint(\"\\nTrying to get and sort unique values of Time column:\")\ntime_vals = data['Time'].dropna().unique()\ntry:\n    sorted_vals = np.sort(time_vals)\n    print(\"Success, shape:\", sorted_vals.shape if hasattr(sorted_vals, 'shape') else len(sorted_vals))\nexcept TypeError as e:\n    print(f\"TypeError: {e}\")\n\nprint(\"\\nChecking for any datetime.time values in Time column:\")\nprint(type(time_vals[0]))\nprint(time_vals[:5])",
+      "categories": [
+        "print_output",
+        "runinfo_structural",
+        "runinfo_type",
+        "runinfo_value"
+      ],
+      "imports": [
+        "numpy"
+      ],
+      "methods": [
+        "unique",
+        "dropna",
+        "sort"
+      ],
+      "print_count": 9
+    },
+    {
+      "run": 3,
+      "file": "new_6.traj",
+      "code": "import numpy as np\n\n# Check for NaN values in the training and validation data used for the neural network\nprint(\"Checking X_train for NaN values...\")\nprint(f\"NaN count in X_train: {np.isnan(X_train).sum()}\")\n\nprint(\"\\nChecking X_val for NaN values...\")\nprint(f\"NaN count in X_val: {np.isnan(X_val).sum()}\")\n\nprint(\"\\nChecking y_train for NaN values...\")\nprint(f\"NaN count in y_train: {np.isnan(y_train).sum()}\")\n\nprint(\"\\nChecking y_val for NaN values...\")\nprint(f\"NaN count in y_val: {np.isnan(y_val).sum()}\")",
+      "categories": [
+        "print_output"
+      ],
+      "imports": [
+        "numpy"
+      ],
+      "methods": [
+        "sum",
+        "isnan"
+      ],
+      "print_count": 8
+    }
+  ],
+  "overlaps": {
+    "all_categories": [
+      "print_output",
+      "runinfo_structural",
+      "runinfo_type",
+      "runinfo_value"
+    ],
+    "co_occurrence_pairs": {
+      "print_output|runinfo_structural": 30,
+      "print_output|runinfo_type": 9,
+      "print_output|runinfo_value": 41,
+      "runinfo_structural|runinfo_type": 5,
+      "runinfo_structural|runinfo_value": 24,
+      "runinfo_type|runinfo_value": 9
+    },
+    "category_counts_per_operation": [
+      2,
+      4,
+      2,
+      4,
+      2,
+      4,
+      1,
+      2,
+      2,
+      2,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      2,
+      3,
+      2,
+      2,
+      2,
+      2,
+      3,
+      3,
+      3,
+      3,
+      2,
+      3,
+      3,
+      2,
+      1,
+      3,
+      2,
+      3,
+      3,
+      3,
+      2,
+      2,
+      3,
+      3,
+      3,
+      2,
+      2,
+      2,
+      4,
+      3,
+      4,
+      1
+    ]
+  }
+}
