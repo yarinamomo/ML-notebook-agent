@@ -69,6 +69,8 @@ def convert_sampled_patches_to_notebooks(
         nbformat.write(notebook, notebook_path)
         created_files.append(notebook_path)
 
+    return created_files
+
 def _extract_sampled_patched_files(
     setting: str,
     model: str
@@ -151,7 +153,7 @@ def _load_last_test_cell_source(instance_name: str) -> str:
 
     return source
 
-def _pick_test_notebook(instance_dir: Path, instance_name: str) -> Path:
+def _pick_test_notebook(instance_dir: Path, instance_name: str) -> Path | None:
     """Select the test notebook for an instance, preferring executed fixed notebooks."""
     pattern = f"{instance_name}_fixed_with_test_executed.ipynb"
 
@@ -160,7 +162,7 @@ def _pick_test_notebook(instance_dir: Path, instance_name: str) -> Path:
         return candidates[0]
 
     print(f"No notebook {instance_name} found under {instance_dir}")
-    return ""
+    return None
 
 
 def copy_notebooks_to_benchmark(
@@ -420,25 +422,26 @@ def calculate_overall_kappa_score(pairs: list[tuple[Path, Path]]) -> dict[str, A
 
 
 
-# copy_validated_test_notebooks()
+if __name__ == "__main__":
+    # copy_validated_test_notebooks()
 
-# convert_sampled_patches_to_notebooks(setting="baseline", model="glm-4.7-355b")
-# # copy_notebooks_to_benchmark(source_dir="JunoBench/test_file_genartion/testfiles")
-# copy_notebooks_to_benchmark(source_dir="JunoBench/test_file_genartion/testpatchedfiles_baseline")
+    # convert_sampled_patches_to_notebooks(setting="baseline", model="glm-4.7-355b")
+    # # copy_notebooks_to_benchmark(source_dir="JunoBench/test_file_genartion/testfiles")
+    # copy_notebooks_to_benchmark(source_dir="JunoBench/test_file_genartion/testpatchedfiles_baseline")
 
-calculate_overall_kappa_score(
-    pairs=[
-        (
-            Path("results/agent/glm-4.7-355b/analysis/stratified_sampled_instances_labeled.json"),
-            Path("results/agent/glm-4.7-355b/analysis/stratified_sampled_instances_tests.json"),
-        ),
-        (
-            Path("results/agent_without_run_code_and_cell_outputs/glm-4.7-355b/analysis/stratified_sampled_instances_labeled.json"),
-            Path("results/agent_without_run_code_and_cell_outputs/glm-4.7-355b/analysis/stratified_sampled_instances_tests.json"),
-        ),
-        (
-            Path("results/baseline/glm-4.7-355b/analysis/stratified_sampled_instances_labeled.json"),
-            Path("results/baseline/glm-4.7-355b/analysis/stratified_sampled_instances_tests.json"),
-        ),
-    ]
-)
+    calculate_overall_kappa_score(
+        pairs=[
+            (
+                Path("results/agent/glm-4.7-355b/analysis/stratified_sampled_instances_labeled.json"),
+                Path("results/agent/glm-4.7-355b/analysis/stratified_sampled_instances_tests.json"),
+            ),
+            (
+                Path("results/agent_without_run_code_and_cell_outputs/glm-4.7-355b/analysis/stratified_sampled_instances_labeled.json"),
+                Path("results/agent_without_run_code_and_cell_outputs/glm-4.7-355b/analysis/stratified_sampled_instances_tests.json"),
+            ),
+            (
+                Path("results/baseline/glm-4.7-355b/analysis/stratified_sampled_instances_labeled.json"),
+                Path("results/baseline/glm-4.7-355b/analysis/stratified_sampled_instances_tests.json"),
+            ),
+        ]
+    )
