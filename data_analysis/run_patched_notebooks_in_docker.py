@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import json
 import os
 import sys
@@ -36,6 +35,16 @@ DEFAULT_TMP_ROOT = Path(os.getenv("NOTEBOOK_AGENT_TMP_PATH", str(PROJECT_ROOT / 
 DEFAULT_RETRY_DELAY_SECONDS = 5.0
 DEFAULT_CONTAINER_MOUNT_PATH = "/app/container"
 DEFAULT_PORT = 8888
+DEFAULT_RESULTS_ROOT = Path("results")
+DEFAULT_JUNO_BENCH_ROOT = Path("JunoBench")
+DEFAULT_MAX_RETRIES = 3
+DEFAULT_SETTING_ORDER = (
+    "agent",
+    "baseline",
+    "agent_without_run_code_and_cell_outputs",
+    "baseline_without_all_outputs",
+    "baseline_without_cell_outputs",
+)
 
 
 class NotebookAssemblyError(RuntimeError):
@@ -662,40 +671,78 @@ def run_all_patched_notebooks(config: RunnerConfig) -> dict[str, Any]:
     }
 
 
-def build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Execute patched notebooks in Docker and copy the executed notebooks back into results.")
-    parser.add_argument("--setting", required=True, help="Results setting name, for example agent or baseline")
-    parser.add_argument("--model", required=True, help="Model name under results/<setting>/")
-    parser.add_argument("--results-root", default="results", help="Root directory containing run results")
-    parser.add_argument("--juno-bench-root", default="JunoBench", help="Path to the JunoBench directory to mount into Docker")
-    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG_PATH, help="Run-specific config file")
-    parser.add_argument("--defaults", type=Path, default=DEFAULT_DEFAULTS_PATH, help="Defaults config file")
-    parser.add_argument("--max-retries", type=int, default=3, help="Maximum number of attempts per notebook")
-    parser.add_argument("--timeout", type=int, default=None, help="Notebook execution timeout in seconds")
-    parser.add_argument("--retry-delay", type=float, default=DEFAULT_RETRY_DELAY_SECONDS, help="Seconds to wait between retries")
-    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing executed notebooks")
-    return parser
+def discover_setting_model_pairs(results_root: Path) -> list[tuple[str, str]]:
+    if not results_root.exists():
+        raise FileNotFoundError(f"Results root not found: {results_root}")
+
+    setting_dirs = [path for path in results_root.iterdir() if path.is_dir()]
+    setting_names = {path.name for path in setting_dirs}
+
+    ordered_settings = [name for name in DEFAULT_SETTING_ORDER if name in setting_names]
+    ordered_settings.extend(sorted(setting_names - set(ordered_settings)))
+
+    pairs: list[tuple[str, str]] = []
+    for setting in ordered_settings:
+        setting_dir = results_root / setting
+        model_dirs = [path for path in setting_dir.iterdir() if path.is_dir()]
+        for model_dir in sorted(model_dirs):
+            if any(model_dir.glob("run_*/*_patched.py")):
+                pairs.append((setting, model_dir.name))
+
+    return pairs
 
 
-def main(argv: list[str] | None = None) -> dict[str, Any]:
-    parser = build_arg_parser()
-    args = parser.parse_args(argv)
+def run_all_settings_with_defaults() -> dict[str, Any]:
+    results_root = DEFAULT_RESULTS_ROOT
+    juno_bench_root = DEFAULT_JUNO_BENCH_ROOT
+    setting_model_pairs = discover_setting_model_pairs(results_root)
+    if not setting_model_pairs:
+        raise FileNotFoundError(f"No patched notebooks found under: {results_root}")
 
-    results_root = Path(args.results_root)
-    juno_bench_root = Path(args.juno_bench_root)
-    config = load_runner_config(
-        setting=args.setting,
-        model=args.model,
-        results_root=results_root,
-        juno_bench_root=juno_bench_root,
-        config_spec=args.config,
-        defaults_spec=args.defaults,
-        max_retries=args.max_retries,
-        notebook_timeout=args.timeout,
-        retry_delay_seconds=args.retry_delay,
-        overwrite=args.overwrite,
-    )
-    return run_all_patched_notebooks(config)
+    all_runs: list[dict[str, Any]] = []
+    for setting, model in setting_model_pairs:
+        print(f"Starting setting/model: {setting}/{model}")
+        config = load_runner_config(
+            setting=setting,
+            model=model,
+            results_root=results_root,
+            juno_bench_root=juno_bench_root,
+            config_spec=DEFAULT_CONFIG_PATH,
+            defaults_spec=DEFAULT_DEFAULTS_PATH,
+            max_retries=DEFAULT_MAX_RETRIES,
+            notebook_timeout=None,
+            retry_delay_seconds=DEFAULT_RETRY_DELAY_SECONDS,
+            overwrite=False,
+        )
+        run_result = run_all_patched_notebooks(config)
+        all_runs.append(
+            {
+                "setting": setting,
+                "model": model,
+                "report_path": run_result["report_path"],
+                "record_count": len(run_result["records"]),
+            }
+        )
+        print(f"Finished setting/model: {setting}/{model}")
+
+    summary_path = results_root / "analysis" / "all_settings_patched_notebook_execution_report.json"
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_payload = {
+        "results_root": str(results_root.resolve()),
+        "juno_bench_root": str(juno_bench_root.resolve()),
+        "total_setting_model_runs": len(all_runs),
+        "runs": all_runs,
+    }
+    summary_path.write_text(json.dumps(summary_payload, indent=2), encoding="utf-8")
+
+    return {
+        "summary_report_path": str(summary_path),
+        "runs": all_runs,
+    }
+
+
+def main() -> dict[str, Any]:
+    return run_all_settings_with_defaults()
 
 
 if __name__ == "__main__":
