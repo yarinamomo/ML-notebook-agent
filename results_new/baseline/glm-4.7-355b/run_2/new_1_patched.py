@@ -115,10 +115,10 @@ from sklearn.model_selection import train_test_split
 MAX_LEN = 128       # Size of each window
 MAX_CHUNKS = 8      # Number of windows per text (8 * 128 = 1024 tokens)
 BATCH_SIZE = 4      # Small batch size because Sliding Window uses a lot of memory
-MODEL_NAME = "sentence-transformers/LaBSE"
+MODEL_NAME = "data/models/LaBSE"
 
-# Load Tokenizer
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, local_files_only=True)
 
 #%%
 # --- [CELL 6]: ---

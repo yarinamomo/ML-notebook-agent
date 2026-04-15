@@ -125,10 +125,10 @@ from sklearn.model_selection import train_test_split
 MAX_LEN = 128
 MAX_CHUNKS = 8
 BATCH_SIZE = 2
-MODEL_NAME = "sentence-transformers/LaBSE"
+MODEL_NAME = "data/models/LaBSE"
 
 
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, local_files_only=True)
 
 #%%
 # --- [CELL 6]: ---
