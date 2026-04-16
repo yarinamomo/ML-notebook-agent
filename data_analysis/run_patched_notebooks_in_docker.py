@@ -38,6 +38,12 @@ DEFAULT_PORT = 8888
 DEFAULT_RESULTS_ROOT = Path("results")
 DEFAULT_JUNO_BENCH_ROOT = Path("JunoBench")
 DEFAULT_MAX_RETRIES = 3
+DEFAULT_CONTAINER_TMP_DIR = "/app/container/tmp"
+DEFAULT_CONTAINER_JUPYTER_CONFIG_DIR = "/app/container/jupyter-config"
+DEFAULT_CONTAINER_JUPYTER_DATA_DIR = "/app/container/jupyter-data"
+DEFAULT_CONTAINER_MPLCONFIGDIR = "/app/container/mplconfig"
+DEFAULT_CONTAINER_IPYTHONDIR = "/app/container/ipython"
+DEFAULT_CONTAINER_XDG_CONFIG_HOME = "/app/container/xdg-config"
 DEFAULT_SETTING_ORDER = (
     "agent",
     "baseline",
@@ -167,7 +173,7 @@ class DockerNotebookExecutor:
             "volumes": volumes,
             "ports": {f"{self.port}/tcp": self.port},
             "command": self.start_command,
-            "environment": {"HOME": "/app/container"},
+            "environment": self._container_environment(),
         }
 
         if os.name == "posix":
@@ -175,6 +181,24 @@ class DockerNotebookExecutor:
 
         self.container = self.client.containers.run(self.image_name, **docker_kwargs)
         self._wait_for_server()
+
+    def _container_environment(self) -> dict[str, str]:
+        return {
+            "HOME": self.mount_container_path,
+            "TMPDIR": DEFAULT_CONTAINER_TMP_DIR,
+            "JUPYTER_CONFIG_DIR": DEFAULT_CONTAINER_JUPYTER_CONFIG_DIR,
+            "JUPYTER_DATA_DIR": DEFAULT_CONTAINER_JUPYTER_DATA_DIR,
+            "MPLCONFIGDIR": DEFAULT_CONTAINER_MPLCONFIGDIR,
+            "IPYTHONDIR": DEFAULT_CONTAINER_IPYTHONDIR,
+            "XDG_CONFIG_HOME": DEFAULT_CONTAINER_XDG_CONFIG_HOME,
+        }
+
+    def _exec_environment_args(self) -> list[str]:
+        environment = self._container_environment()
+        args: list[str] = []
+        for key, value in environment.items():
+            args.extend(["-e", f"{key}={value}"])
+        return args
 
     def _remove_existing_container(self) -> None:
         try:
@@ -235,6 +259,7 @@ class DockerNotebookExecutor:
         command = [
             "docker",
             "exec",
+            *self._exec_environment_args(),
             self.container_name,
             "jupyter",
             "nbconvert",
