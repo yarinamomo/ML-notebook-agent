@@ -5,6 +5,7 @@ import os
 import sys
 import shutil
 import subprocess
+import shlex
 import time
 import uuid
 from collections import Counter
@@ -33,17 +34,10 @@ DEFAULT_CONFIG_PATH = Path(os.getenv("NOTEBOOK_AGENT_CONFIG_PATH", "./config/age
 DEFAULT_DEFAULTS_PATH = Path(os.getenv("NOTEBOOK_AGENT_DEFAULTS_PATH", "./config/defaults.yaml"))
 DEFAULT_TMP_ROOT = Path(os.getenv("NOTEBOOK_AGENT_TMP_PATH", str(PROJECT_ROOT / "tmp" / "patched_notebook_runs")))
 DEFAULT_RETRY_DELAY_SECONDS = 5.0
-DEFAULT_CONTAINER_MOUNT_PATH = "/app/container"
 DEFAULT_PORT = 8888
 DEFAULT_RESULTS_ROOT = Path("results")
 DEFAULT_JUNO_BENCH_ROOT = Path("JunoBench")
 DEFAULT_MAX_RETRIES = 3
-DEFAULT_CONTAINER_TMP_DIR = "/app/container/tmp"
-DEFAULT_CONTAINER_JUPYTER_CONFIG_DIR = "/app/container/jupyter-config"
-DEFAULT_CONTAINER_JUPYTER_DATA_DIR = "/app/container/jupyter-data"
-DEFAULT_CONTAINER_MPLCONFIGDIR = "/app/container/mplconfig"
-DEFAULT_CONTAINER_IPYTHONDIR = "/app/container/ipython"
-DEFAULT_CONTAINER_XDG_CONFIG_HOME = "/app/container/xdg-config"
 DEFAULT_SETTING_ORDER = (
     "agent",
     "baseline",
@@ -137,6 +131,7 @@ class DockerNotebookExecutor:
         image_name: str,
         start_command: str | None,
         mount_host_root: Path,
+        mount_tmp_root: Path | None,
         mount_container_path: str,
         port: int,
         container_name: str | None = None,
@@ -144,6 +139,7 @@ class DockerNotebookExecutor:
         self.image_name = image_name
         self.start_command = start_command
         self.mount_host_root = mount_host_root.resolve()
+        self.mount_tmp_root = (mount_tmp_root or (self.mount_host_root / "_runtime_tmp")).resolve()
         self.mount_container_path = mount_container_path.rstrip("/")
         self.port = port
         self.container_name = container_name or f"patched-notebook-runner-{uuid.uuid4().hex[:8]}"
@@ -159,9 +155,15 @@ class DockerNotebookExecutor:
 
     def start(self) -> None:
         self._remove_existing_container()
+        self.mount_host_root.mkdir(parents=True, exist_ok=True)
+        self.mount_tmp_root.mkdir(parents=True, exist_ok=True)
         volumes = {
             str(self.mount_host_root): {
                 "bind": self.mount_container_path,
+                "mode": "rw",
+            },
+            str(self.mount_tmp_root): {
+                "bind": "/tmp",
                 "mode": "rw",
             }
         }
@@ -184,13 +186,13 @@ class DockerNotebookExecutor:
 
     def _container_environment(self) -> dict[str, str]:
         return {
-            "HOME": self.mount_container_path,
-            "TMPDIR": DEFAULT_CONTAINER_TMP_DIR,
-            "JUPYTER_CONFIG_DIR": DEFAULT_CONTAINER_JUPYTER_CONFIG_DIR,
-            "JUPYTER_DATA_DIR": DEFAULT_CONTAINER_JUPYTER_DATA_DIR,
-            "MPLCONFIGDIR": DEFAULT_CONTAINER_MPLCONFIGDIR,
-            "IPYTHONDIR": DEFAULT_CONTAINER_IPYTHONDIR,
-            "XDG_CONFIG_HOME": DEFAULT_CONTAINER_XDG_CONFIG_HOME,
+            "HOME": "/tmp/home",
+            "TMPDIR": "/tmp",
+            "JUPYTER_CONFIG_DIR": "/tmp/jupyter-config",
+            "JUPYTER_DATA_DIR": "/tmp/jupyter-data",
+            "MPLCONFIGDIR": "/tmp/mplconfig",
+            "IPYTHONDIR": "/tmp/ipython",
+            "XDG_CONFIG_HOME": "/tmp/xdg-config",
         }
 
     def _exec_environment_args(self) -> list[str]:
@@ -224,6 +226,7 @@ class DockerNotebookExecutor:
                 last_error = RuntimeError(f"Jupyter status returned {response.status_code}")
             except Exception as exc:  # noqa: BLE001
                 last_error = exc
+                print(exc)
             time.sleep(1)
 
         raise RecoverableNotebookExecutionError(
@@ -256,18 +259,31 @@ class DockerNotebookExecutor:
             raise RecoverableNotebookExecutionError("Container is not running")
 
         container_notebook_path = self.container_path_for_host_path(notebook_host_path)
+        container_notebook_dir = str(Path(container_notebook_path).parent)
+        container_notebook_name = Path(container_notebook_path).name
+        runtime_env = self._container_environment()
+        shell_command = (
+            "set -eu; "
+            "mkdir -p /tmp/home /tmp/jupyter-config /tmp/jupyter-data /tmp/mplconfig /tmp/ipython /tmp/xdg-config; "
+            "touch /tmp/kaggle.log; "
+            f"export HOME={shlex.quote(runtime_env['HOME'])} TMPDIR={shlex.quote(runtime_env['TMPDIR'])} "
+            f"JUPYTER_CONFIG_DIR={shlex.quote(runtime_env['JUPYTER_CONFIG_DIR'])} "
+            f"JUPYTER_DATA_DIR={shlex.quote(runtime_env['JUPYTER_DATA_DIR'])} "
+            f"MPLCONFIGDIR={shlex.quote(runtime_env['MPLCONFIGDIR'])} "
+            f"IPYTHONDIR={shlex.quote(runtime_env['IPYTHONDIR'])} "
+            f"XDG_CONFIG_HOME={shlex.quote(runtime_env['XDG_CONFIG_HOME'])}; "
+            f"exec jupyter nbconvert --to notebook --execute --inplace {shlex.quote(container_notebook_name)}"
+        )
         command = [
             "docker",
             "exec",
+            "-w",
+            container_notebook_dir,
             *self._exec_environment_args(),
             self.container_name,
-            "jupyter",
-            "nbconvert",
-            "--to",
-            "notebook",
-            "--execute",
-            "--inplace",
-            container_notebook_path,
+            "/bin/sh",
+            "-lc",
+            shell_command,
         ]
 
         try:
@@ -368,7 +384,7 @@ def load_runner_config(
         juno_bench_root=juno_bench_root.resolve(),
         benchmark_root=(juno_bench_root / "benchmark").resolve(),
         temp_root=DEFAULT_TMP_ROOT.resolve(),
-        container_mount_path=DEFAULT_CONTAINER_MOUNT_PATH,
+        container_mount_path="/app/container",
         docker_image_name=str(environment.get("docker_image_name", "yarinamomo/kaggle_python_env")),
         docker_start_command=environment.get("docker_start_command"),
         port=int(environment.get("port", DEFAULT_PORT)),
@@ -601,6 +617,7 @@ def process_single_patched_notebook(patched_path: Path, config: RunnerConfig) ->
                 image_name=config.docker_image_name,
                 start_command=config.docker_start_command,
                 mount_host_root=config.temp_root,
+                mount_tmp_root=config.temp_root / "_runtime_tmp",
                 mount_container_path=config.container_mount_path,
                 port=config.port,
             )
