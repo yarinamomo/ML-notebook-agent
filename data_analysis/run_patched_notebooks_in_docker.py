@@ -108,6 +108,23 @@ class ExecutionAttemptResult:
     timed_out: bool
 
 
+def _format_execution_diagnostics(
+    stdout: str,
+    stderr: str,
+    returncode: int | None = None,
+) -> str:
+    parts: list[str] = []
+    if returncode is not None:
+        parts.append(f"returncode={returncode}")
+    if stdout.strip():
+        parts.append(f"stdout:\n{stdout.strip()}")
+    if stderr.strip():
+        parts.append(f"stderr:\n{stderr.strip()}")
+    if not parts:
+        return "No stdout/stderr captured."
+    return "\n\n".join(parts)
+
+
 class DockerNotebookExecutor:
     def __init__(
         self,
@@ -247,19 +264,23 @@ class DockerNotebookExecutor:
         stderr = completed.stderr or ""
 
         if completed.returncode != 0:
+            diagnostics = _format_execution_diagnostics(stdout, stderr, completed.returncode)
             self._reload_container_state()
             if not self._container_is_running():
                 raise RecoverableNotebookExecutionError(
-                    "Container stopped while executing the notebook"
+                    "Container stopped while executing the notebook. "
+                    f"Diagnostics:\n{diagnostics}"
                 )
 
             if self._looks_like_notebook_failure(stdout, stderr):
                 raise NonRecoverableNotebookExecutionError(
-                    "Notebook execution failed due to a notebook error"
+                    "Notebook execution failed due to a notebook error. "
+                    f"Diagnostics:\n{diagnostics}"
                 )
 
             raise RecoverableNotebookExecutionError(
-                f"Notebook execution returned non-zero exit code {completed.returncode}"
+                f"Notebook execution returned non-zero exit code {completed.returncode}. "
+                f"Diagnostics:\n{diagnostics}"
             )
 
         return ExecutionAttemptResult(
@@ -582,11 +603,15 @@ def process_single_patched_notebook(patched_path: Path, config: RunnerConfig) ->
                     copy_executed_notebook(prepared_path, output_path)
             last_record.status = "notebook_failed"
             last_record.message = str(exc)
+            print(f"Notebook failed: {patched_path}")
+            print(str(exc))
             return last_record
         except RecoverableNotebookExecutionError as exc:
             last_record.executed_notebook_path = str(prepared_path)
             last_record.status = "retrying"
             last_record.message = str(exc)
+            print(f"Notebook retrying after failure: {patched_path}")
+            print(str(exc))
             if prepared_path.exists():
                 try:
                     _set_record_execution_proof(last_record, prepared_path)
@@ -719,6 +744,7 @@ def run_all_settings_with_defaults() -> dict[str, Any]:
             {
                 "setting": setting,
                 "model": model,
+                
                 "report_path": run_result["report_path"],
                 "record_count": len(run_result["records"]),
             }
