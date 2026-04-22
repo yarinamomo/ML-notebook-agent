@@ -75,7 +75,6 @@ class DockerNotebookExecutor:
     def __init__(self, mount_host_dir: Path) -> None:
         environment = _load_runner_environment()
         self.mount_host_dir = mount_host_dir.resolve()
-        self.mount_tmp_dir = (self.mount_host_dir / "_runtime_tmp").resolve()
         self.mount_container_dir = "/app/container"
         self.image_name = str(environment.get("docker_image_name", "yarinamomo/kaggle_python_env"))
         self.timeout_seconds = int(environment.get("timeout", 1800))
@@ -85,7 +84,7 @@ class DockerNotebookExecutor:
 
     def _container_environment(self) -> dict[str, str]:
         return {
-            "HOME": self.mount_container_dir,
+            "HOME": "/tmp/home",
             "TMPDIR": "/tmp",
             "JUPYTER_CONFIG_DIR": "/tmp/jupyter-config",
             "JUPYTER_DATA_DIR": "/tmp/jupyter-data",
@@ -106,7 +105,6 @@ class DockerNotebookExecutor:
 
     def start(self) -> None:
         self.mount_host_dir.mkdir(parents=True, exist_ok=True)
-        self.mount_tmp_dir.mkdir(parents=True, exist_ok=True)
 
         docker_kwargs = {
             "name": self.container_name,
@@ -117,10 +115,6 @@ class DockerNotebookExecutor:
             "volumes": {
                 str(self.mount_host_dir): {
                     "bind": self.mount_container_dir,
-                    "mode": "rw",
-                },
-                str(self.mount_tmp_dir): {
-                    "bind": "/tmp",
                     "mode": "rw",
                 }
             },
@@ -156,7 +150,7 @@ class DockerNotebookExecutor:
 
         command = (
             "set -eu; "
-            "mkdir -p /tmp/jupyter-config /tmp/jupyter-data /tmp/jupyter-runtime /tmp/mplconfig /tmp/ipython /tmp/xdg-config /tmp/xdg-data /tmp/xdg-cache; "
+            "mkdir -p /tmp/home /tmp/jupyter-config /tmp/jupyter-data /tmp/jupyter-runtime /tmp/mplconfig /tmp/ipython /tmp/xdg-config /tmp/xdg-data /tmp/xdg-cache; "
             "touch /tmp/kaggle.log; "
             "jupyter nbconvert --Application.ignore_config=True --to notebook --execute --inplace "
             "--ExecutePreprocessor.allow_errors=True "
@@ -196,6 +190,13 @@ def _reset_tmp_workdir(tmp_root: Path) -> None:
     if tmp_root.exists():
         shutil.rmtree(tmp_root)
     tmp_root.mkdir(parents=True, exist_ok=True)
+
+
+def _cleanup_tmp_workdir(tmp_root: Path) -> None:
+    shutil.rmtree(tmp_root, ignore_errors=True)
+    if tmp_root.exists():
+        raise RuntimeError(f"Temporary workdir could not be removed: {tmp_root}")
+    print(f"Removed tmp workdir: {tmp_root}")
 
 
 def _stage_inputs(patched_script: Path, instance_folder: Path, tmp_root: Path) -> tuple[Path, Path]:
@@ -255,34 +256,34 @@ def run_single_patched_notebook(patched_script: Path, instance_folder: Path) -> 
     _validate_inputs(patched_script, instance_folder)
     _reset_tmp_workdir(tmp_root)
 
-    staged_instance_dir, staged_patched_script = _stage_inputs(patched_script, instance_folder, tmp_root)
-    staged_notebook_path = _build_notebook_from_patched_script(staged_patched_script, staged_instance_dir)
+    try:
+        staged_instance_dir, staged_patched_script = _stage_inputs(patched_script, instance_folder, tmp_root)
+        staged_notebook_path = _build_notebook_from_patched_script(staged_patched_script, staged_instance_dir)
 
-    output_notebook_path = patched_script.with_name(f"{patched_script.stem}_executed.ipynb")
+        output_notebook_path = patched_script.with_name(f"{patched_script.stem}_executed.ipynb")
 
-    print(f"Staged instance dir: {staged_instance_dir}")
-    print(f"Staged notebook: {staged_notebook_path}")
-    print(f"Executing notebook in Docker...")
-    with DockerNotebookExecutor(mount_host_dir=tmp_root) as executor:
-        exit_code, stdout, stderr = executor.execute(
-            mounted_folder=staged_instance_dir,
-            notebook_name=staged_notebook_path.name,
-        )
-    
-    output_notebook_path.parent.mkdir(parents=True, exist_ok=True)
-    print(f"Executed notebook copied to: {output_notebook_path}")
-    shutil.copy2(staged_notebook_path, output_notebook_path)
+        print(f"Staged instance dir: {staged_instance_dir}")
+        print(f"Staged notebook: {staged_notebook_path}")
+        print(f"Executing notebook in Docker...")
+        with DockerNotebookExecutor(mount_host_dir=tmp_root) as executor:
+            exit_code, stdout, stderr = executor.execute(
+                mounted_folder=staged_instance_dir,
+                notebook_name=staged_notebook_path.name,
+            )
 
-    shutil.rmtree(tmp_root, ignore_errors=True)
-    print(f"Removed tmp workdir: {tmp_root}")
-    
-    if exit_code != 0:
-        raise RuntimeError(
-            "Notebook execution failed\n"
-            f"returncode={exit_code}\n\n"
-            f"stdout:\n{stdout}\n\n"
-            f"stderr:\n{stderr}"
-        )
+        output_notebook_path.parent.mkdir(parents=True, exist_ok=True)
+        print(f"Executed notebook copied to: {output_notebook_path}")
+        shutil.copy2(staged_notebook_path, output_notebook_path)
+
+        if exit_code != 0:
+            raise RuntimeError(
+                "Notebook execution failed\n"
+                f"returncode={exit_code}\n\n"
+                f"stdout:\n{stdout}\n\n"
+                f"stderr:\n{stderr}"
+            )
+    finally:
+        _cleanup_tmp_workdir(tmp_root)
 
 
 
