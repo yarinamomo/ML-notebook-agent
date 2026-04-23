@@ -135,10 +135,11 @@ def _read_summary_success(notebook_path: Path) -> bool:
         raise ValueError(f"Error reading summary file: {summary_path}") from e
 
     metadata = payload.get("metadata", {})
-    success = metadata.get("success")
-    if isinstance(success, bool):
-        return success
-    raise ValueError(f"Invalid summary success value: {success}")
+    success = metadata.get("status", "").lower()
+    if success in ["submitted", "submittedwitherrors", "success"]:
+        return True
+    else:
+        return False
 
 
 def _parse_notebook_identity(notebook_path: Path) -> tuple[str, str, str]:
@@ -236,10 +237,9 @@ def analyze_notebooks() -> dict[str, Any]:
 
     total = len(records)
     total_with_test_failure = sum(1 for record in records if _is_test_failure(record))
-    total_test_failure_success_true = sum(
+    total_success_true = sum(
         1
-        for record in records
-        if _is_test_failure(record) and record.summary_success is True
+        for record in records if record.summary_success is True
     )
 
     by_group: dict[str, dict[str, Any]] = {}
@@ -249,22 +249,31 @@ def analyze_notebooks() -> dict[str, Any]:
 
     for (setting, model), group_records in sorted(grouped.items()):
         run_counts: dict[str, dict[str, int]] = defaultdict(lambda: {"total": 0, "failing": 0})
+        instance_statuses: dict[str, dict[str, bool]] = defaultdict(lambda: {"correct": False, "plausible": False})
         error_types: Counter[str] = Counter()
+        detailed_error_types: Counter[str] = Counter()
 
         for record in group_records:
+            instance_name = _instance_name_from_patched_executed_path(Path(record.notebook_path))
             run_counts[record.run]["total"] += 1
             if _is_test_failure(record):
                 run_counts[record.run]["failing"] += 1
-                error_key = record.error_name or ("NotExecuted" if not record.last_cell_was_executed else "UnknownError")
+                error_key = "TestCellFailed" if (record.last_cell_was_executed and record.last_cell_has_error) else "PriorExecutionFailed"
                 error_types[error_key] += 1
+                detailed_error_key = record.error_name or ("NotExecuted" if not record.last_cell_was_executed else "UnknownError")
+                detailed_error_types[detailed_error_key] += 1
+            instance_statuses[instance_name]["correct"] = instance_statuses[instance_name]["correct"] or (not _is_test_failure(record))
+            instance_statuses[instance_name]["plausible"] = instance_statuses[instance_name]["plausible"] or (record.summary_success is True)
 
         total_group = len(group_records)
         failing_group = sum(1 for record in group_records if _is_test_failure(record))
-        test_failure_group_success_true = sum(
+        success_true = sum(
             1
-            for record in group_records
-            if _is_test_failure(record) and record.summary_success is True
+            for record in group_records if record.summary_success is True
         )
+        total_instances = len(instance_statuses)
+        correct_pass_k_count = sum(1 for status in instance_statuses.values() if status["correct"])
+        plausible_pass_k_count = sum(1 for status in instance_statuses.values() if status["plausible"])
 
         run_failure_rates = []
         run_details: dict[str, Any] = {}
@@ -284,11 +293,14 @@ def analyze_notebooks() -> dict[str, Any]:
             "setting": setting,
             "model": model,
             "total": total_group,
-            "failing": failing_group,
-            "failing_percent": _round(_to_percent(failing_group, total_group)),
-            "test_failures_success_true": test_failure_group_success_true,
-            "test_failure_percent_success_true": _round(_to_percent(test_failure_group_success_true, failing_group)),
+            "correct": total_group - failing_group,
+            "correct_rate": f"{_round(100 - _to_percent(failing_group, total_group))}%",
+            "plausible": success_true,
+            "plausible_rate": f"{_round(_to_percent(success_true, total_group))}%",
+            "correct_pass_k_rate": f"{_round(_to_percent(correct_pass_k_count, total_instances))}%",
+            "plausible_pass_k_rate": f"{_round(_to_percent(plausible_pass_k_count, total_instances))}%",
             "error_types": dict(error_types),
+            "detailed_error_types": dict(detailed_error_types),
             "confusion_matrix": _confusion_counts(group_records),
             "run_to_run_variance": {
                 "n_runs": len(run_failure_rates),
@@ -315,9 +327,10 @@ def analyze_notebooks() -> dict[str, Any]:
         "summary": {
             "excluded_instances": sorted(VALIDATED_TEST_NOTEBOOK_EXCLUSIONS),
             "notebooks_analyzed": total,
-            "test_failure_count": total_with_test_failure,
-            "test_failure_percent": _round(_to_percent(total_with_test_failure, total)),
-            "test_failures_success_true": total_test_failure_success_true,
+            "correct": total - total_with_test_failure,
+            "correct_rate": f"{_round(100 - _to_percent(total_with_test_failure, total))}%",
+            "plausible": total_success_true,
+            "plausible_rate": f"{_round(_to_percent(total_success_true, total))}%",
             "confusion_matrix": _confusion_counts(records),
         },
         "by_group": by_group,
@@ -325,59 +338,12 @@ def analyze_notebooks() -> dict[str, Any]:
         "records": [_record_to_dict(record) for record in records],
     }
 
-
-def _print_console_summary(analysis: dict[str, Any]) -> None:
-    summary = analysis["summary"]
-    confusion = summary["confusion_matrix"]
-    print("=" * 88)
-    print("Patched Executed Notebook Failure Analysis")
-    print("=" * 88)
-    print(f"Notebooks analyzed: {summary['notebooks_analyzed']}")
-    print(
-        "Test failures (last cell error or not executed): "
-        f"{summary['test_failure_count']} ({summary['test_failure_percent']}%)"
-    )
-    print(
-        "Test failures among success=true notebooks: "
-        f"{summary['test_failures_success_true']}"
-    )
-    print(
-        "FP/FN (prediction=test failure, actual=not success): "
-        f"FP={confusion['false_positive']} FN={confusion['false_negative']} "
-        f"FPR={confusion['false_positive_rate']}% FNR={confusion['false_negative_rate']}%"
-    )
-    print("-" * 88)
-    print("Per type/model")
-    print("-" * 88)
-
-    for key, group in analysis["by_group"].items():
-        variance = group["run_to_run_variance"]
-        cm = group["confusion_matrix"]
-        print(
-            f"{key}: total={group['total']} failing={group['failing']} "
-            f"({group['failing_percent']}%), test_fail_success_true={group['test_failures_success_true']}, "
-            f"runs={variance['n_runs']} mean_fail_rate={variance['mean_failure_rate']}, "
-            f"stdev={variance['stdev_failure_rate']}, min={variance['min_failure_rate']}, "
-            f"max={variance['max_failure_rate']}, FP={cm['false_positive']} FN={cm['false_negative']}"
-        )
-
-    if summary["test_failure_count"] > 0:
-        print("-" * 88)
-        print("Error types by group:")
-        for key, group in analysis["by_group"].items():
-            if not group["error_types"]:
-                continue
-            print(f"{key}: {group['error_types']}")
-
-
 def main() -> None:
     analysis = analyze_notebooks()
 
     DEFAULT_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     DEFAULT_OUTPUT_PATH.write_text(json.dumps(analysis, indent=2), encoding="utf-8")
 
-    _print_console_summary(analysis)
-    print("-" * 88)
     print(f"Wrote JSON summary to: {DEFAULT_OUTPUT_PATH}")
 
 
