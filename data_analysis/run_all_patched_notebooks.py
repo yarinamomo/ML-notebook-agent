@@ -15,8 +15,9 @@ from data_analysis.util_test_cells_evaluation import (
     _extract_instance_name_from_filename,
 )
 from data_analysis.run_single_patched_notebook import run_single_patched_notebook
-
+IS_NEW_RESULTS = True  # Set to True to use results_new instead of results
 DEFAULT_RESULTS_ROOT = Path("results")
+DEFAULT_RESULTS_NEW_ROOT = Path("results_new")
 DEFAULT_JUNO_BENCH_ROOT = Path("JunoBench")
 DEFAULT_SETTING_ORDER = (
     "agent",
@@ -26,6 +27,11 @@ DEFAULT_SETTING_ORDER = (
     "baseline_without_cell_outputs",
 )
 
+def _get_results_and_benchmark_roots() -> tuple[Path, Path]:
+    results_root = DEFAULT_RESULTS_NEW_ROOT if IS_NEW_RESULTS else DEFAULT_RESULTS_ROOT
+    benchmark_root = DEFAULT_JUNO_BENCH_ROOT / "benchmark_new_202601" if IS_NEW_RESULTS else DEFAULT_JUNO_BENCH_ROOT
+
+    return results_root, benchmark_root
 
 def discover_patched_notebooks(results_root: Path, setting: str, model: str) -> list[Path]:
     model_root = results_root / setting / model
@@ -70,9 +76,7 @@ def build_error_output_path(patched_path: Path) -> Path:
     return patched_path.with_name(f"{patched_path.stem}_error.txt")
 
 def run_all_settings_with_defaults() -> None:
-    results_root = DEFAULT_RESULTS_ROOT
-    juno_bench_root = DEFAULT_JUNO_BENCH_ROOT
-    benchmark_root = juno_bench_root / "benchmark"
+    results_root, benchmark_root = _get_results_and_benchmark_roots()
     setting_model_pairs = discover_setting_model_pairs(results_root)
     if not setting_model_pairs:
         raise FileNotFoundError(f"No patched notebooks found under: {results_root}")

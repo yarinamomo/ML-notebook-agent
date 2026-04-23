@@ -59,6 +59,62 @@ def _load_runner_environment() -> dict[str, Any]:
 
 
 
+def _host_uid_gid() -> tuple[int, int]:
+    return os.getuid(), os.getgid()
+
+
+def _chown_tree_with_container(path: Path, image_name: str, host_uid: int, host_gid: int) -> None:
+    client = docker.from_env()
+    container: Container | None = None
+
+    try:
+        container = client.containers.run(
+            image_name,
+            name=f"single-notebook-chown-{uuid.uuid4().hex[:8]}",
+            detach=True,
+            tty=True,
+            stdin_open=True,
+            command=["bash", "-lc", "sleep infinity"],
+            volumes={
+                str(path): {
+                    "bind": "/app/container",
+                    "mode": "rw",
+                }
+            },
+            user="0",
+        )
+
+        result = container.exec_run(
+            cmd=["bash", "-lc", f"chown -R {host_uid}:{host_gid} /app/container"],
+            workdir="/",
+            demux=True,
+        )
+        if int(result.exit_code) != 0:
+            stdout = ""
+            stderr = ""
+            if isinstance(result.output, tuple):
+                stdout = _decode_output(result.output[0])
+                stderr = _decode_output(result.output[1])
+            else:
+                stdout = _decode_output(result.output)
+            raise RuntimeError(
+                "Failed to restore mount ownership with root container\n"
+                f"returncode={int(result.exit_code)}\n\n"
+                f"stdout:\n{stdout}\n\n"
+                f"stderr:\n{stderr}"
+            )
+    finally:
+        if container is not None:
+            try:
+                container.kill()
+            except Exception:
+                pass
+            try:
+                container.remove(force=True)
+            except Exception:
+                pass
+
+
 def _decode_output(value: bytes | None) -> str:
     if value is None:
         return ""
@@ -78,6 +134,7 @@ class DockerNotebookExecutor:
         self.mount_container_dir = "/app/container"
         self.image_name = str(environment.get("docker_image_name", "yarinamomo/kaggle_python_env"))
         self.timeout_seconds = int(environment.get("timeout", 1800))
+        self.host_uid, self.host_gid = _host_uid_gid()
         self.container_name = f"single-notebook-runner-{uuid.uuid4().hex[:8]}"
         self.client = docker.from_env()
         self.container: Container | None = None
@@ -140,6 +197,35 @@ class DockerNotebookExecutor:
         finally:
             self.container = None
 
+    def restore_mount_ownership(self) -> None:
+        if self.container is None:
+            return
+
+        result = self.container.exec_run(
+            cmd=[
+                "bash",
+                "-lc",
+                f"chown -R {self.host_uid}:{self.host_gid} {shlex.quote(self.mount_container_dir)}",
+            ],
+            workdir="/",
+            demux=True,
+        )
+
+        if int(result.exit_code) != 0:
+            stdout = ""
+            stderr = ""
+            if isinstance(result.output, tuple):
+                stdout = _decode_output(result.output[0])
+                stderr = _decode_output(result.output[1])
+            else:
+                stdout = _decode_output(result.output)
+            raise RuntimeError(
+                "Failed to restore mount ownership inside container\n"
+                f"returncode={int(result.exit_code)}\n\n"
+                f"stdout:\n{stdout}\n\n"
+                f"stderr:\n{stderr}"
+            )
+
     def execute(self, mounted_folder: Path, notebook_name: str) -> tuple[int, str, str]:
         if self.container is None:
             raise RuntimeError("Container is not running")
@@ -186,9 +272,16 @@ def _validate_inputs(patched_script: Path, instance_folder: Path) -> None:
         raise FileNotFoundError(f"Instance folder is not a directory: {instance_folder}")
 
 
-def _reset_tmp_workdir(tmp_root: Path) -> None:
+def _reset_tmp_workdir(tmp_root: Path, image_name: str | None = None) -> None:
     if tmp_root.exists():
-        shutil.rmtree(tmp_root)
+        try:
+            shutil.rmtree(tmp_root)
+        except PermissionError:
+            if image_name is None:
+                raise
+            host_uid, host_gid = _host_uid_gid()
+            _chown_tree_with_container(tmp_root, image_name, host_uid, host_gid)
+            shutil.rmtree(tmp_root)
     tmp_root.mkdir(parents=True, exist_ok=True)
 
 
@@ -252,9 +345,10 @@ def run_single_patched_notebook(patched_script: Path, instance_folder: Path) -> 
     configured_mount = Path(str(environment.get("docker_mount_path", "tmp/single_notebook_run")))
     tmp_root = configured_mount if configured_mount.is_absolute() else PROJECT_ROOT / configured_mount
     tmp_root = tmp_root.resolve()
+    image_name = str(environment.get("docker_image_name", "yarinamomo/kaggle_python_env"))
 
     _validate_inputs(patched_script, instance_folder)
-    _reset_tmp_workdir(tmp_root)
+    _reset_tmp_workdir(tmp_root, image_name=image_name)
 
     try:
         staged_instance_dir, staged_patched_script = _stage_inputs(patched_script, instance_folder, tmp_root)
@@ -266,10 +360,13 @@ def run_single_patched_notebook(patched_script: Path, instance_folder: Path) -> 
         print(f"Staged notebook: {staged_notebook_path}")
         print(f"Executing notebook in Docker...")
         with DockerNotebookExecutor(mount_host_dir=tmp_root) as executor:
-            exit_code, stdout, stderr = executor.execute(
-                mounted_folder=staged_instance_dir,
-                notebook_name=staged_notebook_path.name,
-            )
+            try:
+                exit_code, stdout, stderr = executor.execute(
+                    mounted_folder=staged_instance_dir,
+                    notebook_name=staged_notebook_path.name,
+                )
+            finally:
+                executor.restore_mount_ownership()
 
         output_notebook_path.parent.mkdir(parents=True, exist_ok=True)
         print(f"Executed notebook copied to: {output_notebook_path}")
