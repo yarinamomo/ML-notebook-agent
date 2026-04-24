@@ -217,12 +217,11 @@ def _build_group_comparison(
     group_rows: list[dict[str, Any]] = []
     for group_name, group in sorted(by_group.items()):
         group_total = int(group["total"])
-        group_failing = int(group["failing"])
         cm = group["confusion_matrix"]
         labeled_instances = int(cm["labeled_instances"])
         tp = int(cm["true_positive"])
         fp = int(cm["false_positive"])
-        group_actual_solved_rate = (group_total - group_failing) / group_total if group_total > 0 else 0.0
+        group_actual_solved_rate = group["correct"] / group_total if group_total > 0 else 0.0
         group_predicted_solved_rate = (tp + fp) / labeled_instances if labeled_instances > 0 else 0.0
         group_false_positive_rate = float(cm["false_positive_rate"])
 
