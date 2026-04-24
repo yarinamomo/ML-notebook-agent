@@ -203,6 +203,44 @@ def _round(value: float) -> float:
     return round(value, 4)
 
 
+def _build_group_comparison(
+    *,
+    by_group: dict[str, dict[str, Any]],
+    total: int,
+    total_with_test_failure: int,
+    overall_confusion: dict[str, float | int],
+) -> list[dict[str, Any]]:
+    overall_actual_solved_rate = (total - total_with_test_failure) / total if total > 0 else 0.0
+    overall_false_positive_rate = float(overall_confusion["false_positive_rate"])
+
+    group_rows: list[dict[str, Any]] = []
+    for group_name, group in sorted(by_group.items()):
+        group_total = int(group["total"])
+        group_failing = int(group["failing"])
+        cm = group["confusion_matrix"]
+        labeled_instances = int(cm["labeled_instances"])
+        tp = int(cm["true_positive"])
+        fp = int(cm["false_positive"])
+        group_actual_solved_rate = (group_total - group_failing) / group_total if group_total > 0 else 0.0
+        group_predicted_solved_rate = (tp + fp) / labeled_instances if labeled_instances > 0 else 0.0
+        group_false_positive_rate = float(cm["false_positive_rate"])
+
+        group_rows.append(
+            {
+                "group": group_name,
+                "total": group_total,
+                "actual_solved_rate": _round(group_actual_solved_rate),
+                "predicted_solved_rate": _round(group_predicted_solved_rate),
+                "false_positive_rate": _round(group_false_positive_rate),
+                "false_negative_rate": _round(float(cm["false_negative_rate"])),
+                "actual_solved_rate_delta_vs_overall": _round(group_actual_solved_rate - overall_actual_solved_rate),
+                "false_positive_rate_delta_vs_overall": _round(group_false_positive_rate - overall_false_positive_rate),
+            }
+        )
+
+    return sorted(group_rows, key=lambda row: row["actual_solved_rate"], reverse=True)
+
+
 def analyze_notebooks() -> dict[str, Any]:
     records: list[NotebookFailureRecord] = []
     notebooks = _discover_notebooks()
@@ -311,6 +349,14 @@ def analyze_notebooks() -> dict[str, Any]:
         if _is_test_failure(record)
     ]
 
+    overall_confusion = _confusion_counts(records)
+    group_comparison = _build_group_comparison(
+        by_group=by_group,
+        total=total,
+        total_with_test_failure=total_with_test_failure,
+        overall_confusion=overall_confusion,
+    )
+
     return {
         "summary": {
             "excluded_instances": sorted(VALIDATED_TEST_NOTEBOOK_EXCLUSIONS),
@@ -318,7 +364,8 @@ def analyze_notebooks() -> dict[str, Any]:
             "test_failure_count": total_with_test_failure,
             "test_failure_percent": _round(_to_percent(total_with_test_failure, total)),
             "test_failures_success_true": total_test_failure_success_true,
-            "confusion_matrix": _confusion_counts(records),
+            "confusion_matrix": overall_confusion,
+            "group_comparison": group_comparison,
         },
         "by_group": by_group,
         "failure_examples": non_assertion_examples,
