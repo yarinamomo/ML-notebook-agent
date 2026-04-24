@@ -19,10 +19,10 @@ if __package__ in (None, ""):
 
 from data_analysis.util_test_cells_evaluation import VALIDATED_TEST_NOTEBOOK_EXCLUSIONS
 
-HUMAN_EVALUATED_CASES = VALIDATED_TEST_NOTEBOOK_EXCLUSIONS - {"new_10"}
+HUMAN_EVALUATED_CASES = VALIDATED_TEST_NOTEBOOK_EXCLUSIONS
 # x 15 (3 RUNS, 5 SETTINGS)
 
-DEFAULT_ROOT = Path("results") # results_new
+DEFAULT_ROOT = Path("results_new") # results_new
 DEFAULT_OUTPUT_PATH = DEFAULT_ROOT / "data_analysis/patched_executed_failures_summary.json"
 
 class Classification(Enum):
