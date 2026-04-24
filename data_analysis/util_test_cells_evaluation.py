@@ -28,6 +28,7 @@ VALIDATED_TEST_NOTEBOOK_EXCLUSIONS = {
     "matplotlib_4",
     "matplotlib_5",
     "tensorflow_9",
+    "new_10",
 }
 
 def convert_sampled_patches_to_notebooks(
