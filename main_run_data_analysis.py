@@ -10,7 +10,7 @@ from data_analysis import (
 )
 
 def main():
-    results_dir = Path("results_new")
+    results_dir = Path("results")
     target_modes = ["baseline", "baseline_without_all_outputs", "baseline_without_cell_outputs", "agent", "agent_without_run_code_and_cell_outputs"]
     target_models = ["glm-4.7-355b"]
     for target_mode in target_modes:
@@ -50,8 +50,17 @@ def main():
 
     summarize_plots.compare_performance_across_settings(
         results_dir = results_dir,
-        settings=['baseline_without_all_outputs', 'baseline_without_cell_outputs', 'baseline', 'agent_without_run_code_and_cell_outputs', 'agent']
+        settings=target_modes
     )
+
+    for target_model in target_models:
+        summarize_statistics.run_passk_pairwise_significance(
+            results_root=results_dir,
+            model=target_model,
+            settings=["agent", "agent_without_run_code_and_cell_outputs", "baseline"],
+            k=1,
+            output_path=results_dir / Path(f"data_analysis/passk_pairwise_significance_{target_model}.json"),
+        )
 
 if __name__ == "__main__":
     main()

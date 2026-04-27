@@ -358,28 +358,28 @@ def create_comparison_chart(path1: str, path2: str, title: str, output_path: Pat
     plt.close()
 
 
-def load_manual_validation_outcome(llm_dir: Path):
-    """Load the manual validation outcome string for a model directory if available."""
-    labeled_instances_path = llm_dir / 'analysis' / 'stratified_sampled_instances_labeled.json'
-    if not labeled_instances_path.exists():
-        return None
+# def load_manual_validation_outcome(llm_dir: Path):
+#     """Load the manual validation outcome string for a model directory if available."""
+#     labeled_instances_path = llm_dir / 'analysis' / 'stratified_sampled_instances_labeled.json'
+#     if not labeled_instances_path.exists():
+#         return None
 
-    try:
-        with open(labeled_instances_path, 'r', encoding='utf-8') as f:
-            labeled_instances = json.load(f)
-    except (OSError, json.JSONDecodeError) as e:
-        print(f"Warning: failed to load manual validation from {labeled_instances_path}: {e}")
-        return None
+#     try:
+#         with open(labeled_instances_path, 'r', encoding='utf-8') as f:
+#             labeled_instances = json.load(f)
+#     except (OSError, json.JSONDecodeError) as e:
+#         print(f"Warning: failed to load manual validation from {labeled_instances_path}: {e}")
+#         return None
 
-    manual_validation = labeled_instances.get('manual_validation', {})
-    if not isinstance(manual_validation, dict):
-        return None
+#     manual_validation = labeled_instances.get('manual_validation', {})
+#     if not isinstance(manual_validation, dict):
+#         return None
 
-    validation_outcome = manual_validation.get('validation_outcome')
-    if isinstance(validation_outcome, str) and validation_outcome.strip():
-        return validation_outcome
+#     validation_outcome = manual_validation.get('validation_outcome')
+#     if isinstance(validation_outcome, str) and validation_outcome.strip():
+#         return validation_outcome
 
-    return None
+#     return None
 
 
 def format_setting_display_name(setting: str, width: int = 18):
@@ -391,11 +391,10 @@ def get_table_column_widths(columns):
     """Return matplotlib table column widths tuned for the comparison output."""
     widths = {
         'Setting': 0.24,
-        'Pass@K Rate': 0.14,
-        'Pass All K Rate': 0.16,
-        'Avg Run SR': 0.12,
-        'Std Run SR': 0.12,
-        'Correct Rate\n(CI 90%, MoE 10%)': 0.22,
+        'Pass@K (correct)': 0.16,
+        'Pass@All (correct)': 0.16,
+        'Pass@K (plausible)': 0.16,
+        'Pass@All (plausible)': 0.16,
     }
     default_width = 1.0 / max(len(columns), 1)
     return [widths.get(column, default_width) for column in columns]
@@ -426,11 +425,22 @@ def main(base_dir: Path):
     print(f"Charts saved to: {output_dir.absolute()}")
     print("="*60)
 
+SETTING_ABBREVIATIONS = {
+    'baseline_without_all_outputs': 'Baseline(-RT-ERR)',
+    'baseline_without_cell_outputs': 'Baseline(-RT)',
+    'baseline': 'Baseline',
+    'agent_without_run_code_and_cell_outputs': 'Agent(-RT)',
+    'agent': 'Agent',
+}
+
+LLM_ABBREVIATIONS = {
+    'glm-4.7-355b': 'GLM'
+}
 
 def compare_performance_across_settings(results_dir: Path = Path('results'), 
                                        settings: list = None,
                                        output_dir: Path = None):
-    correct_rate_col = 'Correct Rate\n(CI 90%, MoE 10%)'
+    # correct_rate_col = 'Correct Rate\n(CI 90%, MoE 10%)'
 
     if settings is None:
         settings = ['baseline', 'without_run_code', 'agent']
@@ -470,29 +480,30 @@ def compare_performance_across_settings(results_dir: Path = Path('results'),
                 
                 # Extract metrics from summary
                 stats = summary.get('statistics', {})
-                outcome_dist = stats.get('outcome_distribution', {})
-                per_run = outcome_dist.get('per_run', {})
-                
-                # Extract run success rates
-                run_sr = [
-                    per_run.get('run_1', {}).get('success_rate', np.nan),
-                    per_run.get('run_2', {}).get('success_rate', np.nan),
-                    per_run.get('run_3', {}).get('success_rate', np.nan),
-                ]
+                correct_outcome_dist = stats.get('correct_outcome_distribution', {})
+                plausible_outcome_dist = stats.get('plausible_outcome_distribution', {})
                 
                 # Calculate average and std (ignore NaN values)
-                run_sr_valid = [x for x in run_sr if not np.isnan(x)]
-                avg_run_sr = np.mean(run_sr_valid) if run_sr_valid else np.nan
-                std_run_sr = np.std(run_sr_valid) if len(run_sr_valid) > 1 else np.nan
-                manual_validation_outcome = load_manual_validation_outcome(llm_dir)
+                # per_run = correct_outcome_dist.get('per_run', {})
+                # run_sr = [
+                #     per_run.get('run_1', {}).get('correct_rate', np.nan),
+                #     per_run.get('run_2', {}).get('correct_rate', np.nan),
+                #     per_run.get('run_3', {}).get('correct_rate', np.nan),
+                # ]
+                # run_sr_valid = [x for x in run_sr if not np.isnan(x)]
+                # avg_run_sr = np.mean(run_sr_valid) if run_sr_valid else np.nan
+                # std_run_sr = np.std(run_sr_valid) if len(run_sr_valid) > 1 else np.nan
+                # manual_validation_outcome = load_manual_validation_outcome(llm_dir)
                 
                 row = {
-                    'Setting': setting,
-                    'Pass@K Rate': outcome_dist.get('pass_at_k_rate', np.nan),
-                    'Pass All K Rate': outcome_dist.get('pass_all_k_rate', np.nan),
-                    'Avg Run SR': avg_run_sr,
-                    'Std Run SR': std_run_sr,
-                    correct_rate_col: manual_validation_outcome,
+                    'Setting': SETTING_ABBREVIATIONS.get(setting, setting),
+                    'Pass@K (correct)': round(correct_outcome_dist.get('pass_at_k_rate', np.nan), 3),
+                    'Pass@All (correct)': round(correct_outcome_dist.get('pass_all_k_rate', np.nan), 3),
+                    'Pass@K (plausible)': round(plausible_outcome_dist.get('pass_at_k_rate', np.nan), 3),
+                    'Pass@All (plausible)': round(plausible_outcome_dist.get('pass_all_k_rate', np.nan), 3),
+                    # 'Avg Run SR': avg_run_sr,
+                    # 'Std Run SR': std_run_sr,
+                    # correct_rate_col: manual_validation_outcome,
                 }
                 
                 data_by_llm[llm_name].append(row)
@@ -528,13 +539,6 @@ def compare_performance_across_settings(results_dir: Path = Path('results'),
         # Format dataframe for display (round to 4 decimal places)
         df_display = df.copy()
         df_display['Setting'] = df_display['Setting'].apply(format_setting_display_name)
-        for col in ['Pass@K Rate', 'Pass All K Rate', 'Avg Run SR', 'Std Run SR']:
-            if col in df_display.columns:
-                df_display[col] = df_display[col].apply(lambda x: f"{x:.4f}" if pd.notna(x) else "N/A")
-        if correct_rate_col in df_display.columns:
-            df_display[correct_rate_col] = df_display[correct_rate_col].apply(
-                lambda x: x if isinstance(x, str) and x.strip() else 'N/A'
-            )
         
         # Create table
         table = ax.table(cellText=df_display.values, colLabels=df_display.columns,
