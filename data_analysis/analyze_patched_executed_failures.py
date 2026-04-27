@@ -19,9 +19,11 @@ if __package__ in (None, ""):
 
 from data_analysis.util_test_cells_evaluation import VALIDATED_TEST_NOTEBOOK_EXCLUSIONS
 
+HUMAN_EVALUATED_CASES = VALIDATED_TEST_NOTEBOOK_EXCLUSIONS
+# x 15 (3 RUNS, 5 SETTINGS)
 
-DEFAULT_ROOT = Path("results")
-DEFAULT_OUTPUT_PATH = Path("results/data_analysis/patched_executed_failures_summary.json")
+DEFAULT_ROOT = Path("results_new") # results_new
+DEFAULT_OUTPUT_PATH = DEFAULT_ROOT / "data_analysis/patched_executed_failures_summary.json"
 
 class Classification(Enum):
     TRUE_POSITIVE = "true_positive"
@@ -101,7 +103,7 @@ def _instance_name_from_patched_executed_path(notebook_path: Path) -> str:
 
 def _discover_notebooks() -> list[Path]:
     discovered: list[Path] = []
-    excluded_instances = {name.lower() for name in VALIDATED_TEST_NOTEBOOK_EXCLUSIONS}
+    excluded_instances = {name.lower() for name in (VALIDATED_TEST_NOTEBOOK_EXCLUSIONS-HUMAN_EVALUATED_CASES)}
     root = DEFAULT_ROOT
     assert root.exists() and root.is_dir(), f"Results root not found: {root}"
 
@@ -370,7 +372,8 @@ def analyze_notebooks() -> dict[str, Any]:
 
     return {
         "summary": {
-            "excluded_instances": sorted(VALIDATED_TEST_NOTEBOOK_EXCLUSIONS),
+            "excluded_instances": sorted(VALIDATED_TEST_NOTEBOOK_EXCLUSIONS-HUMAN_EVALUATED_CASES),
+            "human_evaluated_cases": sorted(HUMAN_EVALUATED_CASES),
             "notebooks_analyzed": total,
             "correct": total - total_with_test_failure,
             "correct_rate": f"{_round(100 - _to_percent(total_with_test_failure, total))}%",
