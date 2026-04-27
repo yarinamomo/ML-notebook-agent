@@ -19,6 +19,7 @@ from jinja2 import StrictUndefined, Template
 from src.notebook_environment import NotebookEnvironment
 from src.CustomToolLitellmModel import CustomToolLitellmModel
 from src.notebook_tools import EDIT_CELL_TOOL
+from src.run_nb.run_single_patched import run_single_patched_notebook
 from src.utils.format_nb_cells import format_cell_source_for_llm
 from src.utils.log import logger
 from src.utils.summary_util import build_summary
@@ -158,5 +159,8 @@ def run_baseline_instance(
 
         env.close()
         time.sleep(2)
+        # Execute the resulting notebook and save outputs regardless of success
+        run_single_patched_notebook(patched_script=output_dir / f"{instance_name}_patched.py", instance_name=instance_name, config=config.get("environment", {}))
+
 
     return exit_status, summary_text

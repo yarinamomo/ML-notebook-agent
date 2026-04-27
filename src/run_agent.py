@@ -6,6 +6,7 @@ from src.notebook_environment import NotebookEnvironment
 from src.CustomToolLitellmModel import CustomToolLitellmModel
 from src.utils.log import logger
 from src.ui_agent import UiAgent
+from src.run_nb.run_single_patched import run_single_patched_notebook
 
 
 def get_instance_trajectory_path(run_output_dir: Path, instance_name: str) -> Path:
@@ -59,5 +60,7 @@ def run_single_instance(
         # Close environment
         env.close()
         time.sleep(2)  # Ensure clean shutdown
+        # Execute the resutling notebook and save outputs regardless of agent success
+        run_single_patched_notebook(patched_script=output_dir / f"{instance_name}_patched.py", instance_name=instance_name, config=config.get("environment", {}))
     
     return exit_status, submission
