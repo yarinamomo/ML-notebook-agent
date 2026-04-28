@@ -372,26 +372,25 @@ def _exact_mcnemar_p_value(n10: int, n01: int) -> float:
     lower_tail = sum(comb(n, i) for i in range(k + 1)) / (2 ** n)
     return min(1.0, 2.0 * lower_tail)
 
-def _instance_pass_at_k_from_results(results: list[dict], k: int) -> dict[str, int]:
+def _instance_pass_at_k_from_results(results: list[dict]) -> dict[str, int]:
     by_instance: dict[str, list[bool]] = {}
     for r in results:
         instance = r.get("instance", "")
         by_instance.setdefault(instance, []).append(bool(r.get("is_correct", False)))
     return {
-        instance: int(sum(run_correctness) >= k)
+        instance: int(sum(run_correctness) >= 1)
         for instance, run_correctness in by_instance.items()
     }
 
 def compare_settings_pass_at_k(
     setting_to_results: dict[str, list[dict]],
-    k: int = 1,
     alpha: float = 0.05,
 ) -> dict[str, object]:
     comparisons: list[dict] = []
 
     for setting_a, setting_b in combinations(sorted(setting_to_results.keys()), 2):
-        outcomes_a = _instance_pass_at_k_from_results(setting_to_results[setting_a], k)
-        outcomes_b = _instance_pass_at_k_from_results(setting_to_results[setting_b], k)
+        outcomes_a = _instance_pass_at_k_from_results(setting_to_results[setting_a])
+        outcomes_b = _instance_pass_at_k_from_results(setting_to_results[setting_b])
 
         common_instances = sorted(set(outcomes_a.keys()) & set(outcomes_b.keys()))
 
@@ -423,7 +422,6 @@ def compare_settings_pass_at_k(
             {
                 "setting_a": setting_a,
                 "setting_b": setting_b,
-                "k": k,
                 "n_instances": n_instances,
                 "contingency_table": {
                     "n11_both_pass": n11,
@@ -452,7 +450,6 @@ def compare_settings_pass_at_k(
         )
 
     return {
-        "k": k,
         "alpha": alpha,
         "method": "Exact McNemar (two-sided), paired by instance pass@k outcomes",
         "comparisons": comparisons,
@@ -474,11 +471,10 @@ def run_passk_pairwise_significance(
     results_root: Path,
     model: str,
     settings: list[str],
-    k: int,
     output_path: Path,
 ) -> None:
     setting_to_results = collect_results_for_setting_model(results_root, model, settings)
-    report = compare_settings_pass_at_k(setting_to_results=setting_to_results, k=k, alpha=0.05)
+    report = compare_settings_pass_at_k(setting_to_results=setting_to_results, alpha=0.05)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(f"Saved pairwise pass@k significance: {output_path}")

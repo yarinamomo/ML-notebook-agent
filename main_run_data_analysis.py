@@ -57,8 +57,7 @@ def main():
         summarize_statistics.run_passk_pairwise_significance(
             results_root=results_dir,
             model=target_model,
-            settings=["agent", "agent_without_run_code_and_cell_outputs", "baseline"],
-            k=1,
+            settings=target_modes, #["agent", "agent_without_run_code_and_cell_outputs", "baseline"],
             output_path=results_dir / Path(f"data_analysis/passk_pairwise_significance_{target_model}.json"),
         )
 
