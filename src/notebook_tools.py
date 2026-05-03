@@ -182,6 +182,7 @@ def parse_notebook_tool_actions(
     tool_calls: list,
     *,
     format_error_template: str,
+    raw_message: dict | None = None,
 ) -> list[dict]:
     """Parse tool calls from the LLM response into structured action dicts.
 
@@ -199,6 +200,9 @@ def parse_notebook_tool_actions(
     references an unknown tool.
     """
     if not tool_calls:
+        extra = {"interrupt_type": "FormatError"}
+        if raw_message is not None:
+            extra["raw_message"] = raw_message
         raise FormatError(
             {
                 "role": "user",
@@ -209,7 +213,7 @@ def parse_notebook_tool_actions(
                     ),
                     actions=[],
                 ),
-                "extra": {"interrupt_type": "FormatError"},
+                "extra": extra,
             }
         )
 
@@ -233,25 +237,31 @@ def parse_notebook_tool_actions(
             )
 
         if error_msg:
+            extra = {"interrupt_type": "FormatError"}
+            if raw_message is not None:
+                extra["raw_message"] = raw_message
             raise FormatError(
                 {
                     "role": "user",
                     "content": Template(format_error_template, undefined=StrictUndefined).render(
                         actions=[], error=error_msg.strip()
                     ),
-                    "extra": {"interrupt_type": "FormatError"},
+                    "extra": extra,
                 }
             )
 
         # Build a human-readable "command" string for logging / UI display
         command_repr = _build_command_repr(name, args)
 
-        actions.append({
+        action = {
             "tool_name": name,
             "arguments": args,
-            "tool_call_id": tool_call.id,
             "command": command_repr,
-        })
+        }
+        if getattr(tool_call, "id", None):
+            action["tool_call_id"] = tool_call.id
+
+        actions.append(action)
 
     return actions
 
@@ -283,7 +293,7 @@ class _MockFunction:
 class _MockToolCall:
     def __init__(self, name: str, arguments: str, call_id: str | None = None):
         self.function = _MockFunction(name, arguments)
-        self.id = call_id or f"content_{uuid.uuid4().hex[:12]}"
+        self.id = call_id
 
 
 def parse_tool_calls_from_content(content: str) -> list[_MockToolCall]:
@@ -312,21 +322,8 @@ def parse_tool_calls_from_content(content: str) -> list[_MockToolCall]:
         if parsed:
             calls.append(parsed)
 
-    if calls:
-        return calls
-
-    # Fallback: look for known tool names used function-call style in content
-    # e.g.  "I'll call run_all() now" or "edit_cell(0, "code")"
-    for name in sorted(VALID_TOOL_NAMES, key=len, reverse=True):
-        # Match name(...) capturing the argument portion
-        pattern = rf"\b{re.escape(name)}\s*\(([^)]*)\)"
-        for m in re.finditer(pattern, content, re.DOTALL):
-            args_str = m.group(1).strip()
-            args = _parse_positional_args(name, args_str)
-            if args is not None:
-                calls.append(_MockToolCall(name, json.dumps(args)))
-                return calls  # Only take the first match to avoid duplicates
-
+    # Strict mode: only parse explicit <tool_call> blocks. This avoids
+    # executing tools from incidental prose such as "I'll run_all() next".
     return calls
 
 
