@@ -6,13 +6,13 @@ taken by the LLM agent at each step of execution.
 """
 
 import json
-import os
 import textwrap
 from collections import defaultdict
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.ticker import FuncFormatter
 
 # Define the valid tool names from notebook_tools._TOOL_PARAM_ORDER
 # Ordered for stacked bar chart display
@@ -24,11 +24,13 @@ VALID_TOOLS = [
     "get_cell_count",
     "edit_cell",
     "run_code",
-    "Submitted"
+    "Submitted",
+    "submit",
 ]
 
 # Fixed colors per tool for consistent appearance across settings
-_tab10 = plt.cm.tab10(np.linspace(0, 1, 10))
+_tab10 = plt.get_cmap('tab10')(np.linspace(0, 1, 10))
+_tab20 = plt.get_cmap('tab20')(np.linspace(0, 1, 20))
 TOOL_COLORS = {
     "run_all":       _tab10[0],
     "run_cell":      _tab10[1],
@@ -38,7 +40,49 @@ TOOL_COLORS = {
     "edit_cell":     _tab10[5],
     "run_code":      _tab10[6],
     "Submitted":     _tab10[7],
+    "submit":        _tab10[7],
 }
+
+CATEGORY_ORDER = ["Inspect", "Execute", "Edit", "Submit"]
+CATEGORY_TOOL_MAP = {
+    "Inspect": {"get_cell", "get_cells", "get_cell_count"},
+    "Execute": {"run_cell", "run_all"},
+    "Edit": {"edit_cell"},
+    "Submit": {"submit", "Submitted"},
+}
+
+
+def normalize_tool_name(tool_name):
+    """Normalize synonymous tool names to a shared canonical form."""
+    if tool_name == "Submitted":
+        return "submit"
+    return tool_name
+
+
+def get_tool_category(tool_name):
+    """Map a tool name to one of the high-level behavior categories."""
+    normalized_tool_name = normalize_tool_name(tool_name)
+
+    for category, tool_names in CATEGORY_TOOL_MAP.items():
+        normalized_tool_names = {normalize_tool_name(name) for name in tool_names}
+        if normalized_tool_name in normalized_tool_names:
+            return category
+
+    return None
+
+
+def save_figure(fig, output_path: Path, save_pdf: bool = False):
+    """Save a matplotlib figure to the requested image path and optionally to PDF."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=300, bbox_inches='tight')
+
+    if save_pdf:
+        pdf_path = output_path.with_suffix('.pdf')
+        fig.savefig(pdf_path, bbox_inches='tight')
+
+    print(f"Saved figure to {output_path}")
+    if save_pdf:
+        print(f"Saved figure to {output_path.with_suffix('.pdf')}")
 
 
 def extract_tool_name(action_string):
@@ -109,7 +153,7 @@ def load_summary_data(run_dir):
             
             data[instance_id] = operations_by_step
             
-        except Exception as e:
+        except (OSError, json.JSONDecodeError) as e:
             print(f"Error loading {summary_file}: {e}")
     
     return data
@@ -127,7 +171,7 @@ def aggregate_operations(data_dict):
     """
     aggregated = defaultdict(lambda: defaultdict(int))
     
-    for instance_id, operations_by_step in data_dict.items():
+    for _instance_id, operations_by_step in data_dict.items():
         for step, tool_counts in operations_by_step.items():
             for tool_name, count in tool_counts.items():
                 aggregated[step][tool_name] += count
@@ -135,10 +179,10 @@ def aggregate_operations(data_dict):
     return aggregated
 
 
-def create_stacked_bar_chart(aggregated_data, title, output_path):
+def create_stacked_bar_chart(aggregated_data, title, output_path, save_pdf: bool = False):
     """
     Create a stacked bar chart for operations by step.
-    
+
     Args:
         aggregated_data: Dictionary mapping step -> tool_name -> count
         title: Title for the chart
@@ -147,42 +191,29 @@ def create_stacked_bar_chart(aggregated_data, title, output_path):
     if not aggregated_data:
         print(f"No data to plot for {title}")
         return
-    
-    # Get all steps and sort them
+
     steps = sorted(aggregated_data.keys())
-    
-    # Get all tool names that appear in the data
+
     all_tools = set()
     for tool_counts in aggregated_data.values():
         all_tools.update(tool_counts.keys())
-    
-    # Sort tools using VALID_TOOLS order
+
     tools = [tool for tool in VALID_TOOLS if tool in all_tools]
-    # Add any tools not in the predefined order at the end
     tools.extend(sorted([tool for tool in all_tools if tool not in VALID_TOOLS]))
-    
-    # Prepare data for stacking
+
     data_matrix = np.zeros((len(tools), len(steps)))
-    
     for i, step in enumerate(steps):
         for j, tool in enumerate(tools):
             data_matrix[j, i] = aggregated_data[step].get(tool, 0)
-    
-    # Create the plot
-    fig, ax = plt.subplots(figsize=(max(12, len(steps) * 0.5), 8))
-    
-    # Create stacked bars
+
+    _fig, ax = plt.subplots(figsize=(max(12, len(steps) * 0.5), 8))
+
     bottom = np.zeros(len(steps))
-    bars = []
-    
     for j, tool in enumerate(tools):
-        color = TOOL_COLORS.get(tool, plt.cm.tab10((len(TOOL_COLORS) + list(tools).index(tool)) / 10))
-        bar = ax.bar(range(len(steps)), data_matrix[j], bottom=bottom, 
-                     label=tool, color=color, edgecolor='white', linewidth=0.5)
-        bars.append(bar)
+        color = TOOL_COLORS.get(tool, plt.get_cmap('tab10')((len(TOOL_COLORS) + list(tools).index(tool)) / 10))
+        ax.bar(range(len(steps)), data_matrix[j], bottom=bottom, label=tool, color=color, edgecolor='white', linewidth=0.5)
         bottom += data_matrix[j]
-    
-    # Customize the plot
+
     ax.set_xlabel('Step', fontsize=12, fontweight='bold')
     ax.set_ylabel('Operation Count', fontsize=12, fontweight='bold')
     ax.set_title(title, fontsize=14, fontweight='bold')
@@ -190,10 +221,9 @@ def create_stacked_bar_chart(aggregated_data, title, output_path):
     ax.set_xticklabels(steps, rotation=45 if len(steps) > 20 else 0)
     ax.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=10)
     ax.grid(axis='y', alpha=0.3, linestyle='--')
-    
+
     plt.tight_layout()
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
-    print(f"Saved chart to {output_path}")
+    save_figure(_fig, output_path, save_pdf=save_pdf)
     plt.close()
 
 
@@ -234,7 +264,7 @@ def aggregate_directory(path):
     return combined_data
 
 
-def create_comparison_chart(path1: str, path2: str, title: str, output_path: Path, label1: str='Setting 1', label2: str='Setting 2', mode: str='diff'):
+def create_comparison_chart(path1: str, path2: str, title: str, output_path: Path, label1: str='Setting 1', label2: str='Setting 2', mode: str='diff', save_pdf: bool = False):
     """
     Create a comparison chart between two settings.
     
@@ -277,7 +307,7 @@ def create_comparison_chart(path1: str, path2: str, title: str, output_path: Pat
         
         # Plot difference lines for each tool
         for j, tool in enumerate(tools):
-            color = TOOL_COLORS.get(tool, plt.cm.tab10((len(TOOL_COLORS) + j) / 10))
+            color = TOOL_COLORS.get(tool, plt.get_cmap('tab10')((len(TOOL_COLORS) + j) / 10))
             steps_list = list(all_steps)
             data1 = np.array([aggregated_data1.get(step, {}).get(tool, 0) for step in steps_list])
             data2 = np.array([aggregated_data2.get(step, {}).get(tool, 0) for step in steps_list])
@@ -294,7 +324,7 @@ def create_comparison_chart(path1: str, path2: str, title: str, output_path: Pat
         
         # Customize the plot
         ax.set_xlabel('Step', fontsize=12, fontweight='bold')
-        ax.set_ylabel(f'Difference', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Difference', fontsize=12, fontweight='bold')
         ax.set_title(title, fontsize=14, fontweight='bold')
         ax.set_xticks(range(len(all_steps)))
         ax.set_xticklabels(all_steps, rotation=45 if len(all_steps) > 20 else 0)
@@ -350,11 +380,231 @@ def create_comparison_chart(path1: str, path2: str, title: str, output_path: Pat
         fig.suptitle(title, fontsize=14, fontweight='bold', y=1.00)
     
     plt.tight_layout()
-    output_path.parent.mkdir(parents=True, exist_ok=True)
     # Append mode to filename before extension (e.g., comparison_diff.png)
     final_path = output_path.parent / (output_path.stem + f'_{mode}' + output_path.suffix)
-    plt.savefig(final_path, dpi=300, bbox_inches='tight')
-    print(f"Saved comparison chart to {final_path}")
+    save_figure(fig, final_path, save_pdf=save_pdf)
+    plt.close()
+
+
+def _iter_run_directories(path_obj: Path):
+    """Return run directories if present, otherwise the path itself as a single run."""
+    run_directories = [path_obj / f'run_{run_num}' for run_num in [1, 2, 3] if (path_obj / f'run_{run_num}').exists()]
+    return run_directories if run_directories else [path_obj]
+
+
+def _load_notebook_run_metrics(run_dir: Path):
+    """Load per-notebook category proportions and run_code usage for one run directory."""
+    run_path = Path(run_dir)
+    data = {}
+
+    for summary_file in run_path.glob('*_summary.json'):
+        instance_id = summary_file.stem.replace('_summary', '')
+
+        try:
+            with open(summary_file, 'r', encoding='utf-8', errors='ignore') as f:
+                summary = json.load(f)
+
+            category_counts = defaultdict(int)
+            total_tool_calls = 0
+            run_code_count = 0
+
+            for op in summary.get('operations', []):
+                action = op.get('action')
+                tool_name = extract_tool_name(action)
+
+                if not tool_name:
+                    continue
+
+                total_tool_calls += 1
+
+                normalized_tool_name = normalize_tool_name(tool_name)
+                if normalized_tool_name == 'run_code':
+                    run_code_count += 1
+
+                category = get_tool_category(normalized_tool_name)
+                if category:
+                    category_counts[category] += 1
+
+            if total_tool_calls > 0:
+                data[instance_id] = {
+                    'category_proportions': {
+                        category: category_counts.get(category, 0) / total_tool_calls
+                        for category in CATEGORY_ORDER
+                    },
+                    'run_code_count': run_code_count,
+                    'total_tool_calls': total_tool_calls,
+                }
+
+        except (OSError, json.JSONDecodeError) as e:
+            print(f"Error loading {summary_file}: {e}")
+
+    return data
+
+
+def _aggregate_notebook_category_proportions(path):
+    """Average run-level category proportions within each notebook across its runs."""
+    path_obj = Path(path)
+    notebook_runs = defaultdict(list)
+
+    for run_dir in _iter_run_directories(path_obj):
+        run_metrics = _load_notebook_run_metrics(run_dir)
+        for instance_id, metrics in run_metrics.items():
+            notebook_runs[instance_id].append(metrics['category_proportions'])
+
+    notebook_means = {}
+    for instance_id, run_proportions in notebook_runs.items():
+        if not run_proportions:
+            continue
+
+        matrix = np.array([
+            [run_proportions_per_category.get(category, 0.0) for category in CATEGORY_ORDER]
+            for run_proportions_per_category in run_proportions
+        ], dtype=float)
+        notebook_means[instance_id] = matrix.mean(axis=0)
+
+    return notebook_means
+
+
+def _summarize_category_statistics(notebook_means):
+    """Compute mean and uncertainty across notebooks for each category."""
+    if not notebook_means:
+        return None
+
+    matrix = np.array(list(notebook_means.values()), dtype=float)
+    num_notebooks = matrix.shape[0]
+    means = matrix.mean(axis=0)
+
+    if num_notebooks > 1:
+        standard_error = matrix.std(axis=0, ddof=1) / np.sqrt(num_notebooks)
+    else:
+        standard_error = np.zeros(matrix.shape[1], dtype=float)
+
+    confidence_interval = 1.96 * standard_error
+
+    return {
+        'means': means,
+        'standard_error': standard_error,
+        'confidence_interval': confidence_interval,
+        'num_notebooks': num_notebooks,
+    }
+
+
+def create_comparison_chart_agg(path1: str, path2: str, title: str, output_path: Path, label1: str='Setting 1', label2: str='Setting 2', error_bars: str='ci', save_pdf: bool = False):
+    """Create a grouped bar chart comparing category proportions between two settings."""
+    font_scale = 1.5
+
+    print(f"Loading data from {path1}...")
+    notebook_means1 = _aggregate_notebook_category_proportions(path1)
+
+    print(f"Loading data from {path2}...")
+    notebook_means2 = _aggregate_notebook_category_proportions(path2)
+
+    stats1 = _summarize_category_statistics(notebook_means1)
+    stats2 = _summarize_category_statistics(notebook_means2)
+
+    if not stats1 or not stats2:
+        print(f"Insufficient data to plot {title}")
+        return
+
+    x = np.arange(len(CATEGORY_ORDER))
+    bar_width = 0.35
+    _fig, ax = plt.subplots(figsize=(8, 6))
+
+    if error_bars == 'stderr':
+        yerr1 = stats1['standard_error']
+        yerr2 = stats2['standard_error']
+    else:
+        yerr1 = stats1['confidence_interval']
+        yerr2 = stats2['confidence_interval']
+
+    means1_pct = stats1['means'] * 100
+    means2_pct = stats2['means'] * 100
+    yerr1_pct = yerr1 * 100
+    yerr2_pct = yerr2 * 100
+
+    color1 = _tab20[1]
+    color2 = _tab20[3]
+
+    ax.bar(x - bar_width / 2, means1_pct, bar_width, yerr=yerr1_pct, capsize=5,
+           label=label1, color=color1, edgecolor='white', linewidth=0.8, alpha=0.95)
+    ax.bar(x + bar_width / 2, means2_pct, bar_width, yerr=yerr2_pct, capsize=5,
+           label=label2, color=color2, edgecolor='white', linewidth=0.8, alpha=0.95)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(CATEGORY_ORDER, fontsize=11 * font_scale)
+    y_max = max(float(np.max(means1_pct + yerr1_pct)), float(np.max(means2_pct + yerr2_pct)), 50.0)
+    ax.set_ylim(0, y_max)
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'{y:.0f}%'))
+    ax.set_ylabel('Mean percentage of actions', fontsize=12 * font_scale, fontweight='bold')
+    # ax.set_title(title, fontsize=14 * font_scale, fontweight='bold')
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+    ax.legend(fontsize=10 * font_scale)
+
+    plt.tight_layout()
+    save_figure(_fig, output_path, save_pdf=save_pdf)
+    plt.close()
+
+
+def summarize_run_code_usage(path: str):
+    """Summarize how often run_code appears across all runs in a path."""
+    path_obj = Path(path)
+    total_runs = 0
+    runs_with_run_code = 0
+    total_run_code_calls = 0
+
+    for run_dir in _iter_run_directories(path_obj):
+        run_metrics = _load_notebook_run_metrics(run_dir)
+        for metrics in run_metrics.values():
+            total_runs += 1
+            total_run_code_calls += metrics['run_code_count']
+            if metrics['run_code_count'] > 0:
+                runs_with_run_code += 1
+
+    if total_runs == 0:
+        return None
+
+    return {
+        'total_runs': total_runs,
+        'runs_with_run_code': runs_with_run_code,
+        'run_code_usage_rate': runs_with_run_code / total_runs,
+        'average_run_code_count_per_run': total_run_code_calls / total_runs,
+    }
+
+
+def create_run_code_usage_plot(path: str, title: str, output_path: Path, label: str='Setting', save_pdf: bool = False):
+    """Create a compact plot summarizing run_code usage for one setting."""
+    stats = summarize_run_code_usage(path)
+    if not stats:
+        print(f"Insufficient data to plot {title}")
+        return
+
+    _fig, axes = plt.subplots(1, 2, figsize=(4, 6))
+    # _fig.suptitle(title, fontsize=14, fontweight='bold')
+
+    metrics = [
+        ('% Runs', stats['run_code_usage_rate'], 'percent'),
+        ('Avg Count / Run', stats['average_run_code_count_per_run'], 'count'),
+    ]
+    colors = [_tab20[17], _tab20[19]]
+
+    for ax, (subplot_title, value, value_kind), color in zip(axes, metrics, colors):
+        ax.bar([0], [value], width=0.6, color=color, edgecolor='white', linewidth=0.8)
+        ax.set_title(subplot_title, fontsize=16.5, fontweight='bold')
+        ax.set_xticks([0])
+        ax.set_xticklabels([label], fontsize=15)
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
+
+        if value_kind == 'percent':
+            ax.set_ylim(0, 1)
+            ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'{y:.0%}'))
+            ax.text(0, value, f'{value:.0%}', ha='center', va='bottom', fontsize=15)
+        else:
+            ax.set_ylim(0, 1)
+            ax.text(0, value, f'{value:.2f}', ha='center', va='bottom', fontsize=15)
+        
+
+    plt.tight_layout(rect=[0, 0, 1, 0.92])
+    save_figure(_fig, output_path, save_pdf=save_pdf)
     plt.close()
 
 
@@ -439,7 +689,8 @@ LLM_ABBREVIATIONS = {
 
 def compare_performance_across_settings(results_dir: Path = Path('results'), 
                                        settings: list = None,
-                                       output_dir: Path = None):
+                                       output_dir: Path = None,
+                                       save_pdf: bool = False):
     # correct_rate_col = 'Correct Rate\n(CI 90%, MoE 10%)'
 
     if settings is None:
@@ -447,9 +698,7 @@ def compare_performance_across_settings(results_dir: Path = Path('results'),
     
     if output_dir is None:
         output_dir = results_dir / 'data_analysis'
-    else:
-        output_dir = output_dir
-    
+
     output_dir.mkdir(parents=True, exist_ok=True)
     
     data_by_llm = defaultdict(list)
@@ -509,7 +758,7 @@ def compare_performance_across_settings(results_dir: Path = Path('results'),
                 data_by_llm[llm_name].append(row)
                 print(f"Loaded: {setting} / {llm_name}")
                 
-            except Exception as e:
+            except (OSError, json.JSONDecodeError) as e:
                 print(f"Error loading {summary_file}: {e}")
     
     if not data_by_llm:
@@ -532,7 +781,7 @@ def compare_performance_across_settings(results_dir: Path = Path('results'),
         all_dfs[llm_name] = df
         
         # Create a formatted table visualization
-        fig, ax = plt.subplots(figsize=(14, 6))
+        _fig, ax = plt.subplots(figsize=(14, 6))
         ax.axis('tight')
         ax.axis('off')
         
@@ -565,8 +814,7 @@ def compare_performance_across_settings(results_dir: Path = Path('results'),
                   fontsize=14, fontweight='bold', pad=20)
         
         table_path = output_dir / f'performance_comparison_{llm_name.replace("/", "_")}.png'
-        plt.savefig(table_path, dpi=300, bbox_inches='tight')
-        print(f"Saved performance comparison table to: {table_path}")
+        save_figure(_fig, table_path, save_pdf=save_pdf)
         plt.close()
     
     # Print summary statistics
