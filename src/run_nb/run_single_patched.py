@@ -99,7 +99,7 @@ def run_single_patched_notebook(
         if isinstance(config, NotebookEnvironmentConfig)
         else NotebookEnvironmentConfig.model_validate(config)
     )
-    tmp_root = Path(config.docker_mount_path).resolve()
+    tmp_root = Path(config.docker_mount_path).resolve() / f"patched_{config.port}"
     instance_folder = Path(config.source_path_parent) / instance_name
     _validate_inputs(patched_script, instance_folder)
     setup_tmp_workdir(tmp_root, docker_image_name=config.docker_image_name)
