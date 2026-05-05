@@ -13,7 +13,13 @@ from pathlib import Path
 
 import docker
 from docker.models.containers import Container
+from pathlib import PurePosixPath
 
+
+def _host_uid_gid() -> tuple[int | None, int | None]:
+    if hasattr(os, "getuid") and hasattr(os, "getgid"):
+        return os.getuid(), os.getgid()
+    return None, None
 
 
 def _decode_output(value: bytes | None) -> str:
@@ -39,8 +45,7 @@ class DockerNotebookExecutor:
         self.mount_container_dir = "/app/container"
         self.image_name = docker_image_name
         self.timeout_seconds = timeout_seconds
-        self.host_uid = os.getuid()
-        self.host_gid = os.getgid()
+        self.host_uid, self.host_gid = _host_uid_gid()
         self.container_name = f"single-notebook-runner-{uuid.uuid4().hex[:8]}"
         self.client = docker.from_env()
         self.container: Container | None = None
@@ -102,6 +107,8 @@ class DockerNotebookExecutor:
     def restore_mount_ownership(self) -> None:
         if self.container is None:
             return
+        if self.host_uid is None or self.host_gid is None:
+            return
 
         result = self.container.exec_run(
             cmd=[
@@ -133,8 +140,13 @@ class DockerNotebookExecutor:
             raise RuntimeError("Container is not running")
 
         mounted_folder = mounted_folder.resolve()
-        relative_dir = mounted_folder.relative_to(self.mount_host_dir)
-        container_workdir = str(Path(self.mount_container_dir) / relative_dir)
+        try:
+            relative_dir = mounted_folder.relative_to(self.mount_host_dir)
+            # Build a POSIX-style container workdir to avoid Windows backslashes
+            container_workdir = str(PurePosixPath(self.mount_container_dir) / PurePosixPath(*relative_dir.parts))
+        except Exception:
+            # If relative path can't be computed, fall back to the mount root in container
+            container_workdir = str(PurePosixPath(self.mount_container_dir))
 
         command = (
             "set -eu; "

@@ -22,7 +22,7 @@ from data_analysis.util_test_cells_evaluation import VALIDATED_TEST_NOTEBOOK_EXC
 HUMAN_EVALUATED_CASES = VALIDATED_TEST_NOTEBOOK_EXCLUSIONS
 # x 15 (3 RUNS, 5 SETTINGS)
 
-DEFAULT_ROOT = Path("results_new") # results_new
+DEFAULT_ROOT = Path("results") # results_new
 DEFAULT_OUTPUT_PATH = DEFAULT_ROOT / "data_analysis/patched_executed_failures_summary.json"
 
 class Classification(Enum):
@@ -184,6 +184,23 @@ def _check_last_cell_status(cell: dict[str, Any] | None) -> tuple[bool, bool, st
     return was_executed, False, None, None
 
 
+def evaluate_notebook_correctness(notebook_path: Path) -> tuple[bool, bool, str | None, str | None]:
+    """Evaluate correctness from the last code cell of a patched executed notebook.
+
+    Returns: (is_correct, was_executed, error_name, error_preview)
+    """
+    notebook = nbformat.read(notebook_path, as_version=4)
+    last_cell = notebook.cells[-1] if notebook.cells else None
+    if last_cell is None:
+        return False, False, None, None
+    if last_cell.get("cell_type") != "code":
+        return False, False, None, None
+
+    was_executed, has_error, error_name, error_preview = _check_last_cell_status(last_cell)
+    is_correct = was_executed and not has_error
+    return is_correct, was_executed, error_name, error_preview
+
+
 def _safe_pstdev(values: list[float]) -> float:
     if len(values) <= 1:
         return 0.0
@@ -249,13 +266,10 @@ def analyze_notebooks() -> dict[str, Any]:
 
     for notebook_path in notebooks:
         setting, model, run = _parse_notebook_identity(notebook_path)
-        notebook = nbformat.read(notebook_path, as_version=4)
-        last_cell = notebook.cells[-1] if notebook.cells else None
-        assert last_cell is not None, f"No cells found in notebook: {notebook_path}"
-        assert last_cell.get("cell_type") == "code", f"Last cell is not a code cell in notebook: {notebook_path}"
-        was_executed, has_error, error_name, error_preview = _check_last_cell_status(last_cell)
+        is_correct, was_executed, error_name, error_preview = evaluate_notebook_correctness(notebook_path)
+        has_error = not is_correct and was_executed
         summary_success = _read_summary_success(notebook_path)
-        actual_success = not has_error and was_executed
+        actual_success = is_correct
 
         classification = _classify_record(predicted_success=summary_success, actual_success=actual_success)
 

@@ -188,19 +188,24 @@ def main(
     run_fn = run_baseline_instance if is_baseline else run_single_instance
 
     def run_non_threaded(config: dict, instance: SingleInstance, progress_advance_fn: ProgressAdvanceFn):
-            instance_name, run_num, output_dir = instance
-            
-            try:
+        instance_name, run_num, output_dir = instance
+
+        try:
+            exit_status, _ = run_fn(instance_name, config, output_dir)
+            # Prefer the direct exit status from the run result. Falling back
+            # to summary inspection can misclassify just-completed runs.
+            completed_statuses = {"Submitted", "SubmittedWithErrors", "Success"}
+            run_completed = exit_status in completed_statuses
+
+            # Backward-compatible fallback when exit_status is empty/unknown.
+            if not run_completed and not should_skip_instance(output_dir, instance_name):
+                logger.warning(f"Run failed or incomplete for {instance_name} run {run_num}, retrying once...")
                 run_fn(instance_name, config, output_dir)
-                # Check if run completed successfully, and retry once if not
-                if not should_skip_instance(output_dir, instance_name):
-                    logger.warning(f"Run failed or incomplete for {instance_name} run {run_num}, retrying once...")
-                    run_fn(instance_name, config, output_dir)
-            except Exception as e:
-                logger.error(f"Failed to run model={model_name}, instance={instance_name}, run={run_num}: {e}")
-                logger.exception(e)
-            finally:
-                progress_advance_fn(f"{mode_label}: {model_name} | {instance_name} | run {run_num}")
+        except Exception as e:
+            logger.error(f"Failed to run model={model_name}, instance={instance_name}, run={run_num}: {e}")
+            logger.exception(e)
+        finally:
+            progress_advance_fn(f"{mode_label}: {model_name} | {instance_name} | run {run_num}")
     
     run_threaded = get_run_threaded_fn(config, api_keys, instances_to_execute, run_non_threaded) 
 
