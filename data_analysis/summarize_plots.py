@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.ticker import FuncFormatter
+from data_analysis.analyze_patched_executed_failures import evaluate_notebook_correctness
 
 # Define the valid tool names from notebook_tools._TOOL_PARAM_ORDER
 # Ordered for stacked bar chart display
@@ -224,6 +225,161 @@ def create_stacked_bar_chart(aggregated_data, title, output_path, save_pdf: bool
 
     plt.tight_layout()
     save_figure(_fig, output_path, save_pdf=save_pdf)
+    plt.close()
+
+def _aggregate_notebook_category_proportions_by_outcome(path):
+    """Aggregate run-level category proportions grouped by outcome label.
+
+    Returns a dict mapping normalized outcome keys ('correct', 'failed') to a
+    dict of instance_id -> mean_vector (averaged across runs with that outcome).
+    """
+    path_obj = Path(path)
+    # For each instance, collect a list of (outcome, proportion_vector)
+    notebook_runs = defaultdict(list)
+
+    for run_dir in _iter_run_directories(path_obj):
+        run_path = Path(run_dir)
+
+        for summary_file in run_path.glob('*_summary.json'):
+            instance_id = summary_file.stem.replace('_summary', '')
+            try:
+                with open(summary_file, 'r', encoding='utf-8', errors='ignore') as f:
+                    summary = json.load(f)
+
+                # Build category proportions for this single run/instance
+                category_counts = defaultdict(int)
+                total_tool_calls = 0
+
+                for op in summary.get('operations', []):
+                    action = op.get('action')
+                    tool_name = extract_tool_name(action)
+                    if not tool_name:
+                        continue
+                    total_tool_calls += 1
+                    normalized_tool_name = normalize_tool_name(tool_name)
+                    category = get_tool_category(normalized_tool_name)
+                    if category:
+                        category_counts[category] += 1
+
+                if total_tool_calls == 0:
+                    continue
+
+                proportions = {
+                    category: category_counts.get(category, 0) / total_tool_calls
+                    for category in CATEGORY_ORDER
+                }
+
+                # Require the patched-executed notebook to determine correctness.
+                notebook_ipynb = run_path / f"{instance_id}_patched_executed.ipynb"
+                is_correct, _, _, _ = evaluate_notebook_correctness(notebook_ipynb)
+                outcome = 'correct' if is_correct else 'failed'
+                notebook_runs[instance_id].append((outcome, proportions))
+
+            except (OSError, json.JSONDecodeError) as e:
+                print(f"Error loading {summary_file}: {e}")
+
+    # Now compute per-instance mean vectors separately for 'correct' and 'failed'
+    outcome_groups = {'correct': {}, 'failed': {}}
+
+    for instance_id, runs in notebook_runs.items():
+        # group by outcome
+        by_outcome = defaultdict(list)
+        for outcome, prop in runs:
+            vec = [prop.get(category, 0.0) for category in CATEGORY_ORDER]
+            by_outcome[outcome].append(vec)
+
+        for olabel, vecs in by_outcome.items():
+            if not vecs:
+                continue
+            matrix = np.array(vecs, dtype=float)
+            outcome_groups[olabel][instance_id] = matrix.mean(axis=0)
+
+    return outcome_groups
+
+
+def create_comparison_chart_agg_by_outcome(path1: str, path2: str, title: str, output_path: Path,
+                                          label1: str='Setting 1', label2: str='Setting 2',
+                                          error_bars: str='ci', save_pdf: bool = False):
+    """Create grouped bar chart comparing category proportions split by outcome.
+
+    For each category on the x-axis, four bars are shown (left to right):
+        - correct, setting1
+        - correct, setting2
+        - failed,  setting1
+        - failed,  setting2
+
+    The function attempts to extract per-run outcome labels from each
+    run's *_summary.json using common keys; runs without an explicit
+    correct/failed label are ignored.
+    """
+    font_scale = 1.5
+
+    print(f"Loading data from {path1}...")
+    groups1 = _aggregate_notebook_category_proportions_by_outcome(path1)
+
+    print(f"Loading data from {path2}...")
+    groups2 = _aggregate_notebook_category_proportions_by_outcome(path2)
+
+    stats = {}
+    for label, groups in (('s1', groups1), ('s2', groups2)):
+        stats[label] = {}
+        for outcome in ('correct', 'failed'):
+            stats[label][outcome] = _summarize_category_statistics(groups.get(outcome, {}))
+
+    # If both settings have no data for both outcomes, nothing to plot
+    if all(stats[l][o] is None for l in stats for o in ('correct', 'failed')):
+        print(f"Insufficient labeled data to plot {title}")
+        return
+
+    x = np.arange(len(CATEGORY_ORDER))
+    bar_width = 0.18
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Helper to get means and yerr (in percent) for a stats object
+    def _means_yerr_pct(s):
+        if not s:
+            return np.zeros(len(CATEGORY_ORDER)), np.zeros(len(CATEGORY_ORDER))
+        means = s['means'] * 100
+        yerr = (s['standard_error'] if error_bars == 'stderr' else s['confidence_interval']) * 100
+        return means, yerr
+
+    m1c, e1c = _means_yerr_pct(stats['s1']['correct'])
+    m2c, e2c = _means_yerr_pct(stats['s2']['correct'])
+    m1f, e1f = _means_yerr_pct(stats['s1']['failed'])
+    m2f, e2f = _means_yerr_pct(stats['s2']['failed'])
+
+    # Colors for the four bar groups
+    c1 = _tab20[0]
+    c2 = _tab20[1]
+    c3 = _tab20[2]
+    c4 = _tab20[3]
+
+    offsets = [-1.5 * bar_width, -0.5 * bar_width, 0.5 * bar_width, 1.5 * bar_width]
+
+    bars = []
+    bars.append(ax.bar(x + offsets[0], m1c, bar_width, yerr=e1c, capsize=4, label=f"{label1} success", color=c1, edgecolor='white'))
+    bars.append(ax.bar(x + offsets[1], m1f, bar_width, yerr=e1f, capsize=4, label=f"{label1} failed", color=c2, edgecolor='white'))
+    bars.append(ax.bar(x + offsets[2], m2c, bar_width, yerr=e2c, capsize=4, label=f"{label2} success", color=c3, edgecolor='white'))
+    bars.append(ax.bar(x + offsets[3], m2f, bar_width, yerr=e2f, capsize=4, label=f"{label2} failed", color=c4, edgecolor='white'))
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(CATEGORY_ORDER, fontsize=11 * font_scale)
+    y_max = max(
+        float(np.max(m1c + e1c)) if m1c.size else 0,
+        float(np.max(m2c + e2c)) if m2c.size else 0,
+        float(np.max(m1f + e1f)) if m1f.size else 0,
+        float(np.max(m2f + e2f)) if m2f.size else 0,
+        50.0,
+    )
+    ax.set_ylim(0, y_max)
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f"{y:.0f}%"))
+    ax.set_ylabel('Mean percentage of actions', fontsize=12 * font_scale, fontweight='bold')
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+    ax.legend(fontsize=10 * font_scale)
+
+    # plt.title(title, fontsize=14 * font_scale, fontweight='bold')
+    plt.tight_layout()
+    save_figure(fig, output_path, save_pdf=save_pdf)
     plt.close()
 
 
@@ -571,6 +727,63 @@ def summarize_run_code_usage(path: str):
     }
 
 
+def _summarize_run_code_usage_by_outcome(path: str):
+    """Summarize run_code usage separately for correct and failed runs.
+
+    Correctness is determined only from evaluate_notebook_correctness on the
+    corresponding *_patched_executed.ipynb file.
+    """
+    path_obj = Path(path)
+    outcome_stats = {
+        'correct': {'total_runs': 0, 'runs_with_run_code': 0, 'total_run_code_calls': 0},
+        'failed': {'total_runs': 0, 'runs_with_run_code': 0, 'total_run_code_calls': 0},
+    }
+
+    for run_dir in _iter_run_directories(path_obj):
+        run_path = Path(run_dir)
+
+        for summary_file in run_path.glob('*_summary.json'):
+            instance_id = summary_file.stem.replace('_summary', '')
+            notebook_ipynb = run_path / f"{instance_id}_patched_executed.ipynb"
+            is_correct, _, _, _ = evaluate_notebook_correctness(notebook_ipynb)
+
+            outcome = 'correct' if is_correct else 'failed'
+
+            with open(summary_file, 'r', encoding='utf-8', errors='ignore') as f:
+                summary = json.load(f)
+
+            run_code_count = 0
+            for op in summary.get('operations', []):
+                action = op.get('action')
+                tool_name = extract_tool_name(action)
+                if not tool_name:
+                    continue
+
+                normalized_tool_name = normalize_tool_name(tool_name)
+                if normalized_tool_name == 'run_code':
+                    run_code_count += 1
+
+            bucket = outcome_stats[outcome]
+            bucket['total_runs'] += 1
+            bucket['total_run_code_calls'] += run_code_count
+            if run_code_count > 0:
+                bucket['runs_with_run_code'] += 1
+
+    for outcome, bucket in outcome_stats.items():
+        total_runs = bucket['total_runs']
+        if total_runs == 0:
+            bucket['run_code_usage_rate'] = 0.0
+            bucket['average_run_code_count_per_run'] = 0.0
+        else:
+            bucket['run_code_usage_rate'] = bucket['runs_with_run_code'] / total_runs
+            bucket['average_run_code_count_per_run'] = bucket['total_run_code_calls'] / total_runs
+
+    if outcome_stats['correct']['total_runs'] == 0 and outcome_stats['failed']['total_runs'] == 0:
+        return None
+
+    return outcome_stats
+
+
 def create_run_code_usage_plot(path: str, title: str, output_path: Path, label: str='Setting', save_pdf: bool = False):
     """Create a compact plot summarizing run_code usage for one setting."""
     stats = summarize_run_code_usage(path)
@@ -606,6 +819,131 @@ def create_run_code_usage_plot(path: str, title: str, output_path: Path, label: 
     plt.tight_layout(rect=[0, 0, 1, 0.92])
     save_figure(_fig, output_path, save_pdf=save_pdf)
     plt.close()
+
+
+def create_run_code_usage_plot_by_outcome(path: str, title: str, output_path: Path, label: str='Setting', save_pdf: bool = False):
+    """Create a compact plot summarizing run_code usage split by correct vs failed runs."""
+    stats = _summarize_run_code_usage_by_outcome(path)
+    if not stats:
+        print(f"Insufficient data to plot {title}")
+        return
+
+    font_scale = 1.5
+    outcomes = ['correct', 'failed']
+    outcome_labels = ['Correct', 'Failed']
+    x = np.array([0.0, 0.58])
+    bar_width = 0.30
+
+    fig, axes = plt.subplots(1, 2, figsize=(4, 6))
+
+    metrics = [
+        ('% Runs', 'run_code_usage_rate', 'percent'),
+        ('Avg Count / Run', 'average_run_code_count_per_run', 'count'),
+    ]
+    colors = [_tab20[17], _tab20[19]]
+
+    for ax, (subplot_title, metric_key, value_kind), color in zip(axes, metrics, colors):
+        values = [stats[outcome][metric_key] for outcome in outcomes]
+        ax.bar(x, values, width=bar_width, color=color, edgecolor='white', linewidth=0.8)
+        ax.set_title(subplot_title, fontsize=16.5 * font_scale / 1.5, fontweight='bold')
+        ax.set_xticks(x)
+        ax.set_xticklabels(outcome_labels, fontsize=15 * font_scale / 1.5)
+        ax.set_xlim(-0.28, 0.86)
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
+
+        if value_kind == 'percent':
+            ax.set_ylim(0, 1)
+            ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'{y:.0%}'))
+            for xpos, value in zip(x, values):
+                ax.text(xpos, value, f'{value:.0%}', ha='center', va='bottom', fontsize=15 * font_scale / 1.5)
+        else:
+            max_value = max(values) if values else 0.0
+            ax.set_ylim(0, max(1.0, max_value * 1.2))
+            for xpos, value in zip(x, values):
+                ax.text(xpos, value, f'{value:.2f}', ha='center', va='bottom', fontsize=15 * font_scale / 1.5)
+
+        ax.set_xlabel(label, fontsize=12 * font_scale / 1.5, fontweight='bold')
+
+    plt.tight_layout(rect=[0, 0, 1, 0.92])
+    save_figure(fig, output_path, save_pdf=save_pdf)
+    plt.close()
+
+
+def summarize_run_code_usage_table(path: str):
+    """Summarize agent-full runs by run_code usage and correctness.
+
+    Returns a DataFrame with one row per condition:
+    - With run_code
+    - Without run_code
+
+    Success rate is the fraction of correct runs as determined by
+    evaluate_notebook_correctness on the corresponding patched-executed notebook.
+    Avg steps is the mean number of valid tool calls per run.
+    """
+    path_obj = Path(path)
+    rows = {
+        'With run_code': {'total_runs': 0, 'correct_runs': 0, 'total_steps': 0},
+        'Without run_code': {'total_runs': 0, 'correct_runs': 0, 'total_steps': 0},
+    }
+
+    for run_dir in _iter_run_directories(path_obj):
+        run_path = Path(run_dir)
+
+        for summary_file in run_path.glob('*_summary.json'):
+            instance_id = summary_file.stem.replace('_summary', '')
+            notebook_ipynb = run_path / f"{instance_id}_patched_executed.ipynb"
+            is_correct, _, _, _ = evaluate_notebook_correctness(notebook_ipynb)
+
+            with open(summary_file, 'r', encoding='utf-8', errors='ignore') as f:
+                summary = json.load(f)
+
+            total_steps = int(summary.get('statistics', {}).get('total_steps', 0) or 0)
+            run_code_count = 0
+            for op in summary.get('operations', []):
+                action = op.get('action')
+                tool_name = extract_tool_name(action)
+                if not tool_name:
+                    continue
+
+                normalized_tool_name = normalize_tool_name(tool_name)
+                if normalized_tool_name == 'run_code':
+                    run_code_count += 1
+
+            condition = 'With run_code' if run_code_count > 0 else 'Without run_code'
+            bucket = rows[condition]
+            bucket['total_runs'] += 1
+            bucket['total_steps'] += total_steps
+            if is_correct:
+                bucket['correct_runs'] += 1
+
+    table_rows = []
+    for condition in ('With run_code', 'Without run_code'):
+        bucket = rows[condition]
+        total_runs = bucket['total_runs']
+        table_rows.append({
+            'Condition': condition,
+            'Success rate': bucket['correct_runs'] / total_runs if total_runs else 0.0,
+            'Avg steps': bucket['total_steps'] / total_runs if total_runs else 0.0,
+            'Runs': total_runs,
+        })
+
+    return pd.DataFrame(table_rows)
+
+
+def print_run_code_usage_table(path: str):
+    """Print the run_code usage comparison table for a single setting."""
+    df = summarize_run_code_usage_table(path)
+    if df.empty:
+        print("No runs found.")
+        return df
+
+    display_df = df.copy()
+    display_df['Success rate'] = display_df['Success rate'].map(lambda value: f"{value:.2f}")
+    display_df['Avg steps'] = display_df['Avg steps'].map(lambda value: f"{value:.1f}")
+    display_df = display_df[['Condition', 'Success rate', 'Avg steps']]
+
+    print(display_df.to_string(index=False))
+    return df
 
 
 # def load_manual_validation_outcome(llm_dir: Path):

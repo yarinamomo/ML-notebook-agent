@@ -59,7 +59,7 @@ def categorize_code(code):
     
     # Print/display output
     if 'print(' in code:
-        categories.append('print_output')
+        categories.append('prints')
 
     # # File/directory/CSV/data files operations
     # if any(pattern in code for pattern in ['os.listdir', 'os.path.exists', 'os.getcwd', 'glob.glob', 'pd.read_csv', 'pd.read_', 'np.load']):
@@ -81,11 +81,11 @@ def categorize_code(code):
     # runtime information categories
     # structural information (size, shape, count, dimensions)
     if any(pattern in code for pattern in ['.shape', 'len(', '.dtypes', '.ndim', 'size']):
-        categories.append('runinfo_structural')
+        categories.append('structure')
 
     # type semantics (type, dtype, shcema-level properties)
     if any(pattern in code for pattern in ['type(', '.dtypes', 'isinstance(', 'dtype']):
-        categories.append('runinfo_type')
+        categories.append('type')
 
     # value semantics (concrete values: value range, presence of NaNs, number of classes, example values)
     if (
@@ -93,7 +93,7 @@ def categorize_code(code):
         or ('in' in code and 'columns' in code)
         or any(re.search(pattern, code) for pattern in [r'\.read\(\d+\)', r'\[\s*-?\d*\s*:\s*-?\d*\s*\]'])
     ):
-        categories.append('runinfo_value')
+        categories.append('value')
     
     # # DataFrame operations
     # if any(pattern in code for pattern in ['.iloc', '.loc', '.query(', '.groupby(']):
