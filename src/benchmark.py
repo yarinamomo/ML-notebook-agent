@@ -23,8 +23,11 @@ def setup_environment(src, dst):
         else:
             _remove_directory_with_retry(dst, max_retries=3, delay=1.0)
 
-    # Copy recursively
-    shutil.copytree(src, dst)
+    # Copy recursively, excluding files containing "fixed"
+    def ignore_fixed_files(directory, files):
+        return [f for f in files if f.endswith("_fixed.ipynb") or f.endswith("_fixed_with_test_executed.ipynb")]
+    
+    shutil.copytree(src, dst, ignore=ignore_fixed_files)
     
     # Ensure filesystem buffers are flushed (Unix only)
     if os.name != "nt" and hasattr(os, "sync"):
