@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 from collections import Counter
+from matplotlib.patches import Patch
+from matplotlib.legend_handler import HandlerTuple
 # Import the analyze module to run analysis first
 from data_analysis import run_code_analyze
 
@@ -31,7 +33,7 @@ def plot_category_distribution(input_dir, output_dir):
             category_counts[cat] += 1
     
     # Prepare data for plotting
-    categories = []
+    categories = [] # 4 main categories: prints, structure, type, value
     counts = []
     percentages = []
     
@@ -42,93 +44,65 @@ def plot_category_distribution(input_dir, output_dir):
         counts.append(count)
         percentages.append((count / total_ops) * 100)
     
-    # Create figure with two subplots
-    # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6), width_ratios=[0.6, 0.4])
-    fig, ax1 = plt.subplots(1, 1, figsize=(10, 4))
-    
-    # Plot 1: Horizontal bar chart
-    colors = plt.cm.viridis(np.linspace(0.3, 0.9, len(categories)))
-    bars = ax1.barh(categories, counts, color=colors, edgecolor='black', linewidth=0.5)
-    
-    # Add value labels
+    # Scale fonts by 1.5x for better readability
+    scale = 1.4
+    label_font = int(10 * scale)
+    title_font = int(14 * scale)
+    value_font = int(9 * scale)
+
+    fig, ax1 = plt.subplots(1, 1, figsize=(4, 4))
+
+    # Plot: Vertical bar chart
+    # Color strategy for presentation: gray for the top category,
+    # and progressively lighter blue shades for the remaining categories.
+    colors = [plt.cm.Greys(0.4)]
+    shade_values = np.linspace(0.75, 0.5, len(categories) - 1)
+    colors.extend([plt.cm.Blues(v) for v in shade_values])
+
+    bars = ax1.bar(categories, counts, color=colors, edgecolor='black', linewidth=0.5)
+
+    # Small legend for the two conceptual groups.
+    first_color = colors[0]
+    runinfo_colors = list(colors[1:4])
+
+    runinfo_handle = tuple(Patch(facecolor=c, edgecolor='black') for c in runinfo_colors[:3])
+    legend_handles = [
+        Patch(facecolor=first_color, edgecolor='black'),
+        runinfo_handle,
+    ]
+    legend_labels = ['Overall prints', 'Runinfo categories']
+    ax1.legend(
+        legend_handles,
+        legend_labels,
+        handler_map={tuple: HandlerTuple(ndivide=None)},
+        loc='upper right',
+        fontsize=max(8, int(value_font * 0.85)),
+        frameon=True,
+    )
+
+    # Add value labels above each bar
+    y_offset = max(counts) * 0.01 if max(counts) > 0 else 0.1
     for bar, count, pct in zip(bars, counts, percentages):
-        width = bar.get_width()
-        ax1.text(width + 20, bar.get_y() + bar.get_height()/2, 
-                f'{count} ({pct:.1f}%)', 
-                ha='left', va='center', fontsize=9)
-    
-    ax1.set_xlabel('Number of Operations', fontsize=12, fontweight='bold')
-    ax1.set_title('Tool "run_code" Categories Distribution', fontsize=14, fontweight='bold')
-    ax1.grid(axis='x', alpha=0.3, linestyle='--')
-    ax1.set_xlim(0, max(counts) * 1.15)
-    
-    # # Plot 2: Co-occurrence heatmap of pair overlap categories
-    # # Check if we have overlap data
-    # if not isinstance(data, dict) or 'overlaps' not in data:
-    #     print("No overlap data found. Run analysis first.")
-    #     return
-    
-    # overlaps = data['overlaps']
-    
-    # # Remove 'other' and 'print_output' from categories list
-    # categories = [cat for cat in overlaps['all_categories'] if cat != 'other' and cat != 'print_output']
-    # n_cats = len(categories)
-    
-    # # Build co-occurrence matrix
-    # cooccur_matrix = np.zeros((n_cats, n_cats))
-    
-    # # Diagonal: count of each category
-    # category_counts = Counter()
-    # for op in operations:
-    #     for cat in op['categories']:
-    #         category_counts[cat] += 1
-    
-    # for i, cat in enumerate(categories):
-    #     cooccur_matrix[i, i] = category_counts[cat]
-    
-    # # Off-diagonal: co-occurrence counts
-    # for pair_str, count in overlaps['co_occurrence_pairs'].items():
-    #     cat1, cat2 = pair_str.split('|')
-    #     # Skip pairs involving 'other' or 'print_output' categories
-    #     if cat1 == 'other' or cat2 == 'other' or cat1 == 'print_output' or cat2 == 'print_output':
-    #         continue
-    #     i = categories.index(cat1)
-    #     j = categories.index(cat2)
-    #     cooccur_matrix[i, j] = count
-    #     cooccur_matrix[j, i] = count  # Symmetric
-    
-    # # Plot heatmap
-    # im = ax2.imshow(cooccur_matrix, cmap='YlOrRd', aspect='auto')
-    
-    # # Set ticks and labels
-    # cat_labels = [cat.replace('_', ' ').title() for cat in categories]
-    # ax2.set_xticks(np.arange(n_cats))
-    # ax2.set_yticks(np.arange(n_cats))
-    # ax2.set_xticklabels(cat_labels, rotation=45, ha='right')
-    # ax2.set_yticklabels(cat_labels)
-    
-    # # Add text annotations
-    # for i in range(n_cats):
-    #     for j in range(n_cats):
-    #         count = int(cooccur_matrix[i, j])
-    #         if count > 0:
-    #             color = 'white' if cooccur_matrix[i, j] > cooccur_matrix.max() / 2 else 'black'
-    #             ax2.text(j, i, str(count), ha='center', va='center', 
-    #                     color=color, fontsize=9, fontweight='bold')
-    
-    # ax2.set_title('Runinfo Category Co-occurrence Matrix\n(diagonal = total count, off-diagonal = overlap count)', 
-    #               fontsize=12, fontweight='bold')
-    
-    # # Add colorbar
-    # cbar = plt.colorbar(im, ax=ax2)
-    # cbar.set_label('Number of Operations', rotation=270, labelpad=20)
-    
+        height = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width() / 2, height + y_offset,
+                 f'{count}\n({pct:.1f}%)',
+                 ha='center', va='bottom', fontsize=value_font)
+
+    ax1.set_ylabel('Number of Operations', fontsize=label_font, fontweight='bold')
+    # ax1.set_title('Tool "run_code" Categories Distribution', fontsize=title_font, fontweight='bold')
+    ax1.grid(axis='y', alpha=0.3, linestyle='--')
+    ax1.set_ylim(0, max(counts) * 1.15)
+    ax1.set_xticklabels([c for c in categories], rotation=45, ha='right', fontsize=value_font)
+    ax1.tick_params(axis='y', labelsize=value_font)
+
     plt.tight_layout()
-    
-    # Save figure
-    output_file = output_dir / 'run_code_categories_visualization.png'
-    plt.savefig(output_file, dpi=300, bbox_inches='tight')
-    print(f"Visualization saved to: {output_file}")
+
+    # Save figures: PNG and PDF
+    output_file_png = output_dir / 'run_code_categories_visualization.png'
+    output_file_pdf = output_dir / 'run_code_categories_visualization.pdf'
+    plt.savefig(output_file_png, dpi=300, bbox_inches='tight')
+    plt.savefig(output_file_pdf, bbox_inches='tight')
+    print(f"Visualizations saved to: {output_file_png} and {output_file_pdf}")
     plt.close()
 
 def plot_code_length_distribution(input_dir, output_dir):

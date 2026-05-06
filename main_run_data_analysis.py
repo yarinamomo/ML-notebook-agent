@@ -21,9 +21,9 @@ def main():
     #         if "baseline" not in target_mode:
     #             summarize_plots.main(target_result_dir)
     #             find_early_submissions.main(target_result_dir, max_step=2)
-    #         if target_mode == "agent":
-    #             # run_code_analyze.main(target_result_dir)
-    #             run_code_visualize.main(target_result_dir)
+            if target_mode == "agent":
+                # run_code_analyze.main(target_result_dir)
+                run_code_visualize.main(target_result_dir)
     #         edit_cell_analyze.main(target_result_dir)
 
     # compare_fixed_notebooks.main()
@@ -48,27 +48,49 @@ def main():
     # #     mode="full"
     # # )
 
-    # Create aggregated category proportion comparison between settings
-    summarize_plots.create_comparison_chart_agg(
-        results_dir / "agent_without_run_code_and_cell_outputs" / "glm-4.7-355b",
-        results_dir / "agent" / "glm-4.7-355b",
-        "Tool Category Proportions (GLM)",
-        results_dir / "data_analysis" / "tool_category_proportions_comparison.png",
-        label1="Agent-lite",
-        label2="Agent-full",
-        error_bars="ci",
-        save_pdf=True
-    )
+    # # Create aggregated category proportion comparison between settings
+    # summarize_plots.create_comparison_chart_agg(
+    #     results_dir / "agent_without_run_code_and_cell_outputs" / "glm-4.7-355b",
+    #     results_dir / "agent" / "glm-4.7-355b",
+    #     "Tool Category Proportions (GLM)",
+    #     results_dir / "data_analysis" / "tool_category_proportions_comparison.png",
+    #     label1="Agent-lite",
+    #     label2="Agent-full",
+    #     error_bars="ci",
+    #     save_pdf=True
+    # )
 
-    # Create run_code usage summary plot for the default agent
-    summarize_plots.create_run_code_usage_plot(
-        results_dir / "agent" / "glm-4.7-355b",
-        "run_code Usage Summary (GLM)",
-        results_dir / "data_analysis" / "run_code_usage_summary.png",
-        label="Agent-full",
-        save_pdf=True
-    )
+    # # Create run_code usage summary plot for the default agent
+    # summarize_plots.create_run_code_usage_plot(
+    #     results_dir / "agent" / "glm-4.7-355b",
+    #     "run_code Usage Summary (GLM)",
+    #     results_dir / "data_analysis" / "run_code_usage_summary.png",
+    #     label="Agent-full",
+    #     save_pdf=True
+    # )
 
+    # summarize_plots.create_comparison_chart_agg_by_outcome(
+    #     results_dir / "agent_without_run_code_and_cell_outputs" / "glm-4.7-355b",
+    #     results_dir / "agent" / "glm-4.7-355b",
+    #     "Tool Category Proportions by Outcome (GLM)",
+    #     results_dir / "data_analysis" / "tool_category_proportions_by_outcome_comparison.png",
+    #     label1="Agent-lite",
+    #     label2="Agent-full",
+    #     error_bars="ci",
+    #     save_pdf=True
+    # )
+
+    # summarize_plots.create_run_code_usage_plot_by_outcome(
+    #     results_dir / "agent" / "glm-4.7-355b",
+    #     "run_code Usage Summary by Outcome (GLM)",
+    #     results_dir / "data_analysis" / "run_code_usage_summary_by_outcome.png",
+    #     label="Agent-full",
+    #     # save_pdf=True
+    # )
+    # summarize_plots.print_run_code_usage_table(
+    #     results_dir / "agent" / "glm-4.7-355b"
+    # )
+    
     # summarize_plots.compare_performance_across_settings(
     #     results_dir = results_dir,
     #     settings=target_modes
