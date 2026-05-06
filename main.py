@@ -62,7 +62,7 @@ def should_skip_instance(output_dir, instance_name) -> bool:
         status = summary.get("metadata", {}).get("status", "")
         
         # Do NOT skip if status is EnvironmentUnavailable or INCOMPLETE
-        if status in ["EnvironmentUnavailable", "INCOMPLETE"]:
+        if status in ["EnvironmentUnavailable", "INCOMPLETE", 'InternalServerError']:
             return False
         
         # Skip if status indicates successful completion
