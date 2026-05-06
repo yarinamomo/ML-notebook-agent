@@ -4,13 +4,19 @@ from pathlib import Path
 from typing import Any, Iterable
 import typer
 
-from tqdm.auto import tqdm
+from tqdm import tqdm
+from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+# Load .env from the project root so module-level env reads respect overrides
+load_dotenv(str(PROJECT_ROOT / ".env"), override=False)
 
 # Config CLI defaults (match main.py behavior)
 CONFIG_PATH = Path(os.getenv("NOTEBOOK_AGENT_CONFIG_PATH", "config/agent.yaml"))
 DEFAULTS_PATH = Path(os.getenv("NOTEBOOK_AGENT_DEFAULTS_PATH", "config/defaults.yaml"))
+
+app = typer.Typer()
 
 if __package__ in (None, ""):
     if str(PROJECT_ROOT) not in sys.path:
@@ -23,9 +29,14 @@ from src.run_nb.run_single_patched import run_single_patched_notebook
 from src.utils.yaml_parser import get_trajectories_dir, load_config
 
 
-def _load_full_config(config_spec: Path = CONFIG_PATH) -> dict[str, Any]:
-    _load_dotenv(PROJECT_ROOT / ".env")
-    return load_config(config_spec, DEFAULTS_PATH)
+def _load_full_config(config_spec: Path | None = None) -> dict[str, Any]:
+    """Load the layered config using the already-loaded .env values.
+
+    `.env` is loaded at module import time above, so environment overrides
+    are available to resolve `CONFIG_PATH` and `DEFAULTS_PATH`.
+    """
+    resolved_config = config_spec if config_spec is not None else CONFIG_PATH
+    return load_config(resolved_config, DEFAULTS_PATH)
 
 def discover_patched_notebooks(
     model_root: Path,
@@ -78,40 +89,18 @@ def build_error_output_path(patched_path: Path) -> Path:
     return patched_path.with_name(f"{patched_path.stem}_error.txt")
 
 
-def _load_dotenv(dotenv_path: Path) -> None:
-    if not dotenv_path.exists():
-        return
-
-    for raw_line in dotenv_path.read_text(encoding="utf-8", errors="ignore").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip()
-        if not key:
-            continue
-
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"\"" , "'"}:
-            value = value[1:-1]
-
-        os.environ.setdefault(key, value)
-
-
-
-app = typer.Typer()
-
 
 @app.command()
 def main(
-    config: Path = typer.Option(CONFIG_PATH, "-c", "--config", help="Path to run-specific config file"),
+    config_spec: Path = typer.Option(CONFIG_PATH, "-c", "--config", help="Path to run-specific config file"),
 ):
     """Run patched notebook execution using the provided agent config."""    
-    print(f"Loading configuration from: {config.resolve()}")
-    full_config = _load_full_config(config)
-    results_root = get_trajectories_dir(full_config)
-    environment_config = full_config.get("environment", {})
+    print(f"Loading configuration from: {config_spec.resolve()}")
+    print(f"Using defaults from: {DEFAULTS_PATH.resolve()}")
+    
+    config = load_config(config_spec, DEFAULTS_PATH)
+    results_root = get_trajectories_dir(config)
+    environment_config = config.get("environment", {})
     source_path_parent = Path(environment_config.get("source_path_parent", "example/JunoBench/"))
 
     models = get_models(results_root)
