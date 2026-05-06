@@ -1,11 +1,16 @@
+import os
 import sys
-import traceback
 from pathlib import Path
-
+from typing import Any, Iterable
+import typer
 
 from tqdm.auto import tqdm
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+# Config CLI defaults (match main.py behavior)
+CONFIG_PATH = Path(os.getenv("NOTEBOOK_AGENT_CONFIG_PATH", "config/agent.yaml"))
+DEFAULTS_PATH = Path(os.getenv("NOTEBOOK_AGENT_DEFAULTS_PATH", "config/defaults.yaml"))
 
 if __package__ in (None, ""):
     if str(PROJECT_ROOT) not in sys.path:
@@ -14,30 +19,29 @@ if __package__ in (None, ""):
 from data_analysis.util_test_cells_evaluation import (
     _extract_instance_name_from_filename,
 )
-from data_analysis.run_single_patched_notebook import run_single_patched_notebook
-IS_NEW_RESULTS = True  # Set to True to use results_new instead of results
-DEFAULT_RESULTS_ROOT = Path("results")
-DEFAULT_RESULTS_NEW_ROOT = Path("results_new")
-DEFAULT_JUNO_BENCH_ROOT = Path("JunoBench")
-DEFAULT_SETTING_ORDER = (
-    "agent",
-    "baseline",
-    "agent_without_run_code_and_cell_outputs",
-    "baseline_without_all_outputs",
-    "baseline_without_cell_outputs",
-)
+from src.run_nb.run_single_patched import run_single_patched_notebook
+from src.utils.yaml_parser import get_trajectories_dir, load_config
 
-def _get_results_and_benchmark_roots() -> tuple[Path, Path]:
-    results_root = DEFAULT_RESULTS_NEW_ROOT if IS_NEW_RESULTS else DEFAULT_RESULTS_ROOT
-    benchmark_root = DEFAULT_JUNO_BENCH_ROOT / "benchmark_new_202601" if IS_NEW_RESULTS else DEFAULT_JUNO_BENCH_ROOT
 
-    return results_root, benchmark_root
+def _load_full_config(config_spec: Path = CONFIG_PATH) -> dict[str, Any]:
+    _load_dotenv(PROJECT_ROOT / ".env")
+    return load_config(config_spec, DEFAULTS_PATH)
 
-def discover_patched_notebooks(results_root: Path, setting: str, model: str) -> list[Path]:
-    model_root = results_root / setting / model
+def discover_patched_notebooks(
+    model_root: Path,
+    source_path_parent: Path,
+) -> list[Path]:
+    # `model_root` is a Path pointing to results_root/<setting>/<model>
     if not model_root.exists():
         raise FileNotFoundError(f"Results folder not found: {model_root}")
-    return sorted(model_root.glob("run_*/*_patched.py"))
+    discovered = model_root.glob("run_*/*_patched.py")
+    filtered: list[Path] = []
+    for patched_path in discovered:
+        instance_name = extract_instance_name_from_patched_path(patched_path)
+        if (source_path_parent / instance_name).is_dir():
+            filtered.append(patched_path)
+
+    return filtered
 
 
 def extract_instance_name_from_patched_path(patched_path: Path) -> str:
@@ -47,25 +51,23 @@ def extract_instance_name_from_patched_path(patched_path: Path) -> str:
     return _extract_instance_name_from_filename(patched_path)
 
 
-def discover_setting_model_pairs(results_root: Path) -> list[tuple[str, str]]:
+def get_models(results_root: Path) -> list[Path]:
+    """Return model directory Paths under results_root that contain patched scripts.
+
+    Each returned Path points to results_root/<setting>/<model>.
+    Preserves discovery order from glob traversal and avoids sorting.
+    """
     if not results_root.exists():
         raise FileNotFoundError(f"Results root not found: {results_root}")
+    model_dirs: list[Path] = []
+    for model_dir in results_root.iterdir():
+        if not model_dir.is_dir():
+            continue
+        # Expect structure: results_root/<model>/run_*/...*_patched.py
+        if any(model_dir.glob("run_*/*_patched.py")):
+            model_dirs.append(model_dir)
 
-    setting_dirs = [path for path in results_root.iterdir() if path.is_dir()]
-    setting_names = {path.name for path in setting_dirs}
-
-    ordered_settings = [name for name in DEFAULT_SETTING_ORDER if name in setting_names]
-    ordered_settings.extend(sorted(setting_names - set(ordered_settings)))
-
-    pairs: list[tuple[str, str]] = []
-    for setting in ordered_settings:
-        setting_dir = results_root / setting
-        model_dirs = [path for path in setting_dir.iterdir() if path.is_dir()]
-        for model_dir in sorted(model_dirs):
-            if any(model_dir.glob("run_*/*_patched.py")):
-                pairs.append((setting, model_dir.name))
-
-    return pairs
+    return model_dirs
 
 
 def build_executed_output_path(patched_path: Path) -> Path:
@@ -75,16 +77,52 @@ def build_executed_output_path(patched_path: Path) -> Path:
 def build_error_output_path(patched_path: Path) -> Path:
     return patched_path.with_name(f"{patched_path.stem}_error.txt")
 
-def run_all_settings_with_defaults() -> None:
-    results_root, benchmark_root = _get_results_and_benchmark_roots()
-    setting_model_pairs = discover_setting_model_pairs(results_root)
-    if not setting_model_pairs:
-        raise FileNotFoundError(f"No patched notebooks found under: {results_root}")
 
-    for setting, model in setting_model_pairs:
-        print(f"Starting setting/model: {setting}/{model}")
-        patched_paths = discover_patched_notebooks(results_root, setting, model)
-        for patched_path in tqdm(patched_paths, desc=f"Run patched [{setting}/{model}]", unit="notebook"):
+def _load_dotenv(dotenv_path: Path) -> None:
+    if not dotenv_path.exists():
+        return
+
+    for raw_line in dotenv_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            continue
+
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"\"" , "'"}:
+            value = value[1:-1]
+
+        os.environ.setdefault(key, value)
+
+
+
+app = typer.Typer()
+
+
+@app.command()
+def main(
+    config: Path = typer.Option(CONFIG_PATH, "-c", "--config", help="Path to run-specific config file"),
+):
+    """Run patched notebook execution using the provided agent config."""    
+    print(f"Loading configuration from: {config.resolve()}")
+    full_config = _load_full_config(config)
+    results_root = get_trajectories_dir(full_config)
+    environment_config = full_config.get("environment", {})
+    source_path_parent = Path(environment_config.get("source_path_parent", "example/JunoBench/"))
+
+    models = get_models(results_root)
+
+    for  model in models:
+        print(f"Starting model: /{model}")
+        patched_paths = discover_patched_notebooks(
+            model,
+            source_path_parent,
+        )
+        for patched_path in tqdm(patched_paths, desc=f"Run patched [{model}]", unit="notebook"):
             executed_output_path = build_executed_output_path(patched_path)
             error_output_path = build_error_output_path(patched_path)
 
@@ -96,29 +134,17 @@ def run_all_settings_with_defaults() -> None:
                 print(f"Re-running due to existing error file: {error_output_path}")
 
             instance_name = extract_instance_name_from_patched_path(patched_path)
-            instance_folder = benchmark_root / instance_name
 
-            try:
-                run_single_patched_notebook(
-                    patched_script=patched_path,
-                    instance_folder=instance_folder,
-                )
-                if error_output_path.exists():
-                    error_output_path.unlink()
-            except Exception as exc:  # noqa: BLE001
-                error_payload = (
-                    f"setting={setting}\n"
-                    f"model={model}\n"
-                    f"patched_path={patched_path}\n"
-                    f"instance_folder={instance_folder}\n"
-                    f"exception={exc}\n\n"
-                    "traceback:\n"
-                    f"{traceback.format_exc()}"
-                )
-                error_output_path.write_text(error_payload, encoding="utf-8")
-                print(f"Failed {patched_path}; wrote error file: {error_output_path}")
-
+            run_single_patched_notebook(
+                patched_script=patched_path,
+                instance_name=instance_name,
+                config=environment_config,
+            )
+            if error_output_path.exists():
+                print(f"Failed {patched_path}; error file: {error_output_path}")
+            else:
+                print(f"Completed {patched_path}")
 
 
 if __name__ == "__main__":
-    run_all_settings_with_defaults()
+    app()
