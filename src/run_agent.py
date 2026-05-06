@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 from src.notebook_environment import NotebookEnvironment
-from src.CustomToolLitellmModel import CustomToolLitellmModel
+from src.custom_tool_litellm_model import CustomToolLitellmModel
 from src.utils.log import logger
 from src.ui_agent import UiAgent
 from src.run_nb.run_single_patched import run_single_patched_notebook

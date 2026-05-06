@@ -171,6 +171,8 @@ NOTEBOOK_TOOLS = [
     SUBMIT_TOOL,
 ]
 
+NOTEBOOK_TOOLS_WITHOUT_RUN_CODE = [t for t in NOTEBOOK_TOOLS if t["function"]["name"] != "run_code"]
+
 VALID_TOOL_NAMES = {t["function"]["name"] for t in NOTEBOOK_TOOLS}
 
 
@@ -202,7 +204,7 @@ def parse_notebook_tool_actions(
     if not tool_calls:
         extra = {"interrupt_type": "FormatError"}
         if raw_message is not None:
-            extra["raw_message"] = raw_message
+            extra["raw_message"] = raw_message # type: ignore
         raise FormatError(
             {
                 "role": "user",
@@ -239,7 +241,7 @@ def parse_notebook_tool_actions(
         if error_msg:
             extra = {"interrupt_type": "FormatError"}
             if raw_message is not None:
-                extra["raw_message"] = raw_message
+                extra["raw_message"] = raw_message # type: ignore
             raise FormatError(
                 {
                     "role": "user",

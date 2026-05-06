@@ -1,9 +1,14 @@
 import litellm
-from minisweagent.models.litellm_model import LitellmModel
+from minisweagent.models.litellm_model import LitellmModel, LitellmModelConfig
 
 # Configure logging
 from src.utils.log import logger
-from src.notebook_tools import NOTEBOOK_TOOLS, parse_notebook_tool_actions, parse_tool_calls_from_content
+from src.notebook_tools import (
+    NOTEBOOK_TOOLS,
+    NOTEBOOK_TOOLS_WITHOUT_RUN_CODE,
+    parse_notebook_tool_actions,
+    parse_tool_calls_from_content,
+)
 from minisweagent.models import GLOBAL_MODEL_STATS
 import time
 
@@ -24,12 +29,21 @@ def _json_safe(value):
     return str(value)
 
 
+class CustomToolLitellmModelConfig(LitellmModelConfig):
+    disable_run_code: bool = False
+
+
 class CustomToolLitellmModel(LitellmModel):
     """LitellmModel subclass that uses dedicated notebook tools instead of a single bash tool."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, config_class=CustomToolLitellmModelConfig, **kwargs):
         logger.info("Initializing CustomToolLitellmModel with args: %s, kwargs: %s", args, kwargs)
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, config_class=config_class, **kwargs)
+
+    def _get_tools(self):
+        if self.config.disable_run_code:
+            return NOTEBOOK_TOOLS_WITHOUT_RUN_CODE
+        return NOTEBOOK_TOOLS
 
     # ------------------------------------------------------------------
     # Override: send notebook-specific tools instead of BASH_TOOL
@@ -39,7 +53,7 @@ class CustomToolLitellmModel(LitellmModel):
             return litellm.completion(
                 model=self.config.model_name,
                 messages=messages,
-                tools=NOTEBOOK_TOOLS,
+                tools=self._get_tools(),
                 **(self.config.model_kwargs | kwargs),
             )
         except litellm.exceptions.AuthenticationError as e:
@@ -87,6 +101,7 @@ class CustomToolLitellmModel(LitellmModel):
 
         message = getattr(chosen_choice, "message", None)
         tool_calls = getattr(message, "tool_calls", []) or []
+        message_content = getattr(message, "content", None)
 
         raw_message = {
             "role": getattr(message, "role", "assistant"),
@@ -141,8 +156,8 @@ class CustomToolLitellmModel(LitellmModel):
 
         raw_message["full_response"] = full_resp
 
-        if not tool_calls and getattr(message, "content", None):
-            tool_calls = parse_tool_calls_from_content(message.content)
+        if not tool_calls and message_content:
+            tool_calls = parse_tool_calls_from_content(message_content)
             if tool_calls:
                 logger.info(
                     "Extracted %d tool call(s) from content text (model did not use tool_calls field)",
@@ -151,7 +166,7 @@ class CustomToolLitellmModel(LitellmModel):
             else:
                 logger.warning(
                     "No tool_calls in response and could not parse any from content. content=%r, finish_reason=%r",
-                    (message.content or "")[:200],
+                    message_content[:200],
                     getattr(chosen_choice, "finish_reason", None),
                 )
 

@@ -17,7 +17,7 @@ import litellm
 from jinja2 import StrictUndefined, Template
 
 from src.notebook_environment import NotebookEnvironment
-from src.CustomToolLitellmModel import CustomToolLitellmModel
+from src.custom_tool_litellm_model import CustomToolLitellmModel
 from src.notebook_tools import EDIT_CELL_TOOL
 from src.run_nb.run_single_patched import run_single_patched_notebook
 from src.utils.format_nb_cells import format_cell_source_for_llm

@@ -99,6 +99,8 @@ def apply_cli_overrides(
 def set_model_config(config: dict[str, Any], model_name: str | None = None) -> str | None:
     """
     Select a model from the config and set it as config['model'].
+    If there is no config.get("models"), fall back to legacy single config.get("models") config.
+    Otherwise, the values in config['model'] will be used as default values for the selected model config.
     
     Args:
         config: Configuration dictionary (modified in place)
@@ -127,6 +129,9 @@ def set_model_config(config: dict[str, Any], model_name: str | None = None) -> s
         model_config = matching[0]
     else:
         model_config = models_config[0]
+
+    if config.get("model"):
+        model_config = _deep_merge(config["model"], model_config)
     
     config["model"] = model_config
     selected_name = model_config.get("model_name", None)
