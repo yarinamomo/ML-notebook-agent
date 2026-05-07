@@ -4,7 +4,7 @@ set -Eeuo pipefail
 PYTHON="python"
 
 API_KEYS="api_keys.txt"
-MODEL="qwen-3.5-397b"
+MODEL="gpt-5.3-codex"
 
 CONFIGS=(
   "./config/agent.yaml"
