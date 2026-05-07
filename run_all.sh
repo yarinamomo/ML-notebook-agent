@@ -9,7 +9,7 @@ MODEL="qwen-3.5-397b"
 CONFIGS=(
   "./config/agent.yaml"
   "./config/baseline.yaml"
-  "./config/without_run_code.yaml"
+  "./config/baseline_without_cell_output.yaml"
   "./config/without_run_code_and_output.yaml"
 )
 
