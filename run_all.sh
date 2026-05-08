@@ -9,8 +9,8 @@ MODEL="gpt-5.3-codex"
 CONFIGS=(
   "./config/agent.yaml"
   "./config/baseline.yaml"
-  "./config/baseline_without_cell_output.yaml"
-  "./config/without_run_code_and_output.yaml"
+  "./config/baseline_without_cell_outputs.yaml"
+  "./config/without_run_code_and_outputs.yaml"
 )
 
 log_timestamp() {
