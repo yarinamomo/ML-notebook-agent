@@ -44,6 +44,12 @@ TOOL_COLORS = {
     "submit":        _tab10[7],
 }
 
+SETTING_COLORS = {
+    "baseline_without_cell_outputs":       _tab20[5],
+    "agent_without_run_code_and_cell_outputs": _tab20[1],
+    "agent":           _tab20[3],
+}
+
 CATEGORY_ORDER = ["Inspect", "Execute", "Edit", "Submit"]
 CATEGORY_TOOL_MAP = {
     "Inspect": {"get_cell", "get_cells", "get_cell_count"},
@@ -52,6 +58,25 @@ CATEGORY_TOOL_MAP = {
     "Submit": {"submit", "Submitted"},
 }
 
+
+LLM_ABBREVIATIONS = {
+    'glm-4.7-355b': 'GLM'
+}
+
+SETTING_LABEL_MAP = {
+    'baseline': 'SS+CO',
+    'baseline_without_cell_outputs': 'SS',
+    'baseline_without_all_outputs': 'SS-ERR',
+    'agent_without_run_code_and_cell_outputs': 'Agent-lite',
+    'agent': 'Agent-full',
+}
+
+BUG_CATEGORY_COLUMN_MAP = {
+    'library': ('nb_name', 'Library'),
+    'root_cause': ('label_root_cause', 'Root Cause'),
+    'crash_type': ('label_refined_exp_type', 'Crash Type'),
+    'pipeline': ('label_ML_pipeline', 'Pipeline Stage'),
+}
 
 def normalize_tool_name(tool_name):
     """Normalize synonymous tool names to a shared canonical form."""
@@ -1013,26 +1038,253 @@ def main(base_dir: Path):
     print(f"Charts saved to: {output_dir.absolute()}")
     print("="*60)
 
-SETTING_ABBREVIATIONS = {
-    'baseline_without_all_outputs': 'Baseline(-RT-ERR)',
-    'baseline_without_cell_outputs': 'Baseline(-RT)',
-    'baseline': 'Baseline',
-    'agent_without_run_code_and_cell_outputs': 'Agent(-RT)',
-    'agent': 'Agent',
-}
 
-LLM_ABBREVIATIONS = {
-    'glm-4.7-355b': 'GLM'
-}
+def _normalize_result_instance_name(instance_name):
+    """Normalize a result instance reference to the base benchmark instance id."""
+    if not instance_name:
+        return None
+
+    normalized_instance_name = str(instance_name).strip()
+    if '/' in normalized_instance_name:
+        normalized_instance_name = normalized_instance_name.rsplit('/', 1)[-1]
+
+    return normalized_instance_name or None
+
+
+def _iter_setting_llm_summaries(results_dir: Path, settings: list):
+    """Yield (setting, llm_name, summary) tuples for all available overall summaries."""
+    results_path = Path(results_dir)
+
+    for setting in settings:
+        setting_path = results_path / setting
+
+        if not setting_path.exists():
+            print(f"Warning: Setting directory not found: {setting_path}")
+            continue
+
+        for llm_dir in sorted(setting_path.iterdir()):
+            if not llm_dir.is_dir():
+                continue
+
+            summary_file = llm_dir / 'overall_summary.json'
+            if not summary_file.exists():
+                print(f"Warning: overall_summary.json not found in {llm_dir}")
+                continue
+
+            try:
+                with open(summary_file, 'r', encoding='utf-8') as f:
+                    summary = json.load(f)
+            except (OSError, json.JSONDecodeError) as e:
+                print(f"Error loading {summary_file}: {e}")
+                continue
+
+            yield setting, llm_dir.name, summary
+
+
+def _build_comparison_row(setting: str, summary: dict):
+    """Build a single row of the setting comparison table from a summary file."""
+    stats = summary.get('statistics', {})
+    correct_outcome_dist = stats.get('correct_outcome_distribution', {})
+    plausible_outcome_dist = stats.get('plausible_outcome_distribution', {})
+
+    return {
+        'Setting': SETTING_LABEL_MAP.get(setting, setting),
+        'Pass@K (correct)': round(correct_outcome_dist.get('pass_at_k_rate', np.nan), 3),
+        'Pass@All (correct)': round(correct_outcome_dist.get('pass_all_k_rate', np.nan), 3),
+        'Pass@K (plausible)': round(plausible_outcome_dist.get('pass_at_k_rate', np.nan), 3),
+        'Pass@All (plausible)': round(plausible_outcome_dist.get('pass_all_k_rate', np.nan), 3),
+    }
+
+
+def _extract_evaluated_and_correct_instances(summary: dict):
+    """Return the evaluated instance ids and correct instance ids from an overall summary."""
+    stats = summary.get('statistics', {})
+    correct_outcome_dist = stats.get('correct_outcome_distribution', {})
+
+    correct_instances = {
+        _normalize_result_instance_name(instance)
+        for instance in correct_outcome_dist.get('correct_instances', [])
+    }
+    incorrect_instances = {
+        _normalize_result_instance_name(instance)
+        for instance in correct_outcome_dist.get('incorrect_instances', [])
+    }
+
+    evaluated_instances = {
+        instance for instance in correct_instances | incorrect_instances if instance
+    }
+
+    if evaluated_instances:
+        return evaluated_instances, {instance for instance in correct_instances if instance}
+
+    plausible_outcome_dist = stats.get('plausible_outcome_distribution', {})
+    plausible_instances = {
+        _normalize_result_instance_name(instance)
+        for instance in plausible_outcome_dist.get('plausible_instances', [])
+    }
+    failed_instances = {
+        _normalize_result_instance_name(instance)
+        for instance in plausible_outcome_dist.get('failed_instances', [])
+    }
+
+    evaluated_instances = {
+        instance for instance in plausible_instances | failed_instances if instance
+    }
+    return evaluated_instances, {instance for instance in correct_instances if instance}
+
+
+def _load_benchmark_bug_labels(benchmark_desc_path: Path, bug_category: str):
+    """Load benchmark labels for the requested bug category."""
+    bug_category = bug_category.lower().strip()
+    if bug_category not in BUG_CATEGORY_COLUMN_MAP:
+        valid_categories = ', '.join(sorted(BUG_CATEGORY_COLUMN_MAP))
+        raise ValueError(f"Unsupported bug_category '{bug_category}'. Expected one of: {valid_categories}")
+
+    label_column, _ = BUG_CATEGORY_COLUMN_MAP[bug_category]
+    benchmark_path = Path(benchmark_desc_path)
+
+    benchmark_df = pd.read_excel(benchmark_path)
+    required_columns = {'nb_name'} if bug_category == 'library' else {'nb_name', label_column}
+    missing_columns = required_columns - set(benchmark_df.columns)
+    if missing_columns:
+        missing_columns_str = ', '.join(sorted(missing_columns))
+        raise KeyError(f"Missing required columns in {benchmark_path}: {missing_columns_str}")
+
+    if bug_category == 'library':
+        benchmark_df = benchmark_df[['nb_name']].copy()
+        benchmark_df['bug_label'] = benchmark_df['nb_name'].astype(str).str.rsplit('_', n=1).str[0]
+    else:
+        benchmark_df = benchmark_df[['nb_name', label_column]].copy()
+        benchmark_df['bug_label'] = benchmark_df[label_column]
+
+    benchmark_df['instance_id'] = benchmark_df['nb_name'].fillna('').astype(str).str.strip()
+    benchmark_df['bug_label'] = benchmark_df['bug_label'].fillna('').astype(str).str.strip()
+    benchmark_df = benchmark_df[(benchmark_df['instance_id'] != '') & (benchmark_df['bug_label'] != '')]
+    benchmark_df = benchmark_df.drop_duplicates(subset=['instance_id'], keep='first')
+
+    return benchmark_df[['instance_id', 'bug_label']]
+
+
+def _order_bug_labels(benchmark_labels: pd.DataFrame, bug_categories: list = None):
+    """Return bug labels in a stable plotting order."""
+    if bug_categories:
+        return [str(category) for category in bug_categories]
+
+    if benchmark_labels.empty:
+        return []
+
+    counts = benchmark_labels['bug_label'].value_counts()
+    return counts.index.tolist()
+
+
+def _calculate_pass_at_k_by_bug_category(summary: dict, benchmark_labels: pd.DataFrame, bug_categories: list):
+    """Calculate pass@k(correct) rates grouped by the requested bug categories."""
+    evaluated_instances, correct_instances = _extract_evaluated_and_correct_instances(summary)
+    if not evaluated_instances:
+        return None
+
+    evaluated_labels = benchmark_labels[benchmark_labels['instance_id'].isin(evaluated_instances)]
+    if evaluated_labels.empty:
+        return None
+
+    rates = {}
+    for bug_category in bug_categories:
+        category_instances = set(
+            evaluated_labels.loc[evaluated_labels['bug_label'] == bug_category, 'instance_id']
+        )
+        if not category_instances:
+            rates[bug_category] = np.nan
+            continue
+
+        correct_count = len(category_instances & correct_instances)
+        rates[bug_category] = correct_count / len(category_instances)
+
+    return rates
+
+
+def _format_bug_category_label(label: str, width: int = 16):
+    """Format a bug category label for display on the x-axis."""
+    return textwrap.fill(str(label).replace('_', ' '), width=width)
+
+
+def _plot_grouped_bug_category_bars(rows, bug_categories, bug_category_display_name, title, output_path: Path,
+                                   benchmark_labels: pd.DataFrame = None, save_pdf: bool = False):
+    """Plot grouped bars for pass@k(correct) across bug categories and settings."""
+    if not rows or not bug_categories:
+        print(f"Insufficient data to plot {title}")
+        return
+
+    num_settings = len(rows)
+    num_categories = len(bug_categories)
+    
+    # Fixed bar width from reference standard (7 categories + 3 settings looks good)
+    # For 3 settings: 1/3 = 0.333 capped at 0.25, so bar_width = 0.25
+    bar_width = 0.25
+    x = np.arange(num_categories)
+
+    # Calculate figure width proportional to number of categories
+    # Reference: 7 categories with fig_width≈5 looks good, so scale = 5/7 ≈ 0.71
+    # This keeps bars visually identical width across different category counts
+    # by ensuring inches-per-data-unit stays constant
+    fig_width = max(4, num_categories * 0.71)
+    # Scale height based on number of settings
+    fig_height = 4
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+
+    offsets = (np.arange(num_settings) - (num_settings - 1) / 2.0) * bar_width
+
+    for idx, row in enumerate(rows):
+        values = [row['rates'].get(category, np.nan) for category in bug_categories]
+        color = SETTING_COLORS.get(row['setting_key'], _tab20[idx % len(_tab20)])
+        display_label = SETTING_LABEL_MAP.get(row['setting_key'], row['Setting'])
+        ax.bar(
+            x + offsets[idx],
+            values,
+            width=bar_width,
+            label=display_label,
+            color=color,
+            edgecolor='white',
+            linewidth=0.8,
+            alpha=0.95,
+        )
+
+    ax.set_xticks(x)
+    category_labels = []
+    for category in bug_categories:
+        label_text = _format_bug_category_label(category)
+        label_text = label_text.replace(' ', '\n')
+        if benchmark_labels is not None:
+            count = (benchmark_labels['bug_label'] == category).sum()
+            label_text = f"{label_text}\n({count})"
+        category_labels.append(label_text)
+    ax.set_xticklabels(category_labels, fontsize=10)
+    # ax.set_ylabel('Pass@K (correct) rate', fontsize=10, fontweight='bold')
+    # ax.set_xlabel(bug_category_display_name, fontsize=12, fontweight='bold')
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'{y:.0%}'))
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+    ax.set_ylim(0, 1.0)
+    ax.legend(
+        loc='upper center',
+        bbox_to_anchor=(0.5, 1.08),
+        ncol=max(1, min(num_settings, 4)),
+        fontsize=8,
+        frameon=False,
+        borderaxespad=0.0,
+        columnspacing=0.9,
+        handletextpad=0.4,
+    )
+    # ax.set_title(title, fontsize=14, fontweight='bold')
+
+    plt.tight_layout()
+    save_figure(fig, output_path, save_pdf=save_pdf)
+    plt.close()
 
 def compare_performance_across_settings(results_dir: Path = Path('results'), 
-                                       settings: list = None,
+                                       *,
+                                       settings: list,
                                        output_dir: Path = None,
                                        save_pdf: bool = False):
     # correct_rate_col = 'Correct Rate\n(CI 90%, MoE 10%)'
-
-    if settings is None:
-        settings = ['baseline', 'without_run_code', 'agent']
     
     if output_dir is None:
         output_dir = results_dir / 'data_analysis'
@@ -1042,62 +1294,10 @@ def compare_performance_across_settings(results_dir: Path = Path('results'),
     data_by_llm = defaultdict(list)
     
     # Iterate through each setting
-    for setting in settings:
-        setting_path = results_dir / setting
-        
-        if not setting_path.exists():
-            print(f"Warning: Setting directory not found: {setting_path}")
-            continue
-        
-        # Find all LLM directories in this setting
-        for llm_dir in setting_path.iterdir():
-            if not llm_dir.is_dir():
-                continue
-            
-            llm_name = llm_dir.name
-            summary_file = llm_dir / 'overall_summary.json'
-            
-            if not summary_file.exists():
-                print(f"Warning: overall_summary.json not found in {llm_dir}")
-                continue
-            
-            try:
-                with open(summary_file, 'r', encoding='utf-8') as f:
-                    summary = json.load(f)
-                
-                # Extract metrics from summary
-                stats = summary.get('statistics', {})
-                correct_outcome_dist = stats.get('correct_outcome_distribution', {})
-                plausible_outcome_dist = stats.get('plausible_outcome_distribution', {})
-                
-                # Calculate average and std (ignore NaN values)
-                # per_run = correct_outcome_dist.get('per_run', {})
-                # run_sr = [
-                #     per_run.get('run_1', {}).get('correct_rate', np.nan),
-                #     per_run.get('run_2', {}).get('correct_rate', np.nan),
-                #     per_run.get('run_3', {}).get('correct_rate', np.nan),
-                # ]
-                # run_sr_valid = [x for x in run_sr if not np.isnan(x)]
-                # avg_run_sr = np.mean(run_sr_valid) if run_sr_valid else np.nan
-                # std_run_sr = np.std(run_sr_valid) if len(run_sr_valid) > 1 else np.nan
-                # manual_validation_outcome = load_manual_validation_outcome(llm_dir)
-                
-                row = {
-                    'Setting': SETTING_ABBREVIATIONS.get(setting, setting),
-                    'Pass@K (correct)': round(correct_outcome_dist.get('pass_at_k_rate', np.nan), 3),
-                    'Pass@All (correct)': round(correct_outcome_dist.get('pass_all_k_rate', np.nan), 3),
-                    'Pass@K (plausible)': round(plausible_outcome_dist.get('pass_at_k_rate', np.nan), 3),
-                    'Pass@All (plausible)': round(plausible_outcome_dist.get('pass_all_k_rate', np.nan), 3),
-                    # 'Avg Run SR': avg_run_sr,
-                    # 'Std Run SR': std_run_sr,
-                    # correct_rate_col: manual_validation_outcome,
-                }
-                
-                data_by_llm[llm_name].append(row)
-                print(f"Loaded: {setting} / {llm_name}")
-                
-            except (OSError, json.JSONDecodeError) as e:
-                print(f"Error loading {summary_file}: {e}")
+    for setting, llm_name, summary in _iter_setting_llm_summaries(results_dir, settings):
+        row = _build_comparison_row(setting, summary)
+        data_by_llm[llm_name].append(row)
+        print(f"Loaded: {setting} / {llm_name}")
     
     if not data_by_llm:
         print("No data found to compare")
@@ -1164,3 +1364,110 @@ def compare_performance_across_settings(results_dir: Path = Path('results'),
     print("="*80)
     
     return all_dfs
+
+def compare_pass_at_k_across_bug_types(results_dir: Path = Path('results'),
+                                      benchmark_desc_path: Path = Path('JunoBench/benchmark_desc.xlsx'),
+                                      *,
+                                      settings: list,
+                                      bug_category: str = 'library',
+                                      bug_categories: list = None,
+                                      category_grouping: dict = None,
+                                      output_dir: Path = None,
+                                      save_pdf: bool = False):
+    """Create grouped bar plots for pass@k(correct) across bug categories.
+
+    bug category (x-axis dimension) can be one of BUG_CATEGORY_COLUMN_MAP:
+    - library: nb_name from benchmark_desc.xlsx
+    - root_cause: label_root_cause
+    - crash_type: label_refined_exp_type
+
+    bug_categories (plural, list): Optional list of specific values within that dimension to display, 
+    in a specific order. If None, the plot automatically shows all categories found in the data, sorted by frequency
+
+    category_grouping (dict): Optional dict mapping group names to lists of original category names to combine.
+        E.g., {'PyTorch': ['torch', 'torchvision'], 'ML Libraries': ['sklearn', 'lightgbm']}
+        Categories not in any group will be displayed individually.
+        Pass rates are recalculated as (sum of correct instances in group) / (sum of total instances in group).
+
+    Bars are the selected settings, and the y-axis is pass@k(correct), computed
+    from the same correct/incorrect instance lists used by
+    compare_performance_across_settings.
+    """
+
+    bug_category = bug_category.lower().strip()
+    if bug_category not in BUG_CATEGORY_COLUMN_MAP:
+        valid_categories = ', '.join(sorted(BUG_CATEGORY_COLUMN_MAP))
+        raise ValueError(f"Unsupported bug_category '{bug_category}'. Expected one of: {valid_categories}")
+
+    if output_dir is None:
+        output_dir = results_dir / 'data_analysis'
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    benchmark_labels = _load_benchmark_bug_labels(benchmark_desc_path, bug_category)
+    
+    # Apply category grouping if provided
+    category_rename_map = {}
+    if category_grouping:
+        for group_name, original_categories in category_grouping.items():
+            for original_cat in original_categories:
+                category_rename_map[original_cat] = group_name
+        # Create a grouped version of benchmark_labels
+        benchmark_labels_grouped = benchmark_labels.copy()
+        benchmark_labels_grouped['bug_label'] = benchmark_labels_grouped['bug_label'].map(
+            lambda x: category_rename_map.get(x, x)
+        )
+        benchmark_labels = benchmark_labels_grouped
+    bug_category_display_name = BUG_CATEGORY_COLUMN_MAP[bug_category][1]
+
+    summaries_by_llm = defaultdict(list)
+    evaluated_instances_by_llm = defaultdict(set)
+
+    for setting, llm_name, summary in _iter_setting_llm_summaries(results_dir, settings):
+        evaluated_instances, _ = _extract_evaluated_and_correct_instances(summary)
+        evaluated_instances_by_llm[llm_name].update(evaluated_instances)
+        summaries_by_llm[llm_name].append((setting, summary))
+
+    if not summaries_by_llm:
+        print("No data found to compare")
+        return None
+
+    all_plots = {}
+
+    for llm_name in sorted(summaries_by_llm.keys()):
+        llm_evaluated_instances = evaluated_instances_by_llm.get(llm_name, set())
+        llm_labels = benchmark_labels[benchmark_labels['instance_id'].isin(llm_evaluated_instances)].copy()
+
+        if llm_labels.empty:
+            print(f"Insufficient benchmark labels to plot {llm_name}")
+            continue
+
+        categories = _order_bug_labels(llm_labels, bug_categories=bug_categories)
+        if not categories:
+            print(f"No bug categories found for {llm_name}")
+            continue
+
+        rows = []
+        for setting, summary in summaries_by_llm[llm_name]:
+            rates = _calculate_pass_at_k_by_bug_category(summary, llm_labels, categories)
+            if rates is None:
+                continue
+
+            rows.append({
+                'setting_key': setting,
+                'Setting': SETTING_LABEL_MAP.get(setting, setting),
+                'rates': rates,
+            })
+
+        if not rows:
+            print(f"Insufficient data to plot {llm_name}")
+            continue
+
+        all_plots[llm_name] = rows
+
+        title = f'Pass@K (Correct) by {bug_category_display_name}: {llm_name}'
+        output_path = output_dir / f'pass_at_k_correct_by_{bug_category}_{llm_name.replace("/", "_")}.png'
+        _plot_grouped_bug_category_bars(rows, categories, bug_category_display_name, title, output_path,
+                                       benchmark_labels=llm_labels, save_pdf=save_pdf)
+
+    return all_plots

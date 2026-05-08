@@ -21,9 +21,9 @@ def main():
     #         if "baseline" not in target_mode:
     #             summarize_plots.main(target_result_dir)
     #             find_early_submissions.main(target_result_dir, max_step=2)
-            if target_mode == "agent":
+            # if target_mode == "agent":
                 # run_code_analyze.main(target_result_dir)
-                run_code_visualize.main(target_result_dir)
+                # run_code_visualize.main(target_result_dir)
     #         edit_cell_analyze.main(target_result_dir)
 
     # compare_fixed_notebooks.main()
@@ -91,6 +91,40 @@ def main():
     #     results_dir / "agent" / "glm-4.7-355b"
     # )
     
+    summarize_plots.compare_pass_at_k_across_bug_types(
+        bug_category="library",
+        bug_categories=['tensorflow', 'torch', 'sklearn', 'numpy', 'pandas', 'visual', 'minor'],
+        settings = ['baseline_without_cell_outputs', 'agent_without_run_code_and_cell_outputs', 'agent'],
+        category_grouping={
+            'visual': ['seaborn', 'matplotlib'], 
+            'minor': ['statsmodels', 'torchvision', 'lightgbm']},
+        save_pdf=True)
+    # summarize_plots.compare_pass_at_k_across_bug_types(
+    #     bug_category="root_cause",
+    #     bug_categories=['API misuse', 'data confusion', 'implementation error'],
+    #     settings = ['baseline_without_cell_outputs', 'agent_without_run_code_and_cell_outputs', 'agent'],
+    #     category_grouping={'other': ['ML model confusion', 'library cause']}
+    # )
+    summarize_plots.compare_pass_at_k_across_bug_types(
+        bug_category="pipeline",
+        bug_categories=['data process', 'data visual', 'model construct', 'model train', 'model infer'],
+        settings = ['baseline_without_cell_outputs', 'agent_without_run_code_and_cell_outputs', 'agent'],
+        category_grouping={
+            'model train': ['training'], 'model infer': ['evaluation/prediction'], 
+            'model construct': ['model construction'], 'data visual': ['data visualization'], 
+            'data process': ['data preparation']},
+        save_pdf=True
+    )
+    summarize_plots.compare_pass_at_k_across_bug_types(
+        bug_category="crash_type",
+        settings=['baseline_without_cell_outputs', 'agent_without_run_code_and_cell_outputs', 'agent'],
+        bug_categories=['data mismatch', 'invalid arg', 'value error', 'attribute error', 'key error', 'index error', 'other'],
+        category_grouping={
+            'invalid arg': ['invalid argument'],
+            'data mismatch': ['tensor shape mismatch', 'data value violation', 'unsupported broadcast', 'feature name mismatch'],
+            'other': ['runtime error', 'io error', 'model initialization error', 'type error']},
+        save_pdf=True)
+
     # summarize_plots.compare_performance_across_settings(
     #     results_dir = results_dir,
     #     settings=target_modes
