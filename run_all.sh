@@ -3,14 +3,13 @@ set -Eeuo pipefail
 
 PYTHON="python"
 
-API_KEYS="api_keys.txt"
+API_KEYS="api_keys_gpt.txt" # api_keys_tu
 MODEL="gpt-5.3-codex"
 
 CONFIGS=(
   "./config/agent.yaml"
-  "./config/baseline.yaml"
+  "./config/without_run_code_and_output.yaml"
   "./config/baseline_without_cell_outputs.yaml"
-  "./config/without_run_code_and_outputs.yaml"
 )
 
 log_timestamp() {
