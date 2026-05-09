@@ -1,0 +1,182 @@
+{
+  "metadata": {
+    "generated_at": "2026-05-04T00:59:08.311495",
+    "execution_time_seconds": 352.08,
+    "success": true,
+    "status": "Submitted",
+    "cost": 0.0643
+  },
+  "statistics": {
+    "total_steps": 9,
+    "total_operations": 9,
+    "successful_operations": 6,
+    "failed_operations": 3,
+    "cells_edited": 4,
+    "unique_cells_edited": 4,
+    "avg_tool_execution_time_seconds": 41.26
+  },
+  "original_notebook": [
+    "# --- [CELL 0]: ---\n\nfrom datasets import load_dataset\nimport torch\nimport torch.nn.functional as F\nimport numpy as np\nimport time\nimport pickle\n\ndataset = load_dataset(\"sst\", \"default\")\ndataset2 = load_dataset(\"multi_nli\")",
+    "# --- [CELL 1]: ---\n\ntorch.manual_seed = 555\n",
+    "# --- [CELL 2]: ---\n\n\n\n\nglv = dict()\nglv_size = 50\nwith open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:\n    for line in fp:\n        word, *vec = line.split()\n        glv[word] = torch.tensor(list(map(float , vec)))",
+    "# --- [CELL 3]: ---\n\nembed = torch.zeros((len(glv)+2 , glv_size))\nind =2\n\nword2index ={'_pad_':0}\nindex2word ={0:'_pad_'}\n\nfor x in glv:\n    if(len(glv[x]) != glv_size):\n        continue\n    embed[ind] = glv[x]\n    word2index[x] = ind\n    index2word[ind] = x\n    ind+=1",
+    "# --- [CELL 4]: ---\n\nsentences = dataset['train']['sentence']\ntestsent = dataset['test']['sentence']",
+    "# --- [CELL 5]: ---\n\nfrom nltk.corpus import stopwords\nfrom nltk.tokenize import word_tokenize\nstop_words = set(stopwords.words('english'))\n\ndef tokenize(sentences):\n    tokens =[]\n    max_len = 0\n    for sentence in sentences:\n        sentence = sentence.replace('\\\\',' ')\n        sentence = sentence.replace('/',' ')\n        sentence = sentence.replace('\\'',' ')\n        word_tokens = word_tokenize(sentence)\n        max_len = max(max_len ,len( word_tokens))\n        tokens.append([w for w in word_tokens if not w.lower() in stop_words and len(w)>2])\n    return tokens , max_len",
+    "# --- [CELL 6]: ---\n\ndef build_vocab(sentences):\n    vocab = set()\n    X = list()\n    y = list()\n\n    for tokens in sentences:\n        for token in tokens:\n            vocab.add(token)\n    vocab = list(vocab)\n    int2text = dict()\n    text2int = dict()\n    vocab = [\"_pad_\"] + vocab\n    for ind ,x in enumerate(vocab):\n        int2text[ind] = x\n        text2int[x] = ind\n\n    return vocab ,int2text , text2int",
+    "# --- [CELL 7]: ---\n\ndef build_input(sentences ,word2index, text2int):\n    X =[]\n    Y =[]\n    for tokens in sentences:\n        curx = [word2index['_pad_']]\n        cury = list()\n        for token in tokens:\n            if token in word2index:\n                curx.append(word2index[token])\n                cury.append(text2int[token])\n            else:\n                curx.append(1)\n                cury.append(1)\n        cury.append(text2int['_pad_'])\n        X.append(torch.tensor(curx))\n        Y.append(torch.tensor(cury))\n    return X,Y",
+    "# --- [CELL 8]: ---\n\ndef build_input_test(sentences ,word2index):\n    X =[]\n    for tokens in sentences:\n        curx = [word2index['_pad_']]\n        for token in tokens:\n            if token in word2index:\n                curx.append(word2index[token])\n            else:\n                curx.append(1)\n        X.append(torch.tensor(curx))\n    return X",
+    "# --- [CELL 9]: ---\n\ntokens , max_len = tokenize(sentences)\nvocab , int2text , text2int = build_vocab(tokens)\nX,Y = build_input(tokens , word2index,text2int)",
+    "# --- [CELL 10]: ---\n\nfrom torch.utils.data import Dataset, DataLoader\nclass  data(Dataset):\n    def __init__(self , X,Y,vs , padsz):\n        self.X = X\n        self.Y = Y\n        self.vocab_size = vs\n        self.mx = padsz\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        dif = len(self.mx - self.X[index] )\n        _x = self.X[index]\n        _y = self.Y[index]\n        if dif > 0:\n            a = torch.zeros(self.mx)\n            b = torch.zeros(self.mx)\n            a[:len(_x)] = _x\n            b[:len(_y)] = _y\n            _x = a\n            _y = torch.zeros( ( self.mx, self.vocab_size))\n            _y [torch.arange(self.mx),b.long()] =1\n        return _x.long() , _y.long()",
+    "# --- [CELL 11]: ---\n\nelmotrain = data(X,Y, len(vocab),40)",
+    "# --- [CELL 12]: ---\n\ntraindata = DataLoader(elmotrain, batch_size=32 )",
+    "# --- [CELL 13]: ---\n\ntokens_test,ml = tokenize(testsent)\nX_test = build_input_test(tokens_test , word2index)",
+    "# --- [CELL 14]: ---\n\nclass elmo(torch.nn.Module):\n    def __init__(self , vocab_size,dim ,classes = 2, embed = None):\n        super(elmo, self).__init__()\n        self.embedding = torch.nn.Embedding(vocab_size , dim )\n        if(embed != None):\n          self.embedding.weights = torch.nn.Parameter(embed)\n\n\n\n\n        self.bilstm1 = torch.nn.LSTM(dim,dim , bidirectional = True , batch_first = True)\n        self.bilstm2 = torch.nn.LSTM(dim*2,dim , bidirectional = True, batch_first = True)\n\n        self.parameter =torch.nn.Parameter (torch.tensor([1.,1.,1.]))\n        self.dense = torch.nn.Linear(dim*2 , 512)\n        self.dense2 = torch.nn.Linear(512 , 1024)\n        self.dense3 = torch.nn.Linear(1024 , 512)\n        self.dense4 = torch.nn.Linear(512 , classes)\n        self.dropout = torch.nn.Dropout(p=0.5)\n    def forward(self , x , training= 1):\n\n        embed = self.embedding(x )\n\n        out1 , h1 = self.bilstm1(embed)\n        out2 , h2 = self.bilstm2(out1)\n\n        dembed = torch.cat([embed,embed],2)\n\n\n        first_layer = dembed     * self.parameter[0]\n        second_layer = out1    * self.parameter[1]\n        embed_layer = out2         * self.parameter[2]\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n        encoding =  first_layer + second_layer + embed_layer\n        encoding = torch.sum(encoding,axis = 1)\n\n\n        if training:\n          x = F.relu(self.dense(encoding))\n          x = F.relu(self.dropout(self.dense2(x)))\n          x = F.relu(self.dense3(x))\n          x = F.softmax(self.dense4(x) , 1)\n\n          return x\n        else:\n            return encoding",
+    "# --- [CELL 15]: ---\n\nmodel = elmo(len(vocab) , glv_size)\noptimizer = torch.optim.Adam(model.parameters())",
+    "# --- [CELL 16]: ---\n\ndef train( traindata,epochs = 5):\n\n    for x in range(epochs):\n        datal = iter(traindata)\n        print(\"epoch \",x+1)\n        print(\"*\"*20)\n        st =time.time()\n        bloss = []\n        numb = 0\n        for idx ,(cx, cy)  in enumerate(datal):\n            optimizer.zero_grad()\n\n            outputs = model.forward(cx)\n\n            loss = torch.sum((cy - outputs)**2)\n            bloss.append(loss/cx.shape[0])\n            loss.backward()\n            optimizer.step()\n            numb+=1\n\n\n        print(\"avg trainig loss : {}\".format(sum(bloss)/numb) ,end = \"  \")\n        print(\"time taken : {}\".format(time.time()  - st))\n        print(\"\")",
+    "# --- [CELL 17]: ---\n\nylb =[0 if x<0.5 else 1 for x in dataset['train']['label']]\nyl = dataset['train']['label']\n\nytb = [0 if x<0.5 else 1 for x in dataset['test']['label']]\nyt = dataset['test']['label']",
+    "# --- [CELL 18]: ---\n\nclass sentimentdata(Dataset):\n    def __init__(self , X,Y ):\n        self.X = X\n        self.Y = Y\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        x = self.X[index]\n        y= self.Y[index]\n\n        return x,y\nst_train_loader = sentimentdata(X ,ylb)\nst_test_loader = sentimentdata(X ,ytb)\n\nst_train = DataLoader(st_train_loader, batch_size=5 )\nst_test= DataLoader(st_test_loader, batch_size=5 )",
+    "# --- [CELL 19]: ---\n\ntrain(st_train,2)"
+  ],
+  "llm_responses": [
+    {
+      "step": 1,
+      "content": "",
+      "reasoning": ""
+    },
+    {
+      "step": 2,
+      "content": "",
+      "reasoning": ""
+    },
+    {
+      "step": 3,
+      "content": "",
+      "reasoning": ""
+    },
+    {
+      "step": 4,
+      "content": "",
+      "reasoning": ""
+    },
+    {
+      "step": 5,
+      "content": "",
+      "reasoning": ""
+    },
+    {
+      "step": 6,
+      "content": "",
+      "reasoning": ""
+    },
+    {
+      "step": 7,
+      "content": "",
+      "reasoning": ""
+    },
+    {
+      "step": 8,
+      "content": "",
+      "reasoning": ""
+    },
+    {
+      "step": 9,
+      "content": "",
+      "reasoning": ""
+    }
+  ],
+  "operations": [
+    {
+      "step": 1,
+      "action": "edit_cell(cell_index=18, code=<699 chars>)",
+      "output": "Cell 18 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0062
+    },
+    {
+      "step": 2,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: error\nREADME.md: 0.00B [00:00, ?B/s]sst.py: 0.00B [00:00, ?B/s]\n---ERROR---: ValueError: The repository for sst contains custom code which must be executed to correctly load the dataset. You can inspect the repository content at https://hf.co/datasets/sst.\nPlease pass the argument `trust_remote_code=True` to allow custom code to be run.\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 4.9824
+    },
+    {
+      "step": 3,
+      "action": "edit_cell(cell_index=0, code=<250 chars>)",
+      "output": "Cell 0 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0042
+    },
+    {
+      "step": 4,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\nDownloading data:   0%|          | 0.00/6.37M [00:00<?, ?B/s]Downloading data:   0%|          | 0.00/790k [00:00<?, ?B/s]Generating train split:   0%|          | 0/8544 [00:00<?, ? examples/s]Generating validation split:   0%|          | 0/1101 [00:00<?, ? examples/s]Generating test split:   0%|          | 0/2210 [00:00<?, ? examples/s]README.md: 0.00B [00:00, ?B/s]train-00000-of-00001.parquet:   0%|          | 0.00/214M [00:00<?, ?B/s](…)alidation_matched-00000-of-00001.parquet:   0%|          | 0.00/4.94M [00:00<?, ?B/s](…)dation_mismatched-00000-of-00001.parquet:   0%|          | 0.00/5.10M [00:00<?, ?B/s]Generating train split:   0%|          | 0/392702 [00:00<?, ? examples/s]Generating validation_matched split:   0%|          | 0/9815 [00:00<?, ? examples/s]Generating validation_mismatched split:   0%|          | 0/9832 [00:00<?, ? examples/s]\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\n\nCell 9:\nExecution Count: 10 | Status: ok\n\nCell 10:\nExecution Count: 11 | Status: ok\n\nCell 11:\nExecution Count: 12 | Status: ok\n\nCell 12:\nExecution Count: 13 | Status: ok\n\nCell 13:\nExecution Count: 14 | Status: ok\n\nCell 14:\nExecution Count: 15 | Status: ok\n\nCell 15:\nExecution Count: 16 | Status: ok\n\nCell 16:\nExecution Count: 17 | Status: ok\n\nCell 17:\nExecution Count: 18 | Status: ok\n\nCell 18:\nExecution Count: 19 | Status: ok\n\nCell 19:\nExecution Count: 20 | Status: error\nepoch  1\n********************\n\n---ERROR---: IndexError: index out of range in self\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 41.1245
+    },
+    {
+      "step": 5,
+      "action": "edit_cell(cell_index=15, code='model = elmo(len(word2index) , glv_size)\\noptimizer = torch.optim.Adam(model.parameters())')",
+      "output": "Cell 15 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0076
+    },
+    {
+      "step": 6,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\n\nCell 9:\nExecution Count: 10 | Status: ok\n\nCell 10:\nExecution Count: 11 | Status: ok\n\nCell 11:\nExecution Count: 12 | Status: ok\n\nCell 12:\nExecution Count: 13 | Status: ok\n\nCell 13:\nExecution Count: 14 | Status: ok\n\nCell 14:\nExecution Count: 15 | Status: ok\n\nCell 15:\nExecution Count: 16 | Status: ok\n\nCell 16:\nExecution Count: 17 | Status: ok\n\nCell 17:\nExecution Count: 18 | Status: ok\n\nCell 18:\nExecution Count: 19 | Status: ok\n\nCell 19:\nExecution Count: 20 | Status: error\nepoch  1\n********************\n\n---ERROR---: RuntimeError: The size of tensor a (5) must match the size of tensor b (2) at non-singleton dimension 1\n",
+      "return_code": 1,
+      "success": false,
+      "execution_time_seconds": 27.792
+    },
+    {
+      "step": 7,
+      "action": "edit_cell(cell_index=16, code=<824 chars>)",
+      "output": "Cell 16 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0043
+    },
+    {
+      "step": 8,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok\n\nCell 7:\nExecution Count: 8 | Status: ok\n\nCell 8:\nExecution Count: 9 | Status: ok\n\nCell 9:\nExecution Count: 10 | Status: ok\n\nCell 10:\nExecution Count: 11 | Status: ok\n\nCell 11:\nExecution Count: 12 | Status: ok\n\nCell 12:\nExecution Count: 13 | Status: ok\n\nCell 13:\nExecution Count: 14 | Status: ok\n\nCell 14:\nExecution Count: 15 | Status: ok\n\nCell 15:\nExecution Count: 16 | Status: ok\n\nCell 16:\nExecution Count: 17 | Status: ok\n\nCell 17:\nExecution Count: 18 | Status: ok\n\nCell 18:\nExecution Count: 19 | Status: ok\n\nCell 19:\nExecution Count: 20 | Status: ok\nepoch  1\n********************\n<ipython-input-17-8bfc343f798b>:16: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).\n  cy = torch.tensor(cy, dtype=outputs.dtype)\n",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 256.1564
+    },
+    {
+      "step": 9,
+      "action": "Submitted",
+      "output": "Fixed all crashing cells by: (1) padding/truncating variable-length sentiment inputs in cell 18 so DataLoader can batch tensors, and using X_test for test loader; (2) updating dataset loading in cell 0 to pass trust_remote_code=True for HF datasets; (3) correcting model vocab size in cell 15 to len(word2index) to prevent embedding index overflow; and (4) making train() in cell 16 convert scalar class labels to one-hot tensors matching model output shape before loss computation. After these edits, run_all completes with no execution errors.",
+      "return_code": 0,
+      "success": true
+    }
+  ],
+  "code_changes": [
+    {
+      "cell_index": 18,
+      "step": 1,
+      "code": "class sentimentdata(Dataset):\n    def __init__(self , X,Y, padsz=40 ):\n        self.X = X\n        self.Y = Y\n        self.padsz = padsz\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        x = self.X[index]\n        y= self.Y[index]\n\n        if len(x) < self.padsz:\n            px = torch.zeros(self.padsz, dtype=torch.long)\n            px[:len(x)] = x.long()\n            x = px\n        else:\n            x = x[:self.padsz].long()\n\n        return x,y\nst_train_loader = sentimentdata(X ,ylb, padsz=40)\nst_test_loader = sentimentdata(X_test ,ytb, padsz=40)\n\nst_train = DataLoader(st_train_loader, batch_size=5 )\nst_test= DataLoader(st_test_loader, batch_size=5 )"
+    },
+    {
+      "cell_index": 0,
+      "step": 3,
+      "code": "from datasets import load_dataset\nimport torch\nimport torch.nn.functional as F\nimport numpy as np\nimport time\nimport pickle\n\ndataset = load_dataset(\"sst\", \"default\", trust_remote_code=True)\ndataset2 = load_dataset(\"multi_nli\", trust_remote_code=True)"
+    },
+    {
+      "cell_index": 15,
+      "step": 5,
+      "code": "model = elmo(len(word2index) , glv_size)\noptimizer = torch.optim.Adam(model.parameters())"
+    },
+    {
+      "cell_index": 16,
+      "step": 7,
+      "code": "def train( traindata,epochs = 5):\n\n    for x in range(epochs):\n        datal = iter(traindata)\n        print(\"epoch \",x+1)\n        print(\"*\"*20)\n        st =time.time()\n        bloss = []\n        numb = 0\n        for idx ,(cx, cy)  in enumerate(datal):\n            optimizer.zero_grad()\n\n            outputs = model.forward(cx)\n            cy = torch.tensor(cy, dtype=outputs.dtype)\n            if cy.ndim == 1:\n                cy = F.one_hot(cy.long(), num_classes=outputs.shape[1]).to(outputs.dtype)\n\n            loss = torch.sum((cy - outputs)**2)\n            bloss.append(loss/cx.shape[0])\n            loss.backward()\n            optimizer.step()\n            numb+=1\n\n\n        print(\"avg trainig loss : {}\".format(sum(bloss)/numb) ,end = \"  \")\n        print(\"time taken : {}\".format(time.time()  - st))\n        print(\"\")"
+    }
+  ]
+}

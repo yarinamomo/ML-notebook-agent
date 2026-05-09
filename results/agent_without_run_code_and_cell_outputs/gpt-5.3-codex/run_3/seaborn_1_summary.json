@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "generated_at": "2026-05-05T14:58:01.373789",
+    "execution_time_seconds": 13.15,
+    "success": false,
+    "status": "APIConnectionError",
+    "cost": 0.0049
+  },
+  "statistics": {
+    "total_steps": 2,
+    "total_operations": 3,
+    "successful_operations": 2,
+    "failed_operations": 1,
+    "cells_edited": 1,
+    "unique_cells_edited": 1,
+    "avg_tool_execution_time_seconds": 4.05
+  },
+  "original_notebook": [
+    "# --- [CELL 0]: ---\n\n\n\nimport math, os, re, warnings, random\nimport numpy as np\nimport pandas as pd\nimport seaborn as sns\nfrom matplotlib import pyplot as plt\nfrom kaggle_datasets import KaggleDatasets\nfrom sklearn.utils import class_weight\nfrom sklearn.metrics import classification_report, confusion_matrix\nimport tensorflow as tf\nimport tensorflow.keras.layers as L\nfrom tensorflow.keras import optimizers, applications, Sequential, losses\nfrom tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, LearningRateScheduler\n\n\ndef seed_everything(seed=0):\n    random.seed(seed)\n    np.random.seed(seed)\n    tf.random.set_seed(seed)\n    os.environ['PYTHONHASHSEED'] = str(seed)\n    os.environ['TF_DETERMINISTIC_OPS'] = '1'\n\nseed = 0\nseed_everything(seed)\nwarnings.filterwarnings(\"ignore\")",
+    "# --- [CELL 1]: ---\n\n\n\ntry:\n    tpu = tf.distribute.cluster_resolver.TPUClusterResolver()\n    print(f'Running on TPU {tpu.master()}')\nexcept ValueError:\n    tpu = None\n\nif tpu:\n    tf.config.experimental_connect_to_cluster(tpu)\n    tf.tpu.experimental.initialize_tpu_system(tpu)\n    strategy = tf.distribute.experimental.TPUStrategy(tpu)\nelse:\n    strategy = tf.distribute.get_strategy()\n\nAUTO = tf.data.experimental.AUTOTUNE\nREPLICAS = strategy.num_replicas_in_sync\nprint(f'REPLICAS: {REPLICAS}')",
+    "# --- [CELL 2]: ---\n\nBATCH_SIZE = 16 * REPLICAS\nWARMUP_EPOCHS = 3\nWARMUP_LEARNING_RATE = 1e-4 * REPLICAS\nEPOCHS = 30\nLEARNING_RATE = 3e-5 * REPLICAS\nHEIGHT = 192\nWIDTH = 192\nCHANNELS = 3\nN_CLASSES = 104\nES_PATIENCE = 5",
+    "# --- [CELL 3]: ---\n\nmodel_path = f'model_{HEIGHT}x{WIDTH}.h5'\n\n\nGCS_PATH = \"data/tfrecords-jpeg-{}x{}\".format(HEIGHT, WIDTH)\n\nTRAINING_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/train/*.tfrec')\nVALIDATION_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/val/*.tfrec')\nTEST_FILENAMES = tf.io.gfile.glob(GCS_PATH + '/test/*.tfrec')\n\nCLASSES = [\n    'pink primrose', 'hard-leaved pocket orchid', 'canterbury bells', 'sweet pea',\n    'wild geranium', 'tiger lily', 'moon orchid', 'bird of paradise', 'monkshood',\n    'globe thistle', 'snapdragon', \"colt's foot\", 'king protea', 'spear thistle',\n    'yellow iris', 'globe-flower', 'purple coneflower', 'peruvian lily',\n    'balloon flower', 'giant white arum lily', 'fire lily', 'pincushion flower',\n    'fritillary', 'red ginger', 'grape hyacinth', 'corn poppy',\n    'prince of wales feathers', 'stemless gentian', 'artichoke', 'sweet william',\n    'carnation', 'garden phlox', 'love in the mist', 'cosmos',  'alpine sea holly',\n    'ruby-lipped cattleya', 'cape flower', 'great masterwort',  'siam tulip',\n    'lenten rose', 'barberton daisy', 'daffodil',  'sword lily', 'poinsettia',\n    'bolero deep blue',  'wallflower', 'marigold', 'buttercup', 'daisy',\n    'common dandelion', 'petunia', 'wild pansy', 'primula',  'sunflower',\n    'lilac hibiscus', 'bishop of llandaff', 'gaura',  'geranium', 'orange dahlia',\n    'pink-yellow dahlia', 'cautleya spicata',  'japanese anemone',\n    'black-eyed susan', 'silverbush', 'californian poppy',  'osteospermum',\n    'spring crocus', 'iris', 'windflower',  'tree poppy', 'gazania', 'azalea',\n    'water lily',  'rose', 'thorn apple', 'morning glory', 'passion flower',\n    'lotus', 'toad lily', 'anthurium', 'frangipani',  'clematis', 'hibiscus',\n    'columbine', 'desert-rose', 'tree mallow', 'magnolia', 'cyclamen ',\n    'watercress',  'canna lily', 'hippeastrum ', 'bee balm', 'pink quill',\n    'foxglove', 'bougainvillea', 'camellia', 'mallow',  'mexican petunia',\n    'bromelia', 'blanket flower', 'trumpet creeper',  'blackberry lily',\n    'common tulip', 'wild rose']",
+    "# --- [CELL 4]: ---\n\n\nAUTO = tf.data.experimental.AUTOTUNE\n\ndef decode_image(image_data):\n    image = tf.image.decode_jpeg(image_data, channels=3)\n    image = tf.cast(image, tf.float32) / 255.0\n    image = tf.reshape(image, [HEIGHT, WIDTH, 3])\n    return image\n\ndef read_labeled_tfrecord(example):\n    LABELED_TFREC_FORMAT = {\n        \"image\": tf.io.FixedLenFeature([], tf.string),\n        \"class\": tf.io.FixedLenFeature([], tf.int64),\n    }\n    example = tf.io.parse_single_example(example, LABELED_TFREC_FORMAT)\n    image = decode_image(example['image'])\n    label = tf.cast(example['class'], tf.int32)\n    return image, label\n\ndef read_unlabeled_tfrecord(example):\n    UNLABELED_TFREC_FORMAT = {\n        \"image\": tf.io.FixedLenFeature([], tf.string),\n        \"id\": tf.io.FixedLenFeature([], tf.string),\n\n    }\n    example = tf.io.parse_single_example(example, UNLABELED_TFREC_FORMAT)\n    image = decode_image(example['image'])\n    idnum = example['id']\n    return image, idnum\n\ndef load_dataset(filenames, labeled=True, ordered=False):\n    ignore_order = tf.data.Options()\n    if not ordered:\n        ignore_order.experimental_deterministic = False\n\n    dataset = tf.data.TFRecordDataset(filenames, num_parallel_reads=AUTO)\n    dataset = dataset.with_options(ignore_order)\n    dataset = dataset.map(read_labeled_tfrecord if labeled else read_unlabeled_tfrecord, num_parallel_calls=AUTO)\n\n    return dataset\n\ndef data_augment(image, label):\n    crop_size = tf.random.uniform([], int(HEIGHT*.7), HEIGHT, dtype=tf.int32)\n\n    image = tf.image.random_flip_left_right(image)\n    image = tf.image.random_flip_up_down(image)\n    image = tf.image.random_saturation(image, lower=0, upper=2)\n\n\n\n\n\n\n    image = tf.image.random_crop(image, size=[crop_size, crop_size, CHANNELS])\n    image = tf.image.resize(image, size=[HEIGHT, WIDTH])\n\n    return image, label\n\ndef get_training_dataset():\n    dataset = load_dataset(TRAINING_FILENAMES, labeled=True)\n    dataset = dataset.map(data_augment, num_parallel_calls=AUTO)\n    dataset = dataset.repeat()\n    dataset = dataset.shuffle(2048)\n    dataset = dataset.batch(BATCH_SIZE)\n    dataset = dataset.prefetch(AUTO)\n    return dataset\n\ndef get_training_dataset_preview(ordered=True):\n    dataset = load_dataset(TRAINING_FILENAMES, labeled=True, ordered=ordered)\n    dataset = dataset.batch(BATCH_SIZE)\n    dataset = dataset.cache()\n    dataset = dataset.prefetch(AUTO)\n    return dataset\n\ndef get_validation_dataset(ordered=False):\n    dataset = load_dataset(VALIDATION_FILENAMES, labeled=True, ordered=ordered)\n    dataset = dataset.batch(BATCH_SIZE)\n    dataset = dataset.cache()\n    dataset = dataset.prefetch(AUTO)\n    return dataset\n\ndef get_test_dataset(ordered=False):\n    dataset = load_dataset(TEST_FILENAMES, labeled=False, ordered=ordered)\n    dataset = dataset.batch(BATCH_SIZE)\n    dataset = dataset.prefetch(AUTO)\n    return dataset\n\ndef count_data_items(filenames):\n\n    n = [int(re.compile(r\"-([0-9]*)\\.\").search(filename).group(1)) for filename in filenames]\n    return np.sum(n)",
+    "# --- [CELL 5]: ---\n\n\nNUM_TRAINING_IMAGES = count_data_items(TRAINING_FILENAMES)\ntrain_dataset = get_training_dataset_preview(ordered=True)\ny_train = next(iter(train_dataset.unbatch().map(lambda image, label: label).batch(NUM_TRAINING_IMAGES))).numpy()\nprint(f'Number of training images {NUM_TRAINING_IMAGES}')\n\n\nNUM_VALIDATION_IMAGES = count_data_items(VALIDATION_FILENAMES)\nvalid_dataset = get_validation_dataset(ordered=True)\ny_valid = next(iter(valid_dataset.unbatch().map(lambda image, label: label).batch(NUM_VALIDATION_IMAGES))).numpy()\nprint(f'Number of validation images {NUM_VALIDATION_IMAGES}')\n\n\nNUM_TEST_IMAGES = count_data_items(TEST_FILENAMES)\nprint(f'Number of test images {NUM_TEST_IMAGES}')\ntest_dataset = get_test_dataset(ordered=True)",
+    "# --- [CELL 6]: ---\n\ntrain_agg = np.asarray([[label, (y_train == index).sum()] for index, label in enumerate(CLASSES)])\nvalid_agg = np.asarray([[label, (y_valid == index).sum()] for index, label in enumerate(CLASSES)])\n\nfig, (ax1, ax2) = plt.subplots(2, 1, figsize=(24, 64))\n\nax1 = sns.barplot(x=train_agg[...,1], y=train_agg[...,0], order=CLASSES, ax=ax1)\nax1.set_title('Train', fontsize=30)\nax1.tick_params(labelsize=16)\n\nax2 = sns.barplot(x=valid_agg[...,1], y=valid_agg[...,0], order=CLASSES, ax=ax2)\nax2.set_title('Validation', fontsize=30)\nax2.tick_params(labelsize=16)\n\nplt.show()"
+  ],
+  "llm_responses": [
+    {
+      "step": 1,
+      "content": "",
+      "reasoning": ""
+    },
+    {
+      "step": 2,
+      "content": "",
+      "reasoning": ""
+    }
+  ],
+  "operations": [
+    {
+      "step": 1,
+      "action": "edit_cell(cell_index=6, code=<486 chars>)",
+      "output": "Cell 6 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0055
+    },
+    {
+      "step": 2,
+      "action": "run_all()",
+      "output": "Cell 0:\nExecution Count: 1 | Status: ok\n\nCell 1:\nExecution Count: 2 | Status: ok\n\nCell 2:\nExecution Count: 3 | Status: ok\n\nCell 3:\nExecution Count: 4 | Status: ok\n\nCell 4:\nExecution Count: 5 | Status: ok\n\nCell 5:\nExecution Count: 6 | Status: ok\n\nCell 6:\nExecution Count: 7 | Status: ok",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 8.0929
+    },
+    {
+      "step": 2,
+      "action": "APIConnectionError",
+      "output": "",
+      "return_code": 1,
+      "success": false
+    }
+  ],
+  "code_changes": [
+    {
+      "cell_index": 6,
+      "step": 1,
+      "code": "train_counts = np.array([(y_train == i).sum() for i in range(len(CLASSES))], dtype=np.int32)\nvalid_counts = np.array([(y_valid == i).sum() for i in range(len(CLASSES))], dtype=np.int32)\n\nfig, (ax1, ax2) = plt.subplots(2, 1, figsize=(24, 64))\n\nsns.barplot(x=train_counts, y=CLASSES, ax=ax1)\nax1.set_title('Train', fontsize=30)\nax1.tick_params(labelsize=16)\n\nsns.barplot(x=valid_counts, y=CLASSES, ax=ax2)\nax2.set_title('Validation', fontsize=30)\nax2.tick_params(labelsize=16)\n\nplt.show()"
+    }
+  ]
+}
