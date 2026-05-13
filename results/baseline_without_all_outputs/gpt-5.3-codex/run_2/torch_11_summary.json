@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "generated_at": "2026-05-12T12:56:19.722793",
+    "execution_time_seconds": 16.14,
+    "success": false,
+    "status": "Failure",
+    "cost": 0.0049
+  },
+  "statistics": {
+    "total_steps": 1,
+    "total_operations": 2,
+    "successful_operations": 1,
+    "failed_operations": 1,
+    "cells_edited": 1,
+    "unique_cells_edited": 1,
+    "avg_tool_execution_time_seconds": 0.0
+  },
+  "original_notebook": [
+    "# --- [CELL 0]: ---\n\nfrom datasets import load_dataset\nimport torch\nimport torch.nn.functional as F\nimport numpy as np\nimport time\nimport pickle\n\ndataset = load_dataset(\"sst\", \"default\")\ndataset2 = load_dataset(\"multi_nli\")",
+    "# --- [CELL 1]: ---\n\ntorch.manual_seed = 555\n",
+    "# --- [CELL 2]: ---\n\n\n\n\nglv = dict()\nglv_size = 50\nwith open('data/glove.6B.{}d.txt'.format(glv_size),'r') as fp:\n    for line in fp:\n        word, *vec = line.split()\n        glv[word] = torch.tensor(list(map(float , vec)))",
+    "# --- [CELL 3]: ---\n\nembed = torch.zeros((len(glv)+2 , glv_size))\nind =2\n\nword2index ={'_pad_':0}\nindex2word ={0:'_pad_'}\n\nfor x in glv:\n    if(len(glv[x]) != glv_size):\n        continue\n    embed[ind] = glv[x]\n    word2index[x] = ind\n    index2word[ind] = x\n    ind+=1",
+    "# --- [CELL 4]: ---\n\nsentences = dataset['train']['sentence']\ntestsent = dataset['test']['sentence']",
+    "# --- [CELL 5]: ---\n\nfrom nltk.corpus import stopwords\nfrom nltk.tokenize import word_tokenize\nstop_words = set(stopwords.words('english'))\n\ndef tokenize(sentences):\n    tokens =[]\n    max_len = 0\n    for sentence in sentences:\n        sentence = sentence.replace('\\\\',' ')\n        sentence = sentence.replace('/',' ')\n        sentence = sentence.replace('\\'',' ')\n        word_tokens = word_tokenize(sentence)\n        max_len = max(max_len ,len( word_tokens))\n        tokens.append([w for w in word_tokens if not w.lower() in stop_words and len(w)>2])\n    return tokens , max_len",
+    "# --- [CELL 6]: ---\n\ndef build_vocab(sentences):\n    vocab = set()\n    X = list()\n    y = list()\n\n    for tokens in sentences:\n        for token in tokens:\n            vocab.add(token)\n    vocab = list(vocab)\n    int2text = dict()\n    text2int = dict()\n    vocab = [\"_pad_\"] + vocab\n    for ind ,x in enumerate(vocab):\n        int2text[ind] = x\n        text2int[x] = ind\n\n    return vocab ,int2text , text2int",
+    "# --- [CELL 7]: ---\n\ndef build_input(sentences ,word2index, text2int):\n    X =[]\n    Y =[]\n    for tokens in sentences:\n        curx = [word2index['_pad_']]\n        cury = list()\n        for token in tokens:\n            if token in word2index:\n                curx.append(word2index[token])\n                cury.append(text2int[token])\n            else:\n                curx.append(1)\n                cury.append(1)\n        cury.append(text2int['_pad_'])\n        X.append(torch.tensor(curx))\n        Y.append(torch.tensor(cury))\n    return X,Y",
+    "# --- [CELL 8]: ---\n\ndef build_input_test(sentences ,word2index):\n    X =[]\n    for tokens in sentences:\n        curx = [word2index['_pad_']]\n        for token in tokens:\n            if token in word2index:\n                curx.append(word2index[token])\n            else:\n                curx.append(1)\n        X.append(torch.tensor(curx))\n    return X",
+    "# --- [CELL 9]: ---\n\ntokens , max_len = tokenize(sentences)\nvocab , int2text , text2int = build_vocab(tokens)\nX,Y = build_input(tokens , word2index,text2int)",
+    "# --- [CELL 10]: ---\n\nfrom torch.utils.data import Dataset, DataLoader\nclass  data(Dataset):\n    def __init__(self , X,Y,vs , padsz):\n        self.X = X\n        self.Y = Y\n        self.vocab_size = vs\n        self.mx = padsz\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        dif = len(self.mx - self.X[index] )\n        _x = self.X[index]\n        _y = self.Y[index]\n        if dif > 0:\n            a = torch.zeros(self.mx)\n            b = torch.zeros(self.mx)\n            a[:len(_x)] = _x\n            b[:len(_y)] = _y\n            _x = a\n            _y = torch.zeros( ( self.mx, self.vocab_size))\n            _y [torch.arange(self.mx),b.long()] =1\n        return _x.long() , _y.long()",
+    "# --- [CELL 11]: ---\n\nelmotrain = data(X,Y, len(vocab),40)",
+    "# --- [CELL 12]: ---\n\ntraindata = DataLoader(elmotrain, batch_size=32 )",
+    "# --- [CELL 13]: ---\n\ntokens_test,ml = tokenize(testsent)\nX_test = build_input_test(tokens_test , word2index)",
+    "# --- [CELL 14]: ---\n\nclass elmo(torch.nn.Module):\n    def __init__(self , vocab_size,dim ,classes = 2, embed = None):\n        super(elmo, self).__init__()\n        self.embedding = torch.nn.Embedding(vocab_size , dim )\n        if(embed != None):\n          self.embedding.weights = torch.nn.Parameter(embed)\n\n\n\n\n        self.bilstm1 = torch.nn.LSTM(dim,dim , bidirectional = True , batch_first = True)\n        self.bilstm2 = torch.nn.LSTM(dim*2,dim , bidirectional = True, batch_first = True)\n\n        self.parameter =torch.nn.Parameter (torch.tensor([1.,1.,1.]))\n        self.dense = torch.nn.Linear(dim*2 , 512)\n        self.dense2 = torch.nn.Linear(512 , 1024)\n        self.dense3 = torch.nn.Linear(1024 , 512)\n        self.dense4 = torch.nn.Linear(512 , classes)\n        self.dropout = torch.nn.Dropout(p=0.5)\n    def forward(self , x , training= 1):\n\n        embed = self.embedding(x )\n\n        out1 , h1 = self.bilstm1(embed)\n        out2 , h2 = self.bilstm2(out1)\n\n        dembed = torch.cat([embed,embed],2)\n\n\n        first_layer = dembed     * self.parameter[0]\n        second_layer = out1    * self.parameter[1]\n        embed_layer = out2         * self.parameter[2]\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n        encoding =  first_layer + second_layer + embed_layer\n        encoding = torch.sum(encoding,axis = 1)\n\n\n        if training:\n          x = F.relu(self.dense(encoding))\n          x = F.relu(self.dropout(self.dense2(x)))\n          x = F.relu(self.dense3(x))\n          x = F.softmax(self.dense4(x) , 1)\n\n          return x\n        else:\n            return encoding",
+    "# --- [CELL 15]: ---\n\nmodel = elmo(len(vocab) , glv_size)\noptimizer = torch.optim.Adam(model.parameters())",
+    "# --- [CELL 16]: ---\n\ndef train( traindata,epochs = 5):\n\n    for x in range(epochs):\n        datal = iter(traindata)\n        print(\"epoch \",x+1)\n        print(\"*\"*20)\n        st =time.time()\n        bloss = []\n        numb = 0\n        for idx ,(cx, cy)  in enumerate(datal):\n            optimizer.zero_grad()\n\n            outputs = model.forward(cx)\n\n            loss = torch.sum((cy - outputs)**2)\n            bloss.append(loss/cx.shape[0])\n            loss.backward()\n            optimizer.step()\n            numb+=1\n\n\n        print(\"avg trainig loss : {}\".format(sum(bloss)/numb) ,end = \"  \")\n        print(\"time taken : {}\".format(time.time()  - st))\n        print(\"\")",
+    "# --- [CELL 17]: ---\n\nylb =[0 if x<0.5 else 1 for x in dataset['train']['label']]\nyl = dataset['train']['label']\n\nytb = [0 if x<0.5 else 1 for x in dataset['test']['label']]\nyt = dataset['test']['label']",
+    "# --- [CELL 18]: ---\n\nclass sentimentdata(Dataset):\n    def __init__(self , X,Y ):\n        self.X = X\n        self.Y = Y\n    def __len__(self):\n        return len(self.X)\n    def __getitem__(self , index):\n        x = self.X[index]\n        y= self.Y[index]\n\n        return x,y\nst_train_loader = sentimentdata(X ,ylb)\nst_test_loader = sentimentdata(X ,ytb)\n\nst_train = DataLoader(st_train_loader, batch_size=5 )\nst_test= DataLoader(st_test_loader, batch_size=5 )",
+    "# --- [CELL 19]: ---\n\ntrain(st_train,2)"
+  ],
+  "llm_responses": [
+    {
+      "step": 1,
+      "content": "",
+      "reasoning": ""
+    }
+  ],
+  "operations": [
+    {
+      "step": 1,
+      "action": "edit_cell(cell_index=10, code=<858 chars>)",
+      "output": "Cell 10 edited successfully",
+      "return_code": 0,
+      "success": true,
+      "execution_time_seconds": 0.0034
+    },
+    {
+      "step": 1,
+      "action": "Failure",
+      "output": "Cell 0:\nExecution Count: 1 | Status: error",
+      "return_code": 1,
+      "success": false
+    }
+  ],
+  "code_changes": [
+    {
+      "cell_index": 10,
+      "step": 1,
+      "code": "from torch.utils.data import Dataset, DataLoader\nclass data(Dataset):\n    def __init__(self, X, Y, vs, padsz):\n        self.X = X\n        self.Y = Y\n        self.vocab_size = vs\n        self.mx = padsz\n\n    def __len__(self):\n        return len(self.X)\n\n    def __getitem__(self, index):\n        _x = self.X[index]\n        _y = self.Y[index]\n\n        # pad/truncate input sequence\n        x_pad = torch.zeros(self.mx, dtype=torch.long)\n        lx = min(len(_x), self.mx)\n        x_pad[:lx] = _x[:lx].long()\n\n        # pad/truncate target token ids and one-hot encode\n        y_ids = torch.zeros(self.mx, dtype=torch.long)\n        ly = min(len(_y), self.mx)\n        y_ids[:ly] = _y[:ly].long()\n\n        y_onehot = torch.zeros((self.mx, self.vocab_size), dtype=torch.float32)\n        y_onehot[torch.arange(self.mx), y_ids] = 1.0\n\n        return x_pad, y_onehot"
+    }
+  ]
+}
