@@ -12,84 +12,85 @@ from data_analysis import (
 def main():
     results_dir = Path("results")
     target_modes = ["baseline", "baseline_without_all_outputs", "baseline_without_cell_outputs", "agent", "agent_without_run_code_and_cell_outputs"]
-    target_models = ["glm-4.7-355b"]
+    target_model = "gpt-5.3-codex" #"glm-4.7-355b"
     for target_mode in target_modes:
-        for target_model in target_models:
-            target_result_dir = results_dir / target_mode / target_model
+        target_result_dir = results_dir / target_mode / target_model
 
-    #         summarize_statistics.main(target_result_dir)
-    #         if "baseline" not in target_mode:
-    #             summarize_plots.main(target_result_dir)
-    #             find_early_submissions.main(target_result_dir, max_step=2)
-            # if target_mode == "agent":
-                # run_code_analyze.main(target_result_dir)
-                # run_code_visualize.main(target_result_dir)
-    #         edit_cell_analyze.main(target_result_dir)
+        summarize_statistics.main(target_result_dir)
+        if "baseline" not in target_mode:
+            summarize_plots.main(target_result_dir)
+            find_early_submissions.main(target_result_dir, max_step=2)
+        if target_mode == "agent":
+            # run_code_analyze.main(target_result_dir)
+            run_code_visualize.main(target_result_dir)
+        edit_cell_analyze.main(target_result_dir)
 
-    # compare_fixed_notebooks.main()
+    compare_fixed_notebooks.main()
 
-    # # # Create tool comparison chart per step across two settings: without "run_code" tool vs. default agent
-    # # summarize_plots.create_comparison_chart(
-    # #     results_dir / "agent_without_run_code_and_cell_outputs" / "glm-4.7-355b",
-    # #     results_dir / "agent" / "glm-4.7-355b",
-    # #     "Tool Count Comparison - Without \"run_code\" Tool vs. Default Agent (glm-4.7-355b)",
-    # #     results_dir / "data_analysis" / "tool_comparison_agents_without_run_code.png",
-    # #     label1="Agent without \"run_code\" tool",
-    # #     label2="Agent default",
-    # #     mode="diff"
-    # # )
-    # # summarize_plots.create_comparison_chart(
-    # #     results_dir / "agent_without_run_code_and_cell_outputs" / "glm-4.7-355b",
-    # #     results_dir / "agent" / "glm-4.7-355b",
-    # #     "Tool Count Comparison - Without \"run_code\" Tool vs. Default Agent (glm-4.7-355b)",
-    # #     results_dir / "data_analysis" / "tool_comparison_agents_without_run_code.png",
-    # #     label1="Agent without \"run_code\" tool",
-    # #     label2="Agent default",
-    # #     mode="full"
-    # # )
+    # # Create tool comparison chart per step across two settings: without "run_code" tool vs. default agent
+    # summarize_plots.create_comparison_chart(
+    #     results_dir / "agent_without_run_code_and_cell_outputs" / target_model,
+    #     results_dir / "agent" / target_model,
+    #     "Tool Count Comparison - Without \"run_code\" Tool vs. Default Agent (" + target_model + ")",
+    #     results_dir / "data_analysis" / f"tool_comparison_agents_without_run_code_{target_model}.png",
+    #     label1="Agent without \"run_code\" tool",
+    #     label2="Agent default",
+    #     mode="diff"
+    # )
+    # summarize_plots.create_comparison_chart(
+    #     results_dir / "agent_without_run_code_and_cell_outputs" / target_model,
+    #     results_dir / "agent" / target_model,
+    #     "Tool Count Comparison - Without \"run_code\" Tool vs. Default Agent (" + target_model + ")",
+    #     results_dir / "data_analysis" / f"tool_comparison_agents_without_run_code_{target_model}.png",
+    #     label1="Agent without \"run_code\" tool",
+    #     label2="Agent default",
+    #     mode="full"
+    # )
 
     # # Create aggregated category proportion comparison between settings
     # summarize_plots.create_comparison_chart_agg(
-    #     results_dir / "agent_without_run_code_and_cell_outputs" / "glm-4.7-355b",
-    #     results_dir / "agent" / "glm-4.7-355b",
-    #     "Tool Category Proportions (GLM)",
-    #     results_dir / "data_analysis" / "tool_category_proportions_comparison.png",
+    #     results_dir / "agent_without_run_code_and_cell_outputs" / target_model,
+    #     results_dir / "agent" / target_model,
+    #     "Tool Category Proportions (" + target_model + ")",
+    #     results_dir / "data_analysis" / f"tool_category_proportions_comparison_{target_model}.png",
     #     label1="Agent-lite",
     #     label2="Agent-full",
     #     error_bars="ci",
     #     save_pdf=True
     # )
 
-    # # Create run_code usage summary plot for the default agent
-    # summarize_plots.create_run_code_usage_plot(
-    #     results_dir / "agent" / "glm-4.7-355b",
-    #     "run_code Usage Summary (GLM)",
-    #     results_dir / "data_analysis" / "run_code_usage_summary.png",
-    #     label="Agent-full",
-    #     save_pdf=True
-    # )
+    target_models = ["gpt-5.3-codex", "glm-4.7-355b"]
+    for target_model in target_models:
+        summarize_plots.create_comparison_chart_agg_by_outcome(
+            results_dir / "agent_without_run_code_and_cell_outputs" / target_model,
+            results_dir / "agent" / target_model,
+            "Tool Category Proportions by Outcome (" + target_model + ")",
+            results_dir / "data_analysis" / f"tool_category_proportions_by_outcome_comparison_{target_model}.png",
+            label1="Agent-lite",
+            label2="Agent-full",
+            error_bars="ci",
+            save_pdf=True
+        )
 
-    # summarize_plots.create_comparison_chart_agg_by_outcome(
-    #     results_dir / "agent_without_run_code_and_cell_outputs" / "glm-4.7-355b",
-    #     results_dir / "agent" / "glm-4.7-355b",
-    #     "Tool Category Proportions by Outcome (GLM)",
-    #     results_dir / "data_analysis" / "tool_category_proportions_by_outcome_comparison.png",
-    #     label1="Agent-lite",
-    #     label2="Agent-full",
-    #     error_bars="ci",
-    #     save_pdf=True
-    # )
-
-    # summarize_plots.create_run_code_usage_plot_by_outcome(
-    #     results_dir / "agent" / "glm-4.7-355b",
-    #     "run_code Usage Summary by Outcome (GLM)",
-    #     results_dir / "data_analysis" / "run_code_usage_summary_by_outcome.png",
-    #     label="Agent-full",
-    #     # save_pdf=True
-    # )
-    # summarize_plots.print_run_code_usage_table(
-    #     results_dir / "agent" / "glm-4.7-355b"
-    # )
+    target_models = ["gpt-5.3-codex", "glm-4.7-355b"]
+    for target_model in target_models:
+        summarize_plots.create_run_code_usage_plot(
+            results_dir / "agent" / target_model,
+            "run_code Usage Summary (" + target_model + ")",
+            results_dir / "data_analysis" / f"run_code_usage_summary_{target_model}.png",
+            label="Agent-full",
+            save_pdf=False
+        )
+        summarize_plots.create_run_code_usage_plot_by_outcome(
+            results_dir / "agent" / target_model,
+            "run_code Usage Summary by Outcome (" + target_model + ")",
+            results_dir / "data_analysis" / f"run_code_usage_summary_by_outcome_{target_model}.png",
+            label="Agent-full",
+            save_pdf=False
+        )
+        summarize_plots.print_run_code_usage_table(
+            results_dir / "agent" / target_model
+        )
     
     summarize_plots.compare_pass_at_k_across_bug_types(
         bug_category="library",
@@ -125,18 +126,17 @@ def main():
             'other': ['runtime error', 'io error', 'model initialization error', 'type error']},
         save_pdf=True)
 
-    # summarize_plots.compare_performance_across_settings(
-    #     results_dir = results_dir,
-    #     settings=target_modes
-    # )
+    summarize_plots.compare_performance_across_settings(
+        results_dir = results_dir,
+        settings=target_modes
+    )
 
-    # for target_model in target_models:
-    #     summarize_statistics.run_passk_pairwise_significance(
-    #         results_root=results_dir,
-    #         model=target_model,
-    #         settings=target_modes, #["agent", "agent_without_run_code_and_cell_outputs", "baseline"],
-    #         output_path=results_dir / Path(f"data_analysis/passk_pairwise_significance_{target_model}.json"),
-    #     )
+    summarize_statistics.run_passk_pairwise_significance(
+        results_root=results_dir,
+        model=target_model,
+        settings=target_modes, #["agent", "agent_without_run_code_and_cell_outputs", "baseline"],
+        output_path=results_dir / Path(f"data_analysis/passk_pairwise_significance_{target_model}.json"),
+    )
 
 if __name__ == "__main__":
     main()

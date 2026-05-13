@@ -358,7 +358,7 @@ def create_comparison_chart_agg_by_outcome(path1: str, path2: str, title: str, o
 
     x = np.arange(len(CATEGORY_ORDER))
     bar_width = 0.18
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(8, 6))
 
     # Helper to get means and yerr (in percent) for a stats object
     def _means_yerr_pct(s):
@@ -400,7 +400,9 @@ def create_comparison_chart_agg_by_outcome(path1: str, path2: str, title: str, o
     ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f"{y:.0f}%"))
     ax.set_ylabel('Mean percentage of actions', fontsize=12 * font_scale, fontweight='bold')
     ax.grid(axis='y', alpha=0.3, linestyle='--')
-    ax.legend(fontsize=10 * font_scale)
+    # Reduce the colored handle width in the legend: lower `handlelength` to make the
+    # color swatch narrower, and reduce `handletextpad` to tighten text spacing.
+    ax.legend(fontsize=9 * font_scale, handlelength=0.8, handletextpad=0.6, handleheight=0.8)
 
     # plt.title(title, fontsize=14 * font_scale, fontweight='bold')
     plt.tight_layout()
