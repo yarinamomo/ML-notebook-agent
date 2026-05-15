@@ -8,7 +8,7 @@ MODEL="gpt-5.3-codex"
 
 CONFIGS=(
   "./config/agent.yaml"
-  "./config/without_run_code_and_output.yaml"
+  "./config/agent_without_run_code_and_output.yaml"
   "./config/baseline_without_cell_outputs.yaml"
 )
 

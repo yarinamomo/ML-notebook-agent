@@ -11,7 +11,7 @@ from data_analysis import (
 
 def main():
     results_dir = Path("results")
-    target_modes = ["baseline", "baseline_without_all_outputs", "baseline_without_cell_outputs", "agent", "agent_without_run_code_and_cell_outputs"]
+    target_modes = ["baseline_with_all_outputs", "baseline_without_all_outputs", "baseline_without_cell_outputs", "agent", "agent_without_run_code_and_cell_outputs"]
     target_model = "gpt-5.3-codex" #"glm-4.7-355b"
     for target_mode in target_modes:
         target_result_dir = results_dir / target_mode / target_model
@@ -134,7 +134,7 @@ def main():
     summarize_statistics.run_passk_pairwise_significance(
         results_root=results_dir,
         model=target_model,
-        settings=target_modes, #["agent", "agent_without_run_code_and_cell_outputs", "baseline"],
+        settings=target_modes,
         output_path=results_dir / Path(f"data_analysis/passk_pairwise_significance_{target_model}.json"),
     )
 

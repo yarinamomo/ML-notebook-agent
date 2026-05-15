@@ -64,7 +64,7 @@ LLM_ABBREVIATIONS = {
 }
 
 SETTING_LABEL_MAP = {
-    'baseline': 'SS+CO',
+    'baseline_with_all_outputs': 'SS+CO',
     'baseline_without_cell_outputs': 'SS',
     'baseline_without_all_outputs': 'SS-ERR',
     'agent_without_run_code_and_cell_outputs': 'Agent-lite',

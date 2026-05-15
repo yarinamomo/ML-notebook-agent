@@ -426,7 +426,7 @@ def calculate_overall_kappa_score(pairs: list[tuple[Path, Path]]) -> dict[str, A
 if __name__ == "__main__":
     # copy_validated_test_notebooks()
 
-    # convert_sampled_patches_to_notebooks(setting="baseline", model="glm-4.7-355b")
+    # convert_sampled_patches_to_notebooks(setting="baseline_with_all_outputs", model="glm-4.7-355b")
     # # copy_notebooks_to_benchmark(source_dir="JunoBench/test_file_genartion/testfiles")
     # copy_notebooks_to_benchmark(source_dir="JunoBench/test_file_genartion/testpatchedfiles_baseline")
 
@@ -441,8 +441,8 @@ if __name__ == "__main__":
                 Path("results/agent_without_run_code_and_cell_outputs/glm-4.7-355b/analysis/stratified_sampled_instances_tests.json"),
             ),
             (
-                Path("results/baseline/glm-4.7-355b/analysis/stratified_sampled_instances_labeled.json"),
-                Path("results/baseline/glm-4.7-355b/analysis/stratified_sampled_instances_tests.json"),
+                Path("results/baseline_without_cell_outputs/glm-4.7-355b/analysis/stratified_sampled_instances_labeled.json"),
+                Path("results/baseline_without_cell_outputs/glm-4.7-355b/analysis/stratified_sampled_instances_tests.json"),
             ),
         ]
     )
