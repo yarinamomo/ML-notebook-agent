@@ -37,24 +37,33 @@
       if (!instances.has(t.instance)) {
         instances.set(t.instance, []);
       }
-      instances.get(t.instance).push(t.metadata.success);
+      instances.get(t.instance).push({
+        success: t.metadata.success,
+        correct: t.metadata.correct
+      });
     });
     
     const result = [];
     libraryMap.forEach((instances, library) => {
       let successfulInstances = 0;
+      let correctInstances = 0;
       let totalInstances = instances.size;
       
       instances.forEach((runs) => {
         // Instance is successful if all runs were successful
-        if (runs.every(success => success)) {
+        if (runs.every(r => r.success)) {
           successfulInstances++;
+        }
+        // Instance is correct if all runs were correct
+        if (runs.every(r => r.correct)) {
+          correctInstances++;
         }
       });
       
       result.push({
         name: library,
         successCount: successfulInstances,
+        correctCount: correctInstances,
         totalCount: totalInstances
       });
     });
@@ -77,15 +86,20 @@
       if (!instanceMap.has(t.instance)) {
         instanceMap.set(t.instance, []);
       }
-      instanceMap.get(t.instance).push(t.metadata.success);
+      instanceMap.get(t.instance).push({
+        success: t.metadata.success,
+        correct: t.metadata.correct
+      });
     });
     
     const result = [];
     instanceMap.forEach((runs, instance) => {
-      const successCount = runs.filter(s => s).length;
+      const successCount = runs.filter(r => r.success).length;
+      const correctCount = runs.filter(r => r.correct).length;
       result.push({
         name: instance,
         successCount: successCount,
+        correctCount: correctCount,
         totalCount: runs.length
       });
     });
@@ -264,7 +278,7 @@
         <select bind:value={selectedLibrary}>
           {#each librariesWithStats as lib}
             <option value={lib.name}>
-              {lib.name} ({lib.successCount}/{lib.totalCount} ✓)
+              {lib.name} ({lib.successCount}/{lib.totalCount} ✓ | {lib.correctCount}/{lib.totalCount} 🎯)
             </option>
           {/each}
         </select>
@@ -274,7 +288,7 @@
         <select bind:value={selectedInstance}>
           {#each instancesWithStats as inst}
             <option value={inst.name}>
-              {inst.name} ({inst.successCount}/{inst.totalCount} ✓)
+              {inst.name} ({inst.successCount}/{inst.totalCount} ✓ | {inst.correctCount}/{inst.totalCount} 🎯)
             </option>
           {/each}
         </select>
@@ -300,6 +314,11 @@
         <span class="badge" class:success={currentTrajectory.metadata.success} class:failure={!currentTrajectory.metadata.success}>
           {currentTrajectory.metadata.status}
         </span>
+        {#if currentTrajectory.metadata.correct !== undefined}
+          <span class="badge" class:success={currentTrajectory.metadata.correct} class:failure={!currentTrajectory.metadata.correct}>
+            {currentTrajectory.metadata.correct ? 'Correct 🎯' : 'Incorrect'}
+          </span>
+        {/if}
         <span class="meta-item">Steps: {currentTrajectory.metadata.total_steps}</span>
         <span class="meta-item">Cost: ${currentTrajectory.metadata.cost?.toFixed(4)}</span>
         <span class="meta-item">Time: {currentTrajectory.metadata.execution_time}s</span>

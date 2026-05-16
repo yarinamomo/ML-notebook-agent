@@ -33,8 +33,8 @@ A web-based tool for inspecting agent trajectories. Shows the chat history on th
 ### Setup
 
 ```bash
-# 1. Preprocess trajectory data into a single JSON file
-python3 preprocess_trajectories.py
+# 1. Preprocess trajectory data
+python3 preprocess_trajectories.py --results-dir results_JunoBench
 
 # 2. Install viewer dependencies (once)
 cd viewer && npm install
@@ -47,17 +47,17 @@ The viewer opens at [http://localhost:5173](http://localhost:5173).
 
 ### Features
 
-- **Selector bar** — Pick model, library, run, and instance from cascading dropdowns. Metadata (status, cost, time, edits) is shown inline.
+- **Selector bar** — Pick configuration, model, library, run, and instance from cascading dropdowns. Metadata (status, correctness (🎯/✓), cost, time, edits, etc) is shown inline.
 - **Chat panel (left)** — All agent steps displayed as scrollable cards with reasoning, action, and observation. Click or use arrow keys to step through; the active step is highlighted and auto-scrolled.
 - **Notebook panel (right)** — All notebook cells shown at a glance. When the active step is a cell edit, the viewer auto-scrolls to that cell and displays an inline line-by-line diff.
 - **Keyboard navigation** — Arrow up/down to move between steps.
 
 ### Regenerating Data
 
-After new agent runs are added to `trajectories/`, re-run the preprocessor:
+After new agent runs are added to your results directory, re-run the preprocessor:
 
 ```bash
-python3 preprocess_trajectories.py
+python3 preprocess_trajectories.py --results-dir results_JunoBench
 ```
 
-This reads all `*.traj.json`, `*_summary.json`, and `*_patched.py` files and writes `viewer/public/data.json`.
+This aggregates all runs across different configurations and writes to `viewer/public/configs_index.json` and `viewer/public/[config_name]/data.json`.

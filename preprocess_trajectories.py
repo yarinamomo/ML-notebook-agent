@@ -12,7 +12,7 @@ from pathlib import Path
 
 from src.utils.format_nb_cells import format_cell_source_for_llm
 from src.utils.nbformat_helper import load_and_parse_notebook
-
+from data_analysis.analyze_patched_executed_failures import evaluate_notebook_correctness
 
 REFERENCE_NOTEBOOK_CACHE: dict[str, list[str] | None] = {}
 
@@ -264,6 +264,11 @@ def process_summary(summary_file: Path, model: str, library: str, run: str, base
             # Extract the reason from the action or output
             submit_reason = last_op.get("output", "") or last_action
 
+    patched_file = summary_file.with_name(f"{instance}_patched_executed.ipynb")
+    is_correct = metadata.get("success", False)
+    if patched_file.exists():
+        is_correct, _, _, _ = evaluate_notebook_correctness(patched_file)
+
     # Load reference fixed notebook (already in the same serialized format as original_notebook)
     reference_fix_notebook = load_reference_fix_cells(base_dir, instance)
     
@@ -275,6 +280,7 @@ def process_summary(summary_file: Path, model: str, library: str, run: str, base
         "instance": instance,
         "metadata": {
             "success": metadata.get("success", False),
+            "correct": is_correct,
             "status": metadata.get("status", "UNKNOWN"),
             "cost": metadata.get("cost", 0),
             "execution_time": round(metadata.get("execution_time_seconds", 0), 2),
@@ -354,8 +360,13 @@ def scan_trajectories_dir(trajectories_dir: Path, base_dir: Path) -> list[dict]:
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Preprocess trajectory data.")
+    parser.add_argument("--results-dir", default="results", help="The results directory to scan")
+    args = parser.parse_args()
+
     base_dir = Path(__file__).parent
-    results_dir = base_dir / "results"
+    results_dir = base_dir / args.results_dir
     output_dir = base_dir / "viewer" / "public"
     output_dir.mkdir(parents=True, exist_ok=True)
 
