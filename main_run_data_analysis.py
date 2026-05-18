@@ -140,3 +140,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    # import data_analysis.calculate_execution_time
+    # data_analysis.calculate_execution_time.calculate_execution_times()
+    # data_analysis.calculate_execution_time.calculate_total_runs()
