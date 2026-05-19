@@ -43,11 +43,11 @@ source .venv/bin/activate
 docker pull yarinamomo/kaggle_python_env:latest
 ```
 
-2. Populate API keys:
+3. Populate API keys:
 
  - Edit `api_keys.txt` with your model credentials (one key per line as expected by the code) and modify `run_all.sh` (API_KEYS) with the corresponding name.
 
-3. Prepare the dataset (clone JunoBench and download the extension; place the extension in corresponding benchmark folders)
+4. Prepare the dataset (clone JunoBench and download the extension; place the extension in corresponding benchmark folders)
 
 
 Running experiments
