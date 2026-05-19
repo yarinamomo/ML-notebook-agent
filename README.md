@@ -1,63 +1,83 @@
-# NotebookSandbox
+# ML Notebook Repair Agent — LLM Agents for Crash Repair
 
-A Docker-based Jupyter notebook execution sandbox, or custom environment adapter (`NotebookEnvironment`) with [mini-swe-agent](https://github.com/SWE-agent/mini-swe-agent) integration for AI-powered notebook debugging.
+This repository contains code, data, and analysis for the paper "Beyond Crash Resolution: Evaluating LLM Agents for Repairing Machine Learning Notebooks". We build and evaluate agentic LLM systems that automatically diagnose and repair failing Jupyter notebooks. The project implements agents and baselines, reproduces experiments on the JunoBench benchmark and our self-constructed extension, and includes analysis scripts used to produce the paper results.
 
-## Quick Start
+## Contents
 
-1. `python setup_env.py` (to setup your OpenAI API key)
-2. Run examples: `python main.py`
+- `src/` — core agent and baseline implementations and utilities (see `src/run_agent.py`, `src/run_baseline.py`).
+- `JunoBench/` — benchmark notebooks used in experiments. We also extended the benchmark, which can be found on [Zenodo](https://zenodo.org/records/20205838).
+- `data_analysis/` — scripts for aggregating results, computing metrics, and producing plots.
+- `results_JunoBench/`, `results_new/` — Agent and baseline outputs and processed results from our experiments.
+- `config/` — YAML configs for running agents and baselines.
+- `run_all.sh` — streamlined script for running experiments.
 
-## Installation
+## Datasets used
 
-```bash
-# with pip
-pip install -e .
-```
+- Primary benchmark: [JunoBench](https://huggingface.co/datasets/PELAB-LiU/JunoBench), excluding NBSpecific and Torch 13.
+- [Supplementary JunoBench Extension](https://zenodo.org/records/20205838): We also constructed 16 new notebook instances with the most recent Kaggle notebooks from 2026-01, as well as tests for each notebook instance (JunoBench and the 16 new instances).
 
-## Usage
+If you need to add other datasets, place them in a new directory and update the appropriate config (`source_path_parent`).
 
-- **[Example Notebook](nb_sandbox_example.ipynb)** - Basic sandbox usage
-- **[Examples Script](mini_swe_agent_examples.py)** - Mini-swe-agent integration examples
+## Reproducing the experiments
 
-## Requirements
+Prerequisites
 
-- Docker Desktop (running)
-- Python 3.11+
-- Docker image with Jupyter (e.g., `yarinamomo/kaggle_python_env`)
-- OpenAI/Anthropic/Google API key (for mini-swe-agent features)
+- Python 3.9+ and a POSIX-like shell for some helper scripts (on Windows use WSL or Git Bash).
+- API keys: place OpenAI/other locally hosted model keys in `api_keys.txt` on local machine as needed.
+- `.env`: environment file for local configuration (e.g., NOTEBOOK_AGENT_DEFAULTS_PATH = ./config/defaults_local.yaml).
+- Local notebook environment: The implemented notebook environment for evaluating all notebooks in the datsets uses the [docker environment](https://hub.docker.com/repository/docker/yarinamomo/kaggle_python_env/tags/latest/sha256-73380761b1f37a83aef2c247a9d725c796c6196abf14bccc92b92b25c7eb81b9) from JunoBench (sha256:73380761b1f37a83aef2c247a9d725c796c6196abf14bccc92b92b25c7eb81b9)
 
-## Trajectory Viewer
+Quick setup
 
-A web-based tool for inspecting agent trajectories. Shows the chat history on the left and the notebook state on the right, with inline git-style diffs for cell edits.
-
-### Setup
-
-```bash
-# 1. Preprocess trajectory data
-python3 preprocess_trajectories.py --results-dir results_JunoBench
-
-# 2. Install viewer dependencies (once)
-cd viewer && npm install
-
-# 3. Start the dev server
-npm run dev
-```
-
-The viewer opens at [http://localhost:5173](http://localhost:5173).
-
-### Features
-
-- **Selector bar** — Pick configuration, model, library, run, and instance from cascading dropdowns. Metadata (status, correctness (🎯/✓), cost, time, edits, etc) is shown inline.
-- **Chat panel (left)** — All agent steps displayed as scrollable cards with reasoning, action, and observation. Click or use arrow keys to step through; the active step is highlighted and auto-scrolled.
-- **Notebook panel (right)** — All notebook cells shown at a glance. When the active step is a cell edit, the viewer auto-scrolls to that cell and displays an inline line-by-line diff.
-- **Keyboard navigation** — Arrow up/down to move between steps.
-
-### Regenerating Data
-
-After new agent runs are added to your results directory, re-run the preprocessor:
+1. Create and activate a virtual environment, then install core requirements:
 
 ```bash
-python3 preprocess_trajectories.py --results-dir results_JunoBench
+# On Linux
+uv sync
+source .venv/bin/activate
 ```
 
-This aggregates all runs across different configurations and writes to `viewer/public/configs_index.json` and `viewer/public/[config_name]/data.json`.
+2. Pull the docker image required by notebooks in the datasets:
+
+```bash
+docker pull yarinamomo/kaggle_python_env:latest
+```
+
+2. Populate API keys:
+
+ - Edit `api_keys.txt` with your model credentials (one key per line as expected by the code) and modify `run_all.sh` (API_KEYS) with the corresponding name.
+
+3. Prepare the dataset (clone JunoBench and download the extension; place the extension in corresponding benchmark folders)
+
+
+Running experiments
+
+- To run the full benchmark pipeline (agents/baselines + evaluation):
+
+```bash
+./run_all.sh
+```
+
+- To run only the test-based evaluation for a specific setting (e.g., agent):
+
+```bash
+python data_analysis/run_all_patched_notebooks.py -c config/agent.yaml
+```
+
+Notes
+
+- Use `--config` to select different settings (see `config/` for available settings).
+- Long-running jobs will create per-run outputs under configured folder in the config files, e.g. `trajectories/[setting_name]/[model_name]/[run_id]`.
+
+
+## Results & analysis
+
+Metrics reported in the paper can be reproduced using (`main_run_data_analysis.py`).
+
+<!-- ## Releasing and citing
+
+If you use this code or dataset in your research, please cite the associated paper and include a link to this repository. Contact the authors via the repository maintainer listed in the paper for further details.
+
+## Contact
+
+For questions about reproducing results or running the code, open an issue or contact the maintainers listed in the paper. -->
