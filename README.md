@@ -4,12 +4,13 @@ This repository contains code, data, and analysis for the paper "Beyond Crash Re
 
 ## Contents
 
-- `src/` — core agent and baseline implementations and utilities (see `src/run_agent.py`, `src/run_baseline.py`).
+- [`src/`](src/) — core agent and baseline implementations and utilities (see [`src/run_agent.py`](src/run_agent.py), [`src/run_baseline.py`](src/run_baseline.py)).
 - `JunoBench/` — benchmark notebooks used in experiments. We also extended the benchmark, which can be found on [Zenodo](https://zenodo.org/records/20205838).
-- `data_analysis/` — scripts for aggregating results, computing metrics, and producing plots.
+- [`data_analysis/`](data_analysis/) — scripts for aggregating results, computing metrics, and producing plots.
 - `results_JunoBench/`, `results_new/` — Agent and baseline outputs and processed results from our experiments.
-- `config/` — YAML configs for running agents and baselines.
-- `run_all.sh` — streamlined script for running experiments.
+- [`config/`](config/) — YAML configs for running agents and baselines.
+- [`run_all.sh`](run_all.sh) — streamlined script for running experiments.
+- [`tests/`](tests/) — Unit and integration tests for the project (see [TEST_SUITE.md](TEST_SUITE.md)).
 
 ## Datasets used
 
@@ -20,59 +21,80 @@ If you need to add other datasets, place them in a new directory and update the 
 
 ## Reproducing the experiments
 
-Prerequisites
+### Prerequisites
 
 - Python 3.9+ and a POSIX-like shell for some helper scripts (on Windows use WSL or Git Bash).
-- API keys: place OpenAI/other locally hosted model keys in `api_keys.txt` on local machine as needed.
-- `.env`: environment file for local configuration (e.g., NOTEBOOK_AGENT_DEFAULTS_PATH = ./config/defaults_local.yaml).
-- Local notebook environment: The implemented notebook environment for evaluating all notebooks in the datsets uses the [docker environment](https://hub.docker.com/repository/docker/yarinamomo/kaggle_python_env/tags/latest/sha256-73380761b1f37a83aef2c247a9d725c796c6196abf14bccc92b92b25c7eb81b9) from JunoBench (sha256:73380761b1f37a83aef2c247a9d725c796c6196abf14bccc92b92b25c7eb81b9)
+- [Docker](https://www.docker.com/)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) (for Python dependency management)
+- [Git LFS](https://git-lfs.com/) (required to pull the benchmark dataset)
 
-Quick setup
+### 1. Environment Setup
 
-1. Create and activate a virtual environment, then install core requirements:
+Clone the repository and install dependencies:
 
 ```bash
-# On Linux
+# Install project dependencies
 uv sync
 source .venv/bin/activate
 ```
 
-2. Pull the docker image required by notebooks in the datasets:
+### 2. Pull the docker image required by notebooks in the datasets:
+
+The implemented notebook environment for evaluating all notebooks in the datasets uses the [docker environment](https://hub.docker.com/repository/docker/yarinamomo/kaggle_python_env/tags/latest/sha256-73380761b1f37a83aef2c247a9d725c796c6196abf14bccc92b92b25c7eb81b9) from JunoBench (sha256:73380761b1f37a83aef2c247a9d725c796c6196abf14bccc92b92b25c7eb81b9). Pull the image:
 
 ```bash
 docker pull yarinamomo/kaggle_python_env:latest
 ```
 
-3. Populate API keys:
+### 3. Configure environment variables and API keys:
 
- - Edit `api_keys.txt` with your model credentials (one key per line as expected by the code) and modify `run_all.sh` (API_KEYS) with the corresponding name.
+Create a `.env` file for local configuration using the following template:
+```env
+NOTEBOOK_AGENT_CONFIG_PATH=./config/agent.yaml
+NOTEBOOK_AGENT_DEFAULTS_PATH=./config/defaults_local.yaml
+NOTEBOOK_AGENT_LOG_LEVEL=INFO
+OPENAI_API_KEY=your_key_here
+```
 
-4. Prepare the dataset (clone JunoBench and download the extension; place the extension in corresponding benchmark folders)
+Then, set up your keys for parallel execution:
+- Edit `api_keys.txt` with your model credentials (one key per line). This file is specifically used for threading/parallel execution. Modify `run_all.sh` to ensure `API_KEYS` matches your configured text file.
 
+### 4. Prepare the datasets:
 
-Running experiments
+JunoBench is included as a git submodule and uses Git LFS (Large File Storage) for the notebook data. Initialize and update it:
 
-- To run the full benchmark pipeline (agents/baselines + evaluation):
+```bash
+git submodule update --init --recursive
+git lfs pull
+```
+
+To include the supplementary extension, download it from [Zenodo](https://zenodo.org/records/20205838) and extract the new instances into your local benchmark folders. You will need to explicitly point the agent to these folders in your configuration files by changing the `source_path_parent` key in your config file (e.g., `source_path_parent: JunoBench/benchmark/`, see [config/CONFIG.md](config/CONFIG.md)).
+
+### 5. Running experiments
+
+- To run the full benchmark pipeline across all configurations:
 
 ```bash
 ./run_all.sh
 ```
 
-- To run only the test-based evaluation for a specific setting (e.g., agent):
+- To run a single experiment or setting:
 
 ```bash
-python data_analysis/run_all_patched_notebooks.py -c config/agent.yaml
+python main.py --config config/agent.yaml
 ```
 
-Notes
+**Configuration Mechanics**
 
-- Use `--config` to select different settings (see `config/` for available settings).
-- Long-running jobs will create per-run outputs under configured folder in the config files, e.g. `trajectories/[setting_name]/[model_name]/[run_id]`.
+The runner ([`main.py`](main.py)) relies on a layered configuration system that merges a defaults file with a run-specific configuration. *For full details on all available configurations and extensions, see [config/CONFIG.md](config/CONFIG.md).*
+
+Notes
+- Long-running jobs will create per-run outputs under the configured folder in the config files, e.g. `trajectories/[setting_name]/[model]/[run_id]`.
 
 
 ## Results & analysis
 
-Metrics reported in the paper can be reproduced using (`main_run_data_analysis.py`).
+Metrics reported in the paper can be reproduced using ([`main_run_data_analysis.py`](main_run_data_analysis.py)).
 
 <!-- ## Releasing and citing
 
