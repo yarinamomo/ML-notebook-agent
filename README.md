@@ -1,6 +1,6 @@
 # ML Notebook Repair Agent — LLM Agents for Crash Repair
 
-This repository contains code, data, and analysis for the paper "Beyond Crash Resolution: Evaluating LLM Agents for Repairing Machine Learning Notebooks". We build and evaluate agentic LLM systems that automatically diagnose and repair failing Jupyter notebooks. The project implements agents and baselines, reproduces experiments on the JunoBench benchmark and our self-constructed extension, and includes analysis scripts used to produce the paper results.
+This repository contains code, data, and analysis for the paper "Beyond Crash Resolution: Evaluating LLM Agents for Repairing Machine Learning Notebooks". We build and evaluate agentic LLM systems that automatically diagnose and repair failing Jupyter notebooks, utilizing [mini-swe-agent](https://mini-swe-agent.com/) as our underlying framework. The project implements agents and baselines, reproduces experiments on the JunoBench benchmark and our self-constructed extension, and includes analysis scripts used to produce the paper results.
 
 ## Contents
 
@@ -95,6 +95,10 @@ Notes
 ## Results & analysis
 
 Metrics reported in the paper can be reproduced using ([`main_run_data_analysis.py`](main_run_data_analysis.py)).
+
+## Acknowledgments
+
+This project is built on top of the [mini-swe-agent](https://mini-swe-agent.com/) framework. We thank the authors and maintainers for providing a robust foundation for agentic software engineering.
 
 <!-- ## Releasing and citing
 
