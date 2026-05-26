@@ -40,7 +40,7 @@ source .venv/bin/activate
 
 ### 2. Pull the docker image required by notebooks in the datasets:
 
-The implemented notebook environment for evaluating all notebooks in the datasets uses the [docker environment](https://hub.docker.com/repository/docker/yarinamomo/kaggle_python_env/tags/latest/sha256-73380761b1f37a83aef2c247a9d725c796c6196abf14bccc92b92b25c7eb81b9) from JunoBench (sha256:73380761b1f37a83aef2c247a9d725c796c6196abf14bccc92b92b25c7eb81b9). Pull the image:
+The implemented notebook environment for evaluating all notebooks in the datasets uses the [docker environment](https://hub.docker.com/r/yarinamomo/kaggle_python_env) from JunoBench. 
 
 ```bash
 docker pull yarinamomo/kaggle_python_env:latest
