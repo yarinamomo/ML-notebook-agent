@@ -10,7 +10,7 @@ from data_analysis import (
 )
 
 def main():
-    results_dir = Path("results")
+    results_dir = Path("results_JunoBench")
     target_modes = ["baseline_with_all_outputs", "baseline_without_all_outputs", "baseline_without_cell_outputs", "agent", "agent_without_run_code_and_cell_outputs"]
     target_model = "gpt-5.3-codex" #"glm-4.7-355b"
     for target_mode in target_modes:
@@ -93,6 +93,7 @@ def main():
         )
     
     summarize_plots.compare_pass_at_k_across_bug_types(
+        results_dir=results_dir,
         bug_category="library",
         bug_categories=['tensorflow', 'torch', 'sklearn', 'numpy', 'pandas', 'visual', 'minor'],
         settings = ['baseline_without_cell_outputs', 'agent_without_run_code_and_cell_outputs', 'agent'],
@@ -107,6 +108,7 @@ def main():
     #     category_grouping={'other': ['ML model confusion', 'library cause']}
     # )
     summarize_plots.compare_pass_at_k_across_bug_types(
+        results_dir=results_dir,
         bug_category="pipeline",
         bug_categories=['data process', 'data visual', 'model construct', 'model train', 'model infer'],
         settings = ['baseline_without_cell_outputs', 'agent_without_run_code_and_cell_outputs', 'agent'],
@@ -117,6 +119,7 @@ def main():
         save_pdf=True
     )
     summarize_plots.compare_pass_at_k_across_bug_types(
+        results_dir=results_dir,
         bug_category="crash_type",
         settings=['baseline_without_cell_outputs', 'agent_without_run_code_and_cell_outputs', 'agent'],
         bug_categories=['data mismatch', 'invalid arg', 'value error', 'attribute error', 'key error', 'index error', 'other'],
